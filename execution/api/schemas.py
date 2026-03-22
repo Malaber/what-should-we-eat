@@ -113,6 +113,10 @@ class RandomSelectionRequest(BaseModel):
     tag_names: list[str] = Field(default_factory=list)
     max_kcal: Optional[float] = None
     max_total_time: Optional[int] = None
+    exclude_ids: list[int] = Field(
+        default_factory=list,
+        description="Recipe IDs to exclude (for re-rolling without duplicates).",
+    )
 
 
 # ── Shopping list ────────────────────────────────────────────────────

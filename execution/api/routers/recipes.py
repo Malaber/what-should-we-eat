@@ -170,6 +170,10 @@ def random_recipes(body: RandomSelectionRequest, db: Session = Depends(get_db)):
         max_kcal=body.max_kcal,
         max_total_time=body.max_total_time,
     )
+    # Exclude already-selected recipe IDs (used for single-reroll)
+    if body.exclude_ids:
+        q = q.filter(Recipe.id.notin_(body.exclude_ids))
+
     candidates = q.all()
 
     if len(candidates) <= body.count:

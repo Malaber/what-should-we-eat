@@ -5,8 +5,12 @@ Run with:
     uvicorn execution.api.main:app --reload --port 8000
 """
 
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from execution.api.routers import recipes, shopping_list, tags
 
@@ -34,3 +38,9 @@ app.include_router(shopping_list.router)
 @app.get("/health", tags=["health"])
 def health():
     return {"status": "ok"}
+
+
+# Serve frontend static files (must be last — catches all unmatched routes)
+_frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
+if _frontend_dir.is_dir():
+    app.mount("/", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
