@@ -1,0 +1,178 @@
+"""
+recipes.py — CRUD, filter, and random-selection endpoints for recipes.
+"""
+
+import random as _random
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
+
+from execution.api.schemas import (
+    RandomSelectionRequest,
+    RecipeCreate,
+    RecipeOut,
+    RecipeUpdate,
+)
+from execution.db.database import get_db
+from execution.db.models import Ingredient, InstructionStep, Recipe, Tag
+
+router = APIRouter(prefix="/recipes", tags=["recipes"])
+
+
+# ── helpers ──────────────────────────────────────────────────────────
+
+def _get_or_create_tags(db: Session, tag_names: list[str]) -> list[Tag]:
+    """Return Tag objects, creating any that don't exist yet."""
+    tags: list[Tag] = []
+    for name in tag_names:
+        tag = db.query(Tag).filter(func.lower(Tag.name) == name.lower()).first()
+        if not tag:
+            tag = Tag(name=name)
+            db.add(tag)
+            db.flush()
+        tags.append(tag)
+    return tags
+
+
+def _apply_filters(
+    query,
+    db: Session,
+    tag_names: list[str] | None = None,
+    max_kcal: float | None = None,
+    max_total_time: int | None = None,
+):
+    """Apply optional filters to a recipe query."""
+    if tag_names:
+        for tag_name in tag_names:
+            query = query.filter(
+                Recipe.tags.any(func.lower(Tag.name) == tag_name.lower())
+            )
+    if max_kcal is not None:
+        query = query.filter(Recipe.kcal_per_serving <= max_kcal)
+    if max_total_time is not None:
+        query = query.filter(Recipe.total_time_min <= max_total_time)
+    return query
+
+
+def _recipe_query(db: Session):
+    """Base query with eager-loaded relationships."""
+    return db.query(Recipe).options(
+        joinedload(Recipe.ingredients),
+        joinedload(Recipe.instruction_steps),
+        joinedload(Recipe.tags),
+    )
+
+
+# ── CREATE ───────────────────────────────────────────────────────────
+
+@router.post("", response_model=RecipeOut, status_code=201)
+def create_recipe(data: RecipeCreate, db: Session = Depends(get_db)):
+    recipe = Recipe(
+        name=data.name,
+        kcal_per_serving=data.kcal_per_serving,
+        active_cooking_time_min=data.active_cooking_time_min,
+        total_time_min=data.total_time_min,
+    )
+    recipe.ingredients = [
+        Ingredient(**ing.model_dump()) for ing in data.ingredients
+    ]
+    recipe.instruction_steps = [
+        InstructionStep(**step.model_dump()) for step in data.instruction_steps
+    ]
+    recipe.tags = _get_or_create_tags(db, data.tags)
+
+    db.add(recipe)
+    db.commit()
+    db.refresh(recipe)
+
+    # Re-query with eager loading to ensure full nested output
+    return _recipe_query(db).filter(Recipe.id == recipe.id).first()
+
+
+# ── READ (list + single) ────────────────────────────────────────────
+
+@router.get("", response_model=list[RecipeOut])
+def list_recipes(
+    tag: Optional[list[str]] = Query(None, description="Filter by tag names"),
+    max_kcal: Optional[float] = Query(None),
+    max_total_time: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    q = _recipe_query(db)
+    q = _apply_filters(q, db, tag_names=tag, max_kcal=max_kcal, max_total_time=max_total_time)
+    return q.all()
+
+
+@router.get("/{recipe_id}", response_model=RecipeOut)
+def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
+    recipe = _recipe_query(db).filter(Recipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(404, "Recipe not found")
+    return recipe
+
+
+# ── UPDATE ───────────────────────────────────────────────────────────
+
+@router.put("/{recipe_id}", response_model=RecipeOut)
+def update_recipe(recipe_id: int, data: RecipeUpdate, db: Session = Depends(get_db)):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(404, "Recipe not found")
+
+    # scalar fields
+    for field in ("name", "kcal_per_serving", "active_cooking_time_min", "total_time_min"):
+        value = getattr(data, field)
+        if value is not None:
+            setattr(recipe, field, value)
+
+    # replace ingredients if provided
+    if data.ingredients is not None:
+        recipe.ingredients = [
+            Ingredient(**ing.model_dump()) for ing in data.ingredients
+        ]
+
+    # replace instruction steps if provided
+    if data.instruction_steps is not None:
+        recipe.instruction_steps = [
+            InstructionStep(**step.model_dump()) for step in data.instruction_steps
+        ]
+
+    # replace tags if provided
+    if data.tags is not None:
+        recipe.tags = _get_or_create_tags(db, data.tags)
+
+    db.commit()
+    db.refresh(recipe)
+    return _recipe_query(db).filter(Recipe.id == recipe.id).first()
+
+
+# ── DELETE ───────────────────────────────────────────────────────────
+
+@router.delete("/{recipe_id}", status_code=204)
+def delete_recipe(recipe_id: int, db: Session = Depends(get_db)):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(404, "Recipe not found")
+    db.delete(recipe)
+    db.commit()
+
+
+# ── RANDOM SELECTION ─────────────────────────────────────────────────
+
+@router.post("/random", response_model=list[RecipeOut])
+def random_recipes(body: RandomSelectionRequest, db: Session = Depends(get_db)):
+    q = _recipe_query(db)
+    q = _apply_filters(
+        q, db,
+        tag_names=body.tag_names or None,
+        max_kcal=body.max_kcal,
+        max_total_time=body.max_total_time,
+    )
+    candidates = q.all()
+
+    if len(candidates) <= body.count:
+        return candidates
+
+    return _random.sample(candidates, body.count)

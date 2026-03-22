@@ -1,0 +1,126 @@
+"""
+models.py — SQLAlchemy ORM models for the recipe management system.
+
+Tables:
+    recipes           — core recipe metadata
+    instruction_steps — ordered cooking steps with optional duration
+    ingredients       — recipe ingredients with quantity and unit
+    tags              — reusable property tags (e.g. "high protein")
+    recipe_tags       — many-to-many junction between recipes and tags
+"""
+
+from datetime import datetime, timezone
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import relationship
+
+from execution.db.database import Base
+
+
+# ---------- recipes ----------
+class Recipe(Base):
+    __tablename__ = "recipes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    kcal_per_serving = Column(Float, nullable=True)
+    active_cooking_time_min = Column(Integer, nullable=True)
+    total_time_min = Column(Integer, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    # relationships
+    instruction_steps = relationship(
+        "InstructionStep",
+        back_populates="recipe",
+        cascade="all, delete-orphan",
+        order_by="InstructionStep.step_number",
+    )
+    ingredients = relationship(
+        "Ingredient",
+        back_populates="recipe",
+        cascade="all, delete-orphan",
+    )
+    tags = relationship(
+        "Tag",
+        secondary="recipe_tags",
+        back_populates="recipes",
+    )
+
+
+# ---------- instruction_steps ----------
+class InstructionStep(Base):
+    __tablename__ = "instruction_steps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recipe_id = Column(Integer, ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False)
+    step_number = Column(Integer, nullable=False)
+    description = Column(Text, nullable=False)
+    duration_min = Column(Integer, nullable=True)
+
+    recipe = relationship("Recipe", back_populates="instruction_steps")
+
+
+# ---------- ingredients ----------
+class Ingredient(Base):
+    __tablename__ = "ingredients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recipe_id = Column(Integer, ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(255), nullable=False)
+    quantity = Column(Float, nullable=True)
+    unit = Column(String(50), nullable=True)
+
+    recipe = relationship("Recipe", back_populates="ingredients")
+
+
+# ---------- tags ----------
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, nullable=False)
+
+    recipes = relationship(
+        "Recipe",
+        secondary="recipe_tags",
+        back_populates="tags",
+    )
+
+
+# ---------- recipe_tags (junction) ----------
+class RecipeTag(Base):
+    __tablename__ = "recipe_tags"
+
+    recipe_id = Column(
+        Integer,
+        ForeignKey("recipes.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tag_id = Column(
+        Integer,
+        ForeignKey("tags.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("recipe_id", "tag_id", name="uq_recipe_tag"),
+    )
