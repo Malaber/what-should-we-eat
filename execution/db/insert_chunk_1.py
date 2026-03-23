@@ -1,10 +1,14 @@
 import os
 import json
 from execution.db.database import SessionLocal
-from execution.db.models import Recipe, Ingredient, InstructionStep, Tag
+from execution.db.models import Recipe, Ingredient, InstructionStep, Tag, Household
 
 def seed_recipes():
     db = SessionLocal()
+    household = db.query(Household).first()
+    if not household:
+        household = Household(name='Demo')
+        db.add(household); db.commit(); db.refresh(household)
     
     recipes_data = [
         {
@@ -242,6 +246,7 @@ def seed_recipes():
         recipe = db.query(Recipe).filter(Recipe.name == r_data["name"]).first()
         if not recipe:
             recipe = Recipe(
+                household_id=household.id,
                 name=r_data["name"],
                 kcal_per_serving=r_data["kcal_per_serving"],
                 active_cooking_time_min=r_data["active_cooking_time_min"],

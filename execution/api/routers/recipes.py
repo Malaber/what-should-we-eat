@@ -16,7 +16,8 @@ from execution.api.schemas import (
     RecipeUpdate,
 )
 from execution.db.database import get_db
-from execution.db.models import Ingredient, InstructionStep, Recipe, Tag
+from execution.db.models import Ingredient, InstructionStep, Recipe, Tag, User
+from execution.api.auth import get_current_active_user
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -56,9 +57,9 @@ def _apply_filters(
     return query
 
 
-def _recipe_query(db: Session):
+def _recipe_query(db: Session, household_id: int):
     """Base query with eager-loaded relationships."""
-    return db.query(Recipe).options(
+    return db.query(Recipe).filter(Recipe.household_id == household_id).options(
         joinedload(Recipe.ingredients),
         joinedload(Recipe.instruction_steps),
         joinedload(Recipe.tags),
@@ -68,8 +69,9 @@ def _recipe_query(db: Session):
 # ── CREATE ───────────────────────────────────────────────────────────
 
 @router.post("", response_model=RecipeOut, status_code=201)
-def create_recipe(data: RecipeCreate, db: Session = Depends(get_db)):
+def create_recipe(data: RecipeCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     recipe = Recipe(
+        household_id=current_user.active_household_id,
         name=data.name,
         kcal_per_serving=data.kcal_per_serving,
         active_cooking_time_min=data.active_cooking_time_min,
@@ -88,7 +90,7 @@ def create_recipe(data: RecipeCreate, db: Session = Depends(get_db)):
     db.refresh(recipe)
 
     # Re-query with eager loading to ensure full nested output
-    return _recipe_query(db).filter(Recipe.id == recipe.id).first()
+    return _recipe_query(db, current_user.active_household_id).filter(Recipe.id == recipe.id).first()
 
 
 # ── READ (list + single) ────────────────────────────────────────────
@@ -98,16 +100,17 @@ def list_recipes(
     tag: Optional[list[str]] = Query(None, description="Filter by tag names"),
     max_kcal: Optional[float] = Query(None),
     max_total_time: Optional[int] = Query(None),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    q = _recipe_query(db)
+    q = _recipe_query(db, current_user.active_household_id)
     q = _apply_filters(q, db, tag_names=tag, max_kcal=max_kcal, max_total_time=max_total_time)
     return q.all()
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut)
-def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
-    recipe = _recipe_query(db).filter(Recipe.id == recipe_id).first()
+def get_recipe(recipe_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    recipe = _recipe_query(db, current_user.active_household_id).filter(Recipe.id == recipe_id).first()
     if not recipe:
         raise HTTPException(404, "Recipe not found")
     return recipe
@@ -116,8 +119,8 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
 # ── UPDATE ───────────────────────────────────────────────────────────
 
 @router.put("/{recipe_id}", response_model=RecipeOut)
-def update_recipe(recipe_id: int, data: RecipeUpdate, db: Session = Depends(get_db)):
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+def update_recipe(recipe_id: int, data: RecipeUpdate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id, Recipe.household_id == current_user.active_household_id).first()
     if not recipe:
         raise HTTPException(404, "Recipe not found")
 
@@ -145,25 +148,33 @@ def update_recipe(recipe_id: int, data: RecipeUpdate, db: Session = Depends(get_
 
     db.commit()
     db.refresh(recipe)
-    return _recipe_query(db).filter(Recipe.id == recipe.id).first()
+
+    # Clean up orphaned tags
+    db.query(Tag).filter(~Tag.recipes.any()).delete()
+    db.commit()
+
+    return _recipe_query(db, current_user.active_household_id).filter(Recipe.id == recipe.id).first()
 
 
 # ── DELETE ───────────────────────────────────────────────────────────
 
 @router.delete("/{recipe_id}", status_code=204)
-def delete_recipe(recipe_id: int, db: Session = Depends(get_db)):
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+def delete_recipe(recipe_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id, Recipe.household_id == current_user.active_household_id).first()
     if not recipe:
         raise HTTPException(404, "Recipe not found")
     db.delete(recipe)
     db.commit()
 
+    # Clean up orphaned tags
+    db.query(Tag).filter(~Tag.recipes.any()).delete()
+    db.commit()
 
 # ── RANDOM SELECTION ─────────────────────────────────────────────────
 
 @router.post("/random", response_model=list[RecipeOut])
-def random_recipes(body: RandomSelectionRequest, db: Session = Depends(get_db)):
-    q = _recipe_query(db)
+def random_recipes(body: RandomSelectionRequest, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    q = _recipe_query(db, current_user.active_household_id)
     q = _apply_filters(
         q, db,
         tag_names=body.tag_names or None,

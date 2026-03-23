@@ -373,6 +373,9 @@ body::before {
   transition: box-shadow 0.25s, transform 0.25s;
   position: relative;
   animation: cardIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .recipe-card:hover {
@@ -450,6 +453,7 @@ body::before {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: auto;
 }
 
 /* ── Expandable steps ───────────────────────────────────────── */

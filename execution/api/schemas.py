@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 
 # ── Instruction Steps ────────────────────────────────────────────────
@@ -96,6 +96,7 @@ class RecipeUpdate(BaseModel):
 
 class RecipeOut(RecipeBase):
     id: int
+    household_id: int
     created_at: datetime
     updated_at: datetime
     ingredients: list[IngredientOut] = []
@@ -130,3 +131,52 @@ class ShoppingListItem(BaseModel):
 class ShoppingListOut(BaseModel):
     items: list[ShoppingListItem]
     recipe_ids: list[int]
+
+
+# ── Households ───────────────────────────────────────────────────────
+
+class HouseholdBase(BaseModel):
+    name: str
+
+class HouseholdOut(HouseholdBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ── Users & Auth ─────────────────────────────────────────────────────
+
+class UserBase(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+    is_active: bool = True
+    is_admin: bool = False
+
+class UserCreate(UserBase):
+    password: str
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    password: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
+
+class UserOut(UserBase):
+    id: int
+    personal_household_id: int
+    active_household_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
