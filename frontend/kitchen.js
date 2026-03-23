@@ -122,7 +122,7 @@ function openModal(id) {
     return `
       <li style="margin-bottom:8px;">
         <label style="display:flex; align-items:flex-start; gap:12px; cursor:pointer;">
-          <input type="checkbox" style="width:24px; height:24px; margin-top:2px; accent-color:var(--orange-main); cursor:pointer;" />
+          <input type="checkbox" style="width:24px; height:24px; margin-top:2px; accent-color:var(--orange); cursor:pointer;" />
           <span style="font-size:1.2rem; line-height:1.4; color:var(--text-dark);">
             ${qty ? `<strong>${qty}</strong>` : ''} ${esc(ing.name)}
           </span>
@@ -136,7 +136,7 @@ function openModal(id) {
     .sort((a, b) => a.step_number - b.step_number)
     .map(s => `
       <div style="display:flex; gap:16px; background:var(--bg-card); padding:20px; border-radius:12px; border:1px solid var(--border);">
-        <div style="flex-shrink:0; background:var(--orange-main); color:white; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.2rem;">
+        <div style="flex-shrink:0; background:var(--orange); color:white; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.2rem;">
           ${s.step_number}
         </div>
         <div style="flex:1;">
