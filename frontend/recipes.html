@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Recipes</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🍳</text></svg>" />
+</head>
+<body>
+
+  <!-- ─── Navigation ─────────────────────────────────────────── -->
+  <nav class="top-nav">
+    <div class="container nav-container">
+      <a href="/" class="nav-link">Pick Meals</a>
+      <a href="/recipes.html" class="nav-link active">Manage Recipes</a>
+    </div>
+  </nav>
+
+  <!-- ─── Header ─────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="container">
+      <h1>Manage <span class="accent-orange">Your</span> <span class="accent-green">Recipes</span></h1>
+      <p class="tagline">Create, edit, and curate your meal collection.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="section-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>All Recipes <span class="badge" id="list-badge">0</span></h2>
+        <button class="btn btn-primary" id="btn-create-recipe">
+          <span class="icon">➕</span> Create New Recipe
+        </button>
+      </div>
+      <div class="search-bar-container">
+        <input type="text" id="recipe-search" placeholder="🔍 Search by name, tags, or ingredients..." class="search-input" />
+      </div>
+    </div>
+
+    <!-- ─── Recipe List ──────────────────────────────────────── -->
+    <div class="recipes-grid" id="manage-grid">
+      <!-- filled by JS -->
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      Made with 🍳 — <em>What Should We Eat?</em>
+    </div>
+  </footer>
+
+  <!-- ─── Modals ─────────────────────────────────────────────── -->
+
+  <!-- Recipe Edit/Create Modal -->
+  <div class="modal-overlay" id="edit-modal" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 id="modal-title">Edit Recipe</h2>
+        <button class="btn-icon" id="btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="recipe-form">
+          <input type="hidden" id="recipe-id" />
+          
+          <div class="form-row">
+            <div class="control-group" style="flex: 2;">
+              <label>Recipe Name</label>
+              <input type="text" id="recipe-name" required />
+            </div>
+            <div class="control-group">
+              <label>Kcal / Serving</label>
+              <input type="number" id="recipe-kcal" min="0" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="control-group">
+              <label>Active Time (min)</label>
+              <input type="number" id="recipe-active-time" min="0" />
+            </div>
+            <div class="control-group">
+              <label>Total Time (min)</label>
+              <input type="number" id="recipe-total-time" min="0" />
+            </div>
+          </div>
+
+          <div class="control-group" style="margin-top:16px;">
+            <label>Tags</label>
+            <div class="tag-selector" id="edit-tag-selector">
+              <!-- filled by JS -->
+            </div>
+            <div class="add-tag-row">
+              <input type="text" id="new-tag-input" placeholder="New tag name..." />
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-add-tag">Add</button>
+            </div>
+          </div>
+
+          <!-- Ingredients -->
+          <div class="list-editor">
+            <h3>Ingredients</h3>
+            <div id="ingredients-list"></div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-ingredient">+ Add Ingredient</button>
+          </div>
+
+          <!-- Steps -->
+          <div class="list-editor">
+            <h3>Instruction Steps</h3>
+            <div id="steps-list"></div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-step">+ Add Step</button>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-recipe">Save Recipe</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="delete-modal" style="display:none;">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>Delete Recipe</h2>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete <strong id="delete-recipe-name"></strong>? This cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-delete">Cancel</button>
+        <button class="btn btn-primary" id="btn-confirm-delete" style="background:#d9534f;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/manage.js"></script>
+</body>
+</html>

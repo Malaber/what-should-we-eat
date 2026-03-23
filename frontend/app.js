@@ -33,6 +33,25 @@ async function init() {
 
   $btnRoll.addEventListener('click', rollRecipes);
   $btnRerollAll.addEventListener('click', rerollAll);
+
+  // Cross-tab synchronization so deleted recipes disappear
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'wswe_recipes') {
+      try {
+        const saved = localStorage.getItem('wswe_recipes');
+        if (saved) {
+          selectedRecipes = JSON.parse(saved);
+          renderRecipes();
+          loadShoppingList();
+          if (selectedRecipes.length === 0) {
+            $recipesSection.style.display = 'none';
+            $shoppingSection.style.display = 'none';
+            $btnRerollAll.style.display = 'none';
+          }
+        }
+      } catch(err) {}
+    }
+  });
 }
 
 // ── Tags ───────────────────────────────────────────────────────
@@ -160,6 +179,19 @@ async function rerollSingle(recipeId) {
   }
 }
 
+// ── Remove Single ──────────────────────────────────────────────
+function removeSingle(recipeId) {
+  selectedRecipes = selectedRecipes.filter(r => r.id !== recipeId);
+  renderRecipes();
+  loadShoppingList();
+  saveState();
+  if (selectedRecipes.length === 0) {
+    $recipesSection.style.display = 'none';
+    $shoppingSection.style.display = 'none';
+    $btnRerollAll.style.display = 'none';
+  }
+}
+
 // ── Render Recipes ─────────────────────────────────────────────
 function renderRecipes() {
   $recipeBadge.textContent = selectedRecipes.length;
@@ -168,7 +200,10 @@ function renderRecipes() {
     <div class="recipe-card" style="animation-delay: ${i * 0.06}s" id="card-${r.id}">
       <div class="recipe-card-header">
         <h3>${esc(r.name)}</h3>
-        <button class="btn btn-icon" title="Re-roll this recipe" data-reroll="${r.id}">🔄</button>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-icon" title="Re-roll this recipe" data-reroll="${r.id}">🔄</button>
+          <button class="btn btn-icon" title="Remove from plan" data-remove="${r.id}">✕</button>
+        </div>
       </div>
       <div class="recipe-card-meta">
         ${r.kcal_per_serving ? `<span class="meta-chip"><span class="icon">🔥</span> ${r.kcal_per_serving} kcal</span>` : ''}
@@ -202,9 +237,12 @@ function renderRecipes() {
     </div>
   `).join('');
 
-  // Wire up reroll buttons
+  // Wire up action buttons
   $recipesGrid.querySelectorAll('[data-reroll]').forEach(btn => {
     btn.addEventListener('click', () => rerollSingle(parseInt(btn.dataset.reroll)));
+  });
+  $recipesGrid.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => removeSingle(parseInt(btn.dataset.remove)));
   });
 
   // Wire up step toggles
