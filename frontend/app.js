@@ -4,6 +4,14 @@
 
 const API = '';  // same origin
 
+// ── Auth Helper ────────────────────────────────────────────────
+function getAuthHeaders(extra = {}) {
+  const token = window.WSWEAuth ? window.WSWEAuth.token : localStorage.getItem('wswe_token');
+  const h = { ...extra };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
 // ── State ──────────────────────────────────────────────────────
 let selectedRecipes = [];   // current meal plan
 let activeTags = new Set();
@@ -36,6 +44,10 @@ async function init() {
   $btnRerollAll.addEventListener('click', clearAll);
   $btnKitchen.addEventListener('click', () => { window.location.href = '/kitchen.html'; });
 
+  window.addEventListener('wswe_auth_changed', () => {
+    clearAll(); 
+  });
+
   // Cross-tab synchronization so deleted recipes disappear
   window.addEventListener('storage', (e) => {
     if (e.key === 'wswe_recipes') {
@@ -59,7 +71,7 @@ async function init() {
 // ── Tags ───────────────────────────────────────────────────────
 async function loadTags() {
   try {
-    const res = await fetch(`${API}/tags`);
+    const res = await fetch(`${API}/tags`, { headers: getAuthHeaders() });
     allTags = await res.json();
     renderTags();
   } catch (e) {
@@ -111,7 +123,7 @@ async function rollRecipes() {
 
     const res = await fetch(`${API}/recipes/random`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body),
     });
     const recipes = await res.json();
@@ -175,7 +187,7 @@ async function rerollSingle(recipeId) {
 
     const res = await fetch(`${API}/recipes/random`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body),
     });
     const replacements = await res.json();
@@ -285,7 +297,7 @@ async function loadShoppingList() {
   try {
     const res = await fetch(`${API}/shopping-list`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(ids),
     });
     const data = await res.json();

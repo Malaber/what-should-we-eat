@@ -11,10 +11,13 @@
 
   <!-- ─── Navigation ─────────────────────────────────────────── -->
   <nav class="top-nav">
-    <div class="container nav-container">
-      <a href="/" class="nav-link">Pick Meals</a>
-      <a href="/kitchen.html" class="nav-link">Kitchen</a>
-      <a href="/recipes.html" class="nav-link active">Manage Recipes</a>
+    <div class="container nav-container" style="display: flex; justify-content: space-between; width: 100%;">
+      <div style="display: flex; gap: 24px; align-items: center;">
+        <a href="/" class="nav-link">Pick Meals</a>
+        <a href="/kitchen.html" class="nav-link">Kitchen</a>
+        <a href="/recipes.html" class="nav-link active">Manage Recipes</a>
+      </div>
+      <div id="auth-mount"></div>
     </div>
   </nav>
 
@@ -137,6 +140,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="/auth.js"></script>
   <script src="/manage.js"></script>
 </body>
 </html>

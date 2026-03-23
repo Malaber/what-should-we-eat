@@ -4,6 +4,14 @@
 
 const API = '';  // same origin
 
+// ── Auth Helper ────────────────────────────────────────────────
+function getAuthHeaders(extra = {}) {
+  const token = window.WSWEAuth ? window.WSWEAuth.token : localStorage.getItem('wswe_token');
+  const h = { ...extra };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
 // ── State ──────────────────────────────────────────────────────
 let allRecipes = [];
 let allTags = [];
@@ -44,6 +52,12 @@ async function init() {
   // Search
   $recipeSearch.addEventListener('input', handleSearch);
 
+  // Auth sync
+  window.addEventListener('wswe_auth_changed', async () => {
+    await loadTags();
+    await loadRecipes();
+  });
+
   // Modal close handlers
   document.getElementById('btn-close-modal').addEventListener('click', closeEditModal);
   document.getElementById('btn-cancel-modal').addEventListener('click', closeEditModal);
@@ -75,7 +89,7 @@ async function init() {
 // ── Data Fetching ──────────────────────────────────────────────
 async function loadTags() {
   try {
-    const res = await fetch(`${API}/tags`);
+    const res = await fetch(`${API}/tags`, { headers: getAuthHeaders() });
     allTags = await res.json();
   } catch (e) {
     console.error('Failed to load tags', e);
@@ -84,7 +98,7 @@ async function loadTags() {
 
 async function loadRecipes() {
   try {
-    const res = await fetch(`${API}/recipes`);
+    const res = await fetch(`${API}/recipes`, { headers: getAuthHeaders() });
     allRecipes = await res.json();
     renderRecipes();
   } catch (e) {
@@ -300,7 +314,7 @@ async function saveRecipe(e) {
     
     const res = await fetch(url, {
       method: method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(recipeData)
     });
 
@@ -334,7 +348,7 @@ async function performDelete() {
   if (!recipeToDelete) return;
   
   try {
-    const res = await fetch(`${API}/recipes/${recipeToDelete}`, { method: 'DELETE' });
+    const res = await fetch(`${API}/recipes/${recipeToDelete}`, { method: 'DELETE', headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Delete failed');
     
     toast('Recipe deleted.');

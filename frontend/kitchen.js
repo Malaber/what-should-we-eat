@@ -20,8 +20,33 @@ const $btnToggleCooked = document.getElementById('btn-toggle-cooked');
 
 let activeRecipeId = null;
 
+// ── Auth State & DOM ───────────────────────────────────────────
+let authToken = localStorage.getItem('wswe_token') || null;
+let currentUser = null;
+
+const $authControls = document.getElementById('auth-controls');
+const $userControls = document.getElementById('user-controls');
+const $userGreeting = document.getElementById('user-greeting');
+const $btnShowLogin = document.getElementById('btn-show-login');
+const $btnShowSignup = document.getElementById('btn-show-signup');
+const $btnLogout = document.getElementById('btn-logout');
+
+const $loginModal = document.getElementById('login-modal');
+const $signupModal = document.getElementById('signup-modal');
+const $btnCloseLogin = document.getElementById('btn-close-login');
+const $btnCloseSignup = document.getElementById('btn-close-signup');
+
+const $loginForm = document.getElementById('login-form');
+const $signupForm = document.getElementById('signup-form');
+const $loginError = document.getElementById('login-error');
+const $signupError = document.getElementById('signup-error');
+
+const $linkToSignup = document.getElementById('link-to-signup');
+const $linkToLogin = document.getElementById('link-to-login');
+
 // ── Init ───────────────────────────────────────────────────────
 function init() {
+  initAuth();
   restoreState();
   
   $btnCloseModal.addEventListener('click', closeModal);
@@ -40,17 +65,26 @@ function init() {
 }
 
 function restoreState() {
-  try {
-    const saved = localStorage.getItem('wswe_recipes');
-    if (saved) {
-      kitchenRecipes = JSON.parse(saved);
-    } else {
+  if (authToken) {
+    // If logged in, fetch recipes from the server
+    fetchUserRecipes();
+  } else {
+    // If not logged in, load from local storage
+    try {
+      const saved = localStorage.getItem('wswe_recipes');
+      if (saved) {
+        kitchenRecipes = JSON.parse(saved);
+      } else {
+        kitchenRecipes = [];
+      }
+    } catch {
       kitchenRecipes = [];
     }
-  } catch {
-    kitchenRecipes = [];
+    updateGridVisibility();
   }
+}
 
+function updateGridVisibility() {
   if (kitchenRecipes.length === 0) {
     $emptyState.style.display = '';
     $kitchenSection.style.display = 'none';
