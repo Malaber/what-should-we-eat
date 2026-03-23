@@ -24,6 +24,7 @@ const $shoppingSection = document.getElementById('shopping-section');
 const $shoppingList  = document.getElementById('shopping-list');
 const $shopBadge     = document.getElementById('shop-badge');
 const $toast         = document.getElementById('toast');
+const $btnKitchen    = document.getElementById('btn-kitchen');
 
 
 // ── Init ───────────────────────────────────────────────────────
@@ -32,7 +33,8 @@ async function init() {
   restoreState();
 
   $btnRoll.addEventListener('click', rollRecipes);
-  $btnRerollAll.addEventListener('click', rerollAll);
+  $btnRerollAll.addEventListener('click', clearAll);
+  $btnKitchen.addEventListener('click', () => { window.location.href = '/kitchen.html'; });
 
   // Cross-tab synchronization so deleted recipes disappear
   window.addEventListener('storage', (e) => {
@@ -99,24 +101,32 @@ function getFilters() {
 // ── Roll Recipes ───────────────────────────────────────────────
 async function rollRecipes() {
   const filters = getFilters();
-  currentFilters = filters;
+  currentFilters = filters; // mostly for UI restoration
   $btnRoll.innerHTML = '<span class="spinner"></span> Rolling…';
   $btnRoll.disabled = true;
 
   try {
+    const excludeIds = selectedRecipes.map(r => r.id);
+    const body = { ...filters, exclude_ids: excludeIds };
+
     const res = await fetch(`${API}/recipes/random`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(filters),
+      body: JSON.stringify(body),
     });
     const recipes = await res.json();
 
     if (recipes.length === 0) {
-      toast('No recipes match your filters — try broadening them.');
+      toast('No more recipes match your filters — try broadening them.');
       return;
     }
 
-    selectedRecipes = recipes;
+    // Attach the filters used to each recipe for later single-rerolls
+    recipes.forEach(r => {
+      r._filters = JSON.parse(JSON.stringify(filters));
+    });
+
+    selectedRecipes = [...selectedRecipes, ...recipes];
     renderRecipes();
     await loadShoppingList();
     saveState();
@@ -124,8 +134,9 @@ async function rollRecipes() {
     $recipesSection.style.display = '';
     $shoppingSection.style.display = '';
     $btnRerollAll.style.display = '';
+    $btnKitchen.style.display = '';
 
-    toast(`🎲 Rolled ${recipes.length} recipe${recipes.length > 1 ? 's' : ''}!`);
+    toast(`🎲 Added ${recipes.length} recipe${recipes.length > 1 ? 's' : ''}!`);
   } catch (e) {
     toast('Something went wrong — is the API running?');
     console.error(e);
@@ -135,23 +146,32 @@ async function rollRecipes() {
   }
 }
 
-// ── Re-roll All ────────────────────────────────────────────────
-async function rerollAll() {
-  await rollRecipes();
+// ── Clear All ──────────────────────────────────────────────────
+function clearAll() {
+  selectedRecipes = [];
+  renderRecipes();
+  loadShoppingList();
+  saveState();
+  $recipesSection.style.display = 'none';
+  $shoppingSection.style.display = 'none';
+  $btnRerollAll.style.display = 'none';
+  $btnKitchen.style.display = 'none';
 }
 
 // ── Re-roll Single ─────────────────────────────────────────────
 async function rerollSingle(recipeId) {
   const excludeIds = selectedRecipes.map(r => r.id);
+  const targetRecipe = selectedRecipes.find(r => r.id === recipeId);
+  if (!targetRecipe) return;
+
+  const filtersToUse = targetRecipe._filters || currentFilters;
 
   try {
     const body = {
+      ...filtersToUse,
       count: 1,
-      tag_names: currentFilters.tag_names || [],
       exclude_ids: excludeIds,
     };
-    if (currentFilters.max_kcal) body.max_kcal = currentFilters.max_kcal;
-    if (currentFilters.max_total_time) body.max_total_time = currentFilters.max_total_time;
 
     const res = await fetch(`${API}/recipes/random`, {
       method: 'POST',
@@ -167,6 +187,7 @@ async function rerollSingle(recipeId) {
 
     const idx = selectedRecipes.findIndex(r => r.id === recipeId);
     if (idx !== -1) {
+      replacements[0]._filters = filtersToUse; // Inherit the filters
       selectedRecipes[idx] = replacements[0];
       renderRecipes();
       await loadShoppingList();
@@ -189,6 +210,7 @@ function removeSingle(recipeId) {
     $recipesSection.style.display = 'none';
     $shoppingSection.style.display = 'none';
     $btnRerollAll.style.display = 'none';
+    $btnKitchen.style.display = 'none';
   }
 }
 
@@ -316,6 +338,7 @@ function restoreState() {
         $recipesSection.style.display = '';
         $shoppingSection.style.display = '';
         $btnRerollAll.style.display = '';
+        $btnKitchen.style.display = '';
       }
     }
     if (savedFilters) {
