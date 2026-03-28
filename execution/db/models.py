@@ -39,6 +39,27 @@ class Household(Base):
         nullable=False,
     )
 
+    members = relationship("HouseholdMember", back_populates="household")
+
+
+# ---------- household_members ----------
+class HouseholdMember(Base):
+    __tablename__ = "household_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False)
+    joined_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "household_id", name="uq_user_household"),
+    )
+
+    household = relationship("Household", back_populates="members")
 # ---------- users ----------
 class User(Base):
     __tablename__ = "users"

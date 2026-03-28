@@ -157,9 +157,19 @@ class MealPlanOut(BaseModel):
 class HouseholdBase(BaseModel):
     name: str
 
+class HouseholdCreate(BaseModel):
+    name: str
+
 class HouseholdOut(HouseholdBase):
     id: int
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class HouseholdMembershipOut(BaseModel):
+    household_id: int
+    household_name: str
 
     class Config:
         from_attributes = True
@@ -189,6 +199,7 @@ class UserOut(UserBase):
     active_household_id: int
     created_at: datetime
     updated_at: datetime
+    households: list[HouseholdMembershipOut] = []
 
     class Config:
         from_attributes = True
