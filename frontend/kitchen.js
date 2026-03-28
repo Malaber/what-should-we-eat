@@ -65,23 +65,17 @@ function init() {
 }
 
 function restoreState() {
-  if (authToken) {
-    // If logged in, fetch recipes from the server
-    fetchUserRecipes();
-  } else {
-    // If not logged in, load from local storage
-    try {
-      const saved = localStorage.getItem('wswe_recipes');
-      if (saved) {
-        kitchenRecipes = JSON.parse(saved);
-      } else {
-        kitchenRecipes = [];
-      }
-    } catch {
+  try {
+    const saved = localStorage.getItem('wswe_recipes');
+    if (saved) {
+      kitchenRecipes = JSON.parse(saved);
+    } else {
       kitchenRecipes = [];
     }
-    updateGridVisibility();
+  } catch {
+    kitchenRecipes = [];
   }
+  updateGridVisibility();
 }
 
 function updateGridVisibility() {

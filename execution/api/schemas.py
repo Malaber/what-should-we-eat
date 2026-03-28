@@ -133,6 +133,25 @@ class ShoppingListOut(BaseModel):
     recipe_ids: list[int]
 
 
+# ── Meal Plan ────────────────────────────────────────────────────────
+
+class MealPlanAdd(BaseModel):
+    recipe_ids: list[int] = Field(..., description="Recipe IDs to add to the meal plan")
+
+class MealPlanItemOut(BaseModel):
+    id: int
+    recipe_id: int
+    is_cooked: bool
+    added_at: datetime
+    recipe: RecipeOut
+
+    class Config:
+        from_attributes = True
+
+class MealPlanOut(BaseModel):
+    items: list[MealPlanItemOut]
+
+
 # ── Households ───────────────────────────────────────────────────────
 
 class HouseholdBase(BaseModel):

@@ -64,6 +64,27 @@ class User(Base):
     )
 
 
+# ---------- meal_plan_items ----------
+class MealPlanItem(Base):
+    __tablename__ = "meal_plan_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    recipe_id = Column(Integer, ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False)
+    is_cooked = Column(Boolean, default=False)
+    added_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "recipe_id", name="uq_user_recipe_plan"),
+    )
+
+    recipe = relationship("Recipe")
+
+
 # ---------- recipes ----------
 class Recipe(Base):
     __tablename__ = "recipes"

@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from execution.api.routers import recipes, shopping_list, tags, users, households
+from execution.api.routers import recipes, shopping_list, tags, users, households, meal_plan
 
 app = FastAPI(
     title="What Should We Eat — Recipe API",
@@ -35,6 +35,7 @@ app.include_router(tags.router)
 app.include_router(shopping_list.router)
 app.include_router(users.router)
 app.include_router(households.router)
+app.include_router(meal_plan.router)
 
 
 @app.get("/health", tags=["health"])

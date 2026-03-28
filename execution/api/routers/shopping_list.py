@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from execution.api.schemas import ShoppingListItem, ShoppingListOut
 from execution.db.database import get_db
-from execution.db.models import Recipe
+from execution.db.models import Recipe, User
+from execution.api.auth import get_current_active_user
 
 router = APIRouter(prefix="/shopping-list", tags=["shopping list"])
 
@@ -17,6 +18,7 @@ router = APIRouter(prefix="/shopping-list", tags=["shopping list"])
 @router.post("", response_model=ShoppingListOut)
 def generate_shopping_list(
     recipe_ids: list[int],
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """
