@@ -6,14 +6,18 @@ const API = '';  // same origin
 
 // ── Auth Helper ────────────────────────────────────────────────
 function getAuthHeaders(extra = {}) {
-  const token = window.WSWEAuth ? window.WSWEAuth.token : localStorage.getItem('wswe_token');
+  const token = window.WSWEAuth ? window.WSWEAuth.token : null;
   const h = { ...extra };
   if (token) h['Authorization'] = `Bearer ${token}`;
   return h;
 }
 
+function isLoggedIn() {
+  return !!(window.WSWEAuth && window.WSWEAuth.token);
+}
+
 // ── State ──────────────────────────────────────────────────────
-let selectedRecipes = [];   // current meal plan
+let selectedRecipes = [];   // current meal plan (from API)
 let activeTags = new Set();
 let allTags = [];
 let currentFilters = {};    // remember filters used for reroll
@@ -37,41 +41,39 @@ const $btnKitchen    = document.getElementById('btn-kitchen');
 
 // ── Init ───────────────────────────────────────────────────────
 async function init() {
-  await loadTags();
-  restoreState();
+  // Wait until auth is ready, then load if logged in
+  window.addEventListener('wswe_auth_changed', async () => {
+    if (isLoggedIn()) {
+      await loadTags();
+      await loadMealPlan();
+    } else {
+      selectedRecipes = [];
+      allTags = [];
+      renderRecipes();
+      $recipesSection.style.display = 'none';
+      $shoppingSection.style.display = 'none';
+      $btnRerollAll.style.display = 'none';
+      $btnKitchen.style.display = 'none';
+      $tagSelector.innerHTML = '';
+    }
+  });
+
+  // Initial load if already logged in (token restored from storage)
+  if (isLoggedIn()) {
+    await loadTags();
+    await loadMealPlan();
+  }
 
   $btnRoll.addEventListener('click', rollRecipes);
   $btnRerollAll.addEventListener('click', clearAll);
   $btnKitchen.addEventListener('click', () => { window.location.href = '/kitchen.html'; });
-
-  window.addEventListener('wswe_auth_changed', () => {
-    clearAll(); 
-  });
-
-  // Cross-tab synchronization so deleted recipes disappear
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'wswe_recipes') {
-      try {
-        const saved = localStorage.getItem('wswe_recipes');
-        if (saved) {
-          selectedRecipes = JSON.parse(saved);
-          renderRecipes();
-          loadShoppingList();
-          if (selectedRecipes.length === 0) {
-            $recipesSection.style.display = 'none';
-            $shoppingSection.style.display = 'none';
-            $btnRerollAll.style.display = 'none';
-          }
-        }
-      } catch(err) {}
-    }
-  });
 }
 
 // ── Tags ───────────────────────────────────────────────────────
 async function loadTags() {
   try {
     const res = await fetch(`${API}/tags`, { headers: getAuthHeaders() });
+    if (!res.ok) return;
     allTags = await res.json();
     renderTags();
   } catch (e) {
@@ -110,10 +112,44 @@ function getFilters() {
   return filters;
 }
 
+// ── Load Meal Plan from API ────────────────────────────────────
+async function loadMealPlan() {
+  if (!isLoggedIn()) return;
+  try {
+    const res = await fetch(`${API}/meal-plan`, { headers: getAuthHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    selectedRecipes = data.items.map(item => ({
+      ...item.recipe,
+      _cooked: item.is_cooked,
+    }));
+    if (selectedRecipes.length > 0) {
+      renderRecipes();
+      loadShoppingList();
+      $recipesSection.style.display = '';
+      $shoppingSection.style.display = '';
+      $btnRerollAll.style.display = '';
+      $btnKitchen.style.display = '';
+    } else {
+      $recipesSection.style.display = 'none';
+      $shoppingSection.style.display = 'none';
+      $btnRerollAll.style.display = 'none';
+      $btnKitchen.style.display = 'none';
+    }
+  } catch (e) {
+    console.error('Failed to load meal plan', e);
+  }
+}
+
 // ── Roll Recipes ───────────────────────────────────────────────
 async function rollRecipes() {
+  if (!isLoggedIn()) {
+    toast('Please log in to roll recipes.');
+    return;
+  }
+
   const filters = getFilters();
-  currentFilters = filters; // mostly for UI restoration
+  currentFilters = filters;
   $btnRoll.innerHTML = '<span class="spinner"></span> Rolling…';
   $btnRoll.disabled = true;
 
@@ -133,20 +169,16 @@ async function rollRecipes() {
       return;
     }
 
-    // Attach the filters used to each recipe for later single-rerolls
-    recipes.forEach(r => {
-      r._filters = JSON.parse(JSON.stringify(filters));
+    // Add to meal plan via API
+    const newIds = recipes.map(r => r.id);
+    await fetch(`${API}/meal-plan/add`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ recipe_ids: newIds }),
     });
 
-    selectedRecipes = [...selectedRecipes, ...recipes];
-    renderRecipes();
-    await loadShoppingList();
-    saveState();
-
-    $recipesSection.style.display = '';
-    $shoppingSection.style.display = '';
-    $btnRerollAll.style.display = '';
-    $btnKitchen.style.display = '';
+    // Reload from API for consistency
+    await loadMealPlan();
 
     toast(`🎲 Added ${recipes.length} recipe${recipes.length > 1 ? 's' : ''}!`);
   } catch (e) {
@@ -159,11 +191,18 @@ async function rollRecipes() {
 }
 
 // ── Clear All ──────────────────────────────────────────────────
-function clearAll() {
+async function clearAll() {
+  try {
+    await fetch(`${API}/meal-plan`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+  } catch (e) {
+    console.error('Failed to clear meal plan', e);
+  }
   selectedRecipes = [];
   renderRecipes();
   loadShoppingList();
-  saveState();
   $recipesSection.style.display = 'none';
   $shoppingSection.style.display = 'none';
   $btnRerollAll.style.display = 'none';
@@ -176,11 +215,9 @@ async function rerollSingle(recipeId) {
   const targetRecipe = selectedRecipes.find(r => r.id === recipeId);
   if (!targetRecipe) return;
 
-  const filtersToUse = targetRecipe._filters || currentFilters;
-
   try {
     const body = {
-      ...filtersToUse,
+      ...currentFilters,
       count: 1,
       exclude_ids: excludeIds,
     };
@@ -197,15 +234,19 @@ async function rerollSingle(recipeId) {
       return;
     }
 
-    const idx = selectedRecipes.findIndex(r => r.id === recipeId);
-    if (idx !== -1) {
-      replacements[0]._filters = filtersToUse; // Inherit the filters
-      selectedRecipes[idx] = replacements[0];
-      renderRecipes();
-      await loadShoppingList();
-      saveState();
-      toast(`🔄 Swapped in "${replacements[0].name}"`);
-    }
+    // Remove old from plan, add new
+    await fetch(`${API}/meal-plan/${recipeId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    await fetch(`${API}/meal-plan/add`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ recipe_ids: [replacements[0].id] }),
+    });
+
+    await loadMealPlan();
+    toast(`🔄 Swapped in "${replacements[0].name}"`);
   } catch (e) {
     toast('Failed to re-roll — check the API.');
     console.error(e);
@@ -213,17 +254,16 @@ async function rerollSingle(recipeId) {
 }
 
 // ── Remove Single ──────────────────────────────────────────────
-function removeSingle(recipeId) {
-  selectedRecipes = selectedRecipes.filter(r => r.id !== recipeId);
-  renderRecipes();
-  loadShoppingList();
-  saveState();
-  if (selectedRecipes.length === 0) {
-    $recipesSection.style.display = 'none';
-    $shoppingSection.style.display = 'none';
-    $btnRerollAll.style.display = 'none';
-    $btnKitchen.style.display = 'none';
+async function removeSingle(recipeId) {
+  try {
+    await fetch(`${API}/meal-plan/${recipeId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+  } catch (e) {
+    console.error('Failed to remove recipe from plan', e);
   }
+  await loadMealPlan();
 }
 
 // ── Render Recipes ─────────────────────────────────────────────
@@ -300,6 +340,7 @@ async function loadShoppingList() {
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(ids),
     });
+    if (!res.ok) return;
     const data = await res.json();
     renderShoppingList(data.items);
   } catch (e) {
@@ -330,40 +371,6 @@ function renderShoppingList(items) {
       cb.closest('.shopping-item').classList.toggle('checked-item');
     });
   });
-}
-
-// ── Persistence (localStorage) ─────────────────────────────────
-function saveState() {
-  localStorage.setItem('wswe_recipes', JSON.stringify(selectedRecipes));
-  localStorage.setItem('wswe_filters', JSON.stringify(currentFilters));
-}
-
-function restoreState() {
-  try {
-    const saved = localStorage.getItem('wswe_recipes');
-    const savedFilters = localStorage.getItem('wswe_filters');
-    if (saved) {
-      selectedRecipes = JSON.parse(saved);
-      if (selectedRecipes.length) {
-        renderRecipes();
-        loadShoppingList();
-        $recipesSection.style.display = '';
-        $shoppingSection.style.display = '';
-        $btnRerollAll.style.display = '';
-        $btnKitchen.style.display = '';
-      }
-    }
-    if (savedFilters) {
-      currentFilters = JSON.parse(savedFilters);
-      // Restore filter UI
-      if (currentFilters.count) $recipeCount.value = currentFilters.count;
-      if (currentFilters.max_kcal) $maxKcal.value = currentFilters.max_kcal;
-      if (currentFilters.max_total_time) $maxTime.value = currentFilters.max_total_time;
-      if (currentFilters.tag_names) {
-        currentFilters.tag_names.forEach(t => activeTags.add(t));
-      }
-    }
-  } catch { /* ignore corrupt state */ }
 }
 
 // ── Helpers ────────────────────────────────────────────────────

@@ -2,8 +2,22 @@
    kitchen.js — What Should We Eat? — Kitchen Logic
    ============================================================ */
 
+const API = '';
+
+// ── Auth Helper ────────────────────────────────────────────────
+function getAuthHeaders(extra = {}) {
+  const token = window.WSWEAuth ? window.WSWEAuth.token : null;
+  const h = { ...extra };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
+function isLoggedIn() {
+  return !!(window.WSWEAuth && window.WSWEAuth.token);
+}
+
 // ── State ──────────────────────────────────────────────────────
-let kitchenRecipes = [];
+let kitchenRecipes = [];  // [{...recipe, _cooked: bool}]
 
 // ── DOM refs ───────────────────────────────────────────────────
 const $emptyState     = document.getElementById('empty-state');
@@ -20,62 +34,47 @@ const $btnToggleCooked = document.getElementById('btn-toggle-cooked');
 
 let activeRecipeId = null;
 
-// ── Auth State & DOM ───────────────────────────────────────────
-let authToken = localStorage.getItem('wswe_token') || null;
-let currentUser = null;
-
-const $authControls = document.getElementById('auth-controls');
-const $userControls = document.getElementById('user-controls');
-const $userGreeting = document.getElementById('user-greeting');
-const $btnShowLogin = document.getElementById('btn-show-login');
-const $btnShowSignup = document.getElementById('btn-show-signup');
-const $btnLogout = document.getElementById('btn-logout');
-
-const $loginModal = document.getElementById('login-modal');
-const $signupModal = document.getElementById('signup-modal');
-const $btnCloseLogin = document.getElementById('btn-close-login');
-const $btnCloseSignup = document.getElementById('btn-close-signup');
-
-const $loginForm = document.getElementById('login-form');
-const $signupForm = document.getElementById('signup-form');
-const $loginError = document.getElementById('login-error');
-const $signupError = document.getElementById('signup-error');
-
-const $linkToSignup = document.getElementById('link-to-signup');
-const $linkToLogin = document.getElementById('link-to-login');
-
 // ── Init ───────────────────────────────────────────────────────
 function init() {
-  initAuth();
-  restoreState();
-  
-  $btnCloseModal.addEventListener('click', closeModal);
-  $btnToggleCooked.addEventListener('click', handleToggleCooked);
-
-  // Cross-tab synchronization
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'wswe_recipes') {
-      restoreState();
-      // If modal is open for a deleted recipe, close it
-      if (activeRecipeId && !kitchenRecipes.find(r => r.id === activeRecipeId)) {
-        closeModal();
-      }
-    }
-  });
-}
-
-function restoreState() {
-  try {
-    const saved = localStorage.getItem('wswe_recipes');
-    if (saved) {
-      kitchenRecipes = JSON.parse(saved);
+  window.addEventListener('wswe_auth_changed', () => {
+    if (isLoggedIn()) {
+      loadMealPlan();
     } else {
       kitchenRecipes = [];
+      updateGridVisibility();
     }
-  } catch {
-    kitchenRecipes = [];
+  });
+
+  if (isLoggedIn()) {
+    loadMealPlan();
+  } else {
+    updateGridVisibility();
   }
-  updateGridVisibility();
+
+  if ($btnCloseModal) $btnCloseModal.addEventListener('click', closeModal);
+  if ($btnToggleCooked) $btnToggleCooked.addEventListener('click', handleToggleCooked);
+}
+
+// ── Load from API ──────────────────────────────────────────────
+async function loadMealPlan() {
+  try {
+    const res = await fetch(`${API}/meal-plan`, { headers: getAuthHeaders() });
+    if (!res.ok) {
+      kitchenRecipes = [];
+      updateGridVisibility();
+      return;
+    }
+    const data = await res.json();
+    kitchenRecipes = data.items.map(item => ({
+      ...item.recipe,
+      _cooked: item.is_cooked,
+    }));
+    updateGridVisibility();
+  } catch (e) {
+    console.error('Failed to load meal plan', e);
+    kitchenRecipes = [];
+    updateGridVisibility();
+  }
 }
 
 function updateGridVisibility() {
@@ -87,10 +86,6 @@ function updateGridVisibility() {
     $kitchenSection.style.display = '';
     renderGrid();
   }
-}
-
-function saveState() {
-  localStorage.setItem('wswe_recipes', JSON.stringify(kitchenRecipes));
 }
 
 // ── Render ─────────────────────────────────────────────────────
@@ -199,20 +194,35 @@ function updateCookedButtonState(isCooked) {
   }
 }
 
-function handleToggleCooked() {
+async function handleToggleCooked() {
   if (!activeRecipeId) return;
   const recipe = kitchenRecipes.find(r => r.id === activeRecipeId);
   if (!recipe) return;
 
-  recipe._cooked = !recipe._cooked;
-  saveState();
-  renderGrid();
-  
-  // Close the modal automatically if marking as cooked. Stay open if undoing.
-  if (recipe._cooked) {
-    closeModal();
-  } else {
-    updateCookedButtonState(recipe._cooked);
+  const newState = !recipe._cooked;
+
+  try {
+    if (newState) {
+      await fetch(`${API}/meal-plan/${activeRecipeId}/cooked`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+    } else {
+      await fetch(`${API}/meal-plan/${activeRecipeId}/cooked`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+    }
+    recipe._cooked = newState;
+    renderGrid();
+
+    if (newState) {
+      closeModal();
+    } else {
+      updateCookedButtonState(newState);
+    }
+  } catch (e) {
+    console.error('Failed to toggle cooked status', e);
   }
 }
 

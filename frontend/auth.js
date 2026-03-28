@@ -69,6 +69,20 @@ const modalsHTML = `
   </div>
 `;
 
+const loginGateHTML = `
+  <div id="login-gate" style="position:fixed; inset:0; z-index:8000; background:rgba(0,0,0,0.55); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center;">
+    <div style="background:var(--bg-card, #fff); border-radius:20px; padding:48px 40px; text-align:center; max-width:400px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="font-size:4rem; margin-bottom:16px;">🍳</div>
+      <h2 style="font-family:var(--font-display, inherit); font-size:1.8rem; margin-bottom:8px;">Welcome!</h2>
+      <p style="color:var(--text-muted, #888); margin-bottom:28px; font-size:1rem; line-height:1.5;">Log in or create an account to start planning your meals.</p>
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <button id="gate-login" class="btn btn-primary" style="padding:12px 28px; font-size:1rem;">Log In</button>
+        <button id="gate-signup" class="btn btn-secondary" style="padding:12px 28px; font-size:1rem;">Sign Up</button>
+      </div>
+    </div>
+  </div>
+`;
+
 class AuthHandler {
   constructor() {
     this.token = localStorage.getItem('wswe_token') || null;
@@ -89,6 +103,9 @@ class AuthHandler {
     if (this.token) {
       await this.fetchCurrentUser();
     }
+
+    // Show login gate if not authenticated
+    this.updateLoginGate();
   }
 
   cacheDOM() {
@@ -139,7 +156,29 @@ class AuthHandler {
       this.$authControls.style.display = 'flex';
       this.$userControls.style.display = 'none';
     }
+    this.updateLoginGate();
     window.dispatchEvent(new CustomEvent('wswe_auth_changed', { detail: { token: this.token } }));
+  }
+
+  updateLoginGate() {
+    const existing = document.getElementById('login-gate');
+    if (this.user) {
+      // Logged in — remove gate
+      if (existing) existing.remove();
+    } else {
+      // Not logged in — show gate
+      if (!existing) {
+        document.body.insertAdjacentHTML('beforeend', loginGateHTML);
+        document.getElementById('gate-login').addEventListener('click', () => {
+          document.getElementById('login-gate').style.display = 'none';
+          this.$loginModal.style.display = 'flex';
+        });
+        document.getElementById('gate-signup').addEventListener('click', () => {
+          document.getElementById('login-gate').style.display = 'none';
+          this.$signupModal.style.display = 'flex';
+        });
+      }
+    }
   }
 
   async handleLogin(e) {
@@ -213,6 +252,7 @@ class AuthHandler {
     
     this.$authControls.style.display = 'flex';
     this.$userControls.style.display = 'none';
+    this.updateLoginGate();
     
     if (emit) {
       window.dispatchEvent(new CustomEvent('wswe_auth_changed', { detail: { token: null } }));

@@ -6,7 +6,7 @@ const API = '';  // same origin
 
 // ── Auth Helper ────────────────────────────────────────────────
 function getAuthHeaders(extra = {}) {
-  const token = window.WSWEAuth ? window.WSWEAuth.token : localStorage.getItem('wswe_token');
+  const token = window.WSWEAuth ? window.WSWEAuth.token : null;
   const h = { ...extra };
   if (token) h['Authorization'] = `Bearer ${token}`;
   return h;
@@ -323,8 +323,6 @@ async function saveRecipe(e) {
     toast(editRecipeId ? 'Recipe updated!' : 'Recipe created!');
     closeEditModal();
     
-    // Purge local layout cache so landing page reflects changes safely
-    syncLocalLandingState(editRecipeId, true);
     
     await loadTags();
     await loadRecipes();
@@ -352,7 +350,7 @@ async function performDelete() {
     if (!res.ok) throw new Error('Delete failed');
     
     toast('Recipe deleted.');
-    syncLocalLandingState(recipeToDelete, false); // remove from landing selection
+
     
     await loadTags();
     await loadRecipes();
@@ -365,28 +363,7 @@ async function performDelete() {
   }
 }
 
-// Ensure landing page local selection clears out removed/heavily modified recipes
-function syncLocalLandingState(recipeId, isUpdate=false) {
-  try {
-    const saved = localStorage.getItem('wswe_recipes');
-    if (!saved || !recipeId) return;
-    
-    let selected = JSON.parse(saved);
-    if (!Array.isArray(selected)) return;
-    
-    // If a recipe is deleted, remove it from the frontend active selection
-    if (!isUpdate) {
-      selected = selected.filter(r => r.id !== recipeId);
-      localStorage.setItem('wswe_recipes', JSON.stringify(selected));
-    } else {
-      // If it's an update, the easiest strategy so we don't hold stale data is to just remove it
-      // so the user re-rolls, or we could fetch the newly updated format and replace it. 
-      // Easiest robust method: remove so landing page fetches new.
-      selected = selected.filter(r => r.id !== recipeId);
-      localStorage.setItem('wswe_recipes', JSON.stringify(selected));
-    }
-  } catch(e) {}
-}
+
 
 
 // ── Helpers ────────────────────────────────────────────────────

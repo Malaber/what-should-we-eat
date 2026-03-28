@@ -45,6 +45,25 @@
     </section>
   </main>
 
+  <!-- ─── Meal Detail Modal ──────────────────────────────────── -->
+  <div class="modal-overlay" id="meal-modal" style="display:none; z-index:7000;">
+    <div class="modal" style="max-width:700px; width:90%; max-height:90vh; overflow-y:auto; padding:32px; position:relative;">
+      <button class="btn btn-icon" id="btn-close-modal" style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
+      <h2 id="modal-title" style="font-family:var(--font-display); font-size:1.8rem; margin-bottom:12px;"></h2>
+      <div id="modal-meta" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px;"></div>
+
+      <h3 style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);">Ingredients</h3>
+      <ul id="modal-ingredients" style="list-style:none; padding:0; margin-bottom:32px;"></ul>
+
+      <h3 style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);">Instructions</h3>
+      <div id="modal-instructions" style="display:flex; flex-direction:column; gap:16px; margin-bottom:32px;"></div>
+
+      <div style="text-align:center;">
+        <button id="btn-toggle-cooked" class="btn btn-primary" style="padding:16px 32px; font-size:1.2rem; width:100%; max-width:400px;">✅ Mark as Cooked</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="site-footer">
     <div class="container">
       Made with 🍳 — <em>What Should We Eat?</em>
