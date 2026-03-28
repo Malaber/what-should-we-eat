@@ -1,7 +1,7 @@
 """
-meal_plan.py — Endpoints for managing the user's meal plan.
+meal_plan.py — Endpoints for managing the household's meal plan.
 
-The meal plan stores which recipes a user has selected for the week,
+The meal plan stores which recipes a household has selected for the week,
 and tracks cooked status for the kitchen view.
 """
 
@@ -16,11 +16,11 @@ from execution.db.models import MealPlanItem, Recipe, User
 router = APIRouter(prefix="/meal-plan", tags=["meal plan"])
 
 
-def _plan_query(db: Session, user_id: int):
+def _plan_query(db: Session, household_id: int):
     """Base query with eager-loaded recipe relationships."""
     return (
         db.query(MealPlanItem)
-        .filter(MealPlanItem.user_id == user_id)
+        .filter(MealPlanItem.household_id == household_id)
         .options(
             joinedload(MealPlanItem.recipe)
             .joinedload(Recipe.ingredients),
@@ -39,7 +39,8 @@ def get_meal_plan(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    items = _plan_query(db, current_user.id).order_by(MealPlanItem.added_at).all()
+    hid = current_user.active_household_id
+    items = _plan_query(db, hid).order_by(MealPlanItem.added_at).all()
     return MealPlanOut(items=items)
 
 
@@ -51,16 +52,15 @@ def replace_meal_plan(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    # Clear existing plan
-    db.query(MealPlanItem).filter(MealPlanItem.user_id == current_user.id).delete()
+    hid = current_user.active_household_id
+    db.query(MealPlanItem).filter(MealPlanItem.household_id == hid).delete()
     db.flush()
 
-    # Add new items
     for rid in body.recipe_ids:
-        db.add(MealPlanItem(user_id=current_user.id, recipe_id=rid))
+        db.add(MealPlanItem(household_id=hid, recipe_id=rid))
     db.commit()
 
-    items = _plan_query(db, current_user.id).order_by(MealPlanItem.added_at).all()
+    items = _plan_query(db, hid).order_by(MealPlanItem.added_at).all()
     return MealPlanOut(items=items)
 
 
@@ -72,18 +72,19 @@ def add_to_meal_plan(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
+    hid = current_user.active_household_id
     existing_ids = {
         row.recipe_id
         for row in db.query(MealPlanItem.recipe_id)
-        .filter(MealPlanItem.user_id == current_user.id)
+        .filter(MealPlanItem.household_id == hid)
         .all()
     }
     for rid in body.recipe_ids:
         if rid not in existing_ids:
-            db.add(MealPlanItem(user_id=current_user.id, recipe_id=rid))
+            db.add(MealPlanItem(household_id=hid, recipe_id=rid))
     db.commit()
 
-    items = _plan_query(db, current_user.id).order_by(MealPlanItem.added_at).all()
+    items = _plan_query(db, hid).order_by(MealPlanItem.added_at).all()
     return MealPlanOut(items=items)
 
 
@@ -95,9 +96,10 @@ def remove_from_meal_plan(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
+    hid = current_user.active_household_id
     deleted = (
         db.query(MealPlanItem)
-        .filter(MealPlanItem.user_id == current_user.id, MealPlanItem.recipe_id == recipe_id)
+        .filter(MealPlanItem.household_id == hid, MealPlanItem.recipe_id == recipe_id)
         .delete()
     )
     if not deleted:
@@ -112,7 +114,8 @@ def clear_meal_plan(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    db.query(MealPlanItem).filter(MealPlanItem.user_id == current_user.id).delete()
+    hid = current_user.active_household_id
+    db.query(MealPlanItem).filter(MealPlanItem.household_id == hid).delete()
     db.commit()
 
 
@@ -124,8 +127,9 @@ def mark_cooked(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
+    hid = current_user.active_household_id
     item = (
-        _plan_query(db, current_user.id)
+        _plan_query(db, hid)
         .filter(MealPlanItem.recipe_id == recipe_id)
         .first()
     )
@@ -145,8 +149,9 @@ def unmark_cooked(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
+    hid = current_user.active_household_id
     item = (
-        _plan_query(db, current_user.id)
+        _plan_query(db, hid)
         .filter(MealPlanItem.recipe_id == recipe_id)
         .first()
     )

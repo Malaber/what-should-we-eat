@@ -69,7 +69,7 @@ class MealPlanItem(Base):
     __tablename__ = "meal_plan_items"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    household_id = Column(Integer, ForeignKey("households.id", ondelete="CASCADE"), nullable=False)
     recipe_id = Column(Integer, ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False)
     is_cooked = Column(Boolean, default=False)
     added_at = Column(
@@ -79,7 +79,7 @@ class MealPlanItem(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("user_id", "recipe_id", name="uq_user_recipe_plan"),
+        UniqueConstraint("household_id", "recipe_id", name="uq_household_recipe_plan"),
     )
 
     recipe = relationship("Recipe")
