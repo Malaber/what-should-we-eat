@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from execution.db.database import get_db
-from execution.db.models import User, Household, HouseholdMember
+from execution.db.models import User, Household, HouseholdMember, generate_unique_invite_code
 from execution.api.schemas import UserCreate, UserOut, Token, HouseholdMembershipOut
 from execution.api.auth import get_password_hash, verify_password, create_access_token, get_current_active_user
 
@@ -50,8 +50,9 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     
     hashed_password = get_password_hash(user_data.password)
     
-    # Create the user's default household
-    household = Household(name=f"{user_data.name or 'New User'}'s Kitchen")
+    # Create the user's default household with collision-safe invite code
+    code = generate_unique_invite_code(db)
+    household = Household(name=f"{user_data.name or 'New User'}'s Kitchen", invite_code=code)
     db.add(household)
     db.flush()
     

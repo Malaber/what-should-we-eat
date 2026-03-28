@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from execution.db.database import get_db
-from execution.db.models import Household, HouseholdMember, User
+from execution.db.models import Household, HouseholdMember, User, generate_unique_invite_code
 from execution.api.schemas import HouseholdCreate, HouseholdOut, UserOut, HouseholdMembershipOut
 from execution.api.auth import get_current_active_user
 
@@ -68,7 +68,8 @@ def create_household(
     db: Session = Depends(get_db),
 ):
     """Create a new household and auto-join the creator."""
-    household = Household(name=body.name)
+    code = generate_unique_invite_code(db)
+    household = Household(name=body.name, invite_code=code)
     db.add(household)
     db.flush()
 
@@ -81,27 +82,27 @@ def create_household(
 
 # ── Join an existing household ───────────────────────────────────────
 
-@router.post("/join/{household_id}", response_model=UserOut)
+@router.post("/join/{invite_code}", response_model=UserOut)
 def join_household(
-    household_id: int,
+    invite_code: str,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    """Join a household (adds membership) and switch to it."""
-    household = db.query(Household).filter(Household.id == household_id).first()
+    """Join a household by its invite code (adds membership) and switch to it."""
+    household = db.query(Household).filter(Household.invite_code == invite_code.upper()).first()
     if not household:
-        raise HTTPException(status_code=404, detail="Household not found")
+        raise HTTPException(status_code=404, detail="Invalid invite code")
 
     # Check if already a member
     existing = (
         db.query(HouseholdMember)
-        .filter(HouseholdMember.user_id == current_user.id, HouseholdMember.household_id == household_id)
+        .filter(HouseholdMember.user_id == current_user.id, HouseholdMember.household_id == household.id)
         .first()
     )
     if not existing:
-        db.add(HouseholdMember(user_id=current_user.id, household_id=household_id))
+        db.add(HouseholdMember(user_id=current_user.id, household_id=household.id))
 
-    current_user.active_household_id = household_id
+    current_user.active_household_id = household.id
     db.commit()
     db.refresh(current_user)
     return _build_user_out(current_user, db)

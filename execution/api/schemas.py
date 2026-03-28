@@ -162,6 +162,7 @@ class HouseholdCreate(BaseModel):
 
 class HouseholdOut(HouseholdBase):
     id: int
+    invite_code: str
     created_at: datetime
 
     class Config:

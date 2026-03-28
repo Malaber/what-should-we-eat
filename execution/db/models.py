@@ -10,6 +10,13 @@ Tables:
 """
 
 from datetime import datetime, timezone
+import secrets
+import string
+
+def _generate_invite_code(length=6):
+    """Generate a random alphanumeric invite code."""
+    alphabet = string.ascii_uppercase + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 from sqlalchemy import (
     Boolean,
@@ -33,6 +40,7 @@ class Household(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
+    invite_code = Column(String(6), unique=True, index=True, nullable=False, default=_generate_invite_code)
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -40,6 +48,18 @@ class Household(Base):
     )
 
     members = relationship("HouseholdMember", back_populates="household")
+
+
+def generate_unique_invite_code(db, length=6, max_attempts=10):
+    """Generate an invite code guaranteed unique in the households table."""
+    for _ in range(max_attempts):
+        code = _generate_invite_code(length)
+        exists = db.query(
+            db.query(Household).filter(Household.invite_code == code).exists()
+        ).scalar()
+        if not exists:
+            return code
+    raise RuntimeError("Failed to generate a unique invite code after multiple attempts")
 
 
 # ---------- household_members ----------
