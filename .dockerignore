@@ -1,0 +1,16 @@
+.git
+.tmp
+.env
+__pycache__
+*.pyc
+.DS_Store
+.gitignore
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+README.md
+task.md
+directives/
+resources/
+skills/
+docker-compose.yml

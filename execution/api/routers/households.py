@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from execution.db.database import get_db
-from execution.db.models import Household, HouseholdMember, User, generate_unique_invite_code
+from execution.db.models import Household, HouseholdMember, User, generate_unique_invite_code, Recipe
 from execution.api.schemas import HouseholdCreate, HouseholdOut, UserOut, HouseholdMembershipOut
 from execution.api.auth import get_current_active_user
 
@@ -158,3 +158,30 @@ def leave_household(
     db.commit()
     db.refresh(current_user)
     return _build_user_out(current_user, db)
+
+
+# ── Cleanup orphaned households ──────────────────────────────────────
+
+@router.delete("/cleanup", status_code=200)
+def cleanup_orphaned_households(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Remove all households that have no members and no recipes."""
+    # Subqueries for households that DO have members or recipes
+    has_members = db.query(HouseholdMember.household_id).distinct().subquery()
+    has_recipes = db.query(Recipe.household_id).distinct().subquery()
+
+    orphans = (
+        db.query(Household)
+        .filter(Household.id.notin_(db.query(has_members.c.household_id)))
+        .filter(Household.id.notin_(db.query(has_recipes.c.household_id)))
+        .all()
+    )
+
+    count = len(orphans)
+    for h in orphans:
+        db.delete(h)
+    db.commit()
+
+    return {"removed": count}
