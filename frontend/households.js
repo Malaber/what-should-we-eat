@@ -27,15 +27,20 @@ const $grid         = document.getElementById('households-grid');
 const $empty        = document.getElementById('hh-empty');
 const $btnCreate    = document.getElementById('btn-create-household');
 const $btnJoin      = document.getElementById('btn-join-household');
+const $btnImport    = document.getElementById('btn-import-recipes');
 const $createModal  = document.getElementById('create-modal');
 const $joinModal    = document.getElementById('join-modal');
+const $importModal  = document.getElementById('import-modal');
 const $leaveModal   = document.getElementById('leave-modal');
 const $createForm   = document.getElementById('create-form');
 const $joinForm     = document.getElementById('join-form');
+const $importForm   = document.getElementById('import-form');
 const $createName   = document.getElementById('create-name');
 const $joinCode     = document.getElementById('join-code');
+const $importCode   = document.getElementById('import-code');
 const $createError  = document.getElementById('create-error');
 const $joinError    = document.getElementById('join-error');
+const $importError  = document.getElementById('import-error');
 const $leaveName    = document.getElementById('leave-household-name');
 
 // ── Init ───────────────────────────────────────────────────────
@@ -58,16 +63,18 @@ function init() {
   // Button handlers
   $btnCreate.addEventListener('click', () => openModal($createModal));
   $btnJoin.addEventListener('click', () => openModal($joinModal));
+  $btnImport.addEventListener('click', () => openModal($importModal));
 
   document.getElementById('btn-close-create').addEventListener('click', () => closeModal($createModal));
   document.getElementById('btn-close-join').addEventListener('click', () => closeModal($joinModal));
+  document.getElementById('btn-close-import').addEventListener('click', () => closeModal($importModal));
 
   // Leave modal handlers
   document.getElementById('btn-cancel-leave').addEventListener('click', () => closeModal($leaveModal));
   document.getElementById('btn-confirm-leave').addEventListener('click', confirmLeave);
 
   // Close modals on overlay click
-  [$createModal, $joinModal, $leaveModal].forEach(m => {
+  [$createModal, $joinModal, $importModal, $leaveModal].forEach(m => {
     m.addEventListener('click', (e) => {
       if (e.target === m) closeModal(m);
     });
@@ -76,6 +83,7 @@ function init() {
   // Form handlers
   $createForm.addEventListener('submit', handleCreate);
   $joinForm.addEventListener('submit', handleJoin);
+  $importForm.addEventListener('submit', handleImport);
 }
 
 // ── Load from API ──────────────────────────────────────────────
@@ -254,6 +262,46 @@ async function handleJoin(e) {
   } catch (err) {
     $joinError.textContent = 'Network error';
     $joinError.style.display = '';
+  }
+}
+
+// ── Import Recipes ─────────────────────────────────────────────
+async function handleImport(e) {
+  e.preventDefault();
+  $importError.style.display = 'none';
+
+  const code = $importCode.value.trim().toUpperCase();
+  if (!code || code.length !== 6) {
+    $importError.textContent = 'Please enter a 6-character invite code';
+    $importError.style.display = '';
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/recipes/import/${code}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      $importError.textContent = err.detail || 'Invalid invite code';
+      $importError.style.display = '';
+      return;
+    }
+    const result = await res.json();
+    
+    if (result.imported_count === 0) {
+      $importError.textContent = 'This household has no recipes to import.';
+      $importError.style.display = '';
+      return;
+    }
+
+    closeModal($importModal);
+    $importForm.reset();
+    showToast(`Successfully imported ${result.imported_count} recipes!`, 'success');
+  } catch (err) {
+    $importError.textContent = 'Network error';
+    $importError.style.display = '';
   }
 }
 

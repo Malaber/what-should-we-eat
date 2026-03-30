@@ -41,6 +41,9 @@
       <button id="btn-join-household" class="btn btn-secondary">
         🔑 Join by Code
       </button>
+      <button id="btn-import-recipes" class="btn btn-secondary">
+        📥 Import Recipes
+      </button>
     </div>
 
     <!-- ─── Household Grid ──────────────────────────────────── -->
@@ -88,6 +91,24 @@
         </div>
         <div id="join-error" style="color: #d32f2f; font-size: 0.85rem; font-weight: 600; display: none; text-align: center;"></div>
         <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.05rem; padding: 14px;">Join</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── Import Recipes Modal ──────────────────────────────── -->
+  <div class="modal-overlay" id="import-modal" style="display:none; z-index:7000;">
+    <div class="modal modal-sm" style="padding: 32px; position: relative;">
+      <button class="btn btn-icon" id="btn-close-import" style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
+      <div style="font-size: 3rem; margin-bottom: 12px; text-align: center;">📥</div>
+      <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 8px; text-align: center;">Import Recipes</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center;">Enter a household invite code to copy all of its recipes into your currently active kitchen.</p>
+      <form id="import-form" style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="control-group">
+          <label for="import-code">Invite Code</label>
+          <input type="text" id="import-code" required placeholder="e.g. A1B2C3" maxlength="6" style="text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600; font-size: 1.2rem; text-align: center;" />
+        </div>
+        <div id="import-error" style="color: #d32f2f; font-size: 0.85rem; font-weight: 600; display: none; text-align: center;"></div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.05rem; padding: 14px;">Import</button>
       </form>
     </div>
   </div>
