@@ -2,6 +2,7 @@
 recipes.py — CRUD, filter, and random-selection endpoints for recipes.
 """
 
+import os
 import random as _random
 from typing import Optional
 
@@ -24,6 +25,20 @@ router = APIRouter(prefix="/recipes", tags=["recipes"])
 
 
 # ── helpers ──────────────────────────────────────────────────────────
+
+def _check_not_demo(user: User):
+    """Ensure the user is not trying to modify the demo household."""
+    try:
+        demo_household_id = int(os.getenv("DEMO_HOUSEHOLD_ID", "1"))
+    except ValueError:
+        demo_household_id = 0
+        
+    if user.active_household_id == demo_household_id:
+        raise HTTPException(
+            status_code=403, 
+            detail="The demo household is read-only. You cannot modify its recipes."
+        )
+
 
 def _get_or_create_tags(db: Session, tag_names: list[str]) -> list[Tag]:
     """Return Tag objects, creating any that don't exist yet."""
@@ -71,6 +86,8 @@ def _recipe_query(db: Session, household_id: int):
 
 @router.post("", response_model=RecipeOut, status_code=201)
 def create_recipe(data: RecipeCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    _check_not_demo(current_user)
+    
     recipe = Recipe(
         household_id=current_user.active_household_id,
         name=data.name,
@@ -100,6 +117,8 @@ def import_recipes_from_household(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
+    _check_not_demo(current_user)
+    
     source_household = db.query(Household).filter(Household.invite_code == invite_code.upper()).first()
     if not source_household:
         raise HTTPException(status_code=404, detail="Invalid invite code")
@@ -161,10 +180,12 @@ def get_recipe(recipe_id: int, current_user: User = Depends(get_current_active_u
     return recipe
 
 
-# ── UPDATE ───────────────────────────────────────────────────────────
+# ── UPDATE ─────────x──────────────────────────────────────────────────
 
 @router.put("/{recipe_id}", response_model=RecipeOut)
 def update_recipe(recipe_id: int, data: RecipeUpdate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    _check_not_demo(current_user)
+    
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id, Recipe.household_id == current_user.active_household_id).first()
     if not recipe:
         raise HTTPException(404, "Recipe not found")
@@ -189,50 +210,4 @@ def update_recipe(recipe_id: int, data: RecipeUpdate, current_user: User = Depen
 
     # replace tags if provided
     if data.tags is not None:
-        recipe.tags = _get_or_create_tags(db, data.tags)
-
-    db.commit()
-    db.refresh(recipe)
-
-    # Clean up orphaned tags
-    db.query(Tag).filter(~Tag.recipes.any()).delete()
-    db.commit()
-
-    return _recipe_query(db, current_user.active_household_id).filter(Recipe.id == recipe.id).first()
-
-
-# ── DELETE ───────────────────────────────────────────────────────────
-
-@router.delete("/{recipe_id}", status_code=204)
-def delete_recipe(recipe_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id, Recipe.household_id == current_user.active_household_id).first()
-    if not recipe:
-        raise HTTPException(404, "Recipe not found")
-    db.delete(recipe)
-    db.commit()
-
-    # Clean up orphaned tags
-    db.query(Tag).filter(~Tag.recipes.any()).delete()
-    db.commit()
-
-# ── RANDOM SELECTION ─────────────────────────────────────────────────
-
-@router.post("/random", response_model=list[RecipeOut])
-def random_recipes(body: RandomSelectionRequest, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
-    q = _recipe_query(db, current_user.active_household_id)
-    q = _apply_filters(
-        q, db,
-        tag_names=body.tag_names or None,
-        max_kcal=body.max_kcal,
-        max_total_time=body.max_total_time,
-    )
-    # Exclude already-selected recipe IDs (used for single-reroll)
-    if body.exclude_ids:
-        q = q.filter(Recipe.id.notin_(body.exclude_ids))
-
-    candidates = q.all()
-
-    if len(candidates) <= body.count:
-        return candidates
-
-    return _random.sample(candidates, body.count)
+        recipe.tags
