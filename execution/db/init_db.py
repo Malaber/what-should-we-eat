@@ -14,7 +14,7 @@ from execution.db.models import Household
 def init():
     """Create all tables defined by the ORM models."""
     print("Creating database tables …")
-    Base.metadata.drop_all(bind=engine)
+    # Base.metadata.drop_all(bind=engine) # Commented out to prevent accidental data loss
     Base.metadata.create_all(bind=engine)
     print("Done.")
 
