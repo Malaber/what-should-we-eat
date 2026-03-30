@@ -210,4 +210,51 @@ def update_recipe(recipe_id: int, data: RecipeUpdate, current_user: User = Depen
 
     # replace tags if provided
     if data.tags is not None:
-        recipe.tags
+        recipe.tags = _get_or_create_tags(db, data.tags)
+
+    db.commit()
+    db.refresh(recipe)
+
+    # Clean up orphaned tags
+    db.query(Tag).filter(~Tag.recipes.any()).delete()
+    db.commit()
+
+    return _recipe_query(db, current_user.active_household_id).filter(Recipe.id == recipe.id).first()
+
+
+# ── DELETE ───────────────────────────────────────────────────────────
+
+@router.delete("/{recipe_id}", status_code=204)
+def delete_recipe(recipe_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    _check_not_demo(current_user)
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id, Recipe.household_id == current_user.active_household_id).first()
+    if not recipe:
+        raise HTTPException(404, "Recipe not found")
+    db.delete(recipe)
+    db.commit()
+
+    # Clean up orphaned tags
+    db.query(Tag).filter(~Tag.recipes.any()).delete()
+    db.commit()
+
+# ── RANDOM SELECTION ─────────────────────────────────────────────────
+
+@router.post("/random", response_model=list[RecipeOut])
+def random_recipes(body: RandomSelectionRequest, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    q = _recipe_query(db, current_user.active_household_id)
+    q = _apply_filters(
+        q, db,
+        tag_names=body.tag_names or None,
+        max_kcal=body.max_kcal,
+        max_total_time=body.max_total_time,
+    )
+    # Exclude already-selected recipe IDs (used for single-reroll)
+    if body.exclude_ids:
+        q = q.filter(Recipe.id.notin_(body.exclude_ids))
+
+    candidates = q.all()
+
+    if len(candidates) <= body.count:
+        return candidates
+
+    return _random.sample(candidates, body.count)
