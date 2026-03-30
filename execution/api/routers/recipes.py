@@ -14,9 +14,10 @@ from execution.api.schemas import (
     RecipeCreate,
     RecipeOut,
     RecipeUpdate,
+    RecipeImportOut,
 )
 from execution.db.database import get_db
-from execution.db.models import Ingredient, InstructionStep, Recipe, Tag, User
+from execution.db.models import Ingredient, InstructionStep, Recipe, Tag, User, Household
 from execution.api.auth import get_current_active_user
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
@@ -91,6 +92,50 @@ def create_recipe(data: RecipeCreate, current_user: User = Depends(get_current_a
 
     # Re-query with eager loading to ensure full nested output
     return _recipe_query(db, current_user.active_household_id).filter(Recipe.id == recipe.id).first()
+
+
+@router.post("/import/{invite_code}", response_model=RecipeImportOut, status_code=201)
+def import_recipes_from_household(
+    invite_code: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    source_household = db.query(Household).filter(Household.invite_code == invite_code.upper()).first()
+    if not source_household:
+        raise HTTPException(status_code=404, detail="Invalid invite code")
+    
+    if source_household.id == current_user.active_household_id:
+        raise HTTPException(status_code=400, detail="Cannot import from the currently active household")
+        
+    recipes_to_import = _recipe_query(db, source_household.id).all()
+    count = 0
+    
+    for recipe in recipes_to_import:
+        new_recipe = Recipe(
+            household_id=current_user.active_household_id,
+            name=recipe.name,
+            kcal_per_serving=recipe.kcal_per_serving,
+            active_cooking_time_min=recipe.active_cooking_time_min,
+            total_time_min=recipe.total_time_min,
+        )
+        
+        new_recipe.ingredients = [
+            Ingredient(name=ing.name, quantity=ing.quantity, unit=ing.unit)
+            for ing in recipe.ingredients
+        ]
+        
+        new_recipe.instruction_steps = [
+            InstructionStep(step_number=step.step_number, description=step.description, duration_min=step.duration_min)
+            for step in recipe.instruction_steps
+        ]
+        
+        new_recipe.tags = [t for t in recipe.tags]
+        
+        db.add(new_recipe)
+        count += 1
+        
+    db.commit()
+    return RecipeImportOut(imported_count=count)
 
 
 # ── READ (list + single) ────────────────────────────────────────────

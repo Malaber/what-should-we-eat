@@ -107,6 +107,10 @@ class RecipeOut(RecipeBase):
         from_attributes = True
 
 
+class RecipeImportOut(BaseModel):
+    imported_count: int
+
+
 # ── Random selection request ─────────────────────────────────────────
 
 class RandomSelectionRequest(BaseModel):
