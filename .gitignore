@@ -1,5 +1,4 @@
 # Secrets
-.env
 credentials.json
 token.json
 
