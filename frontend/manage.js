@@ -62,7 +62,7 @@ async function init() {
   document.getElementById('btn-close-modal').addEventListener('click', closeEditModal);
   document.getElementById('btn-cancel-modal').addEventListener('click', closeEditModal);
   document.getElementById('btn-create-recipe').addEventListener('click', openCreateModal);
-  
+
   // Tag add
   document.getElementById('btn-add-tag').addEventListener('click', addNewTag);
   $newTagInput.addEventListener('keydown', (e) => {
@@ -153,7 +153,7 @@ function renderRecipes(recipesToRender = allRecipes) {
       </div>
       <div class="recipe-card-footer">
         <button class="btn btn-secondary btn-sm" onclick="editRecipe(${r.id})">✏️ Edit</button>
-        <button class="btn btn-secondary btn-sm" onclick="promptDelete(${r.id}, '${escJs(r.name)}')" style="color:#d9534f; border-color:#d9534f55;">🗑️ Delete</button>
+        <button class="btn btn-secondary btn-sm" onclick="promptDelete(${r.id}, '${escJs(r.name)}')">🗑️ Delete</button>
       </div>
     </div>
   `).join('');
@@ -167,7 +167,7 @@ function openCreateModal() {
   $recipeForm.reset();
   selectedTags.clear();
   renderEditTags();
-  
+
   $ingredientsList.innerHTML = '';
   $stepsList.innerHTML = '';
   addIngredientRow();
@@ -187,7 +187,7 @@ function editRecipe(id) {
 
   editRecipeId = id;
   $modalTitle.textContent = "Edit Recipe";
-  
+
   $recipeName.value = r.name || '';
   $recipeKcal.value = r.kcal_per_serving || '';
   $recipeActiveTime.value = r.active_cooking_time_min || '';
@@ -201,7 +201,7 @@ function editRecipe(id) {
   if (r.ingredients.length === 0) addIngredientRow();
 
   $stepsList.innerHTML = '';
-  const sortedSteps = [...(r.instruction_steps || [])].sort((a,b) => a.step_number - b.step_number);
+  const sortedSteps = [...(r.instruction_steps || [])].sort((a, b) => a.step_number - b.step_number);
   sortedSteps.forEach(st => addStepRow(st.description, st.duration_min));
   if (sortedSteps.length === 0) addStepRow();
 
@@ -213,7 +213,7 @@ function editRecipe(id) {
 function renderEditTags() {
   // Combine all system tags with any custom tags currently selected
   const allKnownTags = new Set([...allTags.map(t => t.name), ...selectedTags]);
-  
+
   $editTagSelector.innerHTML = Array.from(allKnownTags).map(tName => `
     <button type="button" class="tag-pill ${selectedTags.has(tName) ? 'active' : ''}"
             onclick="toggleTag('${escJs(tName)}')">
@@ -222,7 +222,7 @@ function renderEditTags() {
   `).join('');
 }
 
-window.toggleTag = function(name) {
+window.toggleTag = function (name) {
   if (selectedTags.has(name)) selectedTags.delete(name);
   else selectedTags.add(name);
   renderEditTags();
@@ -265,7 +265,7 @@ function addStepRow(desc = '', dur = '') {
 // ── Save Recipe ────────────────────────────────────────────────
 async function saveRecipe(e) {
   e.preventDefault();
-  
+
   const name = $recipeName.value.trim();
   if (!name) {
     toast('Recipe name is required.');
@@ -311,7 +311,7 @@ async function saveRecipe(e) {
   try {
     const method = editRecipeId ? 'PUT' : 'POST';
     const url = editRecipeId ? `${API}/recipes/${editRecipeId}` : `${API}/recipes`;
-    
+
     const res = await fetch(url, {
       method: method,
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
@@ -322,11 +322,11 @@ async function saveRecipe(e) {
 
     toast(editRecipeId ? 'Recipe updated!' : 'Recipe created!');
     closeEditModal();
-    
-    
+
+
     await loadTags();
     await loadRecipes();
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     toast('Error saving recipe.');
   }
@@ -336,7 +336,7 @@ async function saveRecipe(e) {
 // ── Delete ─────────────────────────────────────────────────────
 let recipeToDelete = null;
 
-window.promptDelete = function(id, name) {
+window.promptDelete = function (id, name) {
   recipeToDelete = id;
   document.getElementById('delete-recipe-name').textContent = name;
   $deleteModal.style.display = 'flex';
@@ -344,17 +344,17 @@ window.promptDelete = function(id, name) {
 
 async function performDelete() {
   if (!recipeToDelete) return;
-  
+
   try {
     const res = await fetch(`${API}/recipes/${recipeToDelete}`, { method: 'DELETE', headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Delete failed');
-    
+
     toast('Recipe deleted.');
 
-    
+
     await loadTags();
     await loadRecipes();
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     toast('Error deleting recipe.');
   } finally {
