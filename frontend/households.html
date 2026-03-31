@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Households - What Should We Eat?</title>
   <meta name="description" content="Manage your households — view, switch, create, and join kitchens." />
   <link rel="stylesheet" href="/styles.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🏠</text></svg>" />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🏠</text></svg>" />
 </head>
+
 <body>
 
   <!-- ─── Navigation ─────────────────────────────────────────── -->
@@ -62,17 +65,22 @@
   <!-- ─── Create Household Modal ────────────────────────────── -->
   <div class="modal-overlay" id="create-modal" style="display:none; z-index:7000;">
     <div class="modal modal-sm" style="padding: 32px; position: relative;">
-      <button class="btn btn-icon" id="btn-close-create" style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
+      <button class="btn btn-icon" id="btn-close-create"
+        style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
       <div style="font-size: 3rem; margin-bottom: 12px; text-align: center;">🏡</div>
-      <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 8px; text-align: center;">Create Household</h2>
-      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center;">Give your new kitchen a name.</p>
+      <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 8px; text-align: center;">Create
+        Household</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center;">Give your new
+        kitchen a name.</p>
       <form id="create-form" style="display: flex; flex-direction: column; gap: 16px;">
         <div class="control-group">
           <label for="create-name">Household Name</label>
           <input type="text" id="create-name" required placeholder="e.g. Family Kitchen" />
         </div>
-        <div id="create-error" style="color: #d32f2f; font-size: 0.85rem; font-weight: 600; display: none; text-align: center;"></div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.05rem; padding: 14px;">Create</button>
+        <div id="create-error"
+          style="color: #d32f2f; font-size: 0.85rem; font-weight: 600; display: none; text-align: center;"></div>
+        <button type="submit" class="btn btn-primary"
+          style="width: 100%; font-size: 1.05rem; padding: 14px;">Create</button>
       </form>
     </div>
   </div>
@@ -80,17 +88,23 @@
   <!-- ─── Join Household Modal ──────────────────────────────── -->
   <div class="modal-overlay" id="join-modal" style="display:none; z-index:7000;">
     <div class="modal modal-sm" style="padding: 32px; position: relative;">
-      <button class="btn btn-icon" id="btn-close-join" style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
+      <button class="btn btn-icon" id="btn-close-join"
+        style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
       <div style="font-size: 3rem; margin-bottom: 12px; text-align: center;">🔑</div>
-      <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 8px; text-align: center;">Join Household</h2>
-      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center;">Enter the 6-character invite code shared with you.</p>
+      <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 8px; text-align: center;">Join
+        Household</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center;">Enter the
+        6-character invite code shared with you.</p>
       <form id="join-form" style="display: flex; flex-direction: column; gap: 16px;">
         <div class="control-group">
           <label for="join-code">Invite Code</label>
-          <input type="text" id="join-code" required placeholder="e.g. A1B2C3" maxlength="6" style="text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600; font-size: 1.2rem; text-align: center;" />
+          <input type="text" id="join-code" required placeholder="e.g. A1B2C3" maxlength="6"
+            style="text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600; font-size: 1.2rem; text-align: center;" />
         </div>
-        <div id="join-error" style="color: #d32f2f; font-size: 0.85rem; font-weight: 600; display: none; text-align: center;"></div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.05rem; padding: 14px;">Join</button>
+        <div id="join-error"
+          style="color: #d32f2f; font-size: 0.85rem; font-weight: 600; display: none; text-align: center;"></div>
+        <button type="submit" class="btn btn-primary"
+          style="width: 100%; font-size: 1.05rem; padding: 14px;">Join</button>
       </form>
     </div>
   </div>
@@ -98,17 +112,23 @@
   <!-- ─── Import Recipes Modal ──────────────────────────────── -->
   <div class="modal-overlay" id="import-modal" style="display:none; z-index:7000;">
     <div class="modal modal-sm" style="padding: 32px; position: relative;">
-      <button class="btn btn-icon" id="btn-close-import" style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
+      <button class="btn btn-icon" id="btn-close-import"
+        style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
       <div style="font-size: 3rem; margin-bottom: 12px; text-align: center;">📥</div>
-      <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 8px; text-align: center;">Import Recipes</h2>
-      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center;">Enter a household invite code to copy all of its recipes into your currently active kitchen.</p>
+      <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 8px; text-align: center;">Import
+        Recipes</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem; text-align: center;">Enter a
+        household invite code to copy all of its recipes into your currently active kitchen.</p>
       <form id="import-form" style="display: flex; flex-direction: column; gap: 16px;">
         <div class="control-group">
           <label for="import-code">Invite Code</label>
-          <input type="text" id="import-code" required placeholder="e.g. A1B2C3" maxlength="6" style="text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600; font-size: 1.2rem; text-align: center;" />
+          <input type="text" id="import-code" required placeholder="e.g. A1B2C3" maxlength="6"
+            style="text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600; font-size: 1.2rem; text-align: center;" />
         </div>
-        <div id="import-error" style="color: #d32f2f; font-size: 0.85rem; font-weight: 600; display: none; text-align: center;"></div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.05rem; padding: 14px;">Import</button>
+        <div id="import-error"
+          style="color: #d32f2f; font-size: 0.85rem; font-weight: 600; display: none; text-align: center;"></div>
+        <button type="submit" class="btn btn-primary"
+          style="width: 100%; font-size: 1.05rem; padding: 14px;">Import</button>
       </form>
     </div>
   </div>
@@ -120,7 +140,8 @@
         <h2>Leave Household</h2>
       </div>
       <div class="modal-body">
-        <p>Are you sure you want to leave <strong id="leave-household-name"></strong>? You'll lose access to its recipes and meal plan.</p>
+        <p>Are you sure you want to leave <strong id="leave-household-name"></strong>? You'll lose access to its recipes
+          and meal plan.</p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="btn-cancel-leave">Cancel</button>
@@ -130,12 +151,10 @@
   </div>
 
   <footer class="site-footer">
-    <div class="container">
-      Made with 🍳 — <em>What Should We Eat?</em>
-    </div>
   </footer>
 
   <script src="/auth.js"></script>
   <script src="/households.js"></script>
 </body>
+
 </html>

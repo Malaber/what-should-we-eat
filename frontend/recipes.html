@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manage Recipes</title>
   <link rel="stylesheet" href="/styles.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🍳</text></svg>" />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🍳</text></svg>" />
 </head>
+
 <body>
 
   <!-- ─── Navigation ─────────────────────────────────────────── -->
@@ -39,7 +42,8 @@
         </button>
       </div>
       <div class="search-bar-container">
-        <input type="text" id="recipe-search" placeholder="🔍 Search by name, tags, or ingredients..." class="search-input" />
+        <input type="text" id="recipe-search" placeholder="🔍 Search by name, tags, or ingredients..."
+          class="search-input" />
       </div>
     </div>
 
@@ -50,9 +54,6 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container">
-      Made with 🍳 — <em>What Should We Eat?</em>
-    </div>
   </footer>
 
   <!-- ─── Modals ─────────────────────────────────────────────── -->
@@ -67,7 +68,7 @@
       <div class="modal-body">
         <form id="recipe-form">
           <input type="hidden" id="recipe-id" />
-          
+
           <div class="form-row">
             <div class="control-group" style="flex: 2;">
               <label>Recipe Name</label>
@@ -144,4 +145,5 @@
   <script src="/auth.js"></script>
   <script src="/manage.js"></script>
 </body>
+
 </html>
