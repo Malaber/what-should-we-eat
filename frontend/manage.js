@@ -131,7 +131,7 @@ function renderRecipes(recipesToRender = allRecipes) {
   if (recipesToRender.length === 0) {
     $manageGrid.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1;">
-        <div class="icon">🍳</div>
+        <div class="icon">🧄</div>
         <p>No recipes found.</p>
       </div>
     `;
@@ -145,7 +145,7 @@ function renderRecipes(recipesToRender = allRecipes) {
       </div>
       <div class="recipe-card-meta">
         ${r.kcal_per_serving ? `<span class="meta-chip"><span class="icon">🔥</span> ${r.kcal_per_serving} kcal</span>` : ''}
-        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">👨‍🍳</span> ${r.active_cooking_time_min} min active</span>` : ''}
+        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧄/span> ${r.active_cooking_time_min} min active</span>` : ''}
         ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} min total</span>` : ''}
       </div>
       <div class="recipe-card-tags">

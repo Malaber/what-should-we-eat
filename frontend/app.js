@@ -23,20 +23,20 @@ let allTags = [];
 let currentFilters = {};    // remember filters used for reroll
 
 // ── DOM refs ───────────────────────────────────────────────────
-const $tagSelector   = document.getElementById('tag-selector');
-const $recipeCount   = document.getElementById('recipe-count');
-const $maxKcal       = document.getElementById('max-kcal');
-const $maxTime       = document.getElementById('max-time');
-const $btnRoll       = document.getElementById('btn-roll');
-const $btnRerollAll  = document.getElementById('btn-reroll-all');
-const $recipesGrid   = document.getElementById('recipes-grid');
-const $recipesSection= document.getElementById('recipes-section');
-const $recipeBadge   = document.getElementById('recipe-badge');
+const $tagSelector = document.getElementById('tag-selector');
+const $recipeCount = document.getElementById('recipe-count');
+const $maxKcal = document.getElementById('max-kcal');
+const $maxTime = document.getElementById('max-time');
+const $btnRoll = document.getElementById('btn-roll');
+const $btnRerollAll = document.getElementById('btn-reroll-all');
+const $recipesGrid = document.getElementById('recipes-grid');
+const $recipesSection = document.getElementById('recipes-section');
+const $recipeBadge = document.getElementById('recipe-badge');
 const $shoppingSection = document.getElementById('shopping-section');
-const $shoppingList  = document.getElementById('shopping-list');
-const $shopBadge     = document.getElementById('shop-badge');
-const $toast         = document.getElementById('toast');
-const $btnKitchen    = document.getElementById('btn-kitchen');
+const $shoppingList = document.getElementById('shopping-list');
+const $shopBadge = document.getElementById('shop-badge');
+const $toast = document.getElementById('toast');
+const $btnKitchen = document.getElementById('btn-kitchen');
 
 
 // ── Init ───────────────────────────────────────────────────────
@@ -281,7 +281,7 @@ function renderRecipes() {
       </div>
       <div class="recipe-card-meta">
         ${r.kcal_per_serving ? `<span class="meta-chip"><span class="icon">🔥</span> ${r.kcal_per_serving} kcal</span>` : ''}
-        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">👨‍🍳</span> ${r.active_cooking_time_min} min active</span>` : ''}
+        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧄</span> ${r.active_cooking_time_min} min active</span>` : ''}
         ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} min total</span>` : ''}
       </div>
       <div class="recipe-card-tags">
@@ -297,8 +297,8 @@ function renderRecipes() {
         <div class="recipe-steps" id="steps-${r.id}">
           <div class="recipe-steps-inner">
             ${r.instruction_steps
-              .sort((a, b) => a.step_number - b.step_number)
-              .map(s => `
+        .sort((a, b) => a.step_number - b.step_number)
+        .map(s => `
                 <div class="step-item">
                   <span class="step-num">${s.step_number}</span>
                   <span>${esc(s.description)}</span>

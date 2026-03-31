@@ -20,14 +20,14 @@ function isLoggedIn() {
 let kitchenRecipes = [];  // [{...recipe, _cooked: bool}]
 
 // ── DOM refs ───────────────────────────────────────────────────
-const $emptyState     = document.getElementById('empty-state');
+const $emptyState = document.getElementById('empty-state');
 const $kitchenSection = document.getElementById('kitchen-section');
-const $kitchenGrid    = document.getElementById('kitchen-grid');
+const $kitchenGrid = document.getElementById('kitchen-grid');
 
-const $modal          = document.getElementById('meal-modal');
-const $btnCloseModal  = document.getElementById('btn-close-modal');
-const $modalTitle     = document.getElementById('modal-title');
-const $modalMeta      = document.getElementById('modal-meta');
+const $modal = document.getElementById('meal-modal');
+const $btnCloseModal = document.getElementById('btn-close-modal');
+const $modalTitle = document.getElementById('modal-title');
+const $modalMeta = document.getElementById('modal-meta');
 const $modalIngredients = document.getElementById('modal-ingredients');
 const $modalInstructions = document.getElementById('modal-instructions');
 const $btnToggleCooked = document.getElementById('btn-toggle-cooked');
@@ -105,7 +105,7 @@ function renderGrid() {
       </div>
       <div class="recipe-card-meta" style="pointer-events:none;">
         ${r.kcal_per_serving ? `<span class="meta-chip"><span class="icon">🔥</span> ${r.kcal_per_serving} kcal</span>` : ''}
-        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">👨‍🍳</span> ${r.active_cooking_time_min} min</span>` : ''}
+        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧄</span> ${r.active_cooking_time_min} min</span>` : ''}
         ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} min</span>` : ''}
       </div>
       <div class="recipe-card-tags" style="pointer-events:none;">
@@ -127,15 +127,15 @@ function renderGrid() {
 function openModal(id) {
   const recipe = kitchenRecipes.find(r => r.id === id);
   if (!recipe) return;
-  
+
   activeRecipeId = id;
 
   $modalTitle.textContent = recipe.name;
-  
+
   // Meta
   const metaHTML = [];
   if (recipe.kcal_per_serving) metaHTML.push(`<span class="meta-chip"><span class="icon">🔥</span> ${recipe.kcal_per_serving} kcal</span>`);
-  if (recipe.active_cooking_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">👨‍🍳</span> ${recipe.active_cooking_time_min} min active</span>`);
+  if (recipe.active_cooking_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">🧄/span> ${recipe.active_cooking_time_min} min active</span>`);
   if (recipe.total_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">⏱️</span> ${recipe.total_time_min} min total</span>`);
   $modalMeta.innerHTML = metaHTML.join('');
 

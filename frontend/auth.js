@@ -72,7 +72,7 @@ const modalsHTML = `
 const loginGateHTML = `
   <div id="login-gate" style="position:fixed; inset:0; z-index:8000; background:rgba(0,0,0,0.55); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center;">
     <div style="background:var(--bg-card, #fff); border-radius:20px; padding:48px 40px; text-align:center; max-width:400px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-      <div style="font-size:4rem; margin-bottom:16px;">🍳</div>
+      <div style="font-size:4rem; margin-bottom:16px;">🧄</div>
       <h2 style="font-family:var(--font-display, inherit); font-size:1.8rem; margin-bottom:8px;">Welcome!</h2>
       <p style="color:var(--text-muted, #888); margin-bottom:28px; font-size:1rem; line-height:1.5;">Log in or create an account to start planning your meals.</p>
       <div style="display:flex; gap:12px; justify-content:center;">
@@ -186,7 +186,7 @@ class AuthHandler {
     this.$loginError.style.display = 'none';
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    
+
     const formData = new URLSearchParams();
     formData.append('username', email);
     formData.append('password', password);
@@ -197,7 +197,7 @@ class AuthHandler {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         this.token = data.access_token;
@@ -228,7 +228,7 @@ class AuthHandler {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name })
       });
-      
+
       if (res.ok) {
         document.getElementById('login-email').value = email;
         document.getElementById('login-password').value = password;
@@ -249,11 +249,11 @@ class AuthHandler {
     this.token = null;
     this.user = null;
     localStorage.removeItem('wswe_token');
-    
+
     this.$authControls.style.display = 'flex';
     this.$userControls.style.display = 'none';
     this.updateLoginGate();
-    
+
     if (emit) {
       window.dispatchEvent(new CustomEvent('wswe_auth_changed', { detail: { token: null } }));
     }
