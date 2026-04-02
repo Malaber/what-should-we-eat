@@ -111,6 +111,17 @@ class RecipeImportOut(BaseModel):
     imported_count: int
 
 
+class RecipeHtmlImportRequest(BaseModel):
+    source: str = Field(description="Import source identifier, e.g. 'chefkoch'")
+    url: Optional[str] = None
+    html: str = Field(min_length=1, description="Raw HTML fetched by the client")
+
+
+class RecipeDraftOut(RecipeCreate):
+    source: Optional[str] = None
+    source_url: Optional[str] = None
+
+
 # ── Random selection request ─────────────────────────────────────────
 
 class RandomSelectionRequest(BaseModel):

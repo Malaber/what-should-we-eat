@@ -59,10 +59,45 @@
   <div class="modal-overlay" id="edit-modal" style="display:none;">
     <div class="modal modal-lg">
       <div class="modal-header">
-        <h2 id="modal-title">Edit Recipe</h2>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <h2 id="modal-title">Edit Recipe</h2>
+          <div id="recipe-mode-switch" style="display:none; gap:8px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-manual">Manual</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-import">Import</button>
+          </div>
+        </div>
         <button class="btn-icon" id="btn-close-modal">✕</button>
       </div>
       <div class="modal-body">
+        <section id="import-panel" style="display:none; margin-bottom:24px; border:1px solid var(--border, #e7d9c7); border-radius:18px; padding:20px; background:var(--bg-soft, #fbf4ea);">
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <div>
+              <h3 style="margin:0 0 8px 0;">Import Recipe</h3>
+              <p style="margin:0; color:var(--text-muted);">Fetch a recipe page, let the server parse it, then review the imported fields before saving.</p>
+            </div>
+            <div class="form-row">
+              <div class="control-group">
+                <label for="import-source">Source</label>
+                <select id="import-source">
+                  <option value="chefkoch">Chefkoch</option>
+                  <option value="instagram" disabled>Instagram (later)</option>
+                </select>
+              </div>
+              <div class="control-group" style="flex:2;">
+                <label for="import-url">Recipe URL</label>
+                <input type="url" id="import-url" placeholder="https://www.chefkoch.de/..." />
+              </div>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary" id="btn-import-recipe">Import Into Form</button>
+              <span id="import-status" style="color:var(--text-muted); font-size:0.95rem;"></span>
+            </div>
+            <div id="import-html-fallback" style="display:none;">
+              <label for="import-html" style="display:block; margin-bottom:8px; color:var(--text-muted);">Browser blocked direct fetch. Paste page HTML here and try again.</label>
+              <textarea id="import-html" rows="8" placeholder="<html>..."></textarea>
+            </div>
+          </div>
+        </section>
         <form id="recipe-form">
           <input type="hidden" id="recipe-id" />
 

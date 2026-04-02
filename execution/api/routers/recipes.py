@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session, joinedload
 from execution.api.schemas import (
     RandomSelectionRequest,
     RecipeCreate,
+    RecipeDraftOut,
+    RecipeHtmlImportRequest,
     RecipeOut,
     RecipeUpdate,
     RecipeImportOut,
@@ -20,6 +22,7 @@ from execution.api.schemas import (
 from execution.db.database import get_db
 from execution.db.models import Ingredient, InstructionStep, Recipe, Tag, User, Household
 from execution.api.auth import get_current_active_user
+from execution.api.recipe_import import parse_recipe_html
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -155,6 +158,19 @@ def import_recipes_from_household(
         
     db.commit()
     return RecipeImportOut(imported_count=count)
+
+
+@router.post("/import/parse/html", response_model=RecipeDraftOut)
+def parse_recipe_import(
+    body: RecipeHtmlImportRequest,
+    current_user: User = Depends(get_current_active_user),
+):
+    # Authentication is enough here; parsed data is only used to prefill the form.
+    _ = current_user
+    try:
+        return parse_recipe_html(source=body.source, html=body.html, url=body.url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 # ── READ (list + single) ────────────────────────────────────────────
