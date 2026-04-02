@@ -76,7 +76,7 @@ That starts:
 - password: `recipes_pass`
 - port: `5432`
 
-### 4. Create the database tables
+### 4. Initialize or migrate the database
 
 ```bash
 ./venv/bin/python -m execution.db.init_db
@@ -84,10 +84,10 @@ That starts:
 
 What this does:
 
-- creates all SQLAlchemy tables
-- creates a default `Demo Kitchen` household if no household exists yet
+- runs Alembic migrations up to the latest revision
+- automatically adopts legacy local databases that were created before Alembic was added
 
-The FastAPI app also calls `create_all()` on startup, but running `init_db` explicitly is the safest first-time setup.
+The app no longer mutates schema automatically on startup. Run this whenever you set up a fresh database or pull schema changes.
 
 ### 5. Start the app
 
@@ -143,6 +143,16 @@ Run them after the app is up:
 ```bash
 ./venv/bin/python -m execution.tests.test_api
 ./venv/bin/python -m execution.tests.test_users
+```
+
+### Migrations
+
+To inspect or apply migrations directly:
+
+```bash
+./venv/bin/alembic history
+./venv/bin/alembic current
+./venv/bin/alembic upgrade head
 ```
 
 ## Common gotchas
