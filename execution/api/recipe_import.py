@@ -5,10 +5,12 @@ recipe_import.py — Parse external recipe HTML into the app's recipe draft shap
 from __future__ import annotations
 
 import json
+from urllib.parse import urlparse
 import re
 from typing import Any
 
 from bs4 import BeautifulSoup
+import httpx
 
 from execution.api.schemas import IngredientCreate, InstructionStepCreate, RecipeDraftOut
 
@@ -84,6 +86,45 @@ def parse_recipe_html(source: str, html: str, url: str | None = None) -> RecipeD
     )
 
 
+def fetch_recipe_html(source: str, url: str) -> str:
+    source_key = (source or "").strip().lower()
+    if source_key != "chefkoch":
+        raise ValueError(f"Unsupported import source: {source}")
+
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        raise ValueError("Only http and https recipe URLs are supported.")
+    if parsed.username or parsed.password:
+        raise ValueError("Recipe URLs with embedded credentials are not allowed.")
+
+    hostname = (parsed.hostname or "").lower()
+    if not _is_allowed_chefkoch_host(hostname):
+        raise ValueError("Only Chefkoch recipe URLs are supported right now.")
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "de-DE,de;q=0.9,en;q=0.8",
+    }
+
+    try:
+        with httpx.Client(follow_redirects=True, timeout=15.0, headers=headers) as client:
+            response = client.get(url)
+    except httpx.HTTPError as exc:
+        raise ValueError("Could not fetch the recipe page.") from exc
+
+    final_host = (response.url.host or "").lower()
+    if not _is_allowed_chefkoch_host(final_host):
+        raise ValueError("Recipe URL redirected to an unsupported host.")
+    if response.status_code >= 400:
+        raise ValueError(f"Recipe source returned {response.status_code}.")
+
+    return response.text
+
+
 def _extract_recipe_json_ld(soup: BeautifulSoup) -> dict[str, Any] | None:
     for node in soup.select('script[type="application/ld+json"]'):
         raw = node.string or node.get_text(strip=True)
@@ -94,6 +135,10 @@ def _extract_recipe_json_ld(soup: BeautifulSoup) -> dict[str, Any] | None:
             if recipe:
                 return recipe
     return None
+
+
+def _is_allowed_chefkoch_host(hostname: str) -> bool:
+    return hostname == "chefkoch.de" or hostname.endswith(".chefkoch.de")
 
 
 def _load_json_candidates(raw: str) -> list[Any]:

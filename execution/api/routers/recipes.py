@@ -22,7 +22,7 @@ from execution.api.schemas import (
 from execution.db.database import get_db
 from execution.db.models import Ingredient, InstructionStep, Recipe, Tag, User, Household
 from execution.api.auth import get_current_active_user
-from execution.api.recipe_import import parse_recipe_html
+from execution.api.recipe_import import fetch_recipe_html, parse_recipe_html
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -170,7 +170,8 @@ def parse_recipe_import(
     # Authentication is enough here; parsed data is only used to prefill the form.
     _ = current_user
     try:
-        return parse_recipe_html(source=body.source, html=body.html, url=body.url)
+        html = body.html or fetch_recipe_html(source=body.source, url=body.url or "")
+        return parse_recipe_html(source=body.source, html=html, url=body.url)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

@@ -73,7 +73,7 @@
           <div style="display:flex; flex-direction:column; gap:16px;">
             <div>
               <h3 style="margin:0 0 8px 0;">Import Recipe</h3>
-              <p style="margin:0; color:var(--text-muted);">Fetch a recipe page, let the server parse it, then review the imported fields before saving.</p>
+              <p style="margin:0; color:var(--text-muted);">Send a recipe URL to the server, let it fetch and parse the page, then review the imported fields before saving.</p>
             </div>
             <div class="form-row">
               <div class="control-group">
@@ -93,7 +93,7 @@
               <span id="import-status" style="color:var(--text-muted); font-size:0.95rem;"></span>
             </div>
             <div id="import-html-fallback" style="display:none;">
-              <label for="import-html" style="display:block; margin-bottom:8px; color:var(--text-muted);">Browser blocked direct fetch. Paste page HTML here and try again.</label>
+              <label for="import-html" style="display:block; margin-bottom:8px; color:var(--text-muted);">If server-side fetch fails, paste page HTML here and try again.</label>
               <textarea id="import-html" rows="8" placeholder="<html>..."></textarea>
             </div>
           </div>

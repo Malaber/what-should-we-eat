@@ -5,7 +5,11 @@ Usage:
     ./venv/bin/python -m execution.tests.test_recipe_import
 """
 
-from execution.api.recipe_import import parse_recipe_html
+from unittest.mock import patch
+
+import httpx
+
+from execution.api.recipe_import import fetch_recipe_html, parse_recipe_html
 
 
 SAMPLE_HTML = """
@@ -75,6 +79,34 @@ def main():
     assert recipe.instruction_steps[2].description == "Alles vermengen und servieren."
     assert recipe.source == "chefkoch"
     assert recipe.source_url == "https://www.chefkoch.de/test"
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def get(self, url):
+            return httpx.Response(
+                200,
+                text=SAMPLE_HTML,
+                request=httpx.Request("GET", url),
+            )
+
+    with patch("execution.api.recipe_import.httpx.Client", FakeClient):
+        fetched_html = fetch_recipe_html("chefkoch", "https://www.chefkoch.de/rezepte/test")
+        assert "Spaghetti al Limone" in fetched_html
+
+    try:
+        fetch_recipe_html("chefkoch", "https://example.com/not-allowed")
+    except ValueError as exc:
+        assert "Chefkoch" in str(exc)
+    else:
+        raise AssertionError("Expected unsupported host to be rejected")
 
     print("Recipe import parser test passed.")
 
