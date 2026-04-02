@@ -178,8 +178,10 @@ body::before {
 
 .control-group input[type="number"],
 .control-group input[type="text"],
+.control-group input[type="url"],
 .control-group input[type="email"],
 .control-group input[type="password"],
+.control-group textarea,
 .control-group select {
   padding: 10px 14px;
   border: 1.5px solid var(--border);
@@ -194,9 +196,15 @@ body::before {
 }
 
 .control-group input:focus,
+.control-group textarea:focus,
 .control-group select:focus {
   border-color: var(--orange);
   box-shadow: 0 0 0 3px var(--orange-pale);
+}
+
+.control-group textarea {
+  resize: vertical;
+  min-height: 120px;
 }
 
 /* Tag pills */

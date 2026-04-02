@@ -32,7 +32,7 @@ SAMPLE_HTML = """
         "recipeInstructions": [
           { "@type": "HowToStep", "text": "Pasta in Salzwasser kochen." },
           { "@type": "HowToStep", "text": "Zitronensaft mit Olivenöl verrühren." },
-          { "@type": "HowToStep", "text": "Alles vermengen und servieren." }
+          { "@type": "HowToStep", "text": "Alles vermengen und servieren. Anmerkung: Mit extra Zitronenabrieb servieren." }
         ]
       }
     </script>
@@ -49,6 +49,7 @@ def main():
     assert recipe.kcal_per_serving == 540.0
     assert recipe.active_cooking_time_min == 15
     assert recipe.total_time_min == 25
+    assert recipe.notes == "Anmerkung: Mit extra Zitronenabrieb servieren."
     assert recipe.tags[:3] == ["Pasta", "Schnell", "Vegetarisch"]
 
     assert len(recipe.ingredients) == 5
@@ -71,6 +72,7 @@ def main():
     assert len(recipe.instruction_steps) == 3
     assert recipe.instruction_steps[0].step_number == 1
     assert recipe.instruction_steps[0].description == "Pasta in Salzwasser kochen."
+    assert recipe.instruction_steps[2].description == "Alles vermengen und servieren."
     assert recipe.source == "chefkoch"
     assert recipe.source_url == "https://www.chefkoch.de/test"
 

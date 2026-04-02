@@ -6,6 +6,7 @@ Usage:
 """
 
 from execution.db.database import Base, engine, SessionLocal
+from execution.db.schema import ensure_schema_compatibility
 
 # Import models so they register with Base.metadata
 from execution.db import models  # noqa: F401
@@ -16,6 +17,7 @@ def init():
     print("Creating database tables …")
     # Base.metadata.drop_all(bind=engine) # Commented out to prevent accidental data loss
     Base.metadata.create_all(bind=engine)
+    ensure_schema_compatibility()
     print("Done.")
 
     db = SessionLocal()

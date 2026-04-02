@@ -58,7 +58,7 @@ def parse_recipe_html(source: str, html: str, url: str | None = None) -> RecipeD
         for line in recipe_data.get("recipeIngredient", [])
         if _clean_text(line)
     ]
-    instructions = _build_instruction_steps(recipe_data.get("recipeInstructions"))
+    instructions, notes = _build_instruction_steps_and_notes(recipe_data.get("recipeInstructions"))
     tags = _extract_tags(recipe_data)
 
     nutrition = recipe_data.get("nutrition") or {}
@@ -72,6 +72,7 @@ def parse_recipe_html(source: str, html: str, url: str | None = None) -> RecipeD
 
     return RecipeDraftOut(
         name=_clean_text(recipe_data.get("name")) or "Imported Recipe",
+        notes=notes,
         kcal_per_serving=kcal,
         active_cooking_time_min=prep_min,
         total_time_min=total_min,
@@ -147,13 +148,24 @@ def _is_recipe_type(value: Any) -> bool:
     return False
 
 
-def _build_instruction_steps(raw_instructions: Any) -> list[InstructionStepCreate]:
+def _build_instruction_steps_and_notes(raw_instructions: Any) -> tuple[list[InstructionStepCreate], str | None]:
     flattened = _flatten_instruction_texts(raw_instructions)
+    step_texts: list[str] = []
+    note_chunks: list[str] = []
+
+    for text in flattened:
+        step, note = _split_step_and_note(text)
+        if step:
+            step_texts.append(step)
+        if note:
+            note_chunks.append(note)
+
+    notes = "\n\n".join(chunk for chunk in note_chunks if chunk) or None
     return [
         InstructionStepCreate(step_number=index + 1, description=text, duration_min=None)
-        for index, text in enumerate(flattened)
+        for index, text in enumerate(step_texts)
         if text
-    ]
+    ], notes
 
 
 def _flatten_instruction_texts(value: Any) -> list[str]:
@@ -174,6 +186,25 @@ def _flatten_instruction_texts(value: Any) -> list[str]:
         if isinstance(value.get("itemListElement"), list):
             return _flatten_instruction_texts(value["itemListElement"])
     return []
+
+
+def _split_step_and_note(text: str) -> tuple[str, str | None]:
+    cleaned = _clean_text(text)
+    if not cleaned:
+        return "", None
+
+    for marker in ("Anmerkung:", "Nachtrag:", "Hinweis:"):
+        if marker in cleaned:
+            step_part, note_part = cleaned.split(marker, 1)
+            step = step_part.strip(" \n:-")
+            note = f"{marker} {note_part.strip()}".strip()
+            return step, note
+
+    lowered = cleaned.lower()
+    if lowered.startswith(("anmerkung:", "nachtrag:", "hinweis:")):
+        return "", cleaned
+
+    return cleaned, None
 
 
 def _extract_tags(recipe_data: dict[str, Any]) -> list[str]:

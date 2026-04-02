@@ -31,6 +31,7 @@ const $recipeName = document.getElementById('recipe-name');
 const $recipeKcal = document.getElementById('recipe-kcal');
 const $recipeActiveTime = document.getElementById('recipe-active-time');
 const $recipeTotalTime = document.getElementById('recipe-total-time');
+const $recipeNotes = document.getElementById('recipe-notes');
 const $recipeModeSwitch = document.getElementById('recipe-mode-switch');
 const $btnModeManual = document.getElementById('btn-mode-manual');
 const $btnModeImport = document.getElementById('btn-mode-import');
@@ -193,7 +194,7 @@ function openCreateModal() {
   addIngredientRow();
   addStepRow();
   $recipeModeSwitch.style.display = 'flex';
-  setRecipeModalMode('import');
+  setRecipeModalMode('manual');
 
   $modalOverlay.style.display = 'flex';
 }
@@ -215,6 +216,7 @@ function editRecipe(id) {
   $importHtmlFallback.style.display = 'none';
 
   $recipeName.value = r.name || '';
+  $recipeNotes.value = r.notes || '';
   $recipeKcal.value = r.kcal_per_serving || '';
   $recipeActiveTime.value = r.active_cooking_time_min || '';
   $recipeTotalTime.value = r.total_time_min || '';
@@ -318,6 +320,7 @@ async function fetchRecipeHtml(url) {
 
 function applyImportedRecipe(recipe) {
   $recipeName.value = recipe.name || '';
+  $recipeNotes.value = recipe.notes || '';
   $recipeKcal.value = recipe.kcal_per_serving || '';
   $recipeActiveTime.value = recipe.active_cooking_time_min || '';
   $recipeTotalTime.value = recipe.total_time_min || '';
@@ -404,6 +407,7 @@ async function saveRecipe(e) {
 
   const recipeData = {
     name: name,
+    notes: $recipeNotes.value.trim() || null,
     kcal_per_serving: parseFloat($recipeKcal.value) || null,
     active_cooking_time_min: parseInt($recipeActiveTime.value) || null,
     total_time_min: parseInt($recipeTotalTime.value) || null,

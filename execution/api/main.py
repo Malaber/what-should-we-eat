@@ -16,9 +16,11 @@ from execution.api.routers import recipes, shopping_list, tags, users, household
 
 from execution.db.database import engine
 from execution.db import models
+from execution.db.schema import ensure_schema_compatibility
 
 # Initialize database tables
 models.Base.metadata.create_all(bind=engine)
+ensure_schema_compatibility()
 
 app = FastAPI(
     title="What Should We Eat — Recipe API",
