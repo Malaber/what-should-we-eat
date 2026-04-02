@@ -252,10 +252,10 @@ function setRecipeModalMode(mode) {
 async function importRecipeIntoForm() {
   const source = $importSource.value;
   const url = $importUrl.value.trim();
-  let html = $importHtml.value.trim();
+  const html = $importHtml.value.trim();
 
   if (!url && !html) {
-    toast('Enter a recipe URL first.');
+    toast('Enter a recipe URL or paste HTML first.');
     return;
   }
 
@@ -264,20 +264,21 @@ async function importRecipeIntoForm() {
   $importStatus.textContent = 'Fetching recipe page…';
 
   try {
-    if (!html) {
-      html = await fetchRecipeHtml(url);
-    }
+    const payload = {
+      source,
+      url: url || null,
+      html: html || null,
+    };
 
-    $importStatus.textContent = 'Parsing imported recipe…';
     const res = await fetch(`${API}/recipes/import/parse/html`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ source, url, html }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(data.detail || 'Could not parse recipe');
+      throw new Error(getApiErrorMessage(data));
     }
 
     applyImportedRecipe(data);
@@ -288,34 +289,21 @@ async function importRecipeIntoForm() {
     console.error(e);
     $importHtmlFallback.style.display = 'block';
     $importStatus.textContent = e.message || 'Import failed.';
-    toast('Import failed. You can paste HTML manually below.');
+    toast('Import failed. You can still paste page HTML below.');
   } finally {
     $btnImportRecipe.disabled = false;
     $btnImportRecipe.textContent = 'Import Into Form';
   }
 }
 
-async function fetchRecipeHtml(url) {
-  if (!url) {
-    throw new Error('Enter a recipe URL first.');
+function getApiErrorMessage(data) {
+  if (!data) return 'Could not parse recipe';
+  if (typeof data.detail === 'string') return data.detail;
+  if (Array.isArray(data.detail)) {
+    const first = data.detail[0];
+    if (first && typeof first.msg === 'string') return first.msg;
   }
-
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
-      credentials: 'omit',
-      headers: {
-        'Accept': 'text/html,application/xhtml+xml',
-      },
-    });
-    if (!res.ok) {
-      throw new Error(`Source page returned ${res.status}.`);
-    }
-    return await res.text();
-  } catch (e) {
-    throw new Error('Browser could not read that page directly. Paste the page HTML below and try again.');
-  }
+  return 'Could not parse recipe';
 }
 
 function applyImportedRecipe(recipe) {
