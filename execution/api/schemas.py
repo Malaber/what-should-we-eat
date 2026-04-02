@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, field_validator
 
 
 # ── Instruction Steps ────────────────────────────────────────────────
@@ -116,7 +116,14 @@ class RecipeImportOut(BaseModel):
 class RecipeHtmlImportRequest(BaseModel):
     source: str = Field(description="Import source identifier, e.g. 'chefkoch'")
     url: Optional[str] = None
-    html: str = Field(min_length=1, description="Raw HTML fetched by the client")
+    html: Optional[str] = Field(default=None, min_length=1, description="Optional raw HTML fetched by the client")
+
+    @field_validator("html", mode="before")
+    @classmethod
+    def empty_html_to_none(cls, value):
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
 
 class RecipeDraftOut(RecipeCreate):
