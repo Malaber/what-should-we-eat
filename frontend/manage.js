@@ -16,6 +16,7 @@ function getAuthHeaders(extra = {}) {
 let allRecipes = [];
 let allTags = [];
 let editRecipeId = null;
+let recipeModalMode = 'manual';
 
 // Form DOM refs
 const $modalOverlay = document.getElementById('edit-modal');
@@ -30,6 +31,19 @@ const $recipeName = document.getElementById('recipe-name');
 const $recipeKcal = document.getElementById('recipe-kcal');
 const $recipeActiveTime = document.getElementById('recipe-active-time');
 const $recipeTotalTime = document.getElementById('recipe-total-time');
+const $recipeNotes = document.getElementById('recipe-notes');
+const $recipeModeSwitch = document.getElementById('recipe-mode-switch');
+const $btnModeManual = document.getElementById('btn-mode-manual');
+const $btnModeImport = document.getElementById('btn-mode-import');
+const $importPanel = document.getElementById('import-panel');
+const $importSource = document.getElementById('import-source');
+const $importUrl = document.getElementById('import-url');
+const $importHtml = document.getElementById('import-html');
+const $importHtmlFallback = document.getElementById('import-html-fallback');
+const $importStatus = document.getElementById('import-status');
+const $btnImportRecipe = document.getElementById('btn-import-recipe');
+const $btnSaveRecipe = document.getElementById('btn-save-recipe');
+const $btnCancelModal = document.getElementById('btn-cancel-modal');
 
 // Tags
 const $editTagSelector = document.getElementById('edit-tag-selector');
@@ -78,6 +92,9 @@ async function init() {
 
   // Save recipe
   document.getElementById('btn-save-recipe').addEventListener('click', saveRecipe);
+  $btnModeManual.addEventListener('click', () => setRecipeModalMode('manual'));
+  $btnModeImport.addEventListener('click', () => setRecipeModalMode('import'));
+  $btnImportRecipe.addEventListener('click', importRecipeIntoForm);
 
   // Delete modal
   document.getElementById('btn-cancel-delete').addEventListener('click', () => {
@@ -165,6 +182,10 @@ function openCreateModal() {
   editRecipeId = null;
   $modalTitle.textContent = "Create New Recipe";
   $recipeForm.reset();
+  $importUrl.value = '';
+  $importHtml.value = '';
+  $importStatus.textContent = '';
+  $importHtmlFallback.style.display = 'none';
   selectedTags.clear();
   renderEditTags();
 
@@ -172,6 +193,8 @@ function openCreateModal() {
   $stepsList.innerHTML = '';
   addIngredientRow();
   addStepRow();
+  $recipeModeSwitch.style.display = 'flex';
+  setRecipeModalMode('manual');
 
   $modalOverlay.style.display = 'flex';
 }
@@ -179,6 +202,7 @@ function openCreateModal() {
 function closeEditModal(e) {
   if (e) e.preventDefault();
   $modalOverlay.style.display = 'none';
+  setRecipeModalMode('manual');
 }
 
 function editRecipe(id) {
@@ -187,8 +211,12 @@ function editRecipe(id) {
 
   editRecipeId = id;
   $modalTitle.textContent = "Edit Recipe";
+  $recipeModeSwitch.style.display = 'none';
+  $importStatus.textContent = '';
+  $importHtmlFallback.style.display = 'none';
 
   $recipeName.value = r.name || '';
+  $recipeNotes.value = r.notes || '';
   $recipeKcal.value = r.kcal_per_serving || '';
   $recipeActiveTime.value = r.active_cooking_time_min || '';
   $recipeTotalTime.value = r.total_time_min || '';
@@ -206,6 +234,111 @@ function editRecipe(id) {
   if (sortedSteps.length === 0) addStepRow();
 
   $modalOverlay.style.display = 'flex';
+}
+
+function setRecipeModalMode(mode) {
+  recipeModalMode = mode;
+  const isImport = mode === 'import' && !editRecipeId;
+  $importPanel.style.display = isImport ? 'block' : 'none';
+  $recipeForm.style.display = isImport ? 'none' : 'block';
+  $btnSaveRecipe.style.display = isImport ? 'none' : '';
+  $btnCancelModal.textContent = isImport ? 'Close' : 'Cancel';
+  $btnModeManual.classList.toggle('btn-primary', !isImport);
+  $btnModeManual.classList.toggle('btn-secondary', isImport);
+  $btnModeImport.classList.toggle('btn-primary', isImport);
+  $btnModeImport.classList.toggle('btn-secondary', !isImport);
+}
+
+async function importRecipeIntoForm() {
+  const source = $importSource.value;
+  const url = $importUrl.value.trim();
+  let html = $importHtml.value.trim();
+
+  if (!url && !html) {
+    toast('Enter a recipe URL first.');
+    return;
+  }
+
+  $btnImportRecipe.disabled = true;
+  $btnImportRecipe.innerHTML = '<span class="spinner"></span> Importing…';
+  $importStatus.textContent = 'Fetching recipe page…';
+
+  try {
+    if (!html) {
+      html = await fetchRecipeHtml(url);
+    }
+
+    $importStatus.textContent = 'Parsing imported recipe…';
+    const res = await fetch(`${API}/recipes/import/parse/html`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ source, url, html }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Could not parse recipe');
+    }
+
+    applyImportedRecipe(data);
+    setRecipeModalMode('manual');
+    $importStatus.textContent = 'Imported recipe loaded into the form.';
+    toast('Recipe imported into the form.');
+  } catch (e) {
+    console.error(e);
+    $importHtmlFallback.style.display = 'block';
+    $importStatus.textContent = e.message || 'Import failed.';
+    toast('Import failed. You can paste HTML manually below.');
+  } finally {
+    $btnImportRecipe.disabled = false;
+    $btnImportRecipe.textContent = 'Import Into Form';
+  }
+}
+
+async function fetchRecipeHtml(url) {
+  if (!url) {
+    throw new Error('Enter a recipe URL first.');
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      headers: {
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`Source page returned ${res.status}.`);
+    }
+    return await res.text();
+  } catch (e) {
+    throw new Error('Browser could not read that page directly. Paste the page HTML below and try again.');
+  }
+}
+
+function applyImportedRecipe(recipe) {
+  $recipeName.value = recipe.name || '';
+  $recipeNotes.value = recipe.notes || '';
+  $recipeKcal.value = recipe.kcal_per_serving || '';
+  $recipeActiveTime.value = recipe.active_cooking_time_min || '';
+  $recipeTotalTime.value = recipe.total_time_min || '';
+
+  selectedTags = new Set(recipe.tags || []);
+  renderEditTags();
+
+  $ingredientsList.innerHTML = '';
+  (recipe.ingredients || []).forEach(ing => {
+    addIngredientRow(ing.name, ing.quantity ?? '', ing.unit || '');
+  });
+  if ((recipe.ingredients || []).length === 0) addIngredientRow();
+
+  $stepsList.innerHTML = '';
+  (recipe.instruction_steps || []).forEach(step => {
+    addStepRow(step.description, step.duration_min ?? '');
+  });
+  if ((recipe.instruction_steps || []).length === 0) addStepRow();
 }
 
 
@@ -274,6 +407,7 @@ async function saveRecipe(e) {
 
   const recipeData = {
     name: name,
+    notes: $recipeNotes.value.trim() || null,
     kcal_per_serving: parseFloat($recipeKcal.value) || null,
     active_cooking_time_min: parseInt($recipeActiveTime.value) || null,
     total_time_min: parseInt($recipeTotalTime.value) || null,

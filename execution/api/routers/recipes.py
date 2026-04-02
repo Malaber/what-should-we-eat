@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session, joinedload
 from execution.api.schemas import (
     RandomSelectionRequest,
     RecipeCreate,
+    RecipeDraftOut,
+    RecipeHtmlImportRequest,
     RecipeOut,
     RecipeUpdate,
     RecipeImportOut,
@@ -20,6 +22,7 @@ from execution.api.schemas import (
 from execution.db.database import get_db
 from execution.db.models import Ingredient, InstructionStep, Recipe, Tag, User, Household
 from execution.api.auth import get_current_active_user
+from execution.api.recipe_import import parse_recipe_html
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -91,6 +94,7 @@ def create_recipe(data: RecipeCreate, current_user: User = Depends(get_current_a
     recipe = Recipe(
         household_id=current_user.active_household_id,
         name=data.name,
+        notes=data.notes,
         kcal_per_serving=data.kcal_per_serving,
         active_cooking_time_min=data.active_cooking_time_min,
         total_time_min=data.total_time_min,
@@ -133,6 +137,7 @@ def import_recipes_from_household(
         new_recipe = Recipe(
             household_id=current_user.active_household_id,
             name=recipe.name,
+            notes=recipe.notes,
             kcal_per_serving=recipe.kcal_per_serving,
             active_cooking_time_min=recipe.active_cooking_time_min,
             total_time_min=recipe.total_time_min,
@@ -155,6 +160,19 @@ def import_recipes_from_household(
         
     db.commit()
     return RecipeImportOut(imported_count=count)
+
+
+@router.post("/import/parse/html", response_model=RecipeDraftOut)
+def parse_recipe_import(
+    body: RecipeHtmlImportRequest,
+    current_user: User = Depends(get_current_active_user),
+):
+    # Authentication is enough here; parsed data is only used to prefill the form.
+    _ = current_user
+    try:
+        return parse_recipe_html(source=body.source, html=body.html, url=body.url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 # ── READ (list + single) ────────────────────────────────────────────
@@ -191,10 +209,9 @@ def update_recipe(recipe_id: int, data: RecipeUpdate, current_user: User = Depen
         raise HTTPException(404, "Recipe not found")
 
     # scalar fields
-    for field in ("name", "kcal_per_serving", "active_cooking_time_min", "total_time_min"):
-        value = getattr(data, field)
-        if value is not None:
-            setattr(recipe, field, value)
+    for field in ("name", "notes", "kcal_per_serving", "active_cooking_time_min", "total_time_min"):
+        if field in data.model_fields_set:
+            setattr(recipe, field, getattr(data, field))
 
     # replace ingredients if provided
     if data.ingredients is not None:
