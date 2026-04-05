@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
 
 
 # ── Instruction Steps ────────────────────────────────────────────────
@@ -25,8 +25,7 @@ class InstructionStepCreate(InstructionStepBase):
 class InstructionStepOut(InstructionStepBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ── Ingredients ──────────────────────────────────────────────────────
@@ -44,8 +43,7 @@ class IngredientCreate(IngredientBase):
 class IngredientOut(IngredientBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ── Tags ─────────────────────────────────────────────────────────────
@@ -61,8 +59,7 @@ class TagCreate(TagBase):
 class TagOut(TagBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ── Recipes ──────────────────────────────────────────────────────────
@@ -105,8 +102,7 @@ class RecipeOut(RecipeBase):
     instruction_steps: list[InstructionStepOut] = []
     tags: list[TagOut] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecipeImportOut(BaseModel):
@@ -169,8 +165,7 @@ class MealPlanItemOut(BaseModel):
     added_at: datetime
     recipe: RecipeOut
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MealPlanOut(BaseModel):
     items: list[MealPlanItemOut]
@@ -189,15 +184,13 @@ class HouseholdOut(HouseholdBase):
     invite_code: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class HouseholdMembershipOut(BaseModel):
     household_id: int
     household_name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ── Users & Auth ─────────────────────────────────────────────────────
@@ -226,8 +219,7 @@ class UserOut(UserBase):
     updated_at: datetime
     households: list[HouseholdMembershipOut] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class Token(BaseModel):
     access_token: str

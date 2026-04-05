@@ -1,5 +1,20 @@
 stages:
+  - test
   - build
+
+unit-tests:
+  stage: test
+  image: python:3.12-slim
+  variables:
+    DATABASE_URL: "sqlite:///test.db"
+    SECRET_KEY: "ci-test-secret"
+    DEMO_HOUSEHOLD_ID: "99999"
+  script:
+    - pip install --no-cache-dir -r requirements.txt
+    - python -m pytest --tb=short -q
+  only:
+    - main
+    - merge_requests
 
 build-image:
   stage: build
