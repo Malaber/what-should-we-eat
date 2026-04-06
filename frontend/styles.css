@@ -115,12 +115,15 @@ body::before {
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 1.4rem;
-  padding: 4px 10px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   color: var(--text);
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
-  line-height: 1;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .burger-btn:hover {
@@ -824,7 +827,14 @@ body::before {
 @media (max-width: 768px) {
   /* ── Burger menu ─────────────────────────────── */
   .burger-btn {
-    display: block;
+    display: flex;
+    position: relative;
+    z-index: 101;
+  }
+
+  .nav-auth-mount {
+    position: relative;
+    z-index: 101;
   }
 
   .nav-container {
