@@ -20,10 +20,10 @@
       <button class="burger-btn" id="burger-btn" aria-label="Toggle menu">☰</button>
       <div id="auth-mount" class="nav-auth-mount"></div>
       <div class="nav-links" id="nav-links">
-        <a href="/" class="nav-link active">Pick Meals</a>
-        <a href="/kitchen.html" class="nav-link">Kitchen</a>
-        <a href="/recipes.html" class="nav-link">Manage Recipes</a>
-        <a href="/households.html" class="nav-link">Households</a>
+        <a href="/" class="nav-link active" data-i18n="nav.pick_meals">Pick Meals</a>
+        <a href="/kitchen.html" class="nav-link" data-i18n="nav.kitchen">Kitchen</a>
+        <a href="/recipes.html" class="nav-link" data-i18n="nav.manage_recipes">Manage Recipes</a>
+        <a href="/households.html" class="nav-link" data-i18n="nav.households">Households</a>
       </div>
     </div>
   </nav>
@@ -31,8 +31,8 @@
   <!-- ─── Header ─────────────────────────────────────────────── -->
   <header class="site-header">
     <div class="container">
-      <h1>What Should <span class="accent-orange">We</span> <span class="accent-green">Eat</span>?</h1>
-      <p class="tagline">Pick your meals for the week, we'll handle the shopping list.</p>
+      <h1 data-i18n="index.header.title">What Should <span class="accent-orange">We</span> <span class="accent-green">Eat</span>?</h1>
+      <p class="tagline" data-i18n="index.header.tagline">Pick your meals for the week, we'll handle the shopping list.</p>
     </div>
   </header>
 
@@ -42,31 +42,31 @@
     <section class="controls" id="controls">
       <div class="controls-row">
         <div class="control-group" style="max-width: 140px;">
-          <label for="recipe-count">How many?</label>
+          <label for="recipe-count" data-i18n="index.controls.how_many">How many?</label>
           <input type="number" id="recipe-count" min="1" max="20" value="5" />
         </div>
         <div class="control-group" style="max-width: 160px;">
-          <label for="max-kcal">Max kcal / serving</label>
-          <input type="number" id="max-kcal" placeholder="any" min="0" step="50" />
+          <label for="max-kcal" data-i18n="index.controls.max_kcal">Max kcal / serving</label>
+          <input type="number" id="max-kcal" data-i18n="index.any_placeholder" placeholder="any" min="0" step="50" />
         </div>
         <div class="control-group" style="max-width: 160px;">
-          <label for="max-time">Max total time (min)</label>
-          <input type="number" id="max-time" placeholder="any" min="0" step="5" />
+          <label for="max-time" data-i18n="index.controls.max_time">Max total time (min)</label>
+          <input type="number" id="max-time" data-i18n="index.any_placeholder" placeholder="any" min="0" step="5" />
         </div>
       </div>
 
       <div class="control-group" style="margin-top:16px;">
-        <label>Filter by tags</label>
+        <label data-i18n="index.controls.filter_tags">Filter by tags</label>
         <div class="tag-selector" id="tag-selector">
           <!-- filled by JS -->
         </div>
       </div>
 
       <div class="controls-actions">
-        <button class="btn btn-primary" id="btn-roll">
+        <button class="btn btn-primary" id="btn-roll" data-i18n="index.controls.btn_roll">
           🎲 Roll Recipes
         </button>
-        <button class="btn btn-secondary" id="btn-reroll-all" style="display:none;">
+        <button class="btn btn-secondary" id="btn-reroll-all" style="display:none;" data-i18n="index.controls.btn_reroll_all">
           🗑️ Clear All
         </button>
       </div>
@@ -75,8 +75,8 @@
     <!-- ─── Selected Recipes ─────────────────────────────────── -->
     <section id="recipes-section" style="display:none;">
       <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Your Meals <span class="badge" id="recipe-badge">0</span></h2>
-        <button class="btn btn-primary" id="btn-kitchen" style="display:none;">🧄 Send to Kitchen</button>
+        <h2><span data-i18n="index.recipes.your_meals">Your Meals</span> <span class="badge" id="recipe-badge">0</span></h2>
+        <button class="btn btn-primary" id="btn-kitchen" style="display:none;" data-i18n="index.recipes.btn_kitchen">🧄 Send to Kitchen</button>
       </div>
       <div class="recipes-grid" id="recipes-grid">
         <!-- filled by JS -->
@@ -87,7 +87,7 @@
     <section class="shopping-section" id="shopping-section" style="display:none;">
       <div class="shopping-card">
         <div class="shopping-card-header">
-          <h2>🛒 Shopping List</h2>
+          <h2 data-i18n="index.shopping.title">🛒 Shopping List</h2>
           <span class="badge" id="shop-badge" style="background:var(--green-pale);color:var(--green-dark);">0</span>
         </div>
         <ul class="shopping-list" id="shopping-list">
@@ -100,13 +100,14 @@
   <footer class="site-footer">
     <div class="container">
       <div style="font-size: 0.85rem;">
-        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;">Impressum</a>
+        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;" data-i18n="footer.impressum">Impressum</a>
       </div>
     </div>
   </footer>
 
   <div class="toast" id="toast"></div>
 
+  <script src="/i18n.js"></script>
   <script src="/auth.js"></script>
   <script src="/app.js"></script>
 </body>

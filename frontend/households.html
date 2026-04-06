@@ -19,10 +19,10 @@
       <button class="burger-btn" id="burger-btn" aria-label="Toggle menu">☰</button>
       <div id="auth-mount" class="nav-auth-mount"></div>
       <div class="nav-links" id="nav-links">
-        <a href="/" class="nav-link">Pick Meals</a>
-        <a href="/kitchen.html" class="nav-link">Kitchen</a>
-        <a href="/recipes.html" class="nav-link">Manage Recipes</a>
-        <a href="/households.html" class="nav-link active">Households</a>
+        <a href="/" class="nav-link" data-i18n="nav.pick_meals">Pick Meals</a>
+        <a href="/kitchen.html" class="nav-link" data-i18n="nav.kitchen">Kitchen</a>
+        <a href="/recipes.html" class="nav-link" data-i18n="nav.manage_recipes">Manage Recipes</a>
+        <a href="/households.html" class="nav-link active" data-i18n="nav.households">Households</a>
       </div>
     </div>
   </nav>
@@ -30,8 +30,8 @@
   <!-- ─── Header ─────────────────────────────────────────────── -->
   <header class="site-header">
     <div class="container">
-      <h1>Your <span class="accent-orange">Households</span></h1>
-      <p class="tagline">Switch between kitchens, or create a new one to share recipes with others.</p>
+      <h1 data-i18n="households.header.title">Your <span class="accent-orange">Households</span></h1>
+      <p class="tagline" data-i18n="households.header.tagline">Switch between kitchens, or create a new one to share recipes with others.</p>
     </div>
   </header>
 
@@ -39,13 +39,13 @@
 
     <!-- ─── Actions ──────────────────────────────────────────── -->
     <div class="hh-actions" style="display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap;">
-      <button id="btn-create-household" class="btn btn-primary">
+      <button id="btn-create-household" class="btn btn-primary" data-i18n="households.btn_create">
         <span style="font-size: 1.2rem;">+</span> New Household
       </button>
-      <button id="btn-join-household" class="btn btn-secondary">
+      <button id="btn-join-household" class="btn btn-secondary" data-i18n="households.btn_join">
         🔑 Join by Code
       </button>
-      <button id="btn-import-recipes" class="btn btn-secondary">
+      <button id="btn-import-recipes" class="btn btn-secondary" data-i18n="households.btn_import">
         📥 Import Recipes
       </button>
     </div>
@@ -58,7 +58,7 @@
     <!-- ─── Empty State ─────────────────────────────────────── -->
     <div id="hh-empty" class="empty-state" style="display:none;">
       <div class="icon">🏠</div>
-      <p>No households found. Create one to get started!</p>
+      <p data-i18n="households.empty_text">No households found. Create one to get started!</p>
     </div>
 
   </main>
@@ -154,11 +154,12 @@
   <footer class="site-footer">
     <div class="container">
       <div style="font-size: 0.85rem;">
-        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;">Impressum</a>
+        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;" data-i18n="footer.impressum">Impressum</a>
       </div>
     </div>
   </footer>
 
+  <script src="/i18n.js"></script>
   <script src="/auth.js"></script>
   <script src="/households.js"></script>
 </body>

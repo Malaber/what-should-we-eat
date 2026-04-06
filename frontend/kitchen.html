@@ -19,10 +19,10 @@
       <button class="burger-btn" id="burger-btn" aria-label="Toggle menu">☰</button>
       <div id="auth-mount" class="nav-auth-mount"></div>
       <div class="nav-links" id="nav-links">
-        <a href="/" class="nav-link">Pick Meals</a>
-        <a href="/kitchen.html" class="nav-link active">Kitchen</a>
-        <a href="/recipes.html" class="nav-link">Manage Recipes</a>
-        <a href="/households.html" class="nav-link">Households</a>
+        <a href="/" class="nav-link" data-i18n="nav.pick_meals">Pick Meals</a>
+        <a href="/kitchen.html" class="nav-link active" data-i18n="nav.kitchen">Kitchen</a>
+        <a href="/recipes.html" class="nav-link" data-i18n="nav.manage_recipes">Manage Recipes</a>
+        <a href="/households.html" class="nav-link" data-i18n="nav.households">Households</a>
       </div>
     </div>
   </nav>
@@ -30,17 +30,17 @@
   <!-- ─── Header ─────────────────────────────────────────────── -->
   <header class="site-header">
     <div class="container">
-      <h1>Your <span class="accent-orange">Kitchen</span></h1>
-      <p class="tagline">Time to cook! Tap a meal to view ingredients and instructions.</p>
+      <h1 data-i18n="kitchen.header.title">Your <span class="accent-orange">Kitchen</span></h1>
+      <p class="tagline" data-i18n="kitchen.header.tagline">Time to cook! Tap a meal to view ingredients and instructions.</p>
     </div>
   </header>
 
   <main class="container">
     <div id="empty-state" style="text-align:center; padding: 60px 20px; display:none;">
-      <div style="font-size:4rem; margin-bottom:1rem;">🍽️</div>
-      <h2 style="margin-bottom:1rem;">Your kitchen is empty</h2>
-      <p style="color:var(--text-light); margin-bottom:2rem;">You haven't sent any meals to the kitchen yet.</p>
-      <a href="/" class="btn btn-primary" style="display:inline-block; text-decoration:none;">Go Pick Meals</a>
+      <div style="font-size:4rem; margin-bottom:1rem;" data-i18n="kitchen.empty_emoji">🍽️</div>
+      <h2 style="margin-bottom:1rem;" data-i18n="kitchen.empty.title">Your kitchen is empty</h2>
+      <p style="color:var(--text-light); margin-bottom:2rem;" data-i18n="kitchen.empty.subtitle">You haven't sent any meals to the kitchen yet.</p>
+      <a href="/" class="btn btn-primary" style="display:inline-block; text-decoration:none;" data-i18n="kitchen.empty.btn_go">Go Pick Meals</a>
     </div>
 
     <section id="kitchen-section" style="display:none;">
@@ -59,26 +59,27 @@
       <h2 id="modal-title" style="font-family:var(--font-display); font-size:1.8rem; margin-bottom:12px;"></h2>
       <div id="modal-meta" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px;"></div>
 
-      <h3 style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);">Ingredients</h3>
+      <h3 style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);" data-i18n="kitchen.modal.ingredients">Ingredients</h3>
       <ul id="modal-ingredients" style="list-style:none; padding:0; margin-bottom:32px;"></ul>
 
-      <h3 style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);">Instructions</h3>
+      <h3 style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);" data-i18n="kitchen.modal.instructions">Instructions</h3>
       <div id="modal-instructions" style="display:flex; flex-direction:column; gap:16px; margin-bottom:32px;"></div>
 
       <div style="text-align:center;">
         <button id="btn-toggle-cooked" class="btn btn-primary"
-          style="padding:16px 32px; font-size:1.2rem; width:100%; max-width:400px;">✅ Mark as Cooked</button>
+          style="padding:16px 32px; font-size:1.2rem; width:100%; max-width:400px;" data-i18n="kitchen.modal.btn_cooked">✅ Mark as Cooked</button>
       </div>
     </div>
   </div>
   <footer class="site-footer">
     <div class="container">
       <div style="font-size: 0.85rem;">
-        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;">Impressum</a>
+        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;" data-i18n="footer.impressum">Impressum</a>
       </div>
     </div>
   </footer>
 
+  <script src="/i18n.js"></script>
   <script src="/auth.js"></script>
   <script src="/kitchen.js"></script>
 </body>

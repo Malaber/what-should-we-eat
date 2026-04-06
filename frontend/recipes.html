@@ -18,10 +18,10 @@
       <button class="burger-btn" id="burger-btn" aria-label="Toggle menu">☰</button>
       <div id="auth-mount" class="nav-auth-mount"></div>
       <div class="nav-links" id="nav-links">
-        <a href="/" class="nav-link">Pick Meals</a>
-        <a href="/kitchen.html" class="nav-link">Kitchen</a>
-        <a href="/recipes.html" class="nav-link active">Manage Recipes</a>
-        <a href="/households.html" class="nav-link">Households</a>
+        <a href="/" class="nav-link" data-i18n="nav.pick_meals">Pick Meals</a>
+        <a href="/kitchen.html" class="nav-link" data-i18n="nav.kitchen">Kitchen</a>
+        <a href="/recipes.html" class="nav-link active" data-i18n="nav.manage_recipes">Manage Recipes</a>
+        <a href="/households.html" class="nav-link" data-i18n="nav.households">Households</a>
       </div>
     </div>
   </nav>
@@ -29,21 +29,21 @@
   <!-- ─── Header ─────────────────────────────────────────────── -->
   <header class="site-header">
     <div class="container">
-      <h1>Manage <span class="accent-orange">Your</span> <span class="accent-green">Recipes</span></h1>
-      <p class="tagline">Create, edit, and curate your meal collection.</p>
+      <h1 data-i18n="recipes.header.title">Manage <span class="accent-orange">Your</span> <span class="accent-green">Recipes</span></h1>
+      <p class="tagline" data-i18n="recipes.header.tagline">Create, edit, and curate your meal collection.</p>
     </div>
   </header>
 
   <main class="container">
     <div class="section-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2>All Recipes <span class="badge" id="list-badge">0</span></h2>
-        <button class="btn btn-primary" id="btn-create-recipe">
+        <h2><span data-i18n="recipes.all_recipes">All Recipes</span> <span class="badge" id="list-badge">0</span></h2>
+        <button class="btn btn-primary" id="btn-create-recipe" data-i18n="recipes.btn_create">
           <span class="icon">➕</span> Create New Recipe
         </button>
       </div>
       <div class="search-bar-container">
-        <input type="text" id="recipe-search" placeholder="🔍 Search by name, tags, or ingredients..."
+        <input type="text" id="recipe-search" data-i18n="recipes.search_placeholder" placeholder="🔍 Search by name, tags, or ingredients..."
           class="search-input" />
       </div>
     </div>
@@ -61,10 +61,10 @@
     <div class="modal modal-lg">
       <div class="modal-header">
         <div style="display:flex; flex-direction:column; gap:12px;">
-          <h2 id="modal-title">Edit Recipe</h2>
+          <h2 id="modal-title" data-i18n="recipes.modal_edit.title">Edit Recipe</h2>
           <div id="recipe-mode-switch" style="display:none; gap:8px;">
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-manual">Manual</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-import">Import</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-manual" data-i18n="recipes.modal_edit.btn_manual">Manual</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-import" data-i18n="recipes.modal_edit.btn_import">Import</button>
           </div>
         </div>
         <button class="btn-icon" id="btn-close-modal">✕</button>
@@ -183,11 +183,12 @@
   <footer class="site-footer">
     <div class="container">
       <div style="font-size: 0.85rem;">
-        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;">Impressum</a>
+        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;" data-i18n="footer.impressum">Impressum</a>
       </div>
     </div>
   </footer>
 
+  <script src="/i18n.js"></script>
   <script src="/auth.js"></script>
   <script src="/manage.js"></script>
 </body>
