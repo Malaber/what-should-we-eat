@@ -8,7 +8,11 @@ def test_language_switch(page: Page):
     page.evaluate("window.localStorage.setItem('app_lang', 'en')")
     page.reload()
     
-    # Verify the language switcher exists
+    # Verify the language switcher exists. If on mobile, it might be behind a burger menu.
+    burger_btn = page.locator("#burger-btn")
+    if burger_btn.is_visible():
+        burger_btn.click()
+        
     lang_switcher = page.locator("#lang-switcher")
     expect(lang_switcher).to_be_visible()
     expect(lang_switcher).to_have_value("en")
@@ -27,6 +31,10 @@ def test_language_switch(page: Page):
     
     # Reload and test persistence
     page.reload()
+    
+    if burger_btn.is_visible():
+        burger_btn.click()
+        
     expect(lang_switcher).to_have_value("de")
     expect(nav_link).to_have_text("Gerichte planen")
     
