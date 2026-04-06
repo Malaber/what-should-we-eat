@@ -14,14 +14,15 @@
 
   <!-- ─── Navigation ─────────────────────────────────────────── -->
   <nav class="top-nav">
-    <div class="container nav-container" style="display: flex; justify-content: space-between; width: 100%;">
-      <div style="display: flex; gap: 24px; align-items: center;">
+    <div class="container nav-container">
+      <button class="burger-btn" id="burger-btn" aria-label="Toggle menu">☰</button>
+      <div id="auth-mount" class="nav-auth-mount"></div>
+      <div class="nav-links" id="nav-links">
         <a href="/" class="nav-link">Pick Meals</a>
         <a href="/kitchen.html" class="nav-link">Kitchen</a>
         <a href="/recipes.html" class="nav-link active">Manage Recipes</a>
         <a href="/households.html" class="nav-link">Households</a>
       </div>
-      <div id="auth-mount"></div>
     </div>
   </nav>
 
@@ -179,16 +180,16 @@
 
   <div class="toast" id="toast"></div>
 
+  <footer class="site-footer">
+    <div class="container">
+      <div style="font-size: 0.85rem;">
+        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;">Impressum</a>
+      </div>
+    </div>
+  </footer>
+
   <script src="/auth.js"></script>
   <script src="/manage.js"></script>
 </body>
-
-<footer class="site-footer">
-  <div class="container">
-    <div style="font-size: 0.85rem;">
-      <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;">Impressum</a>
-    </div>
-  </div>
-</footer>
 
 </html>
