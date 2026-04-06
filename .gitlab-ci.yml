@@ -19,7 +19,7 @@ unit-tests:
 
 e2e-tests:
   stage: e2e
-  image: mcr.microsoft.com/playwright/python:v1.30.0-focal
+  image: mcr.microsoft.com/playwright/python:v1.49.0-jammy
   variables:
     DATABASE_URL: "sqlite://"
     SECRET_KEY: "ci-e2e-test-secret"
