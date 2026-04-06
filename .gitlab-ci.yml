@@ -19,7 +19,7 @@ unit-tests:
 
 e2e-tests:
   stage: e2e
-  image: mcr.microsoft.com/playwright/python:v1.49.0-jammy
+  image: mcr.microsoft.com/playwright/python:v1.58.0-jammy
   variables:
     DATABASE_URL: "sqlite://"
     SECRET_KEY: "ci-e2e-test-secret"
@@ -27,8 +27,8 @@ e2e-tests:
   script:
     - pip install --no-cache-dir -r requirements.txt
     - playwright install
-    - make test-e2e
-    - make test-e2e-mobile
+    - python3 -m pytest execution/tests/e2e/ -v --tb=short --screenshot=only-on-failure --video=retain-on-failure --output=test-results
+    - python3 -m pytest execution/tests/e2e/ -v --tb=short --device="iPhone 13" --screenshot=only-on-failure --video=retain-on-failure --output=test-results
   only:
     - main
     - merge_requests
