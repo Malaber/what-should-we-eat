@@ -8,6 +8,9 @@ def test_language_switch(page: Page):
     page.evaluate("window.localStorage.setItem('app_lang', 'en')")
     page.reload()
     
+    # Hide login gate to prevent it from intercepting mobile burger clicks
+    page.evaluate("if(document.getElementById('login-gate')) document.getElementById('login-gate').style.display = 'none'")
+    
     # Verify the language switcher exists. If on mobile, it might be behind a burger menu.
     burger_btn = page.locator("#burger-btn")
     if burger_btn.is_visible():
@@ -31,6 +34,8 @@ def test_language_switch(page: Page):
     
     # Reload and test persistence
     page.reload()
+    
+    page.evaluate("if(document.getElementById('login-gate')) document.getElementById('login-gate').style.display = 'none'")
     
     if burger_btn.is_visible():
         burger_btn.click()
