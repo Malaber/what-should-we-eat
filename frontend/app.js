@@ -58,15 +58,15 @@ async function init() {
     }
   });
 
+  $btnRoll.addEventListener('click', rollRecipes);
+  $btnRerollAll.addEventListener('click', clearAll);
+  $btnKitchen.addEventListener('click', () => { window.location.href = '/kitchen.html'; });
+
   // Initial load if already logged in (token restored from storage)
   if (isLoggedIn()) {
     await loadTags();
     await loadMealPlan();
   }
-
-  $btnRoll.addEventListener('click', rollRecipes);
-  $btnRerollAll.addEventListener('click', clearAll);
-  $btnKitchen.addEventListener('click', () => { window.location.href = '/kitchen.html'; });
 }
 
 // ── Tags ───────────────────────────────────────────────────────

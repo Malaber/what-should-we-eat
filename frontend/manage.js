@@ -60,9 +60,7 @@ const $toast = document.getElementById('toast');
 
 // ── Init ───────────────────────────────────────────────────────
 async function init() {
-  await loadTags();
-  await loadRecipes();
-
+  // Attach all event listeners synchronously so UI is responsive
   // Search
   $recipeSearch.addEventListener('input', handleSearch);
 
@@ -99,8 +97,13 @@ async function init() {
   // Delete modal
   document.getElementById('btn-cancel-delete').addEventListener('click', () => {
     $deleteModal.style.display = 'none';
+    recipeToDelete = null;
   });
   document.getElementById('btn-confirm-delete').addEventListener('click', performDelete);
+
+  // Now perform initial data load asynchronously
+  await loadTags();
+  await loadRecipes();
 }
 
 // ── Data Fetching ──────────────────────────────────────────────

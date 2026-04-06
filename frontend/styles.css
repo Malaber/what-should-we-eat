@@ -95,6 +95,7 @@ body::before {
   display: flex;
   gap: 24px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .nav-link {
@@ -164,7 +165,7 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex: 1;
+  flex: 1 0 auto;
   min-width: 160px;
 }
 
@@ -656,6 +657,7 @@ body::before {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
