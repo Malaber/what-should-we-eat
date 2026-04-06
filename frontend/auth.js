@@ -273,6 +273,7 @@ window.WSWEAuth = new AuthHandler();
     const isOpen = navLinks.classList.toggle('open');
     burger.textContent = isOpen ? '✕' : '☰';
     burger.setAttribute('aria-expanded', isOpen);
+    document.body.style.overflow = isOpen ? 'hidden' : '';
   });
 
   // Close menu when a nav link is clicked
@@ -280,14 +281,18 @@ window.WSWEAuth = new AuthHandler();
     link.addEventListener('click', () => {
       navLinks.classList.remove('open');
       burger.textContent = '☰';
+      document.body.style.overflow = '';
     });
   });
 
   // Close menu when clicking outside
   document.addEventListener('click', (e) => {
     if (!navLinks.contains(e.target) && !burger.contains(e.target)) {
-      navLinks.classList.remove('open');
-      burger.textContent = '☰';
+      if (navLinks.classList.contains('open')) {
+        navLinks.classList.remove('open');
+        burger.textContent = '☰';
+        document.body.style.overflow = '';
+      }
     }
   });
 })();
