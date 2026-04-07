@@ -390,15 +390,41 @@ function copyShoppingList() {
   items.forEach(li => {
     const qty = li.querySelector('.item-qty').textContent.trim();
     const name = li.querySelector('.item-name').textContent.trim();
-    text += `${qty} ${name}`.trim() + '\n';
+    const line = qty ? `${qty} ${name}` : name;
+    text += `- ${line}\n`;
   });
   
-  navigator.clipboard.writeText(text).then(() => {
-    toast(window.t('index.shopping.copied', 'Copied to clipboard!'));
-  }).catch(err => {
+  const onSuccess = () => toast(window.t('index.shopping.copied', 'Copied to clipboard!'));
+  const onError = (err) => {
     console.error('Failed to copy', err);
-    toast('Failed to copy details');
-  });
+    toast('Failed to copy');
+  };
+
+  // Fallback for mobile/HTTP environments where navigator.clipboard might be missing
+  if (!navigator.clipboard || !window.isSecureContext) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      if (document.execCommand('copy')) {
+        onSuccess();
+      } else {
+        onError(new Error("execCommand false"));
+      }
+    } catch (err) {
+      onError(err);
+    }
+    document.body.removeChild(textArea);
+    return;
+  }
+  
+  navigator.clipboard.writeText(text).then(onSuccess).catch(onError);
 }
 
 // ── Helpers ────────────────────────────────────────────────────

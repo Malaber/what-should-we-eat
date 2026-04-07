@@ -16,7 +16,7 @@
   "index.recipes.your_meals": "Deine Gerichte",
   "index.recipes.btn_kitchen": "🧄 Ab in die Küche",
   "index.shopping.title": "🛒 Einkaufsliste",
-  "index.shopping.btn_copy": "📋 Kopieren",
+  "index.shopping.btn_copy": "Kopieren",
   "index.shopping.copied": "In die Zwischenablage kopiert!",
 
   "kitchen.header.title": "Deine <span class=\"accent-orange\">Küche</span>",

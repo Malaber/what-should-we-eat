@@ -1187,6 +1187,14 @@ body::before {
     padding: 16px 18px;
   }
 
+  .btn-copy .btn-text {
+    display: none;
+  }
+
+  .btn-copy {
+    padding: 6px 8px; /* Tighter padding for icon-only button */
+  }
+
   /* ── Recipe card footer buttons ─────────────── */
   .recipe-card-footer {
     padding: 10px 16px;
