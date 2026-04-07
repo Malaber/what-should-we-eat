@@ -64,6 +64,7 @@
   "recipes.modal_edit.import_title": "Rezept importieren",
   "recipes.modal_edit.import_desc": "Sende eine Rezept-URL, um sie vom Server scannen zu lassen, und überprüfe das Resultat vor dem Speichern.",
   "recipes.modal_edit.label_source": "Quelle",
+  "recipes.modal_edit.source_instagram": "Instagram (später)",
   "recipes.modal_edit.label_url": "Rezept URL",
   "recipes.modal_edit.btn_import_submit": "In Formular laden",
   "recipes.modal_edit.label_name": "Rezeptname",

@@ -64,6 +64,7 @@
   "recipes.modal_edit.import_title": "Import Recipe",
   "recipes.modal_edit.import_desc": "Send a recipe URL to the server, let it fetch and parse the page, then review the imported fields before saving.",
   "recipes.modal_edit.label_source": "Source",
+  "recipes.modal_edit.source_instagram": "Instagram (later)",
   "recipes.modal_edit.label_url": "Rezept URL",
   "recipes.modal_edit.btn_import_submit": "Import Into Form",
   "recipes.modal_edit.label_name": "Recipe Name",
