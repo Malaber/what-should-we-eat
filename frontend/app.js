@@ -37,7 +37,7 @@ const $shoppingList = document.getElementById('shopping-list');
 const $shopBadge = document.getElementById('shop-badge');
 const $toast = document.getElementById('toast');
 const $btnKitchen = document.getElementById('btn-kitchen');
-
+const $btnCopyShopping = document.getElementById('btn-copy-shopping');
 
 // ── Init ───────────────────────────────────────────────────────
 async function init() {
@@ -61,6 +61,10 @@ async function init() {
   $btnRoll.addEventListener('click', rollRecipes);
   $btnRerollAll.addEventListener('click', clearAll);
   $btnKitchen.addEventListener('click', () => { window.location.href = '/kitchen.html'; });
+  
+  if ($btnCopyShopping) {
+    $btnCopyShopping.addEventListener('click', copyShoppingList);
+  }
 
   window.addEventListener('i18n:loaded', () => {
     if (selectedRecipes.length > 0) renderRecipes();
@@ -369,12 +373,31 @@ function renderShoppingList(items) {
     `;
   }).join('');
 
-  // Checkboxes
+// Checkboxes
   $shoppingList.querySelectorAll('.checkbox').forEach(cb => {
     cb.addEventListener('click', () => {
       cb.classList.toggle('checked');
       cb.closest('.shopping-item').classList.toggle('checked-item');
     });
+  });
+}
+
+function copyShoppingList() {
+  const items = $shoppingList.querySelectorAll('.shopping-item');
+  if (!items.length) return;
+  
+  let text = '';
+  items.forEach(li => {
+    const qty = li.querySelector('.item-qty').textContent.trim();
+    const name = li.querySelector('.item-name').textContent.trim();
+    text += `${qty} ${name}`.trim() + '\n';
+  });
+  
+  navigator.clipboard.writeText(text).then(() => {
+    toast(window.t('index.shopping.copied', 'Copied to clipboard!'));
+  }).catch(err => {
+    console.error('Failed to copy', err);
+    toast('Failed to copy details');
   });
 }
 

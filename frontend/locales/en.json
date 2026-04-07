@@ -16,6 +16,8 @@
   "index.recipes.your_meals": "Your Meals",
   "index.recipes.btn_kitchen": "🧄 Send to Kitchen",
   "index.shopping.title": "🛒 Shopping List",
+  "index.shopping.btn_copy": "📋 Copy",
+  "index.shopping.copied": "Copied to clipboard!",
 
   "kitchen.header.title": "Your <span class=\"accent-orange\">Kitchen</span>",
   "kitchen.header.tagline": "Time to cook! Tap a meal to view ingredients and instructions.",

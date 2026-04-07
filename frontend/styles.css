@@ -603,12 +603,45 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .shopping-card-header h2 {
   font-family: var(--font-display);
   font-size: 1.4rem;
   color: var(--green-dark);
+  margin: 0;
+}
+
+.btn-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(86, 155, 110, 0.15); /* light green border */
+  color: var(--green-dark);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-copy:hover {
+  background: #FFF;
+  border-color: rgba(86, 155, 110, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(86, 155, 110, 0.1);
+}
+
+.btn-copy:active {
+  transform: translateY(0);
 }
 
 .shopping-list {
