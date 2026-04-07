@@ -109,6 +109,25 @@ body::before {
   margin-left: auto;
 }
 
+.lang-switcher {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.lang-switcher:focus,
+.lang-switcher:hover {
+  border-color: var(--orange-dark);
+}
+
 .burger-btn {
   display: none;
   background: none;
@@ -893,6 +912,30 @@ body::before {
     padding: 0;
     border-top: none;
     width: auto;
+  }
+
+  .nav-links .lang-switcher {
+    margin-left: 0;
+    margin-top: 16px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text);
+    padding: 8px 0;
+    width: 100%;
+    cursor: pointer;
+  }
+
+  .nav-links .lang-switcher:focus,
+  .nav-links .lang-switcher:active {
+    color: var(--orange-dark);
+    outline: none;
+    background: transparent;
   }
 
   /* ── Layout ─────────────────────────────────── */

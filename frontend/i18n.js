@@ -84,14 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const select = document.createElement('select');
         select.id = 'lang-switcher';
         select.className = 'lang-switcher';
-        select.style.marginLeft = 'auto'; // push to right
-        select.style.padding = '4px 8px';
-        select.style.borderRadius = '6px';
-        select.style.border = '1px solid var(--border)';
-        select.style.background = 'var(--bg-soft)';
-        select.style.cursor = 'pointer';
-        select.style.fontFamily = 'inherit';
-        select.style.fontSize = '14px';
         
         select.innerHTML = `
             <option value="en">🇬🇧 EN</option>
