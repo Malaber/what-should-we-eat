@@ -17,7 +17,9 @@ load_dotenv(".env")
 
 database_url = os.getenv("DATABASE_URL")
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+    # ConfigParser treats percent signs as interpolation, while URLs use them
+    # for encoded password characters. Escape only at the configuration boundary.
+    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 target_metadata = models.Base.metadata
 
