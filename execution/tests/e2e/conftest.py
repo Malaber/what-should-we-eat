@@ -50,22 +50,49 @@ def server_url():
         thread.join()
         raise RuntimeError("E2E Test server could not start")
         
-    yield f"http://127.0.0.1:{port}"
+    os.environ["APP_BASE_URL"] = f"http://localhost:{port}"
+    yield f"http://localhost:{port}"
     
     server.should_exit = True
     thread.join(timeout=2.0)
 
 @pytest.fixture(autouse=True)
-def reset_db_data():
-    """Create all tables before each test, drop them after."""
-    Base.metadata.create_all(bind=engine)
+def _reset_tables():
+    # Override the unit suite's in-memory schema fixture: real HTTP requests use
+    # separate connections and must not share StaticPool's one SQLite connection.
     yield
-    Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def reset_db_data(tmp_path):
+    from sqlalchemy import create_engine, event
+    from sqlalchemy.orm import sessionmaker
+    from execution.db.database import get_db
+    test_engine = create_engine(f"sqlite:///{tmp_path / 'browser.db'}", connect_args={"check_same_thread": False})
+    @event.listens_for(test_engine, "connect")
+    def foreign_keys(connection, _):
+        connection.execute("PRAGMA foreign_keys=ON")
+    Base.metadata.create_all(test_engine)
+    factory = sessionmaker(bind=test_engine)
+    def test_db():
+        with factory() as session:
+            yield session
+    app.dependency_overrides[get_db] = test_db
+    yield
+    app.dependency_overrides.pop(get_db, None)
+    test_engine.dispose()
 
 @pytest.fixture
 def page(context, server_url):
     """Override playwright's page fixture to automatically navigate to the server URL."""
     page = context.new_page()
+    cdp = context.new_cdp_session(page)
+    cdp.send("WebAuthn.enable")
+    cdp.send("WebAuthn.addVirtualAuthenticator", {"options": {
+        "protocol": "ctap2", "transport": "internal", "hasResidentKey": True,
+        "hasUserVerification": True, "isUserVerified": True,
+        "automaticPresenceSimulation": True,
+    }})
     # Adding a custom helper to the page object
     page.base_url = server_url
     yield page

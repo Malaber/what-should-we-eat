@@ -1,0 +1,5 @@
+{
+  "fill-specializations": [{"value": {"solid": "srgb:0.98,0.95,0.89,1.0"}}],
+  "groups": [{"layers": [{"image-name": "Onionary.png", "name": "Onionary"}]}],
+  "supported-platforms": {"squares": "shared"}
+}

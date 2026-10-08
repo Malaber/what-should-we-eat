@@ -178,3 +178,10 @@ To inspect or apply migrations directly:
 ├── docker-compose.yml
 └── requirements.txt
 ```
+
+## Onionary iOS companion
+
+The native cooking companion lives in [`ios/Onionary`](ios/Onionary/README.md).
+The guide covers passkey migration, custom backends, simulator tests, GitHub
+Actions, and background TestFlight uploads. Run migrations and enroll existing
+accounts before disabling legacy password authentication.

@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from execution.api.routers import recipes, shopping_list, tags, users, households, meal_plan
+from execution.api.routers import recipes, shopping_list, tags, users, households, meal_plan, passkeys
 
 
 app = FastAPI(
@@ -20,16 +20,17 @@ app = FastAPI(
     description="Manage recipes, plan weekly meals, and generate shopping lists.",
 )
 
-# CORS — allow everything during development
+# Credentialed browser requests are restricted to the configured public origin.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[passkeys.origin()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Register routers
+app.include_router(passkeys.router)
 app.include_router(recipes.router)
 app.include_router(tags.router)
 app.include_router(shopping_list.router)

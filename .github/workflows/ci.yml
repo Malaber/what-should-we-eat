@@ -1,0 +1,51 @@
+name: Build and test
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: sqlite:///ci.db
+      SECRET_KEY: ci-only-secret-not-for-production-32-bytes
+      APP_BASE_URL: http://localhost:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m execution.db.init_db
+      - run: python -m pytest
+      - run: docker build -t onionary:ci .
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium
+      - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium --device='iPhone 13'
+  ios:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26 or newer
+        run: |
+          xcodebuild -version
+          xcodebuild -version | head -1 | awk '{ if ($2 + 0 < 26) exit 1 }'
+      - run: brew install xcodegen
+      - name: Core tests, simulator build, and UI tests
+        run: bash ios/Onionary/Scripts/test.sh

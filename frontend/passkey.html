@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Onionary</title>
+  <link rel="stylesheet" href="/passkey.css">
+  <script type="module" src="/passkey.js"></script>
+</head>
+<body><main>
+  <div class="mark" aria-hidden="true">🧅</div><p class="eyebrow">YOUR COOKING COMPANION</p>
+  <h1>Welcome to Onionary.</h1><p>Your recipes. Your kitchen. Pick up where you left off.</p>
+  <p id="server"></p><p id="error" role="alert"></p>
+  <button id="sign-in">Sign in with a passkey</button>
+  <button id="enroll" hidden>Create passkey for your account</button>
+  <details id="registration"><summary>New here? Create an account</summary>
+    <form id="register"><label>Your name<input name="display_name" autocomplete="name" required maxlength="255"></label>
+    <label>Email<input name="email" type="email" autocomplete="email" required></label>
+    <button>Create account with a passkey</button></form>
+  </details>
+  <p class="help">Use Face ID, Touch ID, a security key, or your password manager. Existing account without a passkey? Ask your server administrator for an enrollment link.</p>
+</main></body></html>

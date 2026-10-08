@@ -2,6 +2,7 @@
 users.py — Endpoints for user registration, login, and profile.
 """
 
+import os
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -14,6 +15,11 @@ from execution.api.schemas import UserCreate, UserOut, Token, HouseholdMembershi
 from execution.api.auth import get_password_hash, verify_password, create_access_token, get_current_active_user
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+def require_legacy_auth():
+    if os.getenv("ALLOW_LEGACY_PASSWORD_AUTH", "false").lower() != "true":
+        raise HTTPException(410, "Password sign-in is disabled. Use a passkey.")
 
 
 def _build_user_out(user: User, db: Session) -> UserOut:
@@ -44,6 +50,7 @@ def _build_user_out(user: User, db: Session) -> UserOut:
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
+    require_legacy_auth()
     db_user = db.query(User).filter(User.email == user_data.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -60,8 +67,8 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         email=user_data.email,
         name=user_data.name,
         hashed_password=hashed_password,
-        is_active=user_data.is_active,
-        is_admin=user_data.is_admin,
+        is_active=True,
+        is_admin=False,
         personal_household_id=household.id,
         active_household_id=household.id
     )
@@ -79,6 +86,7 @@ def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
     db: Session = Depends(get_db)
 ):
+    require_legacy_auth()
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(

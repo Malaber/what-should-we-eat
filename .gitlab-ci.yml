@@ -26,9 +26,9 @@ e2e-tests:
     DEMO_HOUSEHOLD_ID: "99999"
   script:
     - pip install --no-cache-dir -r requirements.txt
-    - playwright install
-    - python3 -m pytest execution/tests/e2e/ -v --tb=short --screenshot=only-on-failure --video=retain-on-failure --output=test-results
-    - python3 -m pytest execution/tests/e2e/ -v --tb=short --device="iPhone 13" --screenshot=only-on-failure --video=retain-on-failure --output=test-results
+    - playwright install chromium
+    - python3 -m pytest execution/tests/e2e/ -o addopts='' --browser chromium -v --tb=short --screenshot=only-on-failure --video=retain-on-failure --output=test-results
+    - python3 -m pytest execution/tests/e2e/ -o addopts='' --browser chromium -v --tb=short --device="iPhone 13" --screenshot=only-on-failure --video=retain-on-failure --output=test-results
   only:
     - main
     - merge_requests

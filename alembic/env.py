@@ -5,7 +5,7 @@ from alembic import context
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
-from execution.db import models
+from execution.db import models, passkeys
 
 config = context.config
 
