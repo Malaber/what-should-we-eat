@@ -29,7 +29,7 @@ between devices. Tokens are stored in Keychain.
 1. Install root `requirements.txt`. It pins `fastpasskey` 0.2.6 with the same wheel
    hash used by Planini and Tracy.
 2. Set `APP_BASE_URL` to the exact public HTTPS origin, such as
-   `https://onionary.malaber.de`, without an API path or query. Local browser
+   `https://onionary-test.malaber.de`, without an API path or query. Local browser
    development can use `http://localhost:8000`; IP addresses cannot be RP IDs.
 3. Configure the database and a random `SECRET_KEY` of at least 32 characters.
 4. Run `python -m execution.db.init_db` before deploying the updated application.
@@ -111,3 +111,5 @@ python3 execution/start_onionary_testflight.py 1.0.0 1 --archive /absolute/path/
 
 The worker validates the archive's bundle ID and version. Archive/export commands
 use the system PATH because Homebrew rsync can break Xcode's IPA packaging.
+
+See [development deployment](../../docs/development-deployment.md) for GHCR images, tag versions, separate GitHub Pages hosting, and screenshot CI.

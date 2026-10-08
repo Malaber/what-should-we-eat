@@ -185,3 +185,7 @@ The native cooking companion lives in [`ios/Onionary`](ios/Onionary/README.md).
 The guide covers passkey migration, custom backends, simulator tests, GitHub
 Actions, and background TestFlight uploads. Run migrations and enroll existing
 accounts before disabling legacy password authentication.
+
+## Fork development
+
+Development branch: `codex/onionary-ios-companion`. See [test-backend deployment and release guide](docs/development-deployment.md) for GitHub Actions, GHCR images, Git tags, App Store screenshots, and the separate Onionary website.

@@ -14,3 +14,12 @@ directives/
 resources/
 skills/
 docker-compose.yml
+
+venv/
+.venv/
+ios/
+website/
+.github/
+deploy/
+docs/
+.env.local

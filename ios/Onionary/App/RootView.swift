@@ -43,7 +43,7 @@ struct ConnectionView: View {
             Text("Welcome to Onionary. Connect to your kitchen, choose a recipe, and make it your own.").foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Backend address").font(.caption.bold())
-                TextField("https://onionary.malaber.de", text: $store.backend)
+                TextField("https://onionary-test.malaber.de", text: $store.backend)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     .textFieldStyle(.roundedBorder).accessibilityIdentifier("backend")
                 Text("Choose your own Onionary server. Your passkey is verified on that server in a secure browser window.")

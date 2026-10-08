@@ -1,0 +1,37 @@
+name: App Store screenshots
+on:
+  push:
+    branches: [codex/onionary-ios-companion]
+    paths: ['ios/**', 'execution/marketing_screenshots.py', '.github/workflows/screenshots.yml']
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: macos-26
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: iPhone 17 Pro Max
+            family: iphone
+          - device: iPad Pro 13-inch (M5)
+            family: ipad
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: brew install xcodegen
+      - name: Capture real app screenshots
+        env:
+          DEVICE: ${{ matrix.device }}
+          FAMILY: ${{ matrix.family }}
+        run: python3 execution/marketing_screenshots.py --device "$DEVICE" --output ".tmp/marketing/$FAMILY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: onionary-appstore-${{ matrix.family }}-en-US
+          path: .tmp/marketing/${{ matrix.family }}/
+          retention-days: 14

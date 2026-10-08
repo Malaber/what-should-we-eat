@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 package_dir=$(cd "$(dirname "$0")/.." && pwd)
-marketing_version=${1:-}
+marketing_version=${1:-$(python3 "$package_dir/../../execution/version.py" --ios)}
 build_number=${2:-}
 if [[ ! "$marketing_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || ! "$build_number" =~ ^[1-9][0-9]*$ ]]; then
   echo "Usage: $0 <marketing-version> <build-number>" >&2

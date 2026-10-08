@@ -34,3 +34,5 @@ DerivedData/
 *.xcresult/
 *.xcarchive/
 *.ipa
+
+deploy/test.env

@@ -9,7 +9,7 @@ final class AppStore {
     var kitchen = Kitchen()
     var error: String?
     var busy = false
-    var backend = "https://onionary.malaber.de"
+    var backend = "https://onionary-test.malaber.de"
     private var file: URL?
     private let signIn = BrowserSignIn()
 
