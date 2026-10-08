@@ -13,7 +13,7 @@ Use a separate hostname, for example `onionary-test.malaber.de`. The hostname
 1. Push the development branch and wait for **Build and test** to finish. Its
    final job publishes `ghcr.io/malaber/what-should-we-eat:development` plus an
    immutable `sha-<full commit>` image for AMD64 and ARM64. PRs never publish.
-2. On a test server with Docker Compose, clone this repository/branch:
+2. On a test server with Docker Compose and your existing Traefik, clone this repository/branch:
 
    ```sh
    git clone --branch codex/onionary-ios-companion https://github.com/Malaber/what-should-we-eat.git
@@ -25,9 +25,12 @@ Use a separate hostname, for example `onionary-test.malaber.de`. The hostname
 
 3. Put the two generated values into `POSTGRES_PASSWORD` and `SECRET_KEY` in
    `deploy/test.env`. Set `BACKEND_HOST`. Use hex for the database password to
-   avoid URL-encoding problems. Point that hostname's DNS A/AAAA to your server;
-   open ports 80/443. This compose stack owns those ports. If you already have a
-   reverse proxy, adapt the proxy service instead of running two on the same ports.
+   avoid URL-encoding problems. Point that hostname's DNS A/AAAA to your Traefik
+   server. The defaults match Planini: Docker network `traefik_external`,
+   entrypoint `websecure`, and certificate resolver `lets-encr`. Adjust the
+   `TRAEFIK_*` values if your existing Traefik uses different names. Traefik must
+   already be attached to that external network with its Docker provider enabled.
+   This stack publishes no host ports and runs no TLS proxy.
 4. If GHCR package visibility is private, either make the package public in
    GitHub package settings or authenticate the server with a read:packages token:
 
@@ -40,13 +43,16 @@ Use a separate hostname, for example `onionary-test.malaber.de`. The hostname
    ```sh
    docker compose --env-file deploy/test.env -f deploy/compose.test.yml pull
    docker compose --env-file deploy/test.env -f deploy/compose.test.yml up -d
-   docker compose --env-file deploy/test.env -f deploy/compose.test.yml logs migrate api proxy
+   docker compose --env-file deploy/test.env -f deploy/compose.test.yml logs migrate api
    curl --fail https://onionary-test.malaber.de/health
    ```
 
    Postgres becomes healthy before the migration job runs; the API starts only
-   after migrations succeed. Caddy provisions TLS. No database port is public.
-   This stack uses its own named database volume, separate from production.
+   after migrations succeed. Traefik terminates TLS and forwards HTTP to the
+   Python app on port 8000. Only the API joins the Traefik network; Postgres
+   and the migration job stay on the stack's default network. This stack uses
+   its own named database volume, separate from production. No database port
+   is public. No separate migration command is needed for initial startup.
 6. Open `/auth/login` on the test backend to create a passkey account. Existing
    imported accounts need enrollment:
 
@@ -62,13 +68,18 @@ Use a separate hostname, for example `onionary-test.malaber.de`. The hostname
 
 ## Update and rollback
 
-After a green development pipeline, pull images, rerun migrations, then recreate:
+After a green development pipeline, pull images and recreate the stack:
 
 ```sh
 docker compose --env-file deploy/test.env -f deploy/compose.test.yml pull
-docker compose --env-file deploy/test.env -f deploy/compose.test.yml run --rm migrate
 docker compose --env-file deploy/test.env -f deploy/compose.test.yml up -d
 ```
+
+Compose reruns the exited migration job before starting the updated API. If
+migration fails, inspect `logs migrate`; the new API will not start. The app
+image itself runs only Uvicorn; deployments outside this Compose setup must
+run `python -m execution.db.init_db` before starting the app. Keep a single
+migration job per database, even if running multiple API replicas.
 
 For reproducible deployments set `ONIONARY_IMAGE` to `ghcr.io/malaber/what-should-we-eat:sha-<full commit>`.
 Back up the database before upgrades:

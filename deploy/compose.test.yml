@@ -38,18 +38,21 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-  proxy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports: ['80:80', '443:443']
-    environment:
-      BACKEND_HOST: ${BACKEND_HOST:?Set BACKEND_HOST}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on: [api]
+    networks:
+      - default
+      - traefik
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik_external}
+      traefik.http.services.onionary-test.loadbalancer.server.port: '8000'
+      traefik.http.routers.onionary-test.rule: Host(`${BACKEND_HOST:?Set BACKEND_HOST}`)
+      traefik.http.routers.onionary-test.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.onionary-test.service: onionary-test
+      traefik.http.routers.onionary-test.tls: 'true'
+      traefik.http.routers.onionary-test.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-lets-encr}
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik_external}
 volumes:
   pgdata:
-  caddy_data:
-  caddy_config:

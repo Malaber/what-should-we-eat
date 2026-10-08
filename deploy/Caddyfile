@@ -1,3 +1,0 @@
-{$BACKEND_HOST} {
-    reverse_proxy api:8000
-}
