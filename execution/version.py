@@ -13,7 +13,7 @@ def version():
     if supplied:
         return supplied
     tags = subprocess.run(['git', 'tag', '--merged', 'HEAD', '--list', 'v*'], cwd=ROOT, text=True, capture_output=True, check=True).stdout.splitlines()
-    versions = [tuple(map(int, t[1:].split('.'))) for t in tags if re.fullmatch(r'v\d+\.\d+\.\d+', t)]
+    versions = [tuple(map(int, t[1:].split('-')[0].split('.'))) for t in tags if re.fullmatch(r'v\d+\.\d+\.\d+(?:-rc\.\d+)?', t)]
     base = '.'.join(map(str, max(versions))) if versions else '0.2.0'
     exact = subprocess.run(['git', 'tag', '--points-at', 'HEAD'], cwd=ROOT, text=True, capture_output=True, check=True).stdout.splitlines()
     release_tags = [t[1:] for t in exact if re.fullmatch(r'v\d+\.\d+\.\d+(?:-rc\.\d+)?', t)]

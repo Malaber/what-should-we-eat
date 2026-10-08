@@ -21,3 +21,9 @@ def test_stable_tag_and_container_version(monkeypatch):
     monkeypatch.delenv('APP_VERSION')
     with patch('execution.version.subprocess.run', side_effect=[SimpleNamespace(stdout='v0.2.0\nv0.3.0\n'),SimpleNamespace(stdout='v0.3.0\n')]):
         assert version() == '0.3.0'
+
+
+def test_next_candidate_sets_development_base(monkeypatch):
+    monkeypatch.delenv('APP_VERSION', raising=False)
+    with patch('execution.version.subprocess.run', side_effect=[SimpleNamespace(stdout='v0.2.0\nv0.3.0-rc.1\n'),SimpleNamespace(stdout='')]), patch('execution.version.subprocess.check_output',return_value='abc123\n'):
+        assert version() == '0.3.0-dev.abc123'
