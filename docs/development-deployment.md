@@ -131,7 +131,14 @@ App Store URLs:
 
 **App Store screenshots** captures four real app screens in English on iPhone
 and 13-inch iPad, with a fixed clock and synthetic recipe fixture. Download each
-workflow artifact's `en-US/` PNGs; dimensions are validated. No customer data or
+workflow artifact's `en-US/` PNGs; dimensions are validated. Version tags whose
+commits are on `main` also publish `onionary-appstore-iphone-en-US.zip` and
+`onionary-appstore-ipad-en-US.zip` on the matching GitHub Release. The workflow
+creates the release if missing (prerelease for RC tags) and replaces these assets
+on a rerun. Publishing an existing release also triggers capture for that tag.
+Both devices must succeed before release upload; archives contain only PNGs.
+Main branch pushes capture artifacts when app/screenshot code changes; create a
+`v*` tag on the tested main commit to publish the corresponding release assets. No customer data or
 backend credentials are used. Screenshots are raw app captures, not fabricated UI.
 Local equivalent:
 

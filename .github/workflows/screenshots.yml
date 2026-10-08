@@ -1,9 +1,11 @@
 name: App Store screenshots
 on:
   push:
-    branches: [codex/onionary-ios-companion]
-    paths: ['ios/**', 'execution/marketing_screenshots.py', '.github/workflows/screenshots.yml']
+    branches: [main, codex/onionary-ios-companion]
+    paths: ['ios/**', 'execution/marketing_screenshots.py', 'execution/package_marketing_screenshots.py', '.github/workflows/screenshots.yml']
     tags: ['v*']
+  release:
+    types: [published]
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,3 +37,43 @@ jobs:
           name: onionary-appstore-${{ matrix.family }}-en-US
           path: .tmp/marketing/${{ matrix.family }}/
           retention-days: 14
+
+  release-assets:
+    needs: screenshots
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: screenshot-release-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check release belongs to main
+        id: main
+        run: |
+          if git merge-base --is-ancestor HEAD origin/main; then
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Screenshots remain workflow artifacts: release commit is not on main." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/download-artifact@v4
+        if: steps.main.outputs.eligible == 'true'
+        with:
+          pattern: onionary-appstore-*-en-US
+          path: screenshots
+      - name: Package PNGs and attach to matching release
+        if: steps.main.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 execution/package_marketing_screenshots.py screenshots release-assets
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            flags=()
+            if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease); fi
+            gh release create "$RELEASE_TAG" --verify-tag --generate-notes "${flags[@]}"
+          fi
+          gh release upload "$RELEASE_TAG" release-assets/*.zip --clobber
