@@ -146,3 +146,18 @@ Local equivalent:
 python3 execution/marketing_screenshots.py --device 'iPhone 17 Pro Max' --output .tmp/marketing-iphone
 python3 execution/marketing_screenshots.py --device 'iPad Pro 13-inch (M5)' --output .tmp/marketing-ipad
 ```
+
+## Verify the actual container locally
+
+```sh
+docker build -t onionary:local .
+python3 execution/test_container.py --image onionary:local
+```
+
+This checks Python 3.14, UID 1008, fresh/repeated PostgreSQL migrations, frontend,
+authenticated-route protection, and passkey challenge persistence using an
+isolated disposable database with a punctuation-containing test password.
+It publishes no host ports and removes only resources it creates.
+Backend images publish after backend/browser checks; iOS tests run separately.
+Before retrying a deployment, confirm the **publish-image** job succeeded for
+its commit. Prefer `sha-<full commit>` to avoid retrying an old `development` image.

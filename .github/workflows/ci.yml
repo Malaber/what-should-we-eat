@@ -13,17 +13,6 @@ concurrency:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: onionary
-          POSTGRES_DB: onionary
-          POSTGRES_PASSWORD: ci-postgres-only
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U onionary -d onionary"
-          --health-interval 5s --health-timeout 5s --health-retries 20
     env:
       DATABASE_URL: sqlite:///ci.db
       SECRET_KEY: ci-only-secret-not-for-production-32-bytes
@@ -34,30 +23,14 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
           cache: pip
       - run: pip install -r requirements.txt
       - run: python -m execution.db.init_db
       - run: python -m pytest
       - run: docker build -t onionary:ci .
-      - name: Test packaged app against PostgreSQL as deployment user
-        env:
-          DATABASE_URL: postgresql://onionary:ci-postgres-only@127.0.0.1:5432/onionary
-        run: |
-          # Use the built image: host Python/SQLite tests cannot verify its driver.
-          for attempt in 1 2; do
-            docker run --rm --network host --user 1008:1008 \
-              -e DATABASE_URL -e SECRET_KEY -e APP_BASE_URL \
-              onionary:ci python -m execution.db.init_db
-          done
-          docker run -d --name onionary-smoke --network host --user 1008:1008 \
-            -e DATABASE_URL -e SECRET_KEY -e APP_BASE_URL onionary:ci
-          trap 'docker logs onionary-smoke; docker rm -f onionary-smoke' EXIT
-          for attempt in $(seq 1 30); do
-            if curl --fail http://127.0.0.1:8000/health; then exit 0; fi
-            sleep 1
-          done
-          exit 1
+      - name: Test packaged Python 3.14 app against PostgreSQL
+        run: python execution/test_container.py --image onionary:ci
   browser:
     runs-on: ubuntu-latest
     steps:
@@ -66,7 +39,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
           cache: pip
       - run: pip install -r requirements.txt
       - run: python -m playwright install --with-deps chromium
@@ -87,7 +60,7 @@ jobs:
         run: bash ios/Onionary/Scripts/test.sh
 
   publish-image:
-    needs: [backend, browser, ios]
+    needs: [backend, browser]
     if: github.event_name != 'pull_request' && github.repository == 'Malaber/what-should-we-eat'
     runs-on: ubuntu-latest
     permissions:

@@ -10,7 +10,7 @@ docker build -t what-should-we-eat .
 ```
 
 The Dockerfile:
-- Uses `python:3.12-slim`
+- Uses `python:3.14-slim`
 - Installs Python deps, copies `alembic/`, `execution/`, and `frontend/`
 - Runs `uvicorn execution.api.main:app --host 0.0.0.0 --port 8000`
 
@@ -34,7 +34,7 @@ image and database environment before starting the API.
 
 ## CI/CD (GitHub)
 
-`.github/workflows/ci.yml` tests the backend, browsers, and iOS app before
+`.github/workflows/ci.yml` tests the backend and browsers before
 publishing AMD64/ARM64 images to `ghcr.io/malaber/what-should-we-eat`.
 The development branch publishes `development` and immutable `sha-<full commit>`
 images. Git tags control release versions; PR checks never publish images.
@@ -67,4 +67,8 @@ The app is deployed via an Ansible role in a separate `ansible-deployment` repo:
 - Keep the PostgreSQL DBAPI drivers in runtime requirements. SQLAlchemy may
   select psycopg for PostgreSQL URLs; SQLite unit tests cannot catch a missing
   driver. CI runs the built image as a non-root user against PostgreSQL, applies
-  migrations twice, and checks API startup before publishing.
+  migrations twice, and checks API startup and passkey database writes before publishing.
+- Reproduce locally: `docker build -t onionary:local .` then
+  `python3 execution/test_container.py --image onionary:local`. The test creates
+  isolated resources and deletes only its own containers/volumes/network.
+- iOS tests run separately and do not block backend image publication.
