@@ -13,6 +13,17 @@ concurrency:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: onionary
+          POSTGRES_DB: onionary
+          POSTGRES_PASSWORD: ci-postgres-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U onionary -d onionary"
+          --health-interval 5s --health-timeout 5s --health-retries 20
     env:
       DATABASE_URL: sqlite:///ci.db
       SECRET_KEY: ci-only-secret-not-for-production-32-bytes
@@ -29,6 +40,24 @@ jobs:
       - run: python -m execution.db.init_db
       - run: python -m pytest
       - run: docker build -t onionary:ci .
+      - name: Test packaged app against PostgreSQL as deployment user
+        env:
+          DATABASE_URL: postgresql://onionary:ci-postgres-only@127.0.0.1:5432/onionary
+        run: |
+          # Use the built image: host Python/SQLite tests cannot verify its driver.
+          for attempt in 1 2; do
+            docker run --rm --network host --user 1008:1008 \
+              -e DATABASE_URL -e SECRET_KEY -e APP_BASE_URL \
+              onionary:ci python -m execution.db.init_db
+          done
+          docker run -d --name onionary-smoke --network host --user 1008:1008 \
+            -e DATABASE_URL -e SECRET_KEY -e APP_BASE_URL onionary:ci
+          trap 'docker logs onionary-smoke; docker rm -f onionary-smoke' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail http://127.0.0.1:8000/health; then exit 0; fi
+            sleep 1
+          done
+          exit 1
   browser:
     runs-on: ubuntu-latest
     steps:

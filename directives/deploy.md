@@ -63,3 +63,8 @@ The app is deployed via an Ansible role in a separate `ansible-deployment` repo:
   and `lets-encr`, configurable via `TRAEFIK_*` environment variables.
 - Do not bundle another reverse proxy or publish host ports in the test stack.
   Traefik owns TLS; the API alone joins its external Docker network.
+
+- Keep the PostgreSQL DBAPI drivers in runtime requirements. SQLAlchemy may
+  select psycopg for PostgreSQL URLs; SQLite unit tests cannot catch a missing
+  driver. CI runs the built image as a non-root user against PostgreSQL, applies
+  migrations twice, and checks API startup before publishing.
