@@ -37,7 +37,7 @@ const $shoppingList = document.getElementById('shopping-list');
 const $shopBadge = document.getElementById('shop-badge');
 const $toast = document.getElementById('toast');
 const $btnKitchen = document.getElementById('btn-kitchen');
-
+const $btnCopyShopping = document.getElementById('btn-copy-shopping');
 
 // ── Init ───────────────────────────────────────────────────────
 async function init() {
@@ -58,15 +58,23 @@ async function init() {
     }
   });
 
+  $btnRoll.addEventListener('click', rollRecipes);
+  $btnRerollAll.addEventListener('click', clearAll);
+  $btnKitchen.addEventListener('click', () => { window.location.href = '/kitchen.html'; });
+  
+  if ($btnCopyShopping) {
+    $btnCopyShopping.addEventListener('click', copyShoppingList);
+  }
+
+  window.addEventListener('i18n:loaded', () => {
+    if (selectedRecipes.length > 0) renderRecipes();
+  });
+
   // Initial load if already logged in (token restored from storage)
   if (isLoggedIn()) {
     await loadTags();
     await loadMealPlan();
   }
-
-  $btnRoll.addEventListener('click', rollRecipes);
-  $btnRerollAll.addEventListener('click', clearAll);
-  $btnKitchen.addEventListener('click', () => { window.location.href = '/kitchen.html'; });
 }
 
 // ── Tags ───────────────────────────────────────────────────────
@@ -144,13 +152,13 @@ async function loadMealPlan() {
 // ── Roll Recipes ───────────────────────────────────────────────
 async function rollRecipes() {
   if (!isLoggedIn()) {
-    toast('Please log in to roll recipes.');
+    toast(window.t('app.login_required', 'Please log in to roll recipes.'));
     return;
   }
 
   const filters = getFilters();
   currentFilters = filters;
-  $btnRoll.innerHTML = '<span class="spinner"></span> Rolling…';
+  $btnRoll.innerHTML = '<span class="spinner"></span> ' + window.t('app.rolling', 'Rolling…');
   $btnRoll.disabled = true;
 
   try {
@@ -165,7 +173,7 @@ async function rollRecipes() {
     const recipes = await res.json();
 
     if (recipes.length === 0) {
-      toast('No more recipes match your filters — try broadening them.');
+      toast(window.t('app.no_match', 'No more recipes match your filters — try broadening them.'));
       return;
     }
 
@@ -180,12 +188,13 @@ async function rollRecipes() {
     // Reload from API for consistency
     await loadMealPlan();
 
-    toast(`🎲 Added ${recipes.length} recipe${recipes.length > 1 ? 's' : ''}!`);
+    toast(`🎲 ${window.t('app.added', 'Added')} ${recipes.length} ${recipes.length > 1 ? window.t('app.recipes', 'recipes') : window.t('app.recipe', 'recipe')}!`);
   } catch (e) {
-    toast('Something went wrong — is the API running?');
+    toast(window.t('app.error_api', 'Something went wrong — is the API running?'));
     console.error(e);
   } finally {
-    $btnRoll.innerHTML = '🎲 Roll Recipes';
+    const rollLabel = window.t('index.controls.btn_roll', 'Roll Recipes');
+    $btnRoll.innerHTML = rollLabel.includes('🎲') ? rollLabel : `🎲 ${rollLabel}`;
     $btnRoll.disabled = false;
   }
 }
@@ -230,7 +239,7 @@ async function rerollSingle(recipeId) {
     const replacements = await res.json();
 
     if (replacements.length === 0) {
-      toast('No other recipes available to swap in.');
+      toast(window.t('app.no_swap', 'No other recipes available to swap in.'));
       return;
     }
 
@@ -246,9 +255,9 @@ async function rerollSingle(recipeId) {
     });
 
     await loadMealPlan();
-    toast(`🔄 Swapped in "${replacements[0].name}"`);
+    toast(`🔄 ${window.t('app.swapped', 'Swapped in')} "${replacements[0].name}"`);
   } catch (e) {
-    toast('Failed to re-roll — check the API.');
+    toast(window.t('app.error_reroll', 'Failed to re-roll — check the API.'));
     console.error(e);
   }
 }
@@ -290,9 +299,9 @@ function renderRecipes() {
       ${r.instruction_steps && r.instruction_steps.length ? `
         <div class="recipe-card-footer">
           <button class="recipe-steps-toggle" data-toggle="steps-${r.id}">
-            Show steps ▾
+            ${window.t('app.show_steps', 'Show steps ▾')}
           </button>
-          <span style="font-size:0.78rem;color:var(--text-light);">${r.instruction_steps.length} step${r.instruction_steps.length > 1 ? 's' : ''}</span>
+          <span style="font-size:0.78rem;color:var(--text-light);">${r.instruction_steps.length} ${r.instruction_steps.length > 1 ? window.t('app.steps', 'steps') : window.t('app.step', 'step')}</span>
         </div>
         <div class="recipe-steps" id="steps-${r.id}">
           <div class="recipe-steps-inner">
@@ -324,7 +333,7 @@ function renderRecipes() {
     btn.addEventListener('click', () => {
       const target = document.getElementById(btn.dataset.toggle);
       const isOpen = target.classList.toggle('open');
-      btn.textContent = isOpen ? 'Hide steps ▴' : 'Show steps ▾';
+      btn.textContent = isOpen ? window.t('app.hide_steps', 'Hide steps ▴') : window.t('app.show_steps', 'Show steps ▾');
     });
   });
 }
@@ -364,13 +373,58 @@ function renderShoppingList(items) {
     `;
   }).join('');
 
-  // Checkboxes
+// Checkboxes
   $shoppingList.querySelectorAll('.checkbox').forEach(cb => {
     cb.addEventListener('click', () => {
       cb.classList.toggle('checked');
       cb.closest('.shopping-item').classList.toggle('checked-item');
     });
   });
+}
+
+function copyShoppingList() {
+  const items = $shoppingList.querySelectorAll('.shopping-item');
+  if (!items.length) return;
+  
+  let text = '';
+  items.forEach(li => {
+    const qty = li.querySelector('.item-qty').textContent.trim();
+    const name = li.querySelector('.item-name').textContent.trim();
+    const line = qty ? `${qty} ${name}` : name;
+    text += `- ${line}\n`;
+  });
+  
+  const onSuccess = () => toast(window.t('index.shopping.copied', 'Copied to clipboard!'));
+  const onError = (err) => {
+    console.error('Failed to copy', err);
+    toast('Failed to copy');
+  };
+
+  // Fallback for mobile/HTTP environments where navigator.clipboard might be missing
+  if (!navigator.clipboard || !window.isSecureContext) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      if (document.execCommand('copy')) {
+        onSuccess();
+      } else {
+        onError(new Error("execCommand false"));
+      }
+    } catch (err) {
+      onError(err);
+    }
+    document.body.removeChild(textArea);
+    return;
+  }
+  
+  navigator.clipboard.writeText(text).then(onSuccess).catch(onError);
 }
 
 // ── Helpers ────────────────────────────────────────────────────

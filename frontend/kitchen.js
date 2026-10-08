@@ -53,6 +53,11 @@ function init() {
 
   if ($btnCloseModal) $btnCloseModal.addEventListener('click', closeModal);
   if ($btnToggleCooked) $btnToggleCooked.addEventListener('click', handleToggleCooked);
+
+  window.addEventListener('i18n:loaded', () => {
+    if (kitchenRecipes.length > 0) renderGrid();
+    if (activeRecipeId) openModal(activeRecipeId);
+  });
 }
 
 // ── Load from API ──────────────────────────────────────────────
@@ -111,7 +116,7 @@ function renderGrid() {
       <div class="recipe-card-tags" style="pointer-events:none;">
         ${r.tags.map(t => `<span class="recipe-tag">${esc(t.name)}</span>`).join('')}
       </div>
-      ${r._cooked ? `<div style="margin-top:12px; font-weight:bold; color:var(--text-light); text-align:center;">✓ Cooked</div>` : ''}
+      ${r._cooked ? `<div style="margin-top:12px; font-weight:bold; color:var(--text-light); text-align:center;">${window.t('kitchen.cooked', '✓ Cooked')}</div>` : ''}
     </div>
   `).join('');
 
@@ -178,14 +183,14 @@ function openModal(id) {
 
 function updateCookedButtonState(isCooked) {
   if (isCooked) {
-    $btnToggleCooked.innerHTML = '↺ Undo "Cooked" Status';
+    $btnToggleCooked.innerHTML = window.t('kitchen.undo_cooked', '↺ Undo "Cooked" Status');
     $btnToggleCooked.className = 'btn btn-secondary';
     $btnToggleCooked.style.padding = '16px 32px';
     $btnToggleCooked.style.fontSize = '1.2rem';
     $btnToggleCooked.style.width = '100%';
     $btnToggleCooked.style.maxWidth = '400px';
   } else {
-    $btnToggleCooked.innerHTML = '✅ Mark as Cooked';
+    $btnToggleCooked.innerHTML = window.t('kitchen.mark_cooked', '✅ Mark as Cooked');
     $btnToggleCooked.className = 'btn btn-primary';
     $btnToggleCooked.style.padding = '16px 32px';
     $btnToggleCooked.style.fontSize = '1.2rem';

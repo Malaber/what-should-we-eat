@@ -261,3 +261,38 @@ class AuthHandler {
 }
 
 window.WSWEAuth = new AuthHandler();
+
+// ── Burger menu toggle ──────────────────────────────────────────
+(function initBurgerMenu() {
+  const burger = document.getElementById('burger-btn');
+  const navLinks = document.getElementById('nav-links');
+  if (!burger || !navLinks) return;
+
+  burger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = navLinks.classList.toggle('open');
+    burger.textContent = isOpen ? '✕' : '☰';
+    burger.setAttribute('aria-expanded', isOpen);
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  });
+
+  // Close menu when a nav link is clicked
+  navLinks.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      navLinks.classList.remove('open');
+      burger.textContent = '☰';
+      document.body.style.overflow = '';
+    });
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!navLinks.contains(e.target) && !burger.contains(e.target)) {
+      if (navLinks.classList.contains('open')) {
+        navLinks.classList.remove('open');
+        burger.textContent = '☰';
+        document.body.style.overflow = '';
+      }
+    }
+  });
+})();

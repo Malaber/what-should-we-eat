@@ -14,35 +14,36 @@
 
   <!-- ─── Navigation ─────────────────────────────────────────── -->
   <nav class="top-nav">
-    <div class="container nav-container" style="display: flex; justify-content: space-between; width: 100%;">
-      <div style="display: flex; gap: 24px; align-items: center;">
-        <a href="/" class="nav-link">Pick Meals</a>
-        <a href="/kitchen.html" class="nav-link">Kitchen</a>
-        <a href="/recipes.html" class="nav-link active">Manage Recipes</a>
-        <a href="/households.html" class="nav-link">Households</a>
+    <div class="container nav-container">
+      <button class="burger-btn" id="burger-btn" aria-label="Toggle menu">☰</button>
+      <div class="nav-links" id="nav-links">
+        <a href="/" class="nav-link" data-i18n="nav.pick_meals">Pick Meals</a>
+        <a href="/kitchen.html" class="nav-link" data-i18n="nav.kitchen">Kitchen</a>
+        <a href="/recipes.html" class="nav-link active" data-i18n="nav.manage_recipes">Manage Recipes</a>
+        <a href="/households.html" class="nav-link" data-i18n="nav.households">Households</a>
       </div>
-      <div id="auth-mount"></div>
+      <div id="auth-mount" class="nav-auth-mount"></div>
     </div>
   </nav>
 
   <!-- ─── Header ─────────────────────────────────────────────── -->
   <header class="site-header">
     <div class="container">
-      <h1>Manage <span class="accent-orange">Your</span> <span class="accent-green">Recipes</span></h1>
-      <p class="tagline">Create, edit, and curate your meal collection.</p>
+      <h1 data-i18n="recipes.header.title">Manage <span class="accent-orange">Your</span> <span class="accent-green">Recipes</span></h1>
+      <p class="tagline" data-i18n="recipes.header.tagline">Create, edit, and curate your meal collection.</p>
     </div>
   </header>
 
   <main class="container">
     <div class="section-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2>All Recipes <span class="badge" id="list-badge">0</span></h2>
-        <button class="btn btn-primary" id="btn-create-recipe">
+        <h2><span data-i18n="recipes.all_recipes">All Recipes</span> <span class="badge" id="list-badge">0</span></h2>
+        <button class="btn btn-primary" id="btn-create-recipe" data-i18n="recipes.btn_create">
           <span class="icon">➕</span> Create New Recipe
         </button>
       </div>
       <div class="search-bar-container">
-        <input type="text" id="recipe-search" placeholder="🔍 Search by name, tags, or ingredients..."
+        <input type="text" id="recipe-search" data-i18n="recipes.search_placeholder" placeholder="🔍 Search by name, tags, or ingredients..."
           class="search-input" />
       </div>
     </div>
@@ -60,10 +61,10 @@
     <div class="modal modal-lg">
       <div class="modal-header">
         <div style="display:flex; flex-direction:column; gap:12px;">
-          <h2 id="modal-title">Edit Recipe</h2>
+          <h2 id="modal-title" data-i18n="recipes.modal_edit.title">Edit Recipe</h2>
           <div id="recipe-mode-switch" style="display:none; gap:8px;">
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-manual">Manual</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-import">Import</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-manual" data-i18n="recipes.modal_edit.btn_manual">Manual</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-import" data-i18n="recipes.modal_edit.btn_import">Import</button>
           </div>
         </div>
         <button class="btn-icon" id="btn-close-modal">✕</button>
@@ -72,28 +73,28 @@
         <section id="import-panel" style="display:none; margin-bottom:24px; border:1px solid var(--border, #e7d9c7); border-radius:18px; padding:20px; background:var(--bg-soft, #fbf4ea);">
           <div style="display:flex; flex-direction:column; gap:16px;">
             <div>
-              <h3 style="margin:0 0 8px 0;">Import Recipe</h3>
-              <p style="margin:0; color:var(--text-muted);">Send a recipe URL to the server, let it fetch and parse the page, then review the imported fields before saving.</p>
+              <h3 style="margin:0 0 8px 0;" data-i18n="recipes.modal_edit.import_title">Import Recipe</h3>
+              <p style="margin:0; color:var(--text-muted);" data-i18n="recipes.modal_edit.import_desc">Send a recipe URL to the server, let it fetch and parse the page, then review the imported fields before saving.</p>
             </div>
             <div class="form-row">
               <div class="control-group">
-                <label for="import-source">Source</label>
+                <label for="import-source" data-i18n="recipes.modal_edit.label_source">Source</label>
                 <select id="import-source">
                   <option value="chefkoch">Chefkoch</option>
-                  <option value="instagram" disabled>Instagram (later)</option>
+                  <option value="instagram" disabled data-i18n="recipes.modal_edit.source_instagram">Instagram (later)</option>
                 </select>
               </div>
               <div class="control-group" style="flex:2;">
-                <label for="import-url">Recipe URL</label>
+                <label for="import-url" data-i18n="recipes.modal_edit.label_url">Recipe URL</label>
                 <input type="url" id="import-url" placeholder="https://www.chefkoch.de/..." />
               </div>
             </div>
             <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-              <button type="button" class="btn btn-primary" id="btn-import-recipe">Import Into Form</button>
+              <button type="button" class="btn btn-primary" id="btn-import-recipe" data-i18n="recipes.modal_edit.btn_import_submit">Import Into Form</button>
               <span id="import-status" style="color:var(--text-muted); font-size:0.95rem;"></span>
             </div>
             <div id="import-html-fallback" style="display:none;">
-              <label for="import-html" style="display:block; margin-bottom:8px; color:var(--text-muted);">If server-side fetch fails, paste page HTML here and try again.</label>
+              <label for="import-html" style="display:block; margin-bottom:8px; color:var(--text-muted);" data-i18n="recipes.modal_edit.import_fallback">If server-side fetch fails, paste page HTML here and try again.</label>
               <textarea id="import-html" rows="8" placeholder="<html>..."></textarea>
             </div>
           </div>
@@ -179,16 +180,17 @@
 
   <div class="toast" id="toast"></div>
 
+  <footer class="site-footer">
+    <div class="container">
+      <div style="font-size: 0.85rem;">
+        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;" data-i18n="footer.impressum">Impressum</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/i18n.js"></script>
   <script src="/auth.js"></script>
   <script src="/manage.js"></script>
 </body>
-
-<footer class="site-footer">
-  <div class="container">
-    <div style="font-size: 0.85rem;">
-      <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;">Impressum</a>
-    </div>
-  </div>
-</footer>
 
 </html>
