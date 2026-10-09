@@ -84,3 +84,14 @@ def test_auth_theme_follows_system(page: Page):
         expect(page.locator('h1')).to_have_text('Welcome to Onionary.')
         assert page.locator('body').evaluate('(el) => getComputedStyle(el).backgroundColor') == gate_background
         page.screenshot(path=f'.tmp/onionary-signin-{mode}.png', full_page=True)
+
+
+def test_german_is_ready_before_navigation_scripts(page):
+    page.add_init_script("localStorage.setItem('app_lang', 'de');")
+    for path in ['/', '/recipes.html', '/kitchen.html', '/households.html', '/auth/login']:
+        page.goto(page.base_url + path)
+        assert page.locator('html').get_attribute('lang') == 'de'
+        assert page.evaluate("window.t('nav.kitchen')") == 'Küche'
+        assert page.get_by_text('Welcome to Onionary.', exact=True).count() == 0
+        if path == '/auth/login':
+            expect(page.get_by_role('heading', name='Willkommen bei Onionary.')).to_be_visible()

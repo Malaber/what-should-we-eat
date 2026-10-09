@@ -33,4 +33,19 @@ final class RecipeDraftTests: XCTestCase {
         XCTAssertEqual(output["tags"] as? [String], ["vegan"])
     }
 
+    func testClearingMetadataEncodesExplicitNullForPartialUpdate() throws {
+        var draft = RecipeDraft(); draft.name = "Soup"
+        let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: draft.validatedData()) as? [String: Any])
+        XCTAssertTrue(payload["total_time_min"] is NSNull)
+        XCTAssertTrue(payload["active_cooking_time_min"] is NSNull)
+        XCTAssertTrue(payload["kcal_per_serving"] is NSNull)
+    }
+    func testSharedLinkShape() throws {
+        let token = String(repeating: "a", count: 43)
+        XCTAssertNoThrow(try RecipeImportLink.accepted("https://recipes.example/share.html#" + token))
+        for url in ["https://recipes.example/other#" + token, "https://recipes.example/share.html#short", "https://recipes.example/share.html?x=1#" + token] {
+            XCTAssertThrowsError(try RecipeImportLink.sharedRecipe(url))
+        }
+    }
+
 }

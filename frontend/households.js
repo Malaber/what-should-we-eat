@@ -91,14 +91,14 @@ async function loadHouseholds() {
   try {
     // Get user info for active/personal household
     const meRes = await fetch(`${API}/users/me`, { headers: getAuthHeaders() });
-    if (!meRes.ok) throw new Error('Failed to load user');
+    if (!meRes.ok) throw new Error(window.t('feedback.20'));
     const me = await meRes.json();
     activeHouseholdId = me.active_household_id;
     personalHouseholdId = me.personal_household_id;
 
     // Get household list
     const res = await fetch(`${API}/households`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to load households');
+    if (!res.ok) throw new Error(window.t('feedback.21'));
     households = await res.json();
 
     renderGrid();
@@ -140,17 +140,17 @@ function renderGrid() {
             <span class="hh-card-id" style="font-family: monospace; letter-spacing: 0.1em;">Code: ${h.invite_code}</span>
           </div>
           ${isActive
-            ? `<div class="hh-badge hh-badge--active">✦ Active</div>`
-            : `<button class="btn btn-primary btn-sm hh-switch-btn" data-id="${h.id}">Switch</button>`
+            ? `<div class="hh-badge hh-badge--active">${window.t("ui.7")}</div>`
+            : `<button class="btn btn-primary btn-sm hh-switch-btn" data-id="${h.id}">${window.t("ui.6")}</button>`
           }
         </div>
         <div class="hh-card-footer">
           ${isActive
-            ? `<span class="hh-status-dot"></span><span style="color: var(--green-dark); font-weight: 600; font-size: 0.82rem;">Currently using this kitchen</span>`
-            : `<span style="color: var(--text-light); font-size: 0.82rem;">Click switch to use this kitchen</span>`
+            ? `<span class="hh-status-dot"></span><span style="color: var(--green-dark); font-weight: 600; font-size: 0.82rem;">${window.t("ui.4")}</span>`
+            : `<span style="color: var(--text-light); font-size: 0.82rem;">${window.t("ui.3")}</span>`
           }
           ${!isPersonal
-            ? `<button class="btn btn-sm hh-leave-btn" data-id="${h.id}" title="Leave this household" style="margin-left: auto; padding: 6px 12px; background: none; border: 1px solid var(--border); color: var(--text-light); font-size: 0.78rem;">Leave</button>`
+            ? `<button class="btn btn-sm hh-leave-btn" data-id="${h.id}" title="${window.t('feedback.38')}" style="margin-left: auto; padding: 6px 12px; background: none; border: 1px solid var(--border); color: var(--text-light); font-size: 0.78rem;">${window.t("ui.5")}</button>`
             : ''
           }
         </div>
@@ -184,13 +184,13 @@ async function handleSwitch(householdId) {
     });
     if (!res.ok) {
       const err = await res.json();
-      showToast(err.detail || 'Failed to switch', 'error');
+      showToast(err.detail || window.t('feedback.22'), 'error');
       return;
     }
     const user = await res.json();
     activeHouseholdId = user.active_household_id;
     renderGrid();
-    showToast(`Switched to "${households.find(h => h.id === householdId)?.name}"`, 'success');
+    showToast(window.t('feedback.switched').replace('{name}', households.find(h => h.id === householdId)?.name || ''), 'success');
 
     // Dispatch auth change so other tabs/listeners know
     window.dispatchEvent(new Event('wswe_auth_changed'));
@@ -216,16 +216,16 @@ async function handleCreate(e) {
     });
     if (!res.ok) {
       const err = await res.json();
-      $createError.textContent = err.detail || 'Failed to create';
+      $createError.textContent = err.detail || window.t('feedback.23');
       $createError.style.display = '';
       return;
     }
     closeModal($createModal);
     $createForm.reset();
-    showToast(`Created "${name}"!`, 'success');
+    showToast(window.t('feedback.created').replace('{name}', name), 'success');
     await loadHouseholds();
   } catch (err) {
-    $createError.textContent = 'Network error';
+    $createError.textContent = window.t('feedback.24');
     $createError.style.display = '';
   }
 }
@@ -237,7 +237,7 @@ async function handleJoin(e) {
 
   const code = $joinCode.value.trim().toUpperCase();
   if (!code || code.length !== 6) {
-    $joinError.textContent = 'Please enter a 6-character invite code';
+    $joinError.textContent = window.t('feedback.25');
     $joinError.style.display = '';
     return;
   }
@@ -249,7 +249,7 @@ async function handleJoin(e) {
     });
     if (!res.ok) {
       const err = await res.json();
-      $joinError.textContent = err.detail || 'Invalid invite code';
+      $joinError.textContent = err.detail || window.t('feedback.26');
       $joinError.style.display = '';
       return;
     }
@@ -260,7 +260,7 @@ async function handleJoin(e) {
     showToast(window.t('Joined household!'), 'success');
     await loadHouseholds();
   } catch (err) {
-    $joinError.textContent = 'Network error';
+    $joinError.textContent = window.t('feedback.24');
     $joinError.style.display = '';
   }
 }
@@ -272,7 +272,7 @@ async function handleImport(e) {
 
   const code = $importCode.value.trim().toUpperCase();
   if (!code || code.length !== 6) {
-    $importError.textContent = 'Please enter a 6-character invite code';
+    $importError.textContent = window.t('feedback.25');
     $importError.style.display = '';
     return;
   }
@@ -284,23 +284,23 @@ async function handleImport(e) {
     });
     if (!res.ok) {
       const err = await res.json();
-      $importError.textContent = err.detail || 'Invalid invite code';
+      $importError.textContent = err.detail || window.t('feedback.26');
       $importError.style.display = '';
       return;
     }
     const result = await res.json();
     
     if (result.imported_count === 0) {
-      $importError.textContent = 'This household has no recipes to import.';
+      $importError.textContent = window.t('feedback.27');
       $importError.style.display = '';
       return;
     }
 
     closeModal($importModal);
     $importForm.reset();
-    showToast(`Successfully imported ${result.imported_count} recipes!`, 'success');
+    showToast(window.t('feedback.imported').replace('{count}', result.imported_count), 'success');
   } catch (err) {
-    $importError.textContent = 'Network error';
+    $importError.textContent = window.t('feedback.24');
     $importError.style.display = '';
   }
 }
@@ -327,12 +327,12 @@ async function confirmLeave() {
     });
     if (!res.ok) {
       const err = await res.json();
-      showToast(err.detail || 'Failed to leave', 'error');
+      showToast(err.detail || window.t('feedback.28'), 'error');
       return;
     }
     const user = await res.json();
     activeHouseholdId = user.active_household_id;
-    showToast(`Left "${name}"`, 'success');
+    showToast(window.t('feedback.left').replace('{name}', name), 'success');
     await loadHouseholds();
     window.dispatchEvent(new Event('wswe_auth_changed'));
   } catch (err) {

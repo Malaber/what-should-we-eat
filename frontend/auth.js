@@ -87,7 +87,7 @@ class AuthHandler {
     if (this.user) {
       this.$authControls.style.display = 'none';
       this.$userControls.style.display = 'flex';
-      this.$userGreeting.textContent = `Hi, ${this.user.name || this.user.email}`;
+      this.$userGreeting.textContent = window.t('feedback.greeting').replace('{name}', this.user.name || this.user.email);
     } else {
       this.$authControls.style.display = 'flex';
       this.$userControls.style.display = 'none';

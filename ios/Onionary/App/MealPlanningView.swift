@@ -70,7 +70,7 @@ struct MealPlanningView: View {
                         Button { if !picked.insert(recipe.id).inserted { picked.remove(recipe.id) } } label: {
                             Label(recipe.name, systemImage: picked.contains(recipe.id) ? "checkmark.circle.fill" : "circle")
                         }
-                    }.navigationTitle("Add meals").toolbar {
+                    }.navigationTitle("Add meals").task { await store.refresh() }.toolbar {
                         Button("Cancel") { adding = false }
                         Button("Add") { adding = false; run {
                             try await request("meal-plan/add", method: "POST", body: JSONEncoder().encode(["recipe_ids": Array(picked)])); try await load()

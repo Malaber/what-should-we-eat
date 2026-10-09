@@ -59,7 +59,7 @@ def test_fetch_is_pinned_has_no_credentials_and_rejects_redirects():
 def test_oversized_response_rejected():
     with patch('execution.recipe_sharing.public_addresses', return_value=['93.184.216.34']), patch('execution.recipe_sharing.PinnedHTTPSConnection') as cls:
         response=cls.return_value.getresponse.return_value;response.status=200
-        response.getheader.return_value='application/json';response.read.return_value=b' '*(MAX_BYTES+1)
+        response.getheader.return_value='application/json';response.read1.return_value=b' '*(MAX_BYTES+1)
         with pytest.raises(ValueError, match='large'):fetch_snapshot('https://example.org/share.html#'+'a'*43)
 
 
@@ -68,7 +68,14 @@ def test_valid_remote_snapshot_returns_review_draft_without_saving():
     with patch('execution.recipe_sharing.public_addresses', return_value=['93.184.216.34']), patch('execution.recipe_sharing.PinnedHTTPSConnection') as cls:
         response = cls.return_value.getresponse.return_value
         response.status = 200; response.getheader.return_value='application/json; charset=utf-8'
-        response.read.return_value=json.dumps(snapshot).encode()
+        response.read1.side_effect=[json.dumps(snapshot).encode(), b'']
         draft=fetch_snapshot('https://example.org/share.html#'+'a'*43)
         assert draft.name == 'Remote soup'
         assert len(draft.ingredients) == 2
+
+
+def test_slow_recipe_stream_is_bounded():
+    with patch('execution.recipe_sharing.public_addresses', return_value=['93.184.216.34']), patch('execution.recipe_sharing.PinnedHTTPSConnection') as cls, patch('execution.recipe_sharing.time.monotonic', side_effect=[0, 1, 16]):
+        response=cls.return_value.getresponse.return_value; response.status=200
+        response.getheader.return_value='application/json';response.read1.return_value=b' '
+        with pytest.raises(ValueError, match='too long'): fetch_snapshot('https://example.org/share.html#'+'a'*43)

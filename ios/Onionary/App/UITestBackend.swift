@@ -28,6 +28,7 @@ import OnionaryCore
         else if path == "shopping-list" { result=["items":[["name":"cheese","total_quantity":200,"unit":"g"]]] }
         else if path == "recipe-shares" && method == "POST" { result=["id":"test-link","url":"https://example.org/share.html#"+String(repeating:"a",count:43),"expires_at":"2026-12-01T12:00:00Z"] }
         else if path == "recipe-shares" { result=[] }
+        else if path == "recipe-shares/test-link" && method == "DELETE" { result=[:] }
         else { throw CookingError.response("Unexpected UI test request: \(method) \(path)") }
         return try JSONSerialization.data(withJSONObject: result)
     }

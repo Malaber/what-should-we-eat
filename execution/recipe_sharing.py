@@ -3,6 +3,8 @@ import hashlib
 import http.client
 import ipaddress
 import json
+import math
+import time
 import re
 import socket
 import ssl
@@ -66,6 +68,10 @@ def validate_snapshot(value):
                    or (i.quantity is not None and not (0 <= i.quantity <= 1e12)) for i in recipe.ingredients)
             or any(not s.description.strip() or len(s.description) > 100_000 for s in recipe.instruction_steps)):
         raise ValueError('Recipe copy exceeds supported limits or has invalid quantities.')
+    numbers = [recipe.kcal_per_serving, recipe.active_cooking_time_min, recipe.total_time_min,
+               *(step.duration_min for step in recipe.instruction_steps)]
+    if any(value is not None and (not math.isfinite(value) or value < 0 or value > 1e12) for value in numbers):
+        raise ValueError('Recipe copy contains invalid nutrition or duration values.')
     return recipe
 
 
@@ -79,10 +85,21 @@ def fetch_snapshot(url):
         response = connection.getresponse()
         if response.status != 200 or response.getheader('Content-Type', '').split(';')[0] != 'application/json':
             raise ValueError('Recipe link is unavailable, expired, or revoked.')
-        raw = response.read(MAX_BYTES + 1)
-        if len(raw) > MAX_BYTES:
-            raise ValueError('Recipe copy is too large.')
-        return validate_snapshot(json.loads(raw))
+        deadline = time.monotonic() + 15
+        chunks, size = [], 0
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ValueError('Recipe server took too long to send the copy.')
+            if connection.sock is not None:
+                connection.sock.settimeout(min(8, remaining))
+            chunk = response.read1(min(65536, MAX_BYTES + 1 - size))
+            if not chunk:
+                break
+            chunks.append(chunk); size += len(chunk)
+            if size > MAX_BYTES:
+                raise ValueError('Recipe copy is too large.')
+        return validate_snapshot(json.loads(b''.join(chunks)))
     except (OSError, http.client.HTTPException, json.JSONDecodeError) as exc:
         raise ValueError('Could not read the recipe copy from that server.') from exc
     finally:

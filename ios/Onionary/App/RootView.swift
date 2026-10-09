@@ -21,7 +21,7 @@ struct RootView: View {
                     NavigationStack { MealPlanningView(store: store, cook: { tab = 0 }) }
                         .tabItem { Label("Kitchen", systemImage: "calendar") }.tag(3)
                     NavigationStack { SettingsView(store: store) }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
-                }.id(locale.identifier)
+                }.id(locale.identifier + (store.credential?.server.absoluteString ?? "") + (store.credential?.userID ?? ""))
             }
         }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox() } }
          .onChange(of: store.credential?.userID) { store.checkImportInbox() }

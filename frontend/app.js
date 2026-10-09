@@ -284,14 +284,14 @@ function renderRecipes() {
       <div class="recipe-card-header">
         <h3>${esc(r.name)}</h3>
         <div style="display:flex; gap:6px;">
-          <button class="btn btn-icon" title="Re-roll this recipe" data-reroll="${r.id}">🔄</button>
-          <button class="btn btn-icon" title="Remove from plan" data-remove="${r.id}">✕</button>
+          <button class="btn btn-icon" title="${window.t('feedback.36')}" data-reroll="${r.id}">🔄</button>
+          <button class="btn btn-icon" title="${window.t('feedback.37')}" data-remove="${r.id}">✕</button>
         </div>
       </div>
       <div class="recipe-card-meta">
         ${r.kcal_per_serving ? `<span class="meta-chip"><span class="icon">🔥</span> ${r.kcal_per_serving} kcal</span>` : ''}
-        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧅</span> ${r.active_cooking_time_min} min active</span>` : ''}
-        ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} min total</span>` : ''}
+        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧅</span> ${r.active_cooking_time_min} ${window.t('feedback.39')}</span>` : ''}
+        ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} ${window.t('feedback.40')}</span>` : ''}
       </div>
       <div class="recipe-card-tags">
         ${r.tags.map(t => `<span class="recipe-tag">${esc(t.name)}</span>`).join('')}
@@ -396,8 +396,8 @@ function copyShoppingList() {
   
   const onSuccess = () => toast(window.t('index.shopping.copied'));
   const onError = (err) => {
-    console.error('Failed to copy', err);
-    toast('Failed to copy');
+    console.error(window.t('feedback.29'), err);
+    toast(window.t('feedback.29'));
   };
 
   // Fallback for mobile/HTTP environments where navigator.clipboard might be missing

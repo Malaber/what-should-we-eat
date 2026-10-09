@@ -74,19 +74,20 @@ python3 -m pytest execution/tests/e2e/ -v --tb=short --device="iPhone 13" --scre
 
 ## CI/CD
 
-GitLab CI (`.gitlab-ci.yml`) runs three stages:
-1. **test** — Unit tests with `python:3.12-slim`, SQLite backend
-2. **e2e** — Playwright tests (desktop + iPhone 13) with `mcr.microsoft.com/playwright/python:v1.58.0-jammy`
-3. **build** — Docker image build & push to GitLab registry
+GitHub Actions (`.github/workflows/ci.yml`) runs Python 3.14 backend tests,
+desktop/mobile Chromium tests, packaged PostgreSQL smoke tests, and native iOS
+simulator tests. Native tests include a Debug-only deterministic API transport;
+release builds exclude it. Test fixtures set required IMPRESSUM operator values.
 
-Runs on `main` and `merge_requests`.
+Do not poll GitHub jobs while idle; the user will return with results. Complete
+local checks and record their evidence in the PR first.
 
 ## Tools / Scripts
 - `execution/tests/conftest.py` — Unit test fixtures and auth helpers
 - `execution/tests/e2e/conftest.py` — E2E server setup and DB reset
 - `execution/tests/helpers.py` — Shared test utilities
 - `Makefile` — All test commands
-- `.gitlab-ci.yml` — CI pipeline definition
+- `.github/workflows/ci.yml` — CI pipeline definition
 
 ## Edge Cases & Learnings
 - Unit tests are isolated: tables are created and dropped per test, so test order doesn't matter.

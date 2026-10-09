@@ -67,6 +67,11 @@ public struct RecipeDraft: Codable, Sendable {
         var copy = self
         for index in copy.instructionSteps.indices { copy.instructionSteps[index].stepNumber = index + 1 }
         let encoder = JSONEncoder(); encoder.keyEncodingStrategy = .convertToSnakeCase
-        return try encoder.encode(copy)
+        // PUT supports partial updates: explicitly encode cleared optional metadata.
+        var payload = try JSONSerialization.jsonObject(with: encoder.encode(copy)) as! [String: Any]
+        for key in ["notes", "kcal_per_serving", "active_cooking_time_min", "total_time_min"] where payload[key] == nil {
+            payload[key] = NSNull()
+        }
+        return try JSONSerialization.data(withJSONObject: payload)
     }
 }

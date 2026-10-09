@@ -34,11 +34,12 @@ def create_share(body: ShareRequest, response: Response, user: User = Depends(ge
         raise HTTPException(404, 'Recipe not found')
     fields = RecipeOut.model_validate(recipe).model_dump(mode='json')
     fields['tags'] = [tag['name'] for tag in fields['tags']]
-    snapshot = json.dumps({'format': 'onionary.recipe.v1', 'recipe': RecipeCreate.model_validate(fields).model_dump(mode='json')}, allow_nan=False)
-    if len(snapshot.encode()) > MAX_BYTES:
-        raise HTTPException(400, 'Recipe is too large to share')
+    payload = {'format': 'onionary.recipe.v1', 'recipe': RecipeCreate.model_validate(fields).model_dump(mode='json')}
     try:
-        validate_snapshot(json.loads(snapshot))
+        validate_snapshot(payload)
+        snapshot = json.dumps(payload, allow_nan=False)
+        if len(snapshot.encode()) > MAX_BYTES:
+            raise ValueError('Recipe is too large to share')
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     token = secrets.token_urlsafe(32)

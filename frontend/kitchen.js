@@ -140,8 +140,8 @@ function openModal(id) {
   // Meta
   const metaHTML = [];
   if (recipe.kcal_per_serving) metaHTML.push(`<span class="meta-chip"><span class="icon">🔥</span> ${recipe.kcal_per_serving} kcal</span>`);
-  if (recipe.active_cooking_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">🧅</span> ${recipe.active_cooking_time_min} min active</span>`);
-  if (recipe.total_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">⏱️</span> ${recipe.total_time_min} min total</span>`);
+  if (recipe.active_cooking_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">🧅</span> ${recipe.active_cooking_time_min} ${window.t('feedback.39')}</span>`);
+  if (recipe.total_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">⏱️</span> ${recipe.total_time_min} ${window.t('feedback.40')}</span>`);
   $modalMeta.innerHTML = metaHTML.join('');
 
   // Ingredients
