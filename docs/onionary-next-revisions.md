@@ -26,7 +26,7 @@ Commit this checklist before implementation. Each numbered feature gets its own 
 - Chromium desktop and iPhone emulation: 14 tests each, including German navigation and recipe link revocation.
 - Swift core: 13 tests; iOS simulator: 4 UI tests covering cooking persistence, editing/import, sharing/revocation, live language/appearance settings, and marketing screenshots.
 - App plus share-extension simulator build passed. Compact cooking screenshots inspected.
-- Device signing and real-device share-extension delivery are not validated by simulator tests. The follow-up TestFlight release uses tag `v0.2.0-rc.3`, version `0.2.0` and build `3`; signing and upload results are recorded after verification.
+- TestFlight `0.2.0 (3)` from `v0.2.0-rc.3` (`ac2d670`) uploaded successfully on 2026-10-09. Release tests passed; signed app and share extension both have the correct bundle IDs, version/build, and App Group provisioning. Apple accepted the upload and began processing. Real-device share-sheet delivery still needs a device smoke test.
 - GitHub CI has not been polled. User will return with results.
 
 Deployment prerequisites and behavior: [kitchen-sharing-deployment.md](kitchen-sharing-deployment.md).
