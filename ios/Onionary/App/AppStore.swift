@@ -9,6 +9,7 @@ final class AppStore {
     var kitchen = Kitchen()
     var error: String?
     var busy = false
+    var pendingImport: String?
     var backend = "https://onionary-test.malaber.de"
     private var file: URL?
     private let signIn = BrowserSignIn()
@@ -80,6 +81,29 @@ final class AppStore {
         do {
             var next = kitchen; try operation(&next.adventures[index]); try persist(next)
         } catch { self.error = error.localizedDescription }
+    }
+
+    func checkImportInbox() {
+        guard credential != nil, pendingImport == nil,
+              let inbox = UserDefaults(suiteName: "group.de.malaber.onionary"),
+              let link = inbox.string(forKey: "pendingRecipeURL") else { return }
+        pendingImport = link
+        inbox.removeObject(forKey: "pendingRecipeURL")
+    }
+
+    func importDraft(_ link: String) async throws -> RecipeDraft {
+        guard let credential else { throw CookingError.response("Sign in before importing.") }
+        let url = try RecipeImportLink.chefkoch(link)
+        let body = try JSONEncoder().encode(["source": "chefkoch", "url": url.absoluteString])
+        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("recipes/import/parse/html", method: "POST", body: body)
+        return try OnionaryAPI.decoder.decode(RecipeDraft.self, from: data)
+    }
+
+    func saveRecipe(_ draft: RecipeDraft, id: Int? = nil) async throws {
+        guard let credential else { throw CookingError.response("Sign in before saving.") }
+        let data = try draft.validatedData()
+        _ = try await OnionaryAPI(server: credential.server, token: credential.token).data(id.map { "recipes/\($0)" } ?? "recipes", method: id == nil ? "POST" : "PUT", body: data)
+        await refresh()
     }
 
     func disconnect() async {

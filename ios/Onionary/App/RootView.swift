@@ -6,6 +6,7 @@ private let onion = OnionaryTheme.accent
 struct RootView: View {
     @Bindable var store: AppStore
     @State private var tab = 0
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         Group {
             if store.credential == nil {
@@ -36,7 +37,12 @@ struct RootView: View {
                     }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
                 }
             }
-        }
+        }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox() } }
+         .onChange(of: store.credential?.userID) { store.checkImportInbox() }
+         .task { store.checkImportInbox() }
+         .sheet(isPresented: Binding(get: { store.pendingImport != nil }, set: { if !$0 { store.pendingImport = nil } })) {
+             ImportRecipeView(store: store, link: store.pendingImport ?? "")
+         }
     }
 }
 
@@ -89,7 +95,10 @@ struct RecipesView: View {
             }
         }.navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
             .refreshable { await store.refresh() }
-            .toolbar { Button("Refresh", systemImage: "arrow.clockwise") { Task { await store.refresh() } } }
+            .toolbar {
+                Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
+                Button("Refresh", systemImage: "arrow.clockwise") { Task { await store.refresh() } }
+            }
             .task {
                 if store.kitchen.recipes.isEmpty && !ProcessInfo.processInfo.arguments.contains("--ui-testing") { await store.refresh() }
             }

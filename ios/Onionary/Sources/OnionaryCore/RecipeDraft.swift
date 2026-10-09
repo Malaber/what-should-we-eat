@@ -1,0 +1,52 @@
+import Foundation
+
+public enum RecipeImportLink {
+    public static func chefkoch(_ text: String) throws -> URL {
+        guard let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
+              url.scheme == "https", let host = url.host?.lowercased(),
+              host == "chefkoch.de" || host.hasSuffix(".chefkoch.de"),
+              url.user == nil, url.password == nil, url.port == nil else {
+            throw CookingError.response("Share an HTTPS Chefkoch recipe link.")
+        }
+        return url
+    }
+}
+
+public struct RecipeDraft: Codable, Sendable {
+    public struct Item: Codable, Identifiable, Sendable {
+        public var id: UUID = UUID()
+        public var name = ""
+        public var quantity: Decimal?
+        public var unit: String? = ""
+        enum CodingKeys: String, CodingKey { case name, quantity, unit }
+        public init() {}
+    }
+    public struct Step: Codable, Identifiable, Sendable {
+        public var id: UUID = UUID()
+        public var stepNumber = 1
+        public var description = ""
+        public var durationMin: Int?
+        enum CodingKeys: String, CodingKey { case stepNumber, description, durationMin }
+        public init() {}
+    }
+    public var name = ""
+    public var notes: String? = ""
+    public var kcalPerServing: Decimal?
+    public var activeCookingTimeMin: Int?
+    public var totalTimeMin: Int?
+    public var ingredients: [Item] = []
+    public var instructionSteps: [Step] = []
+    public var tags: [String] = []
+    public init() {}
+    public func validatedData() throws -> Data {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              ingredients.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && ($0.quantity == nil || $0.quantity! > 0) }),
+              instructionSteps.allSatisfy({ !$0.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && ($0.durationMin ?? 0) >= 0 }),
+              (totalTimeMin ?? 0) >= 0, (activeCookingTimeMin ?? 0) >= 0,
+              (kcalPerServing ?? 0) >= 0 else { throw CookingError.response("Check recipe name, ingredients, steps, and positive quantities.") }
+        var copy = self
+        for index in copy.instructionSteps.indices { copy.instructionSteps[index].stepNumber = index + 1 }
+        let encoder = JSONEncoder(); encoder.keyEncodingStrategy = .convertToSnakeCase
+        return try encoder.encode(copy)
+    }
+}
