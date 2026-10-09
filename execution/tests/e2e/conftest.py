@@ -3,7 +3,7 @@ import threading
 import time
 import pytest
 import uvicorn
-import requests
+from urllib.request import urlopen
 
 # Set exactly the same environment variables as unit tests for consistency
 os.environ["DATABASE_URL"] = "sqlite://"
@@ -37,10 +37,10 @@ def server_url():
         if getattr(server, "servers", None) and getattr(server.servers[0], "sockets", None):
             port = server.servers[0].sockets[0].getsockname()[1]
             try:
-                r = requests.get(f"http://127.0.0.1:{port}/health")
-                if r.status_code == 200:
-                    started = True
-                    break
+                with urlopen(f"http://127.0.0.1:{port}/health", timeout=1) as response:
+                    if response.status == 200:
+                        started = True
+                        break
             except Exception:
                 pass
         time.sleep(0.1)
