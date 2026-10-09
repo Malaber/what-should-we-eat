@@ -11,7 +11,7 @@ final class AppStore {
     var busy = false
     var pendingImport: String?
     var editingRecipe: Recipe?
-    var backend = "https://onionary-test.malaber.de"
+    var backend = UserDefaults.standard.string(forKey: "backend") ?? "https://onionary-test.malaber.de"
     private var file: URL?
     private let signIn = BrowserSignIn()
 
@@ -36,6 +36,7 @@ final class AppStore {
             let server = try Backend.url(backend)
             let next = try await signIn.signIn(server: server)
             try CredentialStore.save(next)
+            UserDefaults.standard.set(server.absoluteString, forKey: "backend")
             // Never display one account's data while loading another account.
             kitchen = Kitchen(); file = nil; credential = next
             try load(next)

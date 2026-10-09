@@ -6,6 +6,7 @@ private let onion = OnionaryTheme.accent
 struct RootView: View {
     @Bindable var store: AppStore
     @State private var tab = 0
+    @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         Group {
@@ -19,25 +20,8 @@ struct RootView: View {
                         .tabItem { Label("Recipes", systemImage: "book.closed") }.tag(1)
                     NavigationStack { MealPlanningView(store: store, cook: { tab = 0 }) }
                         .tabItem { Label("Kitchen", systemImage: "calendar") }.tag(3)
-                    NavigationStack {
-                        List {
-                            Section("Your kitchen") {
-                                Text(store.credential?.server.host() ?? "").font(.headline)
-                                Text("Progress is saved on this device separately for each backend and account.").foregroundStyle(.secondary)
-                                ConnectionView(store: store)
-                            }
-                            Section("Account security") {
-                                if let server = store.credential?.server {
-                                    Link("Manage passkeys", destination: server.appending(path: "auth/security"))
-                                    Text("Add, rename, or remove passkeys in your backend’s secure browser page. Sign in there to confirm your account.").font(.caption).foregroundStyle(.secondary)
-                                }
-                            }
-                            Section {
-                                Button("Sign out", role: .destructive) { Task { await store.disconnect() } }.disabled(store.busy)
-                            }
-                        }.navigationTitle("Settings")
-                    }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
-                }
+                    NavigationStack { SettingsView(store: store) }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
+                }.id(locale.identifier)
             }
         }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox() } }
          .onChange(of: store.credential?.userID) { store.checkImportInbox() }
@@ -93,8 +77,8 @@ struct RecipesView: View {
                 ForEach(filtered) { recipe in recipeRow(recipe, subtitle: recipe.totalTimeMin.map { "\($0) min" } ?? "Ready when you are") }
             }
             if filtered.isEmpty {
-                ContentUnavailableView(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes",
-                    systemImage: "book.closed", description: Text(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search."))
+                ContentUnavailableView(LocalizedStringKey(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes"),
+                    systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
         }.navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
             .refreshable { await store.refresh() }
@@ -112,12 +96,13 @@ struct RecipesView: View {
                 Image(systemName: "leaf").font(.title2).foregroundStyle(onion).frame(width: 28, height: 36)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
-                    Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                    Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
             }.frame(minHeight: 44)
         }.accessibilityIdentifier("recipe-\(recipe.id)")
-         .swipeActions(edge: .leading) { Button("Edit", systemImage: "pencil") { store.editingRecipe = recipe }.tint(onion) }
+         .swipeActions(edge: .leading) { Button("Edit", systemImage: "pencil") { store.editingRecipe = recipe }.tint(onion)
+         }
     }
 }
 
