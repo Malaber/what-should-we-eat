@@ -16,7 +16,7 @@ from execution.api.routers import recipes, shopping_list, tags, users, household
 
 
 app = FastAPI(
-    title="What Should We Eat — Recipe API",
+    title="Onionary — Recipe API",
     version=os.getenv("APP_VERSION", "0.2.0-dev"),
     description="Manage recipes, plan weekly meals, and generate shopping lists.",
 )

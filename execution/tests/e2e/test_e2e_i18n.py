@@ -23,14 +23,14 @@ def test_language_switch(page: Page):
     # Check default english
     nav_link = page.locator(".nav-link[data-i18n='nav.pick_meals']")
     expect(nav_link).to_have_text("Pick Meals")
-    expect(page.locator("h1")).to_contain_text("What Should We Eat?")
+    expect(page.locator("h1")).to_contain_text("Onionary")
     
     # Switch to German
     lang_switcher.select_option("de")
     
     # Check if UI updated
     expect(nav_link).to_have_text("Gerichte planen")
-    expect(page.locator("h1")).to_contain_text("Was sollen Wir Essen?")
+    expect(page.locator("h1")).to_contain_text("Onionary")
     
     # Reload and test persistence
     page.reload()

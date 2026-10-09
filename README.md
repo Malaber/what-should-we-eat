@@ -1,4 +1,4 @@
-# what-should-we-eat
+# Onionary
 
 Meal planning app with a FastAPI backend, PostgreSQL database, and a static frontend served by the same FastAPI process.
 

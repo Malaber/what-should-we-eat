@@ -5,7 +5,7 @@
   "nav.households": "Haushalte",
   "footer.impressum": "Impressum",
 
-  "index.header.title": "Was sollen <span class=\"accent-orange\">Wir</span> <span class=\"accent-green\">Essen</span>?",
+  "index.header.title": "Onionary",
   "index.header.tagline": "Wähle deine Gerichte für die Woche, wir kümmern uns um die Einkaufsliste.",
   "index.controls.how_many": "Wie viele?",
   "index.controls.max_kcal": "Max kcal / Portion",
@@ -14,7 +14,7 @@
   "index.controls.btn_roll": "🎲 Rezepte würfeln",
   "index.controls.btn_reroll_all": "🗑️ Alle leeren",
   "index.recipes.your_meals": "Deine Gerichte",
-  "index.recipes.btn_kitchen": "🧄 Ab in die Küche",
+  "index.recipes.btn_kitchen": "🧅 Ab in die Küche",
   "index.shopping.title": "🛒 Einkaufsliste",
   "index.shopping.btn_copy": "Kopieren",
   "index.shopping.copied": "In die Zwischenablage kopiert!",
