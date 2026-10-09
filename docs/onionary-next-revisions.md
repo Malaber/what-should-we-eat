@@ -11,7 +11,7 @@ Commit this checklist before implementation. Each numbered feature gets its own 
 - [x] 7. Replace oversized iOS settings presentation with native settings: one backend, appearance (system/light/dark), and language (system/English/German).
 - [x] 8. Share expiring recipe-copy links between Onionary instances; import independent snapshots, with no synchronization, authenticated creation/import, and safe external fetching.
 - [x] 9. Run backend, browser, Swift, simulator, and packaged PostgreSQL regressions; inspect layouts and fix failures.
-- [ ] 10. Push the branch and open a new PR with migration/deployment notes and local test evidence. Leave GitHub CI follow-up to the user.
+- [x] 10. Push the branch and open a new PR with migration/deployment notes and local test evidence. Leave GitHub CI follow-up to the user.
 
 ## Implementation assumptions
 
@@ -30,3 +30,5 @@ Commit this checklist before implementation. Each numbered feature gets its own 
 - GitHub CI has not been polled. User will return with results.
 
 Deployment prerequisites and behavior: [kitchen-sharing-deployment.md](kitchen-sharing-deployment.md).
+
+PR: https://github.com/Malaber/what-should-we-eat/pull/2
