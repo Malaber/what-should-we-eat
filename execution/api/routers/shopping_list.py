@@ -25,7 +25,7 @@ def generate_shopping_list(
     Accepts a list of recipe IDs. Returns a merged shopping list that
     aggregates ingredient quantities by (name, unit).
     """
-    recipes = db.query(Recipe).filter(Recipe.id.in_(recipe_ids)).all()
+    recipes = db.query(Recipe).filter(Recipe.id.in_(recipe_ids), Recipe.household_id == current_user.active_household_id).all()
     found_ids = {r.id for r in recipes}
     missing = set(recipe_ids) - found_ids
     if missing:

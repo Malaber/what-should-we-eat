@@ -3,7 +3,7 @@
 Commit this checklist before implementation. Each numbered feature gets its own commit with appropriate tests. Finish with a combined regression pass and fixes. Open a new PR; do not poll GitHub while idle.
 
 - [x] 1. Add an iOS share extension for Chefkoch URL import, with draft review before saving.
-- [ ] 2. Add the web kitchen's meal planning, cooked state, and shopping list to iOS.
+- [x] 2. Add the web kitchen's meal planning, cooked state, and shopping list to iOS.
 - [ ] 3. Render the selected web language immediately, using centralized translation files with no English-to-German flash.
 - [ ] 4. Configure backend Impressum through environment variables and refuse startup when required values are missing; document deployment changes.
 - [ ] 5. Edit recipes in iOS, including ingredients and steps, with validation and safe cooking-state behavior.

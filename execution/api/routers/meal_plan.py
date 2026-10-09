@@ -32,6 +32,12 @@ def _plan_query(db: Session, household_id: int):
     )
 
 
+def _validate_recipes(db: Session, household_id: int, ids: list[int]):
+    owned = {row.id for row in db.query(Recipe.id).filter(Recipe.household_id == household_id, Recipe.id.in_(ids))}
+    if set(ids) - owned:
+        raise HTTPException(404, "Recipe not found in your kitchen")
+
+
 # ── GET meal plan ────────────────────────────────────────────────────
 
 @router.get("", response_model=MealPlanOut)
@@ -53,10 +59,11 @@ def replace_meal_plan(
     db: Session = Depends(get_db),
 ):
     hid = current_user.active_household_id
+    _validate_recipes(db, hid, body.recipe_ids)
     db.query(MealPlanItem).filter(MealPlanItem.household_id == hid).delete()
     db.flush()
 
-    for rid in body.recipe_ids:
+    for rid in dict.fromkeys(body.recipe_ids):
         db.add(MealPlanItem(household_id=hid, recipe_id=rid))
     db.commit()
 
@@ -73,13 +80,14 @@ def add_to_meal_plan(
     db: Session = Depends(get_db),
 ):
     hid = current_user.active_household_id
+    _validate_recipes(db, hid, body.recipe_ids)
     existing_ids = {
         row.recipe_id
         for row in db.query(MealPlanItem.recipe_id)
         .filter(MealPlanItem.household_id == hid)
         .all()
     }
-    for rid in body.recipe_ids:
+    for rid in dict.fromkeys(body.recipe_ids):
         if rid not in existing_ids:
             db.add(MealPlanItem(household_id=hid, recipe_id=rid))
     db.commit()

@@ -114,3 +114,13 @@ class TestMealPlanHouseholdIsolation:
         assert alice_plan["items"][0]["recipe"]["name"] == "Alice Meal"
         assert len(bob_plan["items"]) == 1
         assert bob_plan["items"][0]["recipe"]["name"] == "Bob Meal"
+
+
+def test_foreign_recipe_rejected_before_replacing_plan(client, auth_headers, second_user_headers):
+    own = _create_recipe(client, auth_headers, "Own")
+    foreign = _create_recipe(client, second_user_headers, "Private")
+    client.post('/meal-plan/add', json={'recipe_ids': [own, own]}, headers=auth_headers)
+    for method, path in [('post', '/meal-plan/add'), ('put', '/meal-plan')]:
+        assert getattr(client, method)(path, json={'recipe_ids': [foreign]}, headers=auth_headers).status_code == 404
+    assert [i['recipe_id'] for i in client.get('/meal-plan', headers=auth_headers).json()['items']] == [own]
+    assert client.post('/shopping-list', json=[foreign], headers=auth_headers).status_code == 404
