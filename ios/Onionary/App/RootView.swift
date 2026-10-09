@@ -105,6 +105,8 @@ struct CookingView: View {
     var browse: () -> Void
     @State private var scaling = false
     @State private var history = false
+    @State private var recentAction: CheckChange?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         Group {
             if let adventure = store.current {
@@ -159,12 +161,31 @@ struct CookingView: View {
                 }.sensoryFeedback(.selection, trigger: adventure.portions)
                  .sensoryFeedback(.selection, trigger: adventure.checked)
                  .safeAreaInset(edge: .bottom) {
-                    HStack {
-                        Button("Go back", systemImage: "arrow.uturn.backward") { store.update { $0.undo() } }
-                            .disabled(!adventure.canUndo).accessibilityIdentifier("undo")
-                        Spacer()
-                        Button("History", systemImage: "clock.arrow.circlepath") { history = true }
+                    VStack(spacing: 10) {
+                        if let action = recentAction {
+                            Text((action.undoes != nil ? "Undid · " : action.redoes != nil ? "Redid · " : action.isChecked ? "Checked · " : "Unchecked · ") + action.label)
+                                .font(.subheadline).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                                .accessibilityIdentifier("recent-action")
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                        HStack {
+                            Button("Undo", systemImage: "arrow.uturn.backward") { store.update { $0.undo() } }
+                                .disabled(!adventure.canUndo).accessibilityIdentifier("undo")
+                            Spacer()
+                            Button("Redo", systemImage: "arrow.uturn.forward") { store.update { $0.redo() } }
+                                .disabled(!adventure.canRedo).accessibilityIdentifier("redo")
+                            Spacer()
+                            Button("History", systemImage: "clock.arrow.circlepath") { history = true }
+                        }
                     }.padding().background(.regularMaterial)
+                    .onChange(of: adventure.history.last?.id) { _, _ in
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { recentAction = adventure.history.last }
+                    }
+                    .task(id: recentAction?.id) {
+                        guard recentAction != nil else { return }
+                        do { try await Task.sleep(for: .seconds(4)) } catch { return }
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { recentAction = nil }
+                    }
                 }
             } else {
                 ContentUnavailableView {
@@ -192,7 +213,7 @@ struct CookingView: View {
                 Spacer(minLength: 0)
             }.padding(.vertical, 10).frame(minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityLabel(label + (subtitle.isEmpty ? "" : ", " + subtitle))
-            .accessibilityValue(checked ? "Checked" : "Unchecked").accessibilityHint("Double tap to toggle. Go back undoes the last change.")
+            .accessibilityValue(checked ? "Checked" : "Unchecked").accessibilityHint("Double tap to toggle. Undo reverses the last change.")
             .accessibilityIdentifier(key)
     }
 }
@@ -288,13 +309,16 @@ struct HistoryView: View {
                 ForEach(store.current?.history.reversed() ?? []) { entry in
                     VStack(alignment: .leading, spacing: 5) {
                         Text(entry.label).font(.headline)
-                        Text((entry.undoes == nil ? "" : "Undo · ") + (entry.isChecked ? "Checked" : "Unchecked"))
+                        Text((entry.redoes != nil ? "Redo · " : entry.undoes == nil ? "" : "Undo · ") + (entry.isChecked ? "Checked" : "Unchecked"))
                         Text(entry.timestamp.formatted(date: .abbreviated, time: .standard)).font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical, 5)
                 }
             }.navigationTitle("Tap history").toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Go back", systemImage: "arrow.uturn.backward") { store.update { $0.undo() } }.disabled(store.current?.canUndo != true)
+                    HStack {
+                        Button("Undo", systemImage: "arrow.uturn.backward") { store.update { $0.undo() } }.disabled(store.current?.canUndo != true)
+                        Button("Redo", systemImage: "arrow.uturn.forward") { store.update { $0.redo() } }.disabled(store.current?.canRedo != true)
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
             }

@@ -65,6 +65,7 @@ public struct CheckChange: Codable, Identifiable, Equatable, Sendable {
     public let wasChecked: Bool
     public let isChecked: Bool
     public let undoes: UUID?
+    public var redoes: UUID? = nil
 }
 
 public struct Adventure: Codable, Identifiable, Equatable, Sendable {
@@ -75,8 +76,10 @@ public struct Adventure: Codable, Identifiable, Equatable, Sendable {
     public private(set) var checked: Set<String> = []
     public private(set) var history: [CheckChange] = []
     private var undoStack: [UUID] = []
+    private var redoStack: [UUID]? = nil
     public var lastVisited: Date
     public var canUndo: Bool { !undoStack.isEmpty }
+    public var canRedo: Bool { redoStack?.isEmpty == false }
     public var portions: Decimal { baseServings * multiplier }
 
     public init(recipe: Recipe, now: Date = Date()) { self.recipe = recipe; lastVisited = now }
@@ -102,14 +105,24 @@ public struct Adventure: Codable, Identifiable, Equatable, Sendable {
         set(key, checked: !previous)
         history.append(change)
         undoStack.append(change.id)
+        redoStack = []
     }
     /// Undo itself is recorded, so accidental checks AND unchecks remain inspectable.
     public mutating func undo(now: Date = Date()) {
         guard let id = undoStack.popLast(), let original = history.first(where: { $0.id == id }) else { return }
         let previous = checked.contains(original.key)
+        redoStack = (redoStack ?? []) + [id]
         set(original.key, checked: original.wasChecked)
         history.append(CheckChange(id: UUID(), timestamp: now, key: original.key, label: original.label,
                                    wasChecked: previous, isChecked: original.wasChecked, undoes: id))
+    }
+    public mutating func redo(now: Date = Date()) {
+        guard let id = redoStack?.popLast(), let original = history.first(where: { $0.id == id }) else { return }
+        let previous = checked.contains(original.key)
+        set(original.key, checked: original.isChecked)
+        undoStack.append(id)
+        history.append(CheckChange(id: UUID(), timestamp: now, key: original.key, label: original.label,
+                                   wasChecked: previous, isChecked: original.isChecked, undoes: nil, redoes: id))
     }
     private mutating func set(_ key: String, checked value: Bool) {
         if value { checked.insert(key) } else { checked.remove(key) }

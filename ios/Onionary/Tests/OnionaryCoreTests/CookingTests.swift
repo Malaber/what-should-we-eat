@@ -101,3 +101,23 @@ private func recipe(_ id: Int = 1) throws -> Recipe {
     #expect(Numbers.display(1, locale: Locale(identifier: "en_US")) == "1")
     #expect(Numbers.text(number) == "193552.666666666666666")
 }
+
+@Test func redoSurvivesRestoreAndNewActionsDiscardRedo() throws {
+    var adventure = Adventure(recipe: try recipe())
+    adventure.toggle(key: "ingredient-1", label: "Cheese")
+    adventure.undo()
+    adventure = try JSONDecoder().decode(Adventure.self, from: JSONEncoder().encode(adventure))
+    #expect(adventure.canRedo)
+    adventure.redo()
+    #expect(adventure.checked.contains("ingredient-1"))
+    #expect(adventure.history.last?.redoes == adventure.history.first?.id)
+    adventure.undo()
+    adventure.toggle(key: "step-1", label: "Cook")
+    #expect(!adventure.canRedo)
+    #expect(adventure.checked == ["step-1"])
+    var legacy = try JSONSerialization.jsonObject(with: JSONEncoder().encode(adventure)) as! [String: Any]
+    legacy.removeValue(forKey: "redoStack")
+    let decoded = try JSONDecoder().decode(Adventure.self, from: JSONSerialization.data(withJSONObject: legacy))
+    #expect(!decoded.canRedo)
+    #expect(decoded.checked == adventure.checked)
+}
