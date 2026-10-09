@@ -6,7 +6,7 @@ then run and fix the relevant complete test suites without retries.
 - [x] Add searchable tags, category navigation and richer recipe browsing.
 - [x] Add explicit ingredient quantity placeholders to recipe steps, resolving
   percentages against the recipe quantities and current portion scale.
-- [ ] Add a Live Activity for the current cooking session with progress and next step.
+- [x] Add a Live Activity for the current cooking session with progress and next step.
 - [ ] Add a Home Screen kitchen widget for recipes planned this week, with deep links.
 - [ ] Configure Onionary widget App ID and shared App Group without deleting Apple records.
 - [ ] Configure Planini phone widget App ID / group as required by PR 110.

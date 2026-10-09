@@ -9,6 +9,11 @@ final class AppStore {
     var kitchen = Kitchen()
     var error: String?
     var busy = false
+    let cookingActivity = CookingActivityController()
+    var scope: String {
+        guard let credential else { return "" }
+        return SHA256.hash(data: Data((credential.server.absoluteString + "|" + credential.userID).utf8)).map { String(format: "%02x", $0) }.joined()
+    }
     var pendingImport: String?
     var editingRecipe: Recipe?
     var sharingRecipe: Recipe?
@@ -39,6 +44,7 @@ final class AppStore {
             try CredentialStore.save(next)
             UserDefaults.standard.set(server.absoluteString, forKey: "backend")
             // Never display one account's data while loading another account.
+            await stopCookingActivity()
             kitchen = Kitchen(); file = nil; credential = next
             try load(next)
             await refresh()
@@ -72,7 +78,22 @@ final class AppStore {
         guard let file else { throw CookingError.response("Your saved kitchen could not be loaded. Reconnect before making changes.") }
         try KitchenFile.write(next, to: file)
         kitchen = next
+        synchronizeCookingActivity()
     }
+
+    func synchronizeCookingActivity() {
+        let snapshot = current.map { CookingSnapshot($0, locale: L10n.locale) }
+        let account = scope
+        Task { try? await cookingActivity.synchronize(snapshot, scope: account) }
+    }
+
+    func startCookingActivity() async {
+        guard let current else { return }
+        do { try await cookingActivity.synchronize(CookingSnapshot(current, locale: L10n.locale), scope: scope, start: true) }
+        catch { self.error = error.localizedDescription }
+    }
+
+    func stopCookingActivity() async { try? await cookingActivity.synchronize(nil, scope: scope) }
 
     func visit(_ recipe: Recipe) {
         do { var next = kitchen; next.visit(recipe); try persist(next) }
@@ -143,7 +164,7 @@ final class AppStore {
             if let credential {
                 _ = try await OnionaryAPI(server: credential.server, token: credential.token).data("auth/mobile/logout", method: "POST")
             }
-            try CredentialStore.remove(); credential = nil; kitchen = Kitchen(); file = nil
+            try CredentialStore.remove(); await stopCookingActivity(); credential = nil; kitchen = Kitchen(); file = nil
         } catch { self.error = "Could not sign out: \(error.localizedDescription)" }
     }
 

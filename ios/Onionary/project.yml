@@ -15,10 +15,13 @@ targets:
     deploymentTarget: '17.0'
     sources:
       - App
+      - Shared
       - path: AppIcon.icon
         buildPhase: resources
     dependencies:
       - package: OnionaryCore
+      - target: OnionaryWidgets
+        embed: true
       - target: OnionaryShare
         embed: true
     settings:
@@ -44,6 +47,7 @@ targets:
     info:
       path: App/Info.plist
       properties:
+        NSSupportsLiveActivities: true
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleURLTypes:
@@ -83,6 +87,33 @@ targets:
             NSExtensionActivationRule:
               NSExtensionActivationSupportsWebURLWithMaxCount: 1
               NSExtensionActivationSupportsText: true
+  OnionaryWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: '17.0'
+    sources: [Widgets, Shared]
+    dependencies:
+      - package: OnionaryCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.malaber.onionary.widget
+        MARKETING_VERSION: 0.2.0
+        CURRENT_PROJECT_VERSION: 1
+        APPLICATION_EXTENSION_API_ONLY: YES
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: '1,2'
+    entitlements:
+      path: Widgets/OnionaryWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.de.malaber.onionary]
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Onionary Kitchen
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
   OnionaryUITests:
     type: bundle.ui-testing
     platform: iOS

@@ -25,7 +25,7 @@ struct RootView: View {
             }
         }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox() } }
          .onChange(of: store.credential?.userID) { store.checkImportInbox() }
-         .task { store.checkImportInbox() }
+         .task { store.checkImportInbox(); store.synchronizeCookingActivity() }
          .sheet(item: $store.sharingRecipe) { recipe in RecipeSharingView(store: store, recipe: recipe) }
          .sheet(item: $store.editingRecipe) { recipe in EditRecipeView(store: store, id: recipe.id) }
          .sheet(isPresented: Binding(get: { store.pendingImport != nil }, set: { if !$0 { store.pendingImport = nil } })) {
@@ -250,6 +250,12 @@ struct CookingView: View {
             }
             .toolbar { if store.current != nil {
                 Menu {
+                    Button(store.cookingActivity.active ? "Stop Live Activity" : "Start Live Activity") {
+                        Task {
+                            if store.cookingActivity.active { await store.stopCookingActivity() }
+                            else { await store.startCookingActivity() }
+                        }
+                    }
                     Button("Edit recipe") { store.editingRecipe = store.current?.recipe }
                     Button("Share recipe copy") { store.sharingRecipe = store.current?.recipe }
                     Button("Restart with latest recipe", role: .destructive) { restart = true }
