@@ -18,6 +18,9 @@ The Dockerfile:
 
 | Variable | Notes |
 |---|---|
+| `IMPRESSUM_NAME` | Required operator full name/company |
+| `IMPRESSUM_ADDRESS` | Required complete postal address; supports newlines |
+| `IMPRESSUM_EMAIL` | Required operator contact email |
 | `DATABASE_URL` | Full PostgreSQL connection string |
 | `SECRET_KEY` | Strong random key for JWT signing |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440` (24h) recommended |
@@ -72,3 +75,8 @@ The app is deployed via an Ansible role in a separate `ansible-deployment` repo:
   `python3 execution/test_container.py --image onionary:local`. The test creates
   isolated resources and deletes only its own containers/volumes/network.
 - iOS tests run separately and do not block backend image publication.
+
+The API validates legal identity at startup and refuses to serve without it. Set
+all three IMPRESSUM variables in the Ansible-generated `app.env` before pulling
+this version. These are public instance identity, not Vault secrets. The separate
+GitHub Pages app website does not inherit backend environment variables.

@@ -7,6 +7,10 @@ creates an in-memory SQLite engine with StaticPool (all sessions share one DB).
 
 import os
 
+os.environ["IMPRESSUM_NAME"] = "Test Operator"
+os.environ["IMPRESSUM_ADDRESS"] = "Test Street 1, Test City"
+os.environ["IMPRESSUM_EMAIL"] = "operator@example.test"
+
 # ── Must happen before any app import ────────────────────────────────
 os.environ["ALLOW_LEGACY_PASSWORD_AUTH"] = "true"
 os.environ["APP_BASE_URL"] = "http://localhost:8000"

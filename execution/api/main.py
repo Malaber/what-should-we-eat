@@ -8,7 +8,10 @@ Run with:
 from pathlib import Path
 import os
 import json
-from fastapi.responses import Response
+from fastapi.responses import Response, HTMLResponse
+from contextlib import asynccontextmanager
+from html import escape
+from execution.legal import legal_identity
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +20,14 @@ from fastapi.staticfiles import StaticFiles
 from execution.api.routers import recipes, shopping_list, tags, users, households, meal_plan, passkeys
 
 
+@asynccontextmanager
+async def lifespan(app):
+    app.state.legal = legal_identity()  # Fail before accepting requests, including /health.
+    yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="Onionary — Recipe API",
     version=os.getenv("APP_VERSION", "0.2.0-dev"),
     description="Manage recipes, plan weekly meals, and generate shopping lists.",
@@ -49,6 +59,16 @@ def health():
 
 from execution.admin import configure_admin
 configure_admin(app)
+
+@app.get("/impressum.html", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/impressum", response_class=HTMLResponse, include_in_schema=False)
+def impressum():
+    identity = legal_identity()
+    template = (Path(__file__).resolve().parents[2] / "frontend/impressum.html").read_text()
+    for key, value in (("NAME", identity.name), ("ADDRESS", identity.address), ("EMAIL", identity.email)):
+        template = template.replace("{{IMPRESSUM_" + key + "}}", escape(value, quote=True))
+    return HTMLResponse(template, headers={"Cache-Control": "no-cache"})
+
 
 @app.get("/translations.js", include_in_schema=False)
 def translations():
