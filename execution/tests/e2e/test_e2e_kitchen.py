@@ -4,9 +4,10 @@ from playwright.sync_api import Page, expect
 def login_as_test_user(page: Page):
     page.goto(page.base_url + "/")
     page.locator("#gate-signup").click()
-    page.locator("#signup-email").fill("kitchen@e2e.com")
-    page.locator("#signup-password").fill("kitchen-password")
-    page.locator("#signup-form button[type='submit']").click(force=True)
+    page.locator("#registration summary").click()
+    page.locator('[name="display_name"]').fill("Test Chef")
+    page.locator('[name="email"]').fill("kitchen@e2e.com")
+    page.locator("#register button").click()
     expect(page.locator("#user-greeting")).to_be_visible()
 
 def create_recipe_and_roll(page: Page):

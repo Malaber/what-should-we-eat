@@ -1,5 +1,11 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
+ARG APP_VERSION=0.2.0-dev
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.source="https://github.com/Malaber/what-should-we-eat"
+LABEL org.opencontainers.image.version=$APP_VERSION
+LABEL org.opencontainers.image.revision=$VCS_REF
+ENV APP_VERSION=$APP_VERSION
 WORKDIR /app
 
 # Install dependencies first for better layer caching

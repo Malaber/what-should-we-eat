@@ -1,5 +1,5 @@
 /* ============================================================
-   households.js — What Should We Eat? — Households Page Logic
+   households.js — Onionary — Households Page Logic
    ============================================================ */
 
 const API = '';

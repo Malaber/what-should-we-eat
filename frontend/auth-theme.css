@@ -1,0 +1,18 @@
+/* Shared by the welcome gate, passkey login and account security pages. */
+:root { color-scheme: light dark; --auth-bg: #fbf5e9; --auth-card: #fffaf2; --auth-text: #382831; --auth-muted: #6d5c65; --auth-accent: #7a3057; --auth-button-text: #fff; --auth-border: #c4a8b5; }
+@media (prefers-color-scheme: dark) { :root { --auth-bg: #211b20; --auth-card: #2b242a; --auth-text: #f7eee4; --auth-muted: #d0bdc8; --auth-accent: #f5a6c9; --auth-button-text: #321523; --auth-border: #846775; } }
+.auth-surface { background: var(--auth-bg); color: var(--auth-text); font-family: system-ui, sans-serif; }
+.auth-surface .mark { font-size: 56px; }
+.auth-surface .eyebrow { font-size: 11px; letter-spacing: 3px; font-weight: 700; color: var(--auth-accent); }
+.auth-surface h1, .auth-surface h2 { font: 600 36px/1.15 Georgia, serif; margin: 20px 0; }
+.auth-surface p { line-height: 1.6; }
+.auth-surface button, .auth-surface .auth-button { display: block; box-sizing: border-box; width: 100%; border: 0; border-radius: 14px; padding: 16px; background: var(--auth-accent); color: var(--auth-button-text); font: 600 16px system-ui; cursor: pointer; margin: 18px 0; text-align: center; text-decoration: none; }
+.auth-surface button:disabled { opacity: .45; cursor: default; }
+.auth-surface button[hidden] { display: none; }
+.auth-surface input { background: var(--auth-card); color: var(--auth-text); display: block; box-sizing: border-box; width: 100%; padding: 14px; border: 1px solid var(--auth-border); border-radius: 10px; font: inherit; margin: 8px 0 16px; }
+.auth-surface .help, .auth-surface #server { color: var(--auth-muted); font-size: 13px; }
+.auth-surface a { color: var(--auth-accent); }
+.auth-surface #error { color: light-dark(#ad143b, #ffb0bf); }
+.auth-surface :focus-visible { outline: 3px solid var(--auth-accent); outline-offset: 4px; }
+#login-gate { position: fixed; inset: 0; z-index: 8000; background: var(--auth-bg); display: grid; place-items: center; overflow: auto; padding: 24px; }
+#login-gate .auth-card { max-width: 440px; width: 100%; text-align: left; }

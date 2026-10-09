@@ -6,30 +6,32 @@ Run with:
 """
 
 from pathlib import Path
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from execution.api.routers import recipes, shopping_list, tags, users, households, meal_plan
+from execution.api.routers import recipes, shopping_list, tags, users, households, meal_plan, passkeys
 
 
 app = FastAPI(
-    title="What Should We Eat — Recipe API",
-    version="0.1.0",
+    title="Onionary — Recipe API",
+    version=os.getenv("APP_VERSION", "0.2.0-dev"),
     description="Manage recipes, plan weekly meals, and generate shopping lists.",
 )
 
-# CORS — allow everything during development
+# Credentialed browser requests are restricted to the configured public origin.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[passkeys.origin()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Register routers
+app.include_router(passkeys.router)
 app.include_router(recipes.router)
 app.include_router(tags.router)
 app.include_router(shopping_list.router)
@@ -42,6 +44,9 @@ app.include_router(meal_plan.router)
 def health():
     return {"status": "ok"}
 
+
+from execution.admin import configure_admin
+configure_admin(app)
 
 # Serve frontend static files (must be last — catches all unmatched routes)
 _frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"

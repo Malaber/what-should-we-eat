@@ -35,3 +35,27 @@ Create, read, update, delete, filter, and randomly select recipes via the API. A
 - **Random selection**: Returns all candidates if fewer than `count` are available. Supports `exclude_ids` for re-rolling without duplicates.
 - **Recipe import (Chefkoch)**: Parses JSON-LD `@type: Recipe` from HTML. Supports Unicode fractions and German units in ingredient parsing. Only `chefkoch.de` domains are allowed; redirect targets are validated.
 - **Household import**: Copies recipes including ingredients, steps, and tags. Tags are shared by reference (not duplicated).
+- **Onionary passkeys**: Uses `fastpasskey` 0.2.6, matching Planini and Tracy.
+  Set `APP_BASE_URL` to the exact HTTPS origin; local WebAuthn requires `localhost`,
+  since IP addresses are not valid RP domains. Run database migrations before
+  deployment. Existing users enroll via `python -m execution.enroll_passkey EMAIL`;
+  links are private, expire after 15 minutes, and are consumed when enrollment
+  starts. Password auth is disabled by default; legacy compatibility is migration-only.
+- **iOS builds**: `python3 execution/start_onionary_testflight.py VERSION BUILD`
+  starts a background test/archive/upload. Use `--status` and the log in
+  `.tmp/onionary-testflight/`. See `ios/Onionary/README.md` for signing setup.
+- **Cooking state**: Decimal scaling uses original quantities. Serving counts are
+  set locally because the API has no original-serving field. Cooking snapshots,
+  timestamped checklist history, and undo state persist separately per account.
+- **Xcode packaging**: Run archive/export with `PATH=/usr/bin:/bin:/usr/sbin:/sbin`.
+  Homebrew rsync 3.5 can cause `exportArchive Copy failed` during IPA packaging.
+  The background upload tool accepts `--archive PATH` to retry an existing archive
+  after an App Store Connect metadata correction without rebuilding.
+- **Fork deployment**: GitHub `Malaber/what-should-we-eat` owns CI and GHCR images.
+  Development remains `codex/onionary-ios-companion`; see
+  `docs/development-deployment.md` and `deploy/compose.test.yml`. App website
+  lives only in `website/` on GitHub Pages at `onionary.malaber.de`; use a separate
+  backend origin such as `onionary-test.malaber.de` for passkeys/API traffic.
+- **Release versions**: Upstream API was 0.1.0 without Git tags; fork baseline is
+  0.2.0. Use stable `vX.Y.Z` and development `vX.Y.Z-rc.N` tags. Container builds
+  use `execution/version.py`; version and commit are embedded as OCI labels.

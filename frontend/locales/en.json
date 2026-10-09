@@ -5,7 +5,7 @@
   "nav.households": "Households",
   "footer.impressum": "Impressum",
 
-  "index.header.title": "What Should <span class=\"accent-orange\">We</span> <span class=\"accent-green\">Eat</span>?",
+  "index.header.title": "Onionary",
   "index.header.tagline": "Pick your meals for the week, we'll handle the shopping list.",
   "index.controls.how_many": "How many?",
   "index.controls.max_kcal": "Max kcal / serving",
@@ -14,7 +14,7 @@
   "index.controls.btn_roll": "🎲 Roll Recipes",
   "index.controls.btn_reroll_all": "🗑️ Clear All",
   "index.recipes.your_meals": "Your Meals",
-  "index.recipes.btn_kitchen": "🧄 Send to Kitchen",
+  "index.recipes.btn_kitchen": "🧅 Send to Kitchen",
   "index.shopping.title": "🛒 Shopping List",
   "index.shopping.btn_copy": "Copy",
   "index.shopping.copied": "Copied to clipboard!",

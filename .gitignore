@@ -24,3 +24,15 @@ htmlcov/
 
 # Data
 resources/
+
+# Local configuration and Apple build output
+.env
+.env.local
+*.xcodeproj/
+.build/
+DerivedData/
+*.xcresult/
+*.xcarchive/
+*.ipa
+
+deploy/test.env

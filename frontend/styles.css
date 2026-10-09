@@ -1,5 +1,5 @@
 /* ============================================================
-   WHAT SHOULD WE EAT — Design System
+   ONIONARY — Design System
    Light mode · Orange & Green accents · Warm & organic feel
    ============================================================ */
 
@@ -1374,4 +1374,15 @@ body::before {
   .hh-grid { grid-template-columns: 1fr; }
   .hh-card-content { padding: 18px 16px 12px; }
   .hh-card-footer { padding: 10px 16px; }
+}
+
+/* Onionary palette follows the device appearance across the whole web kitchen. */
+:root { color-scheme: light dark; --orange: #7a3057; --orange-dark: #642244; --orange-light: #ab6286; --orange-pale: #f5e0e9; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #211b20; --bg-card: #2b242a; --bg-surface: #352c33; --bg-muted: #40333c;
+    --text: #f7eee4; --text-muted: #d0bdc8; --text-light: #baa3b1; --border: #67505e;
+    --orange: #f5a6c9; --orange-dark: #ffc4dc; --orange-light: #f5a6c9; --orange-pale: #492b3c;
+    --green: #9fd4a4; --green-dark: #b5e4b9; --green-pale: #253c2a; }
+  .btn-primary { color: #321523; }
+  input, textarea, select { background: var(--bg-card); color: var(--text); }
 }

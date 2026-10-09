@@ -8,6 +8,8 @@ creates an in-memory SQLite engine with StaticPool (all sessions share one DB).
 import os
 
 # ── Must happen before any app import ────────────────────────────────
+os.environ["ALLOW_LEGACY_PASSWORD_AUTH"] = "true"
+os.environ["APP_BASE_URL"] = "http://localhost:8000"
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["SECRET_KEY"] = "test-secret-key-for-unit-tests-minimum-32-bytes"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "60"

@@ -1,5 +1,5 @@
 /* ============================================================
-   kitchen.js — What Should We Eat? — Kitchen Logic
+   kitchen.js — Onionary — Kitchen Logic
    ============================================================ */
 
 const API = '';
@@ -110,7 +110,7 @@ function renderGrid() {
       </div>
       <div class="recipe-card-meta" style="pointer-events:none;">
         ${r.kcal_per_serving ? `<span class="meta-chip"><span class="icon">🔥</span> ${r.kcal_per_serving} kcal</span>` : ''}
-        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧄</span> ${r.active_cooking_time_min} min</span>` : ''}
+        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧅</span> ${r.active_cooking_time_min} min</span>` : ''}
         ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} min</span>` : ''}
       </div>
       <div class="recipe-card-tags" style="pointer-events:none;">
@@ -140,7 +140,7 @@ function openModal(id) {
   // Meta
   const metaHTML = [];
   if (recipe.kcal_per_serving) metaHTML.push(`<span class="meta-chip"><span class="icon">🔥</span> ${recipe.kcal_per_serving} kcal</span>`);
-  if (recipe.active_cooking_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">🧄</span> ${recipe.active_cooking_time_min} min active</span>`);
+  if (recipe.active_cooking_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">🧅</span> ${recipe.active_cooking_time_min} min active</span>`);
   if (recipe.total_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">⏱️</span> ${recipe.total_time_min} min total</span>`);
   $modalMeta.innerHTML = metaHTML.join('');
 

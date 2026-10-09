@@ -1,0 +1,58 @@
+name: onionary-test
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: onionary
+      POSTGRES_DB: onionary
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U onionary -d onionary']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  migrate:
+    image: ${ONIONARY_IMAGE:-ghcr.io/malaber/what-should-we-eat:development}
+    command: [python, -m, execution.db.init_db]
+    environment: &backend-env
+      DATABASE_URL: postgresql://onionary:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/onionary
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY}
+      APP_BASE_URL: https://${BACKEND_HOST:?Set BACKEND_HOST}
+      ALLOW_LEGACY_PASSWORD_AUTH: 'false'
+      DEMO_HOUSEHOLD_ID: '0'
+    depends_on:
+      db:
+        condition: service_healthy
+  api:
+    image: ${ONIONARY_IMAGE:-ghcr.io/malaber/what-should-we-eat:development}
+    restart: unless-stopped
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - default
+      - traefik
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik_external}
+      traefik.http.services.onionary-test.loadbalancer.server.port: '8000'
+      traefik.http.routers.onionary-test.rule: Host(`${BACKEND_HOST:?Set BACKEND_HOST}`)
+      traefik.http.routers.onionary-test.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.onionary-test.service: onionary-test
+      traefik.http.routers.onionary-test.tls: 'true'
+      traefik.http.routers.onionary-test.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-lets-encr}
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik_external}
+volumes:
+  pgdata:

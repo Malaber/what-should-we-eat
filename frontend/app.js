@@ -1,5 +1,5 @@
 /* ============================================================
-   app.js — What Should We Eat? — Frontend Logic
+   app.js — Onionary — Frontend Logic
    ============================================================ */
 
 const API = '';  // same origin
@@ -290,7 +290,7 @@ function renderRecipes() {
       </div>
       <div class="recipe-card-meta">
         ${r.kcal_per_serving ? `<span class="meta-chip"><span class="icon">🔥</span> ${r.kcal_per_serving} kcal</span>` : ''}
-        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧄</span> ${r.active_cooking_time_min} min active</span>` : ''}
+        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧅</span> ${r.active_cooking_time_min} min active</span>` : ''}
         ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} min total</span>` : ''}
       </div>
       <div class="recipe-card-tags">

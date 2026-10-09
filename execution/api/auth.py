@@ -33,6 +33,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if hashed_password.startswith("!"):
+        return False
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def get_password_hash(password: str) -> str:
@@ -65,6 +67,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     
     user = db.query(User).filter(User.email == token_data.email).first()
     if user is None:
+        raise credentials_exception
+    sid = payload.get("sid")
+    if sid:
+        from execution.db.passkeys import AuthSession
+        session = db.query(AuthSession).filter(
+            AuthSession.token_hash == sid, AuthSession.user_id == user.id,
+            AuthSession.expires_at > datetime.now(timezone.utc)).first()
+        if session is None:
+            raise credentials_exception
+    elif os.getenv("ALLOW_LEGACY_PASSWORD_AUTH", "false").lower() != "true":
         raise credentials_exception
     return user
 
