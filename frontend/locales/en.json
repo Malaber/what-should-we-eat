@@ -215,5 +215,6 @@
   "feedback.created": "Created \"{name}\"!",
   "feedback.left": "Left \"{name}\"",
   "feedback.imported": "Successfully imported {count} recipes!",
-  "recipe.servings": "Original recipe serves"
+  "recipe.servings": "Original recipe serves",
+  "app.website": "Onionary for iPhone and iPad"
 }

@@ -213,5 +213,6 @@
   "feedback.created": "„{name}“ erstellt!",
   "feedback.left": "„{name}“ verlassen",
   "feedback.imported": "{count} Rezepte erfolgreich importiert!",
-  "recipe.servings": "Portionen im Originalrezept"
+  "recipe.servings": "Portionen im Originalrezept",
+  "app.website": "Onionary für iPhone und iPad"
 }
