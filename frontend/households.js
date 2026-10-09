@@ -196,7 +196,7 @@ async function handleSwitch(householdId) {
     window.dispatchEvent(new Event('wswe_auth_changed'));
   } catch (err) {
     console.error('Switch error:', err);
-    showToast('Failed to switch household', 'error');
+    showToast(window.t('Failed to switch household'), 'error');
   }
 }
 
@@ -257,7 +257,7 @@ async function handleJoin(e) {
     activeHouseholdId = user.active_household_id;
     closeModal($joinModal);
     $joinForm.reset();
-    showToast('Joined household!', 'success');
+    showToast(window.t('Joined household!'), 'success');
     await loadHouseholds();
   } catch (err) {
     $joinError.textContent = 'Network error';
@@ -336,7 +336,7 @@ async function confirmLeave() {
     await loadHouseholds();
     window.dispatchEvent(new Event('wswe_auth_changed'));
   } catch (err) {
-    showToast('Failed to leave household', 'error');
+    showToast(window.t('Failed to leave household'), 'error');
   }
 }
 

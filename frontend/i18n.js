@@ -1,103 +1,41 @@
-const I18n = {
-  lang: 'en', // will be overwritten in init()
-  translations: {},
-
-  async init() {
-    // Check localStorage or fallback to navigator languages
-    let preferredLang = localStorage.getItem('app_lang');
-    if (!preferredLang) {
-      const userLang = navigator.language || navigator.userLanguage || "en";
-      preferredLang = userLang.startsWith('de') ? 'de' : 'en';
+// Dictionaries are generated from locales/*.json by the backend before this script.
+(() => {
+  let saved;
+  try { saved = localStorage.getItem('app_lang'); } catch (_) {}
+  const preferred = saved || (navigator.language || 'en').split('-')[0];
+  const lang = preferred === 'de' ? 'de' : 'en';
+  document.documentElement.lang = lang;
+  // No fallback-language paint while parsing the document. Dynamic code already has t().
+  document.documentElement.style.visibility = 'hidden';
+  const I18n = {
+    lang,
+    translations: window.OnionaryTranslations?.[lang] || {},
+    t(key) { return this.translations[key] ?? window.OnionaryTranslations?.en?.[key] ?? key; },
+    updateDOM() {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const value = this.t(el.dataset.i18n);
+        if (el.matches('input,textarea')) el.placeholder = value;
+        else el.innerHTML = value;
+      });
+      document.querySelectorAll('.lang-switcher').forEach(el => { el.value = this.lang; });
+    },
+    setLang(value) {
+      if (!['en','de','system'].includes(value)) return;
+      try { if (value === 'system') localStorage.removeItem('app_lang'); else localStorage.setItem('app_lang', value); } catch (_) {}
+      location.reload();
     }
-
-    if (preferredLang !== 'en' && preferredLang !== 'de') {
-      preferredLang = 'en';
+  };
+  window.I18n = I18n;
+  window.t = I18n.t.bind(I18n);
+  document.addEventListener('DOMContentLoaded', () => {
+    const nav = document.getElementById('nav-links');
+    if (nav && !document.getElementById('lang-switcher')) {
+      const select = document.createElement('select'); select.id = 'lang-switcher'; select.className = 'lang-switcher'; select.setAttribute('aria-label','Language / Sprache');
+      for (const [value,label] of [['en','EN'],['de','DE'],['system','System']]) select.add(new Option(label,value));
+      select.onchange = () => I18n.setLang(select.value); nav.append(select);
     }
-
-    this.lang = preferredLang;
-    await this.loadTranslations(this.lang);
-    this.updateDOM();
+    I18n.updateDOM();
+    document.documentElement.style.visibility = '';
     window.dispatchEvent(new CustomEvent('i18n:loaded'));
-  },
-
-  async loadTranslations(lang) {
-    try {
-      const resp = await fetch(`/locales/${lang}.json`);
-      if (resp.ok) {
-        this.translations = await resp.json();
-      } else {
-        console.warn(`Could not load translations for lang ${lang}`);
-        if(lang !== 'en') {
-          // fallback to en
-          this.lang = 'en';
-          await this.loadTranslations('en');
-        }
-      }
-    } catch (e) {
-      console.error("I18n Load Error:", e);
-    }
-  },
-
-  setLang(lang) {
-    this.lang = lang;
-    localStorage.setItem('app_lang', lang);
-    this.init(); // reload and update
-  },
-
-  t(key, fallback) {
-    if (this.translations[key] !== undefined) {
-      return this.translations[key];
-    }
-    // Handle API backend error translations
-    // e.g., if key starts with "error." or similar, we just use fallback
-    return fallback || key;
-  },
-
-  updateDOM() {
-    const elements = document.querySelectorAll('[data-i18n]');
-    elements.forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      const val = this.t(key);
-      if (val !== key) {
-        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-          if (el.hasAttribute('placeholder')) {
-             el.placeholder = val;
-          }
-        } else {
-           el.innerHTML = val;
-        }
-      }
-    });
-
-    // Handle language switchers (set their value to current language)
-    const switchers = document.querySelectorAll('.lang-switcher');
-    switchers.forEach(s => {
-      s.value = this.lang;
-    });
-  }
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Inject lang switcher if not exists in nav
-    const navLinks = document.getElementById('nav-links');
-    if (navLinks && !document.getElementById('lang-switcher')) {
-        const select = document.createElement('select');
-        select.id = 'lang-switcher';
-        select.className = 'lang-switcher';
-        
-        select.innerHTML = `
-            <option value="en">🇬🇧 EN</option>
-            <option value="de">🇩🇪 DE</option>
-        `;
-        select.addEventListener('change', (e) => {
-            I18n.setLang(e.target.value);
-        });
-        navLinks.appendChild(select);
-    }
-
-    I18n.init(); // init will update DOM
-});
-
-// Expose globally
-window.I18n = I18n;
-window.t = I18n.t.bind(I18n);
+  });
+})();

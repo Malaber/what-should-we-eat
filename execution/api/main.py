@@ -7,6 +7,8 @@ Run with:
 
 from pathlib import Path
 import os
+import json
+from fastapi.responses import Response
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,6 +49,13 @@ def health():
 
 from execution.admin import configure_admin
 configure_admin(app)
+
+@app.get("/translations.js", include_in_schema=False)
+def translations():
+    directory = Path(__file__).resolve().parents[2] / "frontend/locales"
+    dictionaries = {lang: json.loads((directory / f"{lang}.json").read_text()) for lang in ("en", "de")}
+    return Response("window.OnionaryTranslations=" + json.dumps(dictionaries, ensure_ascii=True) + ";", media_type="application/javascript", headers={"Cache-Control": "no-cache"})
+
 
 # Serve frontend static files (must be last — catches all unmatched routes)
 _frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"

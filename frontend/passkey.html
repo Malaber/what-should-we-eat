@@ -1,21 +1,23 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sign in · Onionary</title>
-  <link rel="stylesheet" href="/passkey.css">
-  <script type="module" src="/passkey.js"></script>
+<head><script src="/translations.js"></script><script src="/i18n.js"></script>
+<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Sign in · Onionary</title>
+<link href="/passkey.css" rel="stylesheet"/>
+<script src="/passkey.js" type="module"></script>
 </head>
 <body class="auth-surface"><main>
-  <div class="mark" aria-hidden="true">🧅</div><p class="eyebrow">YOUR COOKING COMPANION</p>
-  <h1>Welcome to Onionary.</h1><p>Your recipes. Your kitchen. Pick up where you left off.</p>
-  <p id="server"></p><p id="error" role="alert"></p>
-  <button id="sign-in">Sign in with a passkey</button>
-  <button id="enroll" hidden>Create passkey for your account</button>
-  <details id="registration"><summary>New here? Create an account</summary>
-    <form id="register"><label>Your name<input name="display_name" autocomplete="name" required maxlength="255"></label>
-    <label>Email<input name="email" type="email" autocomplete="email" required></label>
-    <button>Create account with a passkey</button></form>
-  </details>
-  <p class="help">Use Face ID, Touch ID, a security key, or your password manager. Existing account without a passkey? Ask your server administrator for an enrollment link.</p>
+<div aria-hidden="true" class="mark">🧅</div><p class="eyebrow" data-i18n="auth.eyebrow"></p>
+<h1 data-i18n="auth.welcome"></h1><p data-i18n="auth.tagline"></p>
+<p id="server"></p><p id="error" role="alert"></p>
+<button data-i18n="auth.signin" id="sign-in"></button>
+<button data-i18n="auth.enroll" hidden="" id="enroll"></button>
+<details id="registration"><summary data-i18n="auth.new"></summary>
+<form id="register"><label><span data-i18n="auth.name"></span><input autocomplete="name" maxlength="255" name="display_name" required=""/></label>
+<label><span data-i18n="auth.email"></span><input autocomplete="email" name="email" required="" type="email"/></label>
+<button data-i18n="auth.create"></button></form>
+</details>
+<p class="help" data-i18n="auth.longhelp"></p>
 </main></body></html>
+

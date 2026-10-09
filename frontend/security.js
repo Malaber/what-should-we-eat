@@ -4,22 +4,22 @@ let action;
 async function api(path, body) {
   const r = await fetch(`/auth/${path}`, body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {});
   const data = await r.json();
-  if (!r.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Could not update passkeys.');
+  if (!r.ok) throw new Error(typeof data.detail === 'string' ? data.detail : window.t('security.copy_11'));
   return data;
 }
 async function refresh() {
   const keys = await api('passkeys'); $('keys').replaceChildren();
   for (const key of keys) {
     const row = document.createElement('section'); const title = document.createElement('h2'); title.textContent = key.name; row.append(title);
-    const dates = document.createElement('p'); dates.className = 'help'; dates.textContent = key.last_used_at ? `Last used ${new Date(key.last_used_at).toLocaleString()}` : 'Not used since enrollment'; row.append(dates);
-    for (const kind of ['rename','delete']) { const b = document.createElement('button'); b.textContent = kind === 'rename' ? 'Rename' : 'Delete…'; b.onclick = () => show(kind, key); row.append(b); }
+    const dates = document.createElement('p'); dates.className = 'help'; dates.textContent = key.last_used_at ? window.t('security.copy_24').replace('{date}', new Date(key.last_used_at).toLocaleString(window.I18n.lang)) : window.t('security.copy_12'); row.append(dates);
+    for (const kind of ['rename','delete']) { const b = document.createElement('button'); b.textContent = kind === 'rename' ? window.t('security.copy_13') : window.t('security.copy_14'); b.onclick = () => show(kind, key); row.append(b); }
     $('keys').append(row);
   }
 }
 function show(kind, key) {
   action = {action:kind, key_id:key?.id};
-  $('action-title').textContent = {add:'Add a passkey',rename:'Rename passkey',delete:'Delete this passkey?',replace:'Replace every passkey?',delete_all:'Delete all passkeys?'}[kind];
-  $('action-copy').textContent = kind === 'delete_all' ? 'You will be signed out on every device. Your recipes stay, but you will need an administrator enrollment link to sign in again. This cannot be undone.' : kind === 'replace' ? 'Existing keys will be removed only after the new passkey is created successfully.' : 'Confirm with a passkey belonging to this account.';
+  $('action-title').textContent = {add:window.t('security.copy_3'),rename:window.t('security.copy_15'),delete:window.t('security.copy_16'),replace:window.t('security.copy_17'),delete_all:window.t('security.copy_18')}[kind];
+  $('action-copy').textContent = kind === 'delete_all' ? window.t('security.copy_19') : kind === 'replace' ? window.t('security.copy_20') : window.t('security.copy_21');
   $('name-label').hidden = ['delete','delete_all'].includes(kind); $('key-name').value = key?.name || ''; $('key-name').required = !$('name-label').hidden;
   $('confirm-label').hidden = kind !== 'delete_all'; $('confirmation').value = ''; $('confirmation').required = kind === 'delete_all';
   $('action-dialog').showModal();
@@ -38,8 +38,8 @@ $('action-form').onsubmit = async event => {
     }
     $('action-dialog').close();
     if (result.signed_out) { localStorage.removeItem('wswe_token'); location.assign('/auth/login'); return; }
-    $('status').textContent = 'Passkeys updated.'; await refresh();
-  } catch (error) { $('action-dialog').close(); $('error').textContent = error.name === 'NotAllowedError' ? 'Cancelled. Your passkeys were not changed.' : error.message; }
+    $('status').textContent = window.t('security.copy_22'); await refresh();
+  } catch (error) { $('action-dialog').close(); $('error').textContent = error.name === 'NotAllowedError' ? window.t('security.copy_23') : error.message; }
   finally { buttons.forEach(b => b.disabled = false); }
 };
 refresh().catch(error => $('error').textContent = error.message);

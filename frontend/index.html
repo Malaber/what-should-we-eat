@@ -1,121 +1,102 @@
 <!DOCTYPE html>
+
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Onionary</title>
-  <meta name="description"
-    content="Plan your weekly meals — pick recipes, filter by tags, and generate a shopping list." />
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🧅</text></svg>" />
+<head><script src="/translations.js"></script><script src="/i18n.js"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Onionary</title>
+<meta content="Plan your weekly meals — pick recipes, filter by tags, and generate a shopping list." name="description"/>
+<link href="/styles.css" rel="stylesheet"/>
+<link href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='80'&gt;🧅&lt;/text&gt;&lt;/svg&gt;" rel="icon"/>
 </head>
-
 <body>
+<!-- ─── Navigation ─────────────────────────────────────────── -->
+<nav class="top-nav">
+<div class="container nav-container">
+<button aria-label="Toggle menu" class="burger-btn" id="burger-btn">☰</button>
+<div class="nav-links" id="nav-links">
+<a class="nav-link active" data-i18n="nav.pick_meals" href="/"></a>
+<a class="nav-link" data-i18n="nav.kitchen" href="/kitchen.html"></a>
+<a class="nav-link" data-i18n="nav.manage_recipes" href="/recipes.html"></a>
+<a class="nav-link" data-i18n="nav.households" href="/households.html"></a>
+</div>
+<div class="nav-auth-mount" id="auth-mount"></div>
+</div>
+</nav>
+<!-- ─── Header ─────────────────────────────────────────────── -->
+<header class="site-header">
+<div class="container">
+<h1 data-i18n="index.header.title"></h1>
+<p class="tagline" data-i18n="index.header.tagline"></p>
+</div>
+</header>
+<main class="container">
+<!-- ─── Controls ─────────────────────────────────────────── -->
+<section class="controls" id="controls">
+<div class="controls-row">
+<div class="control-group" style="max-width: 140px;">
+<label data-i18n="index.controls.how_many" for="recipe-count"></label>
+<input id="recipe-count" max="20" min="1" type="number" value="5"/>
+</div>
+<div class="control-group" style="max-width: 160px;">
+<label data-i18n="index.controls.max_kcal" for="max-kcal"></label>
+<input data-i18n="index.any_placeholder" id="max-kcal" min="0" placeholder="" step="50" type="number"/>
+</div>
+<div class="control-group" style="max-width: 160px;">
+<label data-i18n="index.controls.max_time" for="max-time"></label>
+<input data-i18n="index.any_placeholder" id="max-time" min="0" placeholder="" step="5" type="number"/>
+</div>
+</div>
+<div class="control-group" style="margin-top:16px;">
+<label data-i18n="index.controls.filter_tags"></label>
+<div class="tag-selector" id="tag-selector">
+<!-- filled by JS -->
+</div>
+</div>
+<div class="controls-actions">
+<button class="btn btn-primary" data-i18n="index.controls.btn_roll" id="btn-roll"></button>
+<button class="btn btn-secondary" data-i18n="index.controls.btn_reroll_all" id="btn-reroll-all" style="display:none;"></button>
+</div>
+</section>
+<!-- ─── Selected Recipes ─────────────────────────────────── -->
+<section id="recipes-section" style="display:none;">
+<div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+<h2><span data-i18n="index.recipes.your_meals"></span> <span class="badge" id="recipe-badge">0</span></h2>
+<button class="btn btn-primary" data-i18n="index.recipes.btn_kitchen" id="btn-kitchen" style="display:none;"></button>
+</div>
+<div class="recipes-grid" id="recipes-grid">
+<!-- filled by JS -->
+</div>
+</section>
+<!-- ─── Shopping List ────────────────────────────────────── -->
+<section class="shopping-section" id="shopping-section" style="display:none;">
+<div class="shopping-card">
+<div class="shopping-card-header">
+<div style="display:flex; align-items:center; gap:12px;">
+<h2 data-i18n="index.shopping.title"></h2>
+<span class="badge" id="shop-badge" style="background:var(--green-pale);color:var(--green-dark);">0</span>
+</div>
+<button class="btn-copy" id="btn-copy-shopping" title="Copy for Apple Reminders">
+<span class="icon">📋</span>
+<span class="btn-text" data-i18n="index.shopping.btn_copy"></span>
+</button>
+</div>
+<ul class="shopping-list" id="shopping-list">
+<!-- filled by JS -->
+</ul>
+</div>
+</section>
+</main>
+<footer class="site-footer">
+<div class="container">
+<div style="font-size: 0.85rem;">
+<a data-i18n="footer.impressum" href="/impressum.html" style="color: var(--text-muted); text-decoration: none;"></a>
+</div>
+</div>
+</footer>
+<div class="toast" id="toast"></div>
 
-  <!-- ─── Navigation ─────────────────────────────────────────── -->
-  <nav class="top-nav">
-    <div class="container nav-container">
-      <button class="burger-btn" id="burger-btn" aria-label="Toggle menu">☰</button>
-      <div class="nav-links" id="nav-links">
-        <a href="/" class="nav-link active" data-i18n="nav.pick_meals">Pick Meals</a>
-        <a href="/kitchen.html" class="nav-link" data-i18n="nav.kitchen">Kitchen</a>
-        <a href="/recipes.html" class="nav-link" data-i18n="nav.manage_recipes">Manage Recipes</a>
-        <a href="/households.html" class="nav-link" data-i18n="nav.households">Households</a>
-      </div>
-      <div id="auth-mount" class="nav-auth-mount"></div>
-    </div>
-  </nav>
-
-  <!-- ─── Header ─────────────────────────────────────────────── -->
-  <header class="site-header">
-    <div class="container">
-      <h1 data-i18n="index.header.title">Onionary</h1>
-      <p class="tagline" data-i18n="index.header.tagline">Pick your meals for the week, we'll handle the shopping list.</p>
-    </div>
-  </header>
-
-  <main class="container">
-
-    <!-- ─── Controls ─────────────────────────────────────────── -->
-    <section class="controls" id="controls">
-      <div class="controls-row">
-        <div class="control-group" style="max-width: 140px;">
-          <label for="recipe-count" data-i18n="index.controls.how_many">How many?</label>
-          <input type="number" id="recipe-count" min="1" max="20" value="5" />
-        </div>
-        <div class="control-group" style="max-width: 160px;">
-          <label for="max-kcal" data-i18n="index.controls.max_kcal">Max kcal / serving</label>
-          <input type="number" id="max-kcal" data-i18n="index.any_placeholder" placeholder="any" min="0" step="50" />
-        </div>
-        <div class="control-group" style="max-width: 160px;">
-          <label for="max-time" data-i18n="index.controls.max_time">Max total time (min)</label>
-          <input type="number" id="max-time" data-i18n="index.any_placeholder" placeholder="any" min="0" step="5" />
-        </div>
-      </div>
-
-      <div class="control-group" style="margin-top:16px;">
-        <label data-i18n="index.controls.filter_tags">Filter by tags</label>
-        <div class="tag-selector" id="tag-selector">
-          <!-- filled by JS -->
-        </div>
-      </div>
-
-      <div class="controls-actions">
-        <button class="btn btn-primary" id="btn-roll" data-i18n="index.controls.btn_roll">
-          🎲 Roll Recipes
-        </button>
-        <button class="btn btn-secondary" id="btn-reroll-all" style="display:none;" data-i18n="index.controls.btn_reroll_all">
-          🗑️ Clear All
-        </button>
-      </div>
-    </section>
-
-    <!-- ─── Selected Recipes ─────────────────────────────────── -->
-    <section id="recipes-section" style="display:none;">
-      <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <h2><span data-i18n="index.recipes.your_meals">Your Meals</span> <span class="badge" id="recipe-badge">0</span></h2>
-        <button class="btn btn-primary" id="btn-kitchen" style="display:none;" data-i18n="index.recipes.btn_kitchen">🧅 Send to Kitchen</button>
-      </div>
-      <div class="recipes-grid" id="recipes-grid">
-        <!-- filled by JS -->
-      </div>
-    </section>
-
-    <!-- ─── Shopping List ────────────────────────────────────── -->
-    <section class="shopping-section" id="shopping-section" style="display:none;">
-      <div class="shopping-card">
-        <div class="shopping-card-header">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <h2 data-i18n="index.shopping.title">🛒 Shopping List</h2>
-            <span class="badge" id="shop-badge" style="background:var(--green-pale);color:var(--green-dark);">0</span>
-          </div>
-          <button id="btn-copy-shopping" class="btn-copy" title="Copy for Apple Reminders">
-             <span class="icon">📋</span>
-             <span class="btn-text" data-i18n="index.shopping.btn_copy">Copy</span>
-          </button>
-        </div>
-        <ul class="shopping-list" id="shopping-list">
-          <!-- filled by JS -->
-        </ul>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container">
-      <div style="font-size: 0.85rem;">
-        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;" data-i18n="footer.impressum">Impressum</a>
-      </div>
-    </div>
-  </footer>
-
-  <div class="toast" id="toast"></div>
-
-  <script src="/i18n.js"></script>
-  <script src="/auth.js"></script>
-  <script src="/app.js"></script>
+<script src="/auth.js"></script>
+<script src="/app.js"></script>
 </body>
-
 </html>

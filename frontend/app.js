@@ -152,13 +152,13 @@ async function loadMealPlan() {
 // ── Roll Recipes ───────────────────────────────────────────────
 async function rollRecipes() {
   if (!isLoggedIn()) {
-    toast(window.t('app.login_required', 'Please log in to roll recipes.'));
+    toast(window.t('app.login_required'));
     return;
   }
 
   const filters = getFilters();
   currentFilters = filters;
-  $btnRoll.innerHTML = '<span class="spinner"></span> ' + window.t('app.rolling', 'Rolling…');
+  $btnRoll.innerHTML = '<span class="spinner"></span> ' + window.t('app.rolling');
   $btnRoll.disabled = true;
 
   try {
@@ -173,7 +173,7 @@ async function rollRecipes() {
     const recipes = await res.json();
 
     if (recipes.length === 0) {
-      toast(window.t('app.no_match', 'No more recipes match your filters — try broadening them.'));
+      toast(window.t('app.no_match'));
       return;
     }
 
@@ -188,12 +188,12 @@ async function rollRecipes() {
     // Reload from API for consistency
     await loadMealPlan();
 
-    toast(`🎲 ${window.t('app.added', 'Added')} ${recipes.length} ${recipes.length > 1 ? window.t('app.recipes', 'recipes') : window.t('app.recipe', 'recipe')}!`);
+    toast(`🎲 ${window.t('app.added')} ${recipes.length} ${recipes.length > 1 ? window.t('app.recipes') : window.t('app.recipe')}!`);
   } catch (e) {
-    toast(window.t('app.error_api', 'Something went wrong — is the API running?'));
+    toast(window.t('app.error_api'));
     console.error(e);
   } finally {
-    const rollLabel = window.t('index.controls.btn_roll', 'Roll Recipes');
+    const rollLabel = window.t('index.controls.btn_roll');
     $btnRoll.innerHTML = rollLabel.includes('🎲') ? rollLabel : `🎲 ${rollLabel}`;
     $btnRoll.disabled = false;
   }
@@ -239,7 +239,7 @@ async function rerollSingle(recipeId) {
     const replacements = await res.json();
 
     if (replacements.length === 0) {
-      toast(window.t('app.no_swap', 'No other recipes available to swap in.'));
+      toast(window.t('app.no_swap'));
       return;
     }
 
@@ -255,9 +255,9 @@ async function rerollSingle(recipeId) {
     });
 
     await loadMealPlan();
-    toast(`🔄 ${window.t('app.swapped', 'Swapped in')} "${replacements[0].name}"`);
+    toast(`🔄 ${window.t('app.swapped')} "${replacements[0].name}"`);
   } catch (e) {
-    toast(window.t('app.error_reroll', 'Failed to re-roll — check the API.'));
+    toast(window.t('app.error_reroll'));
     console.error(e);
   }
 }
@@ -299,9 +299,9 @@ function renderRecipes() {
       ${r.instruction_steps && r.instruction_steps.length ? `
         <div class="recipe-card-footer">
           <button class="recipe-steps-toggle" data-toggle="steps-${r.id}">
-            ${window.t('app.show_steps', 'Show steps ▾')}
+            ${window.t('app.show_steps')}
           </button>
-          <span style="font-size:0.78rem;color:var(--text-light);">${r.instruction_steps.length} ${r.instruction_steps.length > 1 ? window.t('app.steps', 'steps') : window.t('app.step', 'step')}</span>
+          <span style="font-size:0.78rem;color:var(--text-light);">${r.instruction_steps.length} ${r.instruction_steps.length > 1 ? window.t('app.steps') : window.t('app.step')}</span>
         </div>
         <div class="recipe-steps" id="steps-${r.id}">
           <div class="recipe-steps-inner">
@@ -333,7 +333,7 @@ function renderRecipes() {
     btn.addEventListener('click', () => {
       const target = document.getElementById(btn.dataset.toggle);
       const isOpen = target.classList.toggle('open');
-      btn.textContent = isOpen ? window.t('app.hide_steps', 'Hide steps ▴') : window.t('app.show_steps', 'Show steps ▾');
+      btn.textContent = isOpen ? window.t('app.hide_steps') : window.t('app.show_steps');
     });
   });
 }
@@ -394,7 +394,7 @@ function copyShoppingList() {
     text += `- ${line}\n`;
   });
   
-  const onSuccess = () => toast(window.t('index.shopping.copied', 'Copied to clipboard!'));
+  const onSuccess = () => toast(window.t('index.shopping.copied'));
   const onError = (err) => {
     console.error('Failed to copy', err);
     toast('Failed to copy');
