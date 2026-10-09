@@ -94,3 +94,10 @@ private func recipe(_ id: Int = 1) throws -> Recipe {
         #expect(throws: CookingError.self) { try Backend.url(value) }
     }
 }
+
+@Test func presentationRoundingPreservesPrecision() throws {
+    let number = try Numbers.parse("193552.666666666666666")
+    #expect(Numbers.display(number, locale: Locale(identifier: "de_DE")) == "193552,67")
+    #expect(Numbers.display(1, locale: Locale(identifier: "en_US")) == "1")
+    #expect(Numbers.text(number) == "193552.666666666666666")
+}

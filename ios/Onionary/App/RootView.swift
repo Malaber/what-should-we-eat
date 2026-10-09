@@ -114,7 +114,7 @@ struct CookingView: View {
                             Text("TODAY’S COOKING ADVENTURE").font(.caption2.bold()).tracking(2).foregroundStyle(onion)
                             Text(adventure.recipe.name).font(.system(.largeTitle, design: .serif, weight: .semibold))
                             HStack {
-                                Label("\(Numbers.text(adventure.multiplier))× recipe", systemImage: "scalemass")
+                                Label("\(Numbers.display(adventure.multiplier))× recipe", systemImage: "scalemass")
                                 if let minutes = adventure.recipe.totalTimeMin { Label("\(minutes) min", systemImage: "clock") }
                             }.font(.subheadline).foregroundStyle(.secondary)
                             HStack(spacing: 16) {
@@ -125,10 +125,10 @@ struct CookingView: View {
                                     .accessibilityLabel("One fewer portion").accessibilityIdentifier("portion-minus")
                                 Button { scaling = true } label: {
                                     VStack(spacing: 3) {
-                                        Text(Numbers.text(adventure.portions)).font(.title2.bold()).monospacedDigit()
+                                        Text(Numbers.display(adventure.portions)).font(.title2.bold()).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
                                         Text("portions · tap to edit").font(.caption2)
                                     }.frame(maxWidth: .infinity)
-                                }.buttonStyle(.plain).accessibilityLabel("\(Numbers.text(adventure.portions)) portions. Edit amount")
+                                }.buttonStyle(.plain).accessibilityLabel("\(Numbers.display(adventure.portions)) portions. Edit amount")
                                 Button {
                                     store.update { try $0.scale(baseServings: $0.baseServings, portions: $0.portions + 1) }
                                 } label: { Image(systemName: "plus").frame(width: 32, height: 32) }
@@ -143,7 +143,7 @@ struct CookingView: View {
                     }
                     Section("Gather your ingredients") {
                         ForEach(adventure.recipe.ingredients) { ingredient in
-                            let amount = adventure.quantity(ingredient).map(Numbers.text) ?? ""
+                            let amount = adventure.quantity(ingredient).map(Numbers.display) ?? ""
                             checkRow(key: "ingredient-\(ingredient.id)", label: ingredient.name,
                                 subtitle: [amount, ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "), adventure: adventure)
                         }

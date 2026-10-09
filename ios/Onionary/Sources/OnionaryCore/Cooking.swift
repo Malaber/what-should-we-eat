@@ -44,6 +44,16 @@ public enum Numbers {
               !value.isNaN, value > 0, value <= Decimal(1_000_000_000) else { throw CookingError.invalidNumber }
         return value
     }
+    /// Presentation only. Calculations and persisted values keep full Decimal precision.
+    public static func display(_ value: Decimal, locale: Locale = .current) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = locale
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+        formatter.minimumFractionDigits = 0
+        formatter.usesGroupingSeparator = false
+        return formatter.string(from: NSDecimalNumber(decimal: value)) ?? "–"
+    }
     public static func text(_ value: Decimal) -> String { NSDecimalNumber(decimal: value).stringValue }
 }
 
