@@ -216,5 +216,15 @@
   "feedback.left": "Left \"{name}\"",
   "feedback.imported": "Successfully imported {count} recipes!",
   "recipe.servings": "Original recipe serves",
-  "app.website": "Onionary for iPhone and iPad"
+  "app.website": "Onionary for iPhone and iPad",
+  "account.title": "Account settings",
+  "account.name": "Name",
+  "account.save": "Save name",
+  "account.language": "Language",
+  "account.appearance": "Appearance",
+  "account.system": "System",
+  "account.light": "Light",
+  "account.dark": "Dark",
+  "account.keep-key": "Keep at least one passkey. Add a backup before removing your last key.",
+  "account.saved": "Account updated."
 }

@@ -12,7 +12,7 @@ async function refresh() {
   for (const key of keys) {
     const row = document.createElement('section'); const title = document.createElement('h2'); title.textContent = key.name; row.append(title);
     const dates = document.createElement('p'); dates.className = 'help'; dates.textContent = key.last_used_at ? window.t('security.copy_24').replace('{date}', new Date(key.last_used_at).toLocaleString(window.I18n.lang)) : window.t('security.copy_12'); row.append(dates);
-    for (const kind of ['rename','delete']) { const b = document.createElement('button'); b.textContent = kind === 'rename' ? window.t('security.copy_13') : window.t('security.copy_14'); b.onclick = () => show(kind, key); row.append(b); }
+    for (const kind of ['rename','delete']) { const b = document.createElement('button'); b.textContent = kind === 'rename' ? window.t('security.copy_13') : window.t('security.copy_14'); b.disabled = kind === 'delete' && keys.length <= 1; b.onclick = () => show(kind, key); row.append(b); }
     $('keys').append(row);
   }
 }
@@ -24,7 +24,7 @@ function show(kind, key) {
   $('confirm-label').hidden = kind !== 'delete_all'; $('confirmation').value = ''; $('confirmation').required = kind === 'delete_all';
   $('action-dialog').showModal();
 }
-$('add').onclick = () => show('add'); $('replace').onclick = () => show('replace'); $('delete-all').onclick = () => show('delete_all'); $('cancel').onclick = () => $('action-dialog').close();
+$('add').onclick = () => show('add'); $('cancel').onclick = () => $('action-dialog').close();
 $('action-form').onsubmit = async event => {
   event.preventDefault(); $('error').textContent = ''; $('status').textContent = '';
   const buttons = [...document.querySelectorAll('button')]; buttons.forEach(b => b.disabled = true);
@@ -40,6 +40,21 @@ $('action-form').onsubmit = async event => {
     if (result.signed_out) { localStorage.removeItem('wswe_token'); location.assign('/auth/login'); return; }
     $('status').textContent = window.t('security.copy_22'); await refresh();
   } catch (error) { $('action-dialog').close(); $('error').textContent = error.name === 'NotAllowedError' ? window.t('security.copy_23') : error.message; }
-  finally { buttons.forEach(b => b.disabled = false); }
+  finally { buttons.filter(b => b.isConnected).forEach(b => b.disabled = false); await refresh(); }
 };
 refresh().catch(error => $('error').textContent = error.message);
+
+$('account-language').value = localStorage.getItem('app_lang') || 'system';
+$('account-language').onchange = event => window.I18n.setLang(event.target.value);
+$('account-appearance').value = localStorage.getItem('app_appearance') || 'system';
+$('account-appearance').onchange = event => {
+  localStorage.setItem('app_appearance', event.target.value); location.reload();
+};
+api('account/profile').then(profile => {
+  $('profile-name').value = profile.name || ''; $('profile-email').textContent = profile.email;
+}).catch(error => $('error').textContent = error.message);
+$('profile-form').onsubmit = async event => {
+  event.preventDefault();
+  try { await api('account/profile', {name: $('profile-name').value}); $('status').textContent = window.t('account.saved'); }
+  catch(error) { $('error').textContent = error.message; }
+};

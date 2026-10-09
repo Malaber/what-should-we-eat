@@ -4,3 +4,10 @@ main { max-width: 440px; width: 100%; }
 details { padding: 18px 0; } summary { cursor: pointer; } form { padding-top: 24px; }
 
 dialog { max-width: 420px; border: 1px solid var(--auth-border); border-radius: 20px; padding: 24px; } dialog::backdrop { background: #0009; } [hidden] { display: none !important; }
+
+.account-section { padding: 1rem 0; border-bottom: 1px solid var(--auth-border); }
+.account-section select { display: block; width: 100%; padding: .75rem; margin: .5rem 0 1rem; background: var(--auth-card); color: var(--auth-text); border: 1px solid var(--auth-border); border-radius: .75rem; font: inherit; }
+#keys section { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; border-bottom: 1px solid var(--auth-border); padding: 1rem 0; }
+#keys h2 { flex: 1 1 100%; font: 600 1.1rem system-ui; margin: 0; overflow-wrap: anywhere; }
+#keys p { flex: 1 1 100%; margin: 0; }
+#keys button { width: auto; padding: .6rem 1rem; margin: .25rem 0; }

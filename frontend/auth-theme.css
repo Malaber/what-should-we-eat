@@ -16,3 +16,7 @@
 .auth-surface :focus-visible { outline: 3px solid var(--auth-accent); outline-offset: 4px; }
 #login-gate { position: fixed; inset: 0; z-index: 8000; background: var(--auth-bg); display: grid; place-items: center; overflow: auto; padding: 24px; }
 #login-gate .auth-card { max-width: 440px; width: 100%; text-align: left; }
+
+/* Explicit account preference overrides system appearance. */
+:root[data-appearance="light"] { color-scheme: light dark; --auth-bg: #fbf5e9; --auth-card: #fffaf2; --auth-text: #382831; --auth-muted: #6d5c65; --auth-accent: #7a3057; --auth-button-text: #fff; --auth-border: #c4a8b5; }
+:root[data-appearance="dark"] { --auth-bg: #211b20; --auth-card: #2b242a; --auth-text: #f7eee4; --auth-muted: #d0bdc8; --auth-accent: #f5a6c9; --auth-button-text: #321523; --auth-border: #846775; }

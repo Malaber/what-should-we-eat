@@ -40,13 +40,9 @@ def test_manage_add_rename_delete_and_confirm_all(client, owner, monkeypatch):
     keys = client.get('/auth/passkeys').json()
     backup = next(k['id'] for k in keys if k['name'] == 'Backup key')
     assert action(client, owner, 'delete', key_id=backup).status_code == 200
-    assert client.post('/auth/passkeys/action/options', headers=ORIGIN, json={'action':'delete_all'}).status_code == 400
-    assert action(client, owner, 'delete_all', confirmation='DELETE ALL PASSKEYS').status_code == 200
-    assert client.get('/auth/passkeys').status_code == 401
-    with SessionLocal() as db:
-        assert db.query(Passkey).count() == 0
-        assert db.query(AuthSession).count() == 0
-        assert db.query(User).count() == 1
+    for kind in ['delete_all', 'replace']:
+        assert client.post('/auth/passkeys/action/options', headers=ORIGIN, json={'action':kind, 'confirmation':'DELETE ALL PASSKEYS'}).status_code == 422
+    assert len(client.get('/auth/passkeys').json()) == 1
 
 
 def test_management_requires_origin_and_cannot_replay(client, owner):
@@ -57,7 +53,7 @@ def test_management_requires_origin_and_cannot_replay(client, owner):
 
 
 def test_failed_replace_preserves_old_keys(client, owner, monkeypatch):
-    assert action(client, owner, 'replace', name='New key').status_code == 200
+    assert action(client, owner, 'add', name='New key').status_code == 200
     monkeypatch.setattr(FastPasskey, 'verify_registration', lambda *a, **kw: (_ for _ in ()).throw(ValueError('bad proof')))
     assert client.post('/auth/passkeys/register/verify', headers=ORIGIN, json={'credential':{}}).status_code == 400
     assert client.get('/auth/passkeys').json()[0]['id'] == owner
@@ -114,3 +110,9 @@ def test_sqladmin_access_csrf_creation_and_links(client, owner):
     assert r.status_code == 200
     with SessionLocal() as db:
         assert db.get(PasskeyAddLink, link_id).revoked_at is not None
+
+
+def test_account_profile_requires_origin(client, owner):
+    assert client.post('/auth/account/profile', json={'name':'Other'}).status_code == 403
+    assert client.post('/auth/account/profile', headers=ORIGIN, json={'name':'Schädler'}).status_code == 200
+    assert client.get('/auth/account/profile').json()['name'] == 'Schädler'

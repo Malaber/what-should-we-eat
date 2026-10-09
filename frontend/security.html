@@ -6,7 +6,7 @@
     <script src="/i18n.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width,initial-scale=1" name="viewport" />
-    <title>Your passkeys · Onionary</title>
+    <title>Account · Onionary</title>
     <link href="/passkey.css" rel="stylesheet" />
     <script src="/security.js" type="module"></script>
   </head>
@@ -14,15 +14,40 @@
     <main>
       <div aria-hidden="true" class="mark">🧅</div>
       <p class="eyebrow" data-i18n="security.copy_0"></p>
-      <h1 data-i18n="security.copy_1"></h1>
+      <h1 data-i18n="account.title"></h1>
       <p data-i18n="security.copy_2"></p>
       <p id="error" role="alert"></p>
       <p id="status" role="status"></p>
+      <section class="account-section">
+        <form id="profile-form">
+          <label
+            ><span data-i18n="account.name"></span
+            ><input id="profile-name" required maxlength="120"
+          /></label>
+          <p id="profile-email"></p>
+          <button data-i18n="account.save"></button>
+        </form>
+        <label
+          ><span data-i18n="account.language"></span
+          ><select id="account-language">
+            <option value="system" data-i18n="account.system"></option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+          </select></label
+        >
+        <label
+          ><span data-i18n="account.appearance"></span
+          ><select id="account-appearance">
+            <option value="system" data-i18n="account.system"></option>
+            <option value="light" data-i18n="account.light"></option>
+            <option value="dark" data-i18n="account.dark"></option></select
+        ></label>
+      </section>
+      <h2 data-i18n="auth.keys"></h2>
+      <p class="help" data-i18n="account.keep-key"></p>
       <div id="keys"></div>
-      <button data-i18n="security.copy_3" id="add"></button
-      ><button data-i18n="security.copy_4" id="replace"></button
-      ><button data-i18n="security.copy_5" id="delete-all"></button
-      ><a data-i18n="security.copy_6" href="/"></a>
+      <button data-i18n="security.copy_3" id="add"></button>
+      <a data-i18n="security.copy_6" href="/"></a>
       <dialog class="auth-surface" id="action-dialog">
         <form id="action-form">
           <h2 id="action-title"></h2>
