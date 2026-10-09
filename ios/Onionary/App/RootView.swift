@@ -156,7 +156,9 @@ struct CookingView: View {
                     }
                     if let notes = adventure.recipe.notes, !notes.isEmpty { Section("Kitchen notes") { Text(notes) } }
                     Section { Button("Choose another recipe", action: browse) }
-                }.safeAreaInset(edge: .bottom) {
+                }.sensoryFeedback(.selection, trigger: adventure.portions)
+                 .sensoryFeedback(.selection, trigger: adventure.checked)
+                 .safeAreaInset(edge: .bottom) {
                     HStack {
                         Button("Go back", systemImage: "arrow.uturn.backward") { store.update { $0.undo() } }
                             .disabled(!adventure.canUndo).accessibilityIdentifier("undo")
@@ -260,6 +262,7 @@ struct ScalingView: View {
         do {
             let value = try Numbers.parse(portions) + change
             portions = Numbers.text(try Numbers.parse(Numbers.text(value)))
+            UISelectionFeedbackGenerator().selectionChanged()
         } catch { self.error = error.localizedDescription }
     }
     func apply(_ operation: (inout Adventure) throws -> Void) {
