@@ -108,14 +108,14 @@ struct RecipesView: View {
     }
     func recipeRow(_ recipe: Recipe, subtitle: String) -> some View {
         Button { store.visit(recipe); selected() } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "leaf").font(.title2).foregroundStyle(onion).frame(width: 44, height: 52)
+            HStack(spacing: 10) {
+                Image(systemName: "leaf").font(.title2).foregroundStyle(onion).frame(width: 28, height: 36)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
                     Text(subtitle).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
-            }.padding(.vertical, 5)
+            }.frame(minHeight: 44)
         }.accessibilityIdentifier("recipe-\(recipe.id)")
          .swipeActions(edge: .leading) { Button("Edit", systemImage: "pencil") { store.editingRecipe = recipe }.tint(onion) }
     }
@@ -134,9 +134,9 @@ struct CookingView: View {
             if let adventure = store.current {
                 List {
                     Section {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("TODAY’S COOKING ADVENTURE").font(.caption2.bold()).tracking(2).foregroundStyle(onion)
-                            Text(adventure.recipe.name).font(.system(.largeTitle, design: .serif, weight: .semibold))
+                            Text(adventure.recipe.name).font(.system(.title2, design: .serif, weight: .semibold))
                             HStack {
                                 Label("\(Numbers.display(adventure.multiplier))× recipe", systemImage: "scalemass")
                                 if let minutes = adventure.recipe.totalTimeMin { Label("\(minutes) min", systemImage: "clock") }
@@ -163,7 +163,7 @@ struct CookingView: View {
                             Text("\(adventure.checked.count) of \(adventure.recipe.ingredients.count + adventure.recipe.instructionSteps.count) checked")
                                 .font(.caption).foregroundStyle(.secondary)
                             Button("Adjust portions", systemImage: "slider.horizontal.3") { scaling = true }.buttonStyle(.bordered)
-                        }.padding(.vertical, 12)
+                        }.padding(.vertical, 4)
                     }
                     Section("Gather your ingredients") {
                         ForEach(adventure.recipe.ingredients) { ingredient in
@@ -199,7 +199,7 @@ struct CookingView: View {
                             Spacer()
                             Button("History", systemImage: "clock.arrow.circlepath") { history = true }
                         }
-                    }.padding().background(.regularMaterial)
+                    }.padding(.horizontal).padding(.vertical, 8).background(.regularMaterial)
                     .onChange(of: adventure.history.last?.id) { _, _ in
                         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { recentAction = adventure.history.last }
                     }
@@ -233,14 +233,14 @@ struct CookingView: View {
     func checkRow(key: String, label: String, subtitle: String, adventure: Adventure) -> some View {
         let checked = adventure.checked.contains(key)
         return Button { store.update { $0.toggle(key: key, label: label) } } label: {
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .top, spacing: 10) {
                 Image(systemName: checked ? "checkmark.circle.fill" : "circle").font(.title2).foregroundStyle(checked ? onion : .secondary)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(label).foregroundStyle(.primary).strikethrough(checked).opacity(checked ? 0.55 : 1)
                     if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(.secondary) }
                 }
                 Spacer(minLength: 0)
-            }.padding(.vertical, 10).frame(minHeight: 44).contentShape(Rectangle())
+            }.padding(.vertical, 3).frame(minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityLabel(label + (subtitle.isEmpty ? "" : ", " + subtitle))
             .accessibilityValue(checked ? "Checked" : "Unchecked").accessibilityHint("Double tap to toggle. Undo reverses the last change.")
             .accessibilityIdentifier(key)
