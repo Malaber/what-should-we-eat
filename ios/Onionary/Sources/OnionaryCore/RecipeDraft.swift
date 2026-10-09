@@ -38,6 +38,13 @@ public struct RecipeDraft: Codable, Sendable {
     public var instructionSteps: [Step] = []
     public var tags: [String] = []
     public init() {}
+    public static func fromRecipeResponse(_ data: Data) throws -> RecipeDraft {
+        guard var json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw CookingError.response("Invalid recipe response.") }
+        let tags = json["tags"] as? [[String: Any]] ?? []
+        json["tags"] = tags.compactMap { $0["name"] as? String }
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(RecipeDraft.self, from: JSONSerialization.data(withJSONObject: json))
+    }
     public func validatedData() throws -> Data {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               ingredients.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && ($0.quantity == nil || $0.quantity! > 0) }),

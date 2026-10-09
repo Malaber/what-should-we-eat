@@ -6,7 +6,7 @@ Commit this checklist before implementation. Each numbered feature gets its own 
 - [x] 2. Add the web kitchen's meal planning, cooked state, and shopping list to iOS.
 - [x] 3. Render the selected web language immediately, using centralized translation files with no English-to-German flash.
 - [x] 4. Configure backend Impressum through environment variables and refuse startup when required values are missing; document deployment changes.
-- [ ] 5. Edit recipes in iOS, including ingredients and steps, with validation and safe cooking-state behavior.
+- [x] 5. Edit recipes in iOS, including ingredients and steps, with validation and safe cooking-state behavior.
 - [ ] 6. Tighten native lists and spacing while preserving readable content, Dynamic Type, and usable tap targets.
 - [ ] 7. Replace oversized iOS settings presentation with native settings: one backend, appearance (system/light/dark), and language (system/English/German).
 - [ ] 8. Share expiring recipe-copy links between Onionary instances; import independent snapshots, with no synchronization, authenticated creation/import, and safe external fetching.

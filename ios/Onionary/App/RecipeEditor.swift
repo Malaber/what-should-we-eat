@@ -85,3 +85,28 @@ struct ImportRecipeView: View {
         }
     }
 }
+
+struct EditRecipeView: View {
+    @Bindable var store: AppStore
+    let id: Int
+    @State private var draft: RecipeDraft?
+    @State private var error: String?
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        Group {
+            if let draft { RecipeEditor(store: store, draft: draft, recipeID: id) }
+            else {
+                NavigationStack {
+                    VStack {
+                        if let error { Text(error); Button("Retry") { Task { await load() } } }
+                        else { ProgressView("Loading recipe") }
+                    }.padding().toolbar { Button("Cancel") { dismiss() } }
+                }
+            }
+        }.task { await load() }
+    }
+    private func load() async {
+        error = nil
+        do { draft = try await store.recipeDraft(id: id) } catch { self.error = error.localizedDescription }
+    }
+}

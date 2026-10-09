@@ -10,6 +10,7 @@ final class AppStore {
     var error: String?
     var busy = false
     var pendingImport: String?
+    var editingRecipe: Recipe?
     var backend = "https://onionary-test.malaber.de"
     private var file: URL?
     private let signIn = BrowserSignIn()
@@ -97,6 +98,22 @@ final class AppStore {
         let body = try JSONEncoder().encode(["source": "chefkoch", "url": url.absoluteString])
         let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("recipes/import/parse/html", method: "POST", body: body)
         return try OnionaryAPI.decoder.decode(RecipeDraft.self, from: data)
+    }
+
+    func recipeDraft(id: Int) async throws -> RecipeDraft {
+        guard let credential else { throw CookingError.response("Sign in before editing.") }
+        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("recipes/\(id)")
+        return try RecipeDraft.fromRecipeResponse(data)
+    }
+
+    func restartCurrentRecipe() {
+        guard let current, let latest = kitchen.recipes.first(where: { $0.id == current.id }) else { return }
+        do {
+            var next = kitchen
+            next.adventures.removeAll { $0.id == current.id }
+            next.visit(latest)
+            try persist(next)
+        } catch { self.error = error.localizedDescription }
     }
 
     func saveRecipe(_ draft: RecipeDraft, id: Int? = nil) async throws {

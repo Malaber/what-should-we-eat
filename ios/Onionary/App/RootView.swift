@@ -42,6 +42,7 @@ struct RootView: View {
         }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox() } }
          .onChange(of: store.credential?.userID) { store.checkImportInbox() }
          .task { store.checkImportInbox() }
+         .sheet(item: $store.editingRecipe) { recipe in EditRecipeView(store: store, id: recipe.id) }
          .sheet(isPresented: Binding(get: { store.pendingImport != nil }, set: { if !$0 { store.pendingImport = nil } })) {
              ImportRecipeView(store: store, link: store.pendingImport ?? "")
          }
@@ -116,6 +117,7 @@ struct RecipesView: View {
                 Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
             }.padding(.vertical, 5)
         }.accessibilityIdentifier("recipe-\(recipe.id)")
+         .swipeActions(edge: .leading) { Button("Edit", systemImage: "pencil") { store.editingRecipe = recipe }.tint(onion) }
     }
 }
 
@@ -124,6 +126,7 @@ struct CookingView: View {
     var browse: () -> Void
     @State private var scaling = false
     @State private var history = false
+    @State private var restart = false
     @State private var recentAction: CheckChange?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
@@ -213,8 +216,15 @@ struct CookingView: View {
                 actions: { Button("Choose a recipe", action: browse).buttonStyle(.borderedProminent) }
             }
         }.navigationTitle("Onionary").navigationBarTitleDisplayMode(.inline)
+            .confirmationDialog("Restart cooking? Current checks and history will be cleared; the latest recipe will be used.", isPresented: $restart, titleVisibility: .visible) {
+                Button("Restart", role: .destructive) { store.restartCurrentRecipe() }
+            }
             .toolbar { if store.current != nil {
-                Menu { Button("Adjust portions") { scaling = true }; Button("Tap history") { history = true } }
+                Menu {
+                    Button("Edit recipe") { store.editingRecipe = store.current?.recipe }
+                    Button("Restart with latest recipe", role: .destructive) { restart = true }
+                    Button("Adjust portions") { scaling = true }; Button("Tap history") { history = true }
+                }
                 label: { Label("Cooking options", systemImage: "ellipsis.circle") }
             } }
             .sheet(isPresented: $scaling) { ScalingView(store: store) }

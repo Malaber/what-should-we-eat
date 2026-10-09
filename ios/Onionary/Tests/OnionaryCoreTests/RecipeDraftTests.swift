@@ -23,4 +23,14 @@ final class RecipeDraftTests: XCTestCase {
         draft.ingredients = [item]
         XCTAssertThrowsError(try draft.validatedData())
     }
+    func testEditingPreservesMetadataAndConvertsTags() throws {
+        let data = Data(#"{"name":"Soup","notes":"Note","total_time_min":20,"active_cooking_time_min":10,"kcal_per_serving":123.5,"tags":[{"id":1,"name":"vegan"}],"ingredients":[],"instruction_steps":[]}"#.utf8)
+        let draft = try RecipeDraft.fromRecipeResponse(data)
+        XCTAssertEqual(draft.tags, ["vegan"])
+        XCTAssertEqual(draft.activeCookingTimeMin, 10)
+        XCTAssertEqual(draft.kcalPerServing, Decimal(string: "123.5"))
+        let output = try XCTUnwrap(JSONSerialization.jsonObject(with: draft.validatedData()) as? [String: Any])
+        XCTAssertEqual(output["tags"] as? [String], ["vegan"])
+    }
+
 }
