@@ -1430,3 +1430,9 @@ body::before {
     --text: #f7eee4; --text-muted: #d0bdc8; --text-light: #baa3b1; --border: #67505e;
     --orange: #f5a6c9; --orange-dark: #ffc4dc; --orange-light: #f5a6c9; --orange-pale: #492b3c;
     --green: #9fd4a4; --green-dark: #b5e4b9; --green-pale: #253c2a; }
+
+/* Actions remain available at narrow widths and increased text sizes. */
+.recipe-card-footer { display: flex; flex-wrap: wrap; gap: .5rem; height: auto; }
+.recipe-card-footer .btn { flex: 1 1 auto; white-space: normal; min-width: 0; }
+.recipe-card { min-width: 0; }
+.recipe-card h3 { overflow-wrap: anywhere; }

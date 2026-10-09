@@ -15,7 +15,7 @@ Use the Apple design skill for interaction, accessibility and layout work.
 - [x] Add appropriate web links to app.onionary.malaber.de.
 - [x] Move user passkeys, language and appearance to account settings; match Planini list/actions and prevent deleting the last passkey server-side.
 - [x] Fix dark-mode recipe-import panel contrast.
-- [ ] Keep recipe-card actions visible with responsive wrapping or scrolling.
+- [x] Keep recipe-card actions visible with responsive wrapping or scrolling.
 - [ ] Center and space recipe-share dialogs; provide responsive sizing, focus handling and reduced-motion support.
 - [ ] Preserve umlauts in configured Impressum values, including the Ansible-to-Compose path.
 - [ ] Run backend, web, iOS and affected deployment/release tests; fix regressions, inspect UI, push new PR. Leave GitHub CI follow-up to the user.
