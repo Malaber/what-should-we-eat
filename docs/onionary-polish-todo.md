@@ -17,5 +17,5 @@ Use the Apple design skill for interaction, accessibility and layout work.
 - [x] Fix dark-mode recipe-import panel contrast.
 - [x] Keep recipe-card actions visible with responsive wrapping or scrolling.
 - [x] Center and space recipe-share dialogs; provide responsive sizing, focus handling and reduced-motion support.
-- [ ] Preserve umlauts in configured Impressum values, including the Ansible-to-Compose path.
+- [x] Preserve umlauts in configured Impressum values, including the Ansible-to-Compose path.
 - [ ] Run backend, web, iOS and affected deployment/release tests; fix regressions, inspect UI, push new PR. Leave GitHub CI follow-up to the user.

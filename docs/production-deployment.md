@@ -23,3 +23,11 @@ updates native links for the next build. No TestFlight upload is part of this
 configuration change.
 
 Deployment changes: [selfhosted !29](https://gitlab.com/malaber-ansible/selfhosted/-/merge_requests/29), then [infra !37](https://gitlab.com/Malaber/infra/-/merge_requests/37).
+
+## Unicode operator details
+
+Render Compose environment strings with Ansible `to_json(ensure_ascii=False)`.
+The default JSON encoder emits literal `\u00e4` sequences which Compose does
+not decode. Use actual UTF-8 names such as `Schädler` in inventory, update the
+collection with the encoding fix, then re-run deployment to regenerate app.env.
+Do not enter pre-escaped JSON text in operator variables.
