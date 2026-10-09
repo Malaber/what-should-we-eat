@@ -87,7 +87,7 @@ struct MealPlanningView: View {
                                 Image(systemName: checked.contains(index) ? "checkmark.circle.fill" : "circle")
                                 Text(item.name).strikethrough(checked.contains(index))
                                 Spacer()
-                                Text([item.totalQuantity.map { Numbers.display($0) } ?? "", item.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "))
+                                Text([item.totalQuantity.map { Numbers.display($0, locale: L10n.locale) } ?? "", item.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "))
                             }
                         }
                     }.navigationTitle("Shopping list").toolbar { Button("Done") { showShopping = false } }

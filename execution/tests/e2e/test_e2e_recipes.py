@@ -47,3 +47,19 @@ def test_recipe_crud(page: Page):
     
     expect(page.locator("#toast")).to_contain_text("Recipe deleted")
     expect(cards).to_have_count(0)
+
+
+def test_recipe_share_link_preview_and_revoke(page):
+    login_as_test_user(page)
+    result = page.evaluate("""async () => {
+      const headers={'Content-Type':'application/json',Authorization:'Bearer '+localStorage.getItem('wswe_token')};
+      const recipe=await (await fetch('/recipes',{method:'POST',headers,body:JSON.stringify({name:'Shared soup',ingredients:[{name:'Onion',quantity:2,unit:'pieces'}],instruction_steps:[{step_number:1,description:'Chop'}]})})).json();
+      const share=await (await fetch('/recipe-shares',{method:'POST',headers,body:JSON.stringify({recipe_id:recipe.id})})).json();
+      return share;
+    }""")
+    page.goto(result['url'])
+    expect(page.get_by_role('heading', name='Shared soup')).to_be_visible()
+    assert '#' not in page.url
+    page.evaluate("""async id => {await fetch('/recipe-shares/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+localStorage.getItem('wswe_token')}})}""",result['id'])
+    page.goto(result['url'])
+    expect(page.locator('#error')).to_contain_text('expired')

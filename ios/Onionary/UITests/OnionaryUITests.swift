@@ -2,6 +2,55 @@ import XCTest
 
 final class OnionaryUITests: XCTestCase {
     @MainActor
+    func testKitchenEditAndImport() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Kitchen"].tap()
+        app.buttons["Add meals"].tap()
+        app.buttons["Lemon & cheese pasta"].tap()
+        app.buttons["Add"].tap()
+        XCTAssertTrue(app.buttons["Mark cooked"].waitForExistence(timeout: 5))
+        app.buttons["Mark cooked"].tap()
+        XCTAssertTrue(app.buttons["Mark uncooked"].waitForExistence(timeout: 5))
+        app.buttons["Lemon & cheese pasta"].tap()
+        app.buttons["Cooking options"].tap()
+        app.buttons["Edit recipe"].tap()
+        let name = app.textFields["Name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap(); name.press(forDuration: 1)
+        if app.menuItems["Select All"].waitForExistence(timeout: 2) { app.menuItems["Select All"].tap() }
+        name.typeText("Edited pasta")
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].waitForExistence(timeout: 5))
+        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Import recipe"].tap()
+        app.textFields["Chefkoch or Onionary URL"].tap()
+        app.textFields["Chefkoch or Onionary URL"].typeText("https://www.chefkoch.de/rezepte/123")
+        app.buttons["Review recipe"].tap()
+        XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
+        app.buttons["Cancel"].tap()
+    }
+
+    @MainActor
+    func testNativeSettingsLanguageAndAppearance() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.buttons["Switch backend"].exists)
+        XCTAssertFalse(app.textFields["backend"].exists)
+        app.buttons["language-picker"].tap()
+        app.buttons["Deutsch"].tap()
+        XCTAssertTrue(app.navigationBars["Einstellungen"].waitForExistence(timeout: 5))
+        app.buttons["appearance-picker"].tap()
+        app.buttons["Dunkel"].tap()
+        app.buttons["language-picker"].tap()
+        app.buttons["Englisch"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testMarketingScreenshots() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

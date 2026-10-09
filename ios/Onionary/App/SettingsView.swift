@@ -29,6 +29,7 @@ struct SettingsView: View {
                 Button("Sign out", role: .destructive) { Task { await store.disconnect() } }.disabled(store.busy)
             }
             Section("Onionary") {
+                NavigationLink("Shared recipe links") { SharedRecipeLinksView(store: store) }
                 Link("Support", destination: URL(string: "https://onionary.malaber.de/support/")!)
                 Link("Privacy", destination: URL(string: "https://onionary.malaber.de/privacy/")!)
             }

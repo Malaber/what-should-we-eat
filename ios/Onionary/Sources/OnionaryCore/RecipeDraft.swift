@@ -1,6 +1,19 @@
 import Foundation
 
 public enum RecipeImportLink {
+    public static func sharedRecipe(_ text: String) throws -> URL {
+        guard let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
+              url.scheme == "https", url.host != nil, url.user == nil, url.password == nil,
+              url.port == nil || url.port == 443, url.path == "/share.html", url.query == nil,
+              let token = url.fragment, token.range(of: #"^[A-Za-z0-9_-]{43}$"#, options: .regularExpression) != nil else {
+            throw CookingError.response("Enter a valid Onionary recipe-copy link.")
+        }
+        return url
+    }
+    public static func accepted(_ text: String) throws -> URL {
+        if let url = try? chefkoch(text) { return url }
+        return try sharedRecipe(text)
+    }
     public static func chefkoch(_ text: String) throws -> URL {
         guard let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
               url.scheme == "https", let host = url.host?.lowercased(),

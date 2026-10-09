@@ -226,3 +226,14 @@ class RecipeTag(Base):
     __table_args__ = (
         UniqueConstraint("recipe_id", "tag_id", name="uq_recipe_tag"),
     )
+
+
+class RecipeShare(Base):
+    """Standalone immutable snapshot; original recipe edits never propagate."""
+    __tablename__ = 'recipe_shares'
+    id = Column(String(36), primary_key=True)
+    household_id = Column(Integer, ForeignKey('households.id', ondelete='CASCADE'), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True)
+    snapshot = Column(Text, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked_at = Column(DateTime(timezone=True))

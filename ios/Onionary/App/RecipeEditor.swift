@@ -70,7 +70,7 @@ struct ImportRecipeView: View {
             else {
                 NavigationStack {
                     Form {
-                        TextField("Chefkoch URL", text: $link).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                        TextField("Chefkoch or Onionary URL", text: $link).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                         Button("Review recipe") { Task {
                             busy = true; defer { busy = false }
                             do { draft = try await store.importDraft(link) }

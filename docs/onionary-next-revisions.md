@@ -9,7 +9,7 @@ Commit this checklist before implementation. Each numbered feature gets its own 
 - [x] 5. Edit recipes in iOS, including ingredients and steps, with validation and safe cooking-state behavior.
 - [x] 6. Tighten native lists and spacing while preserving readable content, Dynamic Type, and usable tap targets.
 - [x] 7. Replace oversized iOS settings presentation with native settings: one backend, appearance (system/light/dark), and language (system/English/German).
-- [ ] 8. Share expiring recipe-copy links between Onionary instances; import independent snapshots, with no synchronization, authenticated creation/import, and safe external fetching.
+- [x] 8. Share expiring recipe-copy links between Onionary instances; import independent snapshots, with no synchronization, authenticated creation/import, and safe external fetching.
 - [ ] 9. Run backend, browser, Swift, simulator, and packaged PostgreSQL regressions; inspect layouts and fix failures.
 - [ ] 10. Push the branch and open a new PR with migration/deployment notes and local test evidence. Leave GitHub CI follow-up to the user.
 

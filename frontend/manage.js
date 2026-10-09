@@ -123,7 +123,7 @@ async function loadRecipes() {
     renderRecipes();
   } catch (e) {
     console.error('Failed to load recipes', e);
-    toast('Failed to load recipes.');
+    toast(window.t('feedback.0'));
   }
 }
 
@@ -152,7 +152,7 @@ function renderRecipes(recipesToRender = allRecipes) {
     $manageGrid.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1;">
         <div class="icon">🧅</div>
-        <p>No recipes found.</p>
+        <p>${window.t("ui.0")}</p>
       </div>
     `;
     return;
@@ -165,15 +165,16 @@ function renderRecipes(recipesToRender = allRecipes) {
       </div>
       <div class="recipe-card-meta">
         ${r.kcal_per_serving ? `<span class="meta-chip"><span class="icon">🔥</span> ${r.kcal_per_serving} kcal</span>` : ''}
-        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧅</span> ${r.active_cooking_time_min} min active</span>` : ''}
-        ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} min total</span>` : ''}
+        ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧅</span> ${r.active_cooking_time_min} ${window.t('feedback.39')}</span>` : ''}
+        ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} ${window.t('feedback.40')}</span>` : ''}
       </div>
       <div class="recipe-card-tags">
         ${r.tags.map(t => `<span class="recipe-tag">${esc(t.name)}</span>`).join('')}
       </div>
       <div class="recipe-card-footer">
-        <button class="btn btn-secondary btn-sm" onclick="editRecipe(${r.id})">✏️ Edit</button>
-        <button class="btn btn-secondary btn-sm" onclick="promptDelete(${r.id}, '${escJs(r.name)}')">🗑️ Delete</button>
+        <button class="btn btn-secondary btn-sm" onclick="shareRecipe(${r.id})">${window.t("share.title")}</button>
+        <button class="btn btn-secondary btn-sm" onclick="editRecipe(${r.id})">${window.t("ui.1")}</button>
+        <button class="btn btn-secondary btn-sm" onclick="promptDelete(${r.id}, '${escJs(r.name)}')">${window.t("ui.2")}</button>
       </div>
     </div>
   `).join('');
@@ -183,7 +184,7 @@ function renderRecipes(recipesToRender = allRecipes) {
 // ── Modals & Forms ─────────────────────────────────────────────
 function openCreateModal() {
   editRecipeId = null;
-  $modalTitle.textContent = "Create New Recipe";
+  $modalTitle.textContent = window.t('feedback.1');
   $recipeForm.reset();
   $importUrl.value = '';
   $importHtml.value = '';
@@ -213,7 +214,7 @@ function editRecipe(id) {
   if (!r) return;
 
   editRecipeId = id;
-  $modalTitle.textContent = "Edit Recipe";
+  $modalTitle.textContent = window.t('feedback.2');
   $recipeModeSwitch.style.display = 'none';
   $importStatus.textContent = '';
   $importHtmlFallback.style.display = 'none';
@@ -245,7 +246,7 @@ function setRecipeModalMode(mode) {
   $importPanel.style.display = isImport ? 'block' : 'none';
   $recipeForm.style.display = isImport ? 'none' : 'block';
   $btnSaveRecipe.style.display = isImport ? 'none' : '';
-  $btnCancelModal.textContent = isImport ? 'Close' : 'Cancel';
+  $btnCancelModal.textContent = isImport ? window.t('feedback.3') : window.t('feedback.4');
   $btnModeManual.classList.toggle('btn-primary', !isImport);
   $btnModeManual.classList.toggle('btn-secondary', isImport);
   $btnModeImport.classList.toggle('btn-primary', isImport);
@@ -258,13 +259,13 @@ async function importRecipeIntoForm() {
   const html = $importHtml.value.trim();
 
   if (!url && !html) {
-    toast('Enter a recipe URL or paste HTML first.');
+    toast(window.t('feedback.5'));
     return;
   }
 
   $btnImportRecipe.disabled = true;
-  $btnImportRecipe.innerHTML = '<span class="spinner"></span> Importing…';
-  $importStatus.textContent = 'Fetching recipe page…';
+  $btnImportRecipe.innerHTML = '<span class="spinner"></span> ' + window.t('feedback.30');
+  $importStatus.textContent = window.t('feedback.6');
 
   try {
     const payload = {
@@ -273,7 +274,7 @@ async function importRecipeIntoForm() {
       html: html || null,
     };
 
-    const res = await fetch(`${API}/recipes/import/parse/html`, {
+    const res = await fetch(source === "onionary" ? `${API}/recipe-shares/preview` : `${API}/recipes/import/parse/html`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload),
@@ -286,16 +287,16 @@ async function importRecipeIntoForm() {
 
     applyImportedRecipe(data);
     setRecipeModalMode('manual');
-    $importStatus.textContent = 'Imported recipe loaded into the form.';
-    toast('Recipe imported into the form.');
+    $importStatus.textContent = window.t('feedback.7');
+    toast(window.t('feedback.8'));
   } catch (e) {
     console.error(e);
     $importHtmlFallback.style.display = 'block';
-    $importStatus.textContent = e.message || 'Import failed.';
-    toast('Import failed. You can still paste page HTML below.');
+    $importStatus.textContent = e.message || window.t('feedback.9');
+    toast(window.t('feedback.10'));
   } finally {
     $btnImportRecipe.disabled = false;
-    $btnImportRecipe.textContent = 'Import Into Form';
+    $btnImportRecipe.textContent = window.t('feedback.11');
   }
 }
 
@@ -366,9 +367,9 @@ function addIngredientRow(name = '', qty = '', unit = '') {
   const div = document.createElement('div');
   div.className = 'editor-row ingredient-row';
   div.innerHTML = `
-    <input type="text" placeholder="Name (e.g. Tomato)" class="ing-name" value="${esc(name)}" style="flex:2;" />
-    <input type="number" placeholder="Qty" class="ing-qty" step="any" value="${qty}" style="flex:1;" />
-    <input type="text" placeholder="Unit (g, tbsp...)" class="ing-unit" value="${esc(unit)}" style="flex:1;" />
+    <input type="text" placeholder="${window.t('feedback.31')}" class="ing-name" value="${esc(name)}" style="flex:2;" />
+    <input type="number" placeholder="${window.t('feedback.32')}" class="ing-qty" step="any" value="${qty}" style="flex:1;" />
+    <input type="text" placeholder="${window.t('feedback.33')}" class="ing-unit" value="${esc(unit)}" style="flex:1;" />
     <button type="button" class="btn-icon" onclick="this.parentElement.remove()">✕</button>
   `;
   $ingredientsList.appendChild(div);
@@ -378,8 +379,8 @@ function addStepRow(desc = '', dur = '') {
   const div = document.createElement('div');
   div.className = 'editor-row step-row';
   div.innerHTML = `
-    <input type="text" placeholder="Description..." class="step-desc" value="${esc(desc)}" style="flex:3;" />
-    <input type="number" placeholder="Time (min)" class="step-dur" value="${dur}" style="max-width:100px;" />
+    <input type="text" placeholder="${window.t('feedback.34')}" class="step-desc" value="${esc(desc)}" style="flex:3;" />
+    <input type="number" placeholder="${window.t('feedback.35')}" class="step-dur" value="${dur}" style="max-width:100px;" />
     <button type="button" class="btn-icon" onclick="this.parentElement.remove()">✕</button>
   `;
   $stepsList.appendChild(div);
@@ -392,7 +393,7 @@ async function saveRecipe(e) {
 
   const name = $recipeName.value.trim();
   if (!name) {
-    toast('Recipe name is required.');
+    toast(window.t('feedback.12'));
     return;
   }
 
@@ -443,9 +444,9 @@ async function saveRecipe(e) {
       body: JSON.stringify(recipeData)
     });
 
-    if (!res.ok) throw new Error('Failed to save');
+    if (!res.ok) throw new Error(window.t('feedback.13'));
 
-    toast(editRecipeId ? 'Recipe updated!' : 'Recipe created!');
+    toast(editRecipeId ? window.t('feedback.14') : window.t('feedback.15'));
     closeEditModal();
 
 
@@ -453,7 +454,7 @@ async function saveRecipe(e) {
     await loadRecipes();
   } catch (e) {
     console.error(e);
-    toast('Error saving recipe.');
+    toast(window.t('feedback.16'));
   }
 }
 
@@ -472,16 +473,16 @@ async function performDelete() {
 
   try {
     const res = await fetch(`${API}/recipes/${recipeToDelete}`, { method: 'DELETE', headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Delete failed');
+    if (!res.ok) throw new Error(window.t('feedback.17'));
 
-    toast('Recipe deleted.');
+    toast(window.t('feedback.18'));
 
 
     await loadTags();
     await loadRecipes();
   } catch (e) {
     console.error(e);
-    toast('Error deleting recipe.');
+    toast(window.t('feedback.19'));
   } finally {
     $deleteModal.style.display = 'none';
     recipeToDelete = null;

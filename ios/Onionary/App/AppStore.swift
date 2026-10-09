@@ -11,6 +11,7 @@ final class AppStore {
     var busy = false
     var pendingImport: String?
     var editingRecipe: Recipe?
+    var sharingRecipe: Recipe?
     var backend = UserDefaults.standard.string(forKey: "backend") ?? "https://onionary-test.malaber.de"
     private var file: URL?
     private let signIn = BrowserSignIn()
@@ -95,10 +96,21 @@ final class AppStore {
 
     func importDraft(_ link: String) async throws -> RecipeDraft {
         guard let credential else { throw CookingError.response("Sign in before importing.") }
-        let url = try RecipeImportLink.chefkoch(link)
+        let url = try RecipeImportLink.accepted(link)
+        let isCopy = (try? RecipeImportLink.sharedRecipe(link)) != nil
         let body = try JSONEncoder().encode(["source": "chefkoch", "url": url.absoluteString])
-        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("recipes/import/parse/html", method: "POST", body: body)
+        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data(isCopy ? "recipe-shares/preview" : "recipes/import/parse/html", method: "POST", body: body)
         return try OnionaryAPI.decoder.decode(RecipeDraft.self, from: data)
+    }
+
+    func shareRecipe(_ id: Int, hours: Int) async throws -> RecipeShareLink {
+        guard let credential else { throw CookingError.response("Sign in before sharing.") }
+        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("recipe-shares", method: "POST", body: JSONEncoder().encode(["recipe_id": id, "hours": hours]))
+        return try OnionaryAPI.decoder.decode(RecipeShareLink.self, from: data)
+    }
+    func revokeRecipeLink(_ id: String) async throws {
+        guard let credential else { return }
+        _ = try await OnionaryAPI(server: credential.server, token: credential.token).data("recipe-shares/\(id)", method: "DELETE")
     }
 
     func recipeDraft(id: Int) async throws -> RecipeDraft {
@@ -138,7 +150,11 @@ final class AppStore {
     #if DEBUG
     private func setupUITest() {
         file = FileManager.default.temporaryDirectory.appending(path: "onionary-ui-kitchen.json")
-        if ProcessInfo.processInfo.arguments.contains("--reset") { try? FileManager.default.removeItem(at: file!) }
+        if ProcessInfo.processInfo.arguments.contains("--reset") {
+            try? FileManager.default.removeItem(at: file!)
+            UserDefaults.standard.removeObject(forKey: "appearance")
+            UserDefaults.standard.removeObject(forKey: "language")
+        }
         kitchen = (try? KitchenFile.read(file!)) ?? Kitchen()
         if kitchen.recipes.isEmpty {
             let json = #"[{"id":1,"household_id":1,"name":"Lemon & cheese pasta","notes":"Finish with lemon zest.","total_time_min":20,"ingredients":[{"id":1,"name":"Cheese","quantity":200,"unit":"g"},{"id":2,"name":"Pasta","quantity":250,"unit":"g"}],"instruction_steps":[{"id":1,"step_number":1,"description":"Boil the pasta in salted water.","duration_min":10},{"id":2,"step_number":2,"description":"Fold in cheese and lemon zest.","duration_min":null}]}]"#
