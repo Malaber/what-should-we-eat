@@ -58,7 +58,7 @@ def same_origin(request: Request):
 
 
 def save_flow(db, kind, payload, lifetime=300):
-    db.execute(delete(AuthFlow).where(AuthFlow.expires_at <= now()))
+    db.execute(delete(AuthFlow).where(AuthFlow.expires_at <= now()).execution_options(synchronize_session=False))
     token = secrets.token_urlsafe(32)
     db.add(AuthFlow(token_hash=digest(token), kind=kind, payload=payload,
                     expires_at=now() + timedelta(seconds=lifetime)))

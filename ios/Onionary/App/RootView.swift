@@ -153,7 +153,7 @@ struct CookingView: View {
                     }
                     Section("Gather your ingredients") {
                         ForEach(adventure.recipe.ingredients) { ingredient in
-                            let amount = adventure.quantity(ingredient).map(Numbers.display) ?? ""
+                            let amount = adventure.quantity(ingredient).map { Numbers.display($0) } ?? ""
                             checkRow(key: "ingredient-\(ingredient.id)", label: ingredient.name,
                                 subtitle: [amount, ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "), adventure: adventure)
                         }

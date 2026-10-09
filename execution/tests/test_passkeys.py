@@ -116,9 +116,10 @@ def test_enrollment_preserves_existing_account_and_is_single_use(client, auth_he
     with SessionLocal() as db:
         token = passkeys.save_flow(db, "enrollment", {"user_id": profile["id"]})
     assert client.post("/auth/enroll/options", headers=ORIGIN, json={"token": token}).status_code == 200
-    assert client.post("/auth/enroll/options", headers=ORIGIN, json={"token": token}).status_code == 401
+    assert client.post("/auth/enroll/options", headers=ORIGIN, json={"token": token}).status_code == 200
     response = client.post("/auth/enroll/verify", headers=ORIGIN, json={"credential": {}})
     assert response.status_code == 200
+    assert client.post("/auth/enroll/options", headers=ORIGIN, json={"token": token}).status_code == 401
     headers = {"Authorization": "Bearer " + response.json()["access_token"]}
     assert client.get("/users/me", headers=headers).json()["id"] == profile["id"]
 

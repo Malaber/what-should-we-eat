@@ -88,12 +88,14 @@ def page(context, server_url):
     page = context.new_page()
     cdp = context.new_cdp_session(page)
     cdp.send("WebAuthn.enable")
-    cdp.send("WebAuthn.addVirtualAuthenticator", {"options": {
+    authenticator = cdp.send("WebAuthn.addVirtualAuthenticator", {"options": {
         "protocol": "ctap2", "transport": "internal", "hasResidentKey": True,
         "hasUserVerification": True, "isUserVerified": True,
         "automaticPresenceSimulation": True,
     }})
     # Adding a custom helper to the page object
+    page.cdp = cdp
+    page.authenticator_id = authenticator["authenticatorId"]
     page.base_url = server_url
     yield page
     page.close()
