@@ -65,10 +65,42 @@ struct RecipesView: View {
     var selected: () -> Void
     @State private var search = ""
     @State private var intelligence = false
-    var filtered: [Recipe] { store.kitchen.recipes.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) } }
+    @State private var category: String?
+    @State private var quickestFirst = false
+    var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, category: category, quickestFirst: quickestFirst) }
     var body: some View {
         List {
-            if search.isEmpty && !store.kitchen.recent.isEmpty {
+            if let category {
+                Section {
+                    HStack {
+                        Label(category, systemImage: "tag.fill").font(.headline)
+                        Spacer()
+                        Button("All recipes") { self.category = nil }
+                    }
+                }
+            } else {
+                let categories = RecipeBrowsing.categories(store.kitchen.recipes, query: search)
+                if !categories.isEmpty {
+                    Section("Browse by category") {
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 10) {
+                                ForEach(categories, id: \.self) { tag in
+                                    Button { category = tag } label: {
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Image(systemName: "tag.fill").font(.title3)
+                                            Text(tag).font(.headline).lineLimit(2)
+                                            Text("\(RecipeBrowsing.recipes(store.kitchen.recipes, category: tag).count) recipes")
+                                                .font(.caption).foregroundStyle(.secondary)
+                                        }.padding(12).frame(width: 140, alignment: .leading)
+                                            .background(OnionaryTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+                                    }.buttonStyle(.plain).accessibilityIdentifier("category-" + tag)
+                                }
+                            }
+                        }.scrollIndicators(.hidden).listRowBackground(Color.clear)
+                    }
+                }
+            }
+            if search.isEmpty && category == nil && !store.kitchen.recent.isEmpty {
                 Section("Recently visited") {
                     ForEach(store.kitchen.recent.prefix(8)) { adventure in
                         recipeRow(adventure.recipe, subtitle: L10n.format("Continue · %lld checked", adventure.checked.count))
@@ -86,6 +118,9 @@ struct RecipesView: View {
             .sheet(isPresented: $intelligence) { IntelligenceRecipeView(store: store) }
             .refreshable { await store.refresh() }
             .toolbar {
+                Menu {
+                    Toggle("Quickest first", isOn: $quickestFirst)
+                } label: { Label("Sort recipes", systemImage: "arrow.up.arrow.down") }
                 Button("Create with Intelligence", systemImage: "sparkles") { intelligence = true }
                 Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
                 Button("Refresh", systemImage: "arrow.clockwise") { Task { await store.refresh() } }
@@ -101,6 +136,10 @@ struct RecipesView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
                     Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary)
+                    if let tags = recipe.tags, !tags.isEmpty {
+                        Text(tags.prefix(3).map(\.name).joined(separator: " · "))
+                            .font(.caption2).foregroundStyle(onion).lineLimit(1)
+                    }
                 }
                 Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
             }.frame(minHeight: 44)

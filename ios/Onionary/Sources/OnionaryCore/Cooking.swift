@@ -19,6 +19,7 @@ public struct Recipe: Codable, Identifiable, Equatable, Sendable {
     public let householdId: Int
     public let name: String
     public let notes: String?
+    public var tags: [RecipeTag]? = nil
     public var servings: Decimal? = nil
     public let totalTimeMin: Int?
     public let ingredients: [Ingredient]

@@ -3,7 +3,7 @@
 Commit this checklist before implementation. Keep features in individual commits,
 then run and fix the relevant complete test suites without retries.
 
-- [ ] Add searchable tags, category navigation and richer recipe browsing.
+- [x] Add searchable tags, category navigation and richer recipe browsing.
 - [ ] Add explicit ingredient quantity placeholders to recipe steps, resolving
   percentages against the recipe quantities and current portion scale.
 - [ ] Add a Live Activity for the current cooking session with progress and next step.

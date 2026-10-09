@@ -153,3 +153,13 @@
 "Generation stays on this device. Review ingredients, quantities and cooking instructions before saving to your backend." = "Generation stays on this device. Review ingredients, quantities and cooking instructions before saving to your backend.";
 "Create recipe draft" = "Create recipe draft";
 "Create with Intelligence" = "Create with Intelligence";
+
+"Browse by category" = "Browse by category";
+
+"All recipes" = "All recipes";
+
+"Quickest first" = "Quickest first";
+
+"Sort recipes" = "Sort recipes";
+
+"%lld recipes" = "%lld recipes";

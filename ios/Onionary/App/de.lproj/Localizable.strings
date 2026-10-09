@@ -153,3 +153,13 @@
 "Generation stays on this device. Review ingredients, quantities and cooking instructions before saving to your backend." = "Der Entwurf entsteht auf diesem Gerät. Prüfe Zutaten, Mengen und Kochanleitung vor dem Speichern auf deinem Server.";
 "Create recipe draft" = "Rezeptentwurf erstellen";
 "Create with Intelligence" = "Mit Intelligence erstellen";
+
+"Browse by category" = "Nach Kategorie stöbern";
+
+"All recipes" = "Alle Rezepte";
+
+"Quickest first" = "Schnellste zuerst";
+
+"Sort recipes" = "Rezepte sortieren";
+
+"%lld recipes" = "%lld Rezepte";
