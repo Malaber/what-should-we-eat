@@ -10,7 +10,7 @@ Use the Apple design skill for interaction, accessibility and layout work.
 - [x] Update portion adjustment live on field exit and +/-; remove redundant whole-recipe scaling section.
 - [x] Add free-text Apple Intelligence recipe drafting with Hiinterval-style availability handling and draft review.
 - [x] Accept Chefkoch app share-sheet payloads (URL and text links), including tracking query strings.
-- [ ] Publish stable GitHub releases on main, minor bump by default, with merged PR title/body as release notes (Planini pattern).
+- [x] Publish stable GitHub releases on main, minor bump by default, with merged PR title/body as release notes (Planini pattern).
 - [ ] Format HTML with a pinned formatter and enforce it in CI, including GitHub Pages.
 - [ ] Add appropriate web links to app.onionary.malaber.de.
 - [ ] Move user passkeys, language and appearance to account settings; match Planini list/actions and prevent deleting the last passkey server-side.
