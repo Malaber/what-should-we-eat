@@ -57,7 +57,17 @@ jobs:
           xcodebuild -version | head -1 | awk '{ if ($2 + 0 < 26) exit 1 }'
       - run: brew install xcodegen
       - name: Core tests, simulator build, and UI tests
+        env:
+          TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
         run: bash ios/Onionary/Scripts/test.sh
+      - name: Preserve simulator test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: onionary-ios-test-results
+          path: ${{ runner.temp }}/onionary-tests/Onionary.xcresult
+          if-no-files-found: ignore
+          retention-days: 7
 
   publish-image:
     needs: [backend, browser]

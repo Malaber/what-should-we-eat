@@ -1,35 +1,44 @@
 import SwiftUI
 import UIKit
 
-/// A non-cancelling recognizer dismisses only taps outside editable controls.
+/// Each window owns its recognizer and handler for its full lifetime. SwiftUI
+/// may replace the zero-size attachment view when a sheet or tab changes.
+@MainActor
+private final class OutsideFieldTap: UITapGestureRecognizer, UIGestureRecognizerDelegate {
+    init() {
+        super.init(target: nil, action: nil)
+        addTarget(self, action: #selector(dismissKeyboard))
+        cancelsTouchesInView = false
+        delegate = self
+    }
+
+    @objc private func dismissKeyboard() { view?.endEditing(true) }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        var candidate = touch.view
+        while let current = candidate {
+            if current is UITextField || current is UITextView { return false }
+            candidate = current.superview
+        }
+        return true
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+}
+
 private struct KeyboardDismissal: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView(frame: .zero)
-        DispatchQueue.main.async {
-            guard let window = view.window else { return }
-            if window.gestureRecognizers?.contains(where: { $0 is OutsideFieldTap }) == true { return }
-            let tap = OutsideFieldTap(target: context.coordinator, action: #selector(Coordinator.dismissKeyboard))
-            tap.cancelsTouchesInView = false
-            tap.delegate = context.coordinator
-            window.addGestureRecognizer(tap)
+    final class AttachmentView: UIView {
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            guard let window,
+                  window.gestureRecognizers?.contains(where: { $0 is OutsideFieldTap }) != true else { return }
+            window.addGestureRecognizer(OutsideFieldTap())
         }
-        return view
     }
-    func updateUIView(_ uiView: UIView, context: Context) {}
-    func makeCoordinator() -> Coordinator { Coordinator() }
-    private final class OutsideFieldTap: UITapGestureRecognizer {}
-    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        @objc func dismissKeyboard(_ sender: UITapGestureRecognizer) { sender.view?.endEditing(true) }
-        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-            var view = touch.view
-            while let current = view {
-                if current is UITextField || current is UITextView { return false }
-                view = current.superview
-            }
-            return true
-        }
-        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
-    }
+
+    func makeUIView(context: Context) -> AttachmentView { AttachmentView(frame: .zero) }
+    func updateUIView(_ uiView: AttachmentView, context: Context) {}
 }
 
 extension View {

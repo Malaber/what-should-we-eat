@@ -82,6 +82,14 @@ release builds exclude it. Test fixtures set required IMPRESSUM operator values.
 Do not poll GitHub jobs while idle; the user will return with results. Complete
 local checks and record their evidence in the PR first.
 
+Run native tests once with `bash ios/Onionary/Scripts/test.sh`; do not enable
+test retries. The script uses isolated DerivedData and writes an xcresult bundle.
+CI sets `TEST_RESULTS_DIR` and uploads that bundle even when tests fail.
+Keyboard tests must first assert that the keyboard is visible, then wait for
+the expected dismissal state; an immediate `exists` check can race the animation.
+Outside-tap handlers must survive SwiftUI view replacement and attach when their
+view actually enters a window, rather than relying on a single queued callback.
+
 ## Tools / Scripts
 - `execution/tests/conftest.py` — Unit test fixtures and auth helpers
 - `execution/tests/e2e/conftest.py` — E2E server setup and DB reset

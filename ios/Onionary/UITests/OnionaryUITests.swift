@@ -125,9 +125,10 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Your ingredients right now"].exists)
         let multiplier = app.textFields["portions"]
         multiplier.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "Portion field must open the keyboard before testing dismissal")
         multiplier.typeText(XCUIKeyboardKey.delete.rawValue + "1.583945")
         app.staticTexts["By portions"].tap()
-        XCTAssertFalse(app.keyboards.firstMatch.exists)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5), "Outside tap must dismiss the keyboard")
         app.buttons["Done"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["1.58× recipe"].waitForExistence(timeout: 5), app.debugDescription)
         app.buttons["portion-plus"].tap()

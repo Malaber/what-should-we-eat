@@ -31,3 +31,14 @@ Use the Apple design skill for interaction, accessibility and layout work.
 - Eight deployment role tests passed, including UTF-8 Compose round-trip. Related selfhosted !30 and infra !38 merged/deployed by operator.
 - Physical-device checks remain: Chefkoch app discovery and actual Apple Intelligence generation (simulator cannot establish these).
 - TestFlight v0.2.0-rc.4 / 0.2.0 (4) uploaded and accepted by Apple on 2026-10-09 at 22:01 Europe/Berlin; processing started. Signed app/extension versions and text-share activation verified.
+
+## CI follow-up
+
+- Both GitHub iOS jobs failed the outside-tap keyboard assertion; other checks passed.
+- Replaced the asynchronously attached, transient SwiftUI coordinator with a
+  window-owned recognizer that attaches in `didMoveToWindow`.
+- The regression test requires the keyboard to appear before checking dismissal
+  and awaits the resulting UI state instead of racing its animation.
+- Fresh isolated local build: 15 core tests and all 5 simulator UI tests passed
+  in one test run. No retry flags or repeated test iterations enabled.
+- CI retains xcresult diagnostics on failure. GitHub follow-up remains with the user.
