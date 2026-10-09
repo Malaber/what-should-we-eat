@@ -6,6 +6,8 @@ private let onion = OnionaryTheme.accent
 struct RootView: View {
     @Bindable var store: AppStore
     @State private var tab = 0
+    @Environment(\.locale) private var locale
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         Group {
             if store.credential == nil {
@@ -16,27 +18,19 @@ struct RootView: View {
                         .tabItem { Label("Cooking", systemImage: "flame") }.tag(0)
                     NavigationStack { RecipesView(store: store, selected: { tab = 0 }) }
                         .tabItem { Label("Recipes", systemImage: "book.closed") }.tag(1)
-                    NavigationStack {
-                        List {
-                            Section("Your kitchen") {
-                                Text(store.credential?.server.host() ?? "").font(.headline)
-                                Text("Progress is saved on this device separately for each backend and account.").foregroundStyle(.secondary)
-                                ConnectionView(store: store)
-                            }
-                            Section("Account security") {
-                                if let server = store.credential?.server {
-                                    Link("Manage passkeys", destination: server.appending(path: "auth/security"))
-                                    Text("Add, rename, or remove passkeys in your backend’s secure browser page. Sign in there to confirm your account.").font(.caption).foregroundStyle(.secondary)
-                                }
-                            }
-                            Section {
-                                Button("Sign out", role: .destructive) { Task { await store.disconnect() } }.disabled(store.busy)
-                            }
-                        }.navigationTitle("Settings")
-                    }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
-                }
+                    NavigationStack { MealPlanningView(store: store, cook: { tab = 0 }) }
+                        .tabItem { Label("Kitchen", systemImage: "calendar") }.tag(3)
+                    NavigationStack { SettingsView(store: store) }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
+                }.id(locale.identifier + (store.credential?.server.absoluteString ?? "") + (store.credential?.userID ?? ""))
             }
-        }
+        }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox() } }
+         .onChange(of: store.credential?.userID) { store.checkImportInbox() }
+         .task { store.checkImportInbox() }
+         .sheet(item: $store.sharingRecipe) { recipe in RecipeSharingView(store: store, recipe: recipe) }
+         .sheet(item: $store.editingRecipe) { recipe in EditRecipeView(store: store, id: recipe.id) }
+         .sheet(isPresented: Binding(get: { store.pendingImport != nil }, set: { if !$0 { store.pendingImport = nil } })) {
+             ImportRecipeView(store: store, link: store.pendingImport ?? "")
+         }
     }
 }
 
@@ -76,7 +70,7 @@ struct RecipesView: View {
             if search.isEmpty && !store.kitchen.recent.isEmpty {
                 Section("Recently visited") {
                     ForEach(store.kitchen.recent.prefix(8)) { adventure in
-                        recipeRow(adventure.recipe, subtitle: "Continue · \(adventure.checked.count) checked")
+                        recipeRow(adventure.recipe, subtitle: L10n.format("Continue · %lld checked", adventure.checked.count))
                     }
                 }
             }
@@ -84,27 +78,33 @@ struct RecipesView: View {
                 ForEach(filtered) { recipe in recipeRow(recipe, subtitle: recipe.totalTimeMin.map { "\($0) min" } ?? "Ready when you are") }
             }
             if filtered.isEmpty {
-                ContentUnavailableView(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes",
-                    systemImage: "book.closed", description: Text(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search."))
+                ContentUnavailableView(LocalizedStringKey(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes"),
+                    systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
         }.navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
             .refreshable { await store.refresh() }
-            .toolbar { Button("Refresh", systemImage: "arrow.clockwise") { Task { await store.refresh() } } }
+            .toolbar {
+                Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
+                Button("Refresh", systemImage: "arrow.clockwise") { Task { await store.refresh() } }
+            }
             .task {
                 if store.kitchen.recipes.isEmpty && !ProcessInfo.processInfo.arguments.contains("--ui-testing") { await store.refresh() }
             }
     }
     func recipeRow(_ recipe: Recipe, subtitle: String) -> some View {
         Button { store.visit(recipe); selected() } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "leaf").font(.title2).foregroundStyle(onion).frame(width: 44, height: 52)
+            HStack(spacing: 10) {
+                Image(systemName: "leaf").font(.title2).foregroundStyle(onion).frame(width: 28, height: 36)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
-                    Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                    Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
-            }.padding(.vertical, 5)
+            }.frame(minHeight: 44)
         }.accessibilityIdentifier("recipe-\(recipe.id)")
+         .swipeActions(edge: .leading) { Button("Edit", systemImage: "pencil") { store.editingRecipe = recipe }.tint(onion)
+             Button("Share", systemImage: "square.and.arrow.up") { store.sharingRecipe = recipe }
+         }
     }
 }
 
@@ -113,6 +113,7 @@ struct CookingView: View {
     var browse: () -> Void
     @State private var scaling = false
     @State private var history = false
+    @State private var restart = false
     @State private var recentAction: CheckChange?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
@@ -120,11 +121,11 @@ struct CookingView: View {
             if let adventure = store.current {
                 List {
                     Section {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("TODAY’S COOKING ADVENTURE").font(.caption2.bold()).tracking(2).foregroundStyle(onion)
-                            Text(adventure.recipe.name).font(.system(.largeTitle, design: .serif, weight: .semibold))
+                            Text(adventure.recipe.name).font(.system(.title2, design: .serif, weight: .semibold))
                             HStack {
-                                Label("\(Numbers.display(adventure.multiplier))× recipe", systemImage: "scalemass")
+                                Label("\(Numbers.display(adventure.multiplier, locale: L10n.locale))× recipe", systemImage: "scalemass")
                                 if let minutes = adventure.recipe.totalTimeMin { Label("\(minutes) min", systemImage: "clock") }
                             }.font(.subheadline).foregroundStyle(.secondary)
                             HStack(spacing: 16) {
@@ -135,10 +136,10 @@ struct CookingView: View {
                                     .accessibilityLabel("One fewer portion").accessibilityIdentifier("portion-minus")
                                 Button { scaling = true } label: {
                                     VStack(spacing: 3) {
-                                        Text(Numbers.display(adventure.portions)).font(.title2.bold()).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
+                                        Text(Numbers.display(adventure.portions, locale: L10n.locale)).font(.title2.bold()).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
                                         Text("portions · tap to edit").font(.caption2)
                                     }.frame(maxWidth: .infinity)
-                                }.buttonStyle(.plain).accessibilityLabel("\(Numbers.display(adventure.portions)) portions. Edit amount")
+                                }.buttonStyle(.plain).accessibilityLabel("\(Numbers.display(adventure.portions, locale: L10n.locale)) portions. Edit amount")
                                 Button {
                                     store.update { try $0.scale(baseServings: $0.baseServings, portions: $0.portions + 1) }
                                 } label: { Image(systemName: "plus").frame(width: 32, height: 32) }
@@ -149,11 +150,11 @@ struct CookingView: View {
                             Text("\(adventure.checked.count) of \(adventure.recipe.ingredients.count + adventure.recipe.instructionSteps.count) checked")
                                 .font(.caption).foregroundStyle(.secondary)
                             Button("Adjust portions", systemImage: "slider.horizontal.3") { scaling = true }.buttonStyle(.bordered)
-                        }.padding(.vertical, 12)
+                        }.padding(.vertical, 4)
                     }
                     Section("Gather your ingredients") {
                         ForEach(adventure.recipe.ingredients) { ingredient in
-                            let amount = adventure.quantity(ingredient).map { Numbers.display($0) } ?? ""
+                            let amount = adventure.quantity(ingredient).map { Numbers.display($0, locale: L10n.locale) } ?? ""
                             checkRow(key: "ingredient-\(ingredient.id)", label: ingredient.name,
                                 subtitle: [amount, ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "), adventure: adventure)
                         }
@@ -161,7 +162,7 @@ struct CookingView: View {
                     Section("Let’s cook") {
                         ForEach(adventure.recipe.instructionSteps.sorted { $0.stepNumber < $1.stepNumber }) { step in
                             checkRow(key: "step-\(step.id)", label: step.description,
-                                     subtitle: "Step \(step.stepNumber)" + (step.durationMin.map { " · \($0) min" } ?? ""), adventure: adventure)
+                                     subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""), adventure: adventure)
                         }
                     }
                     if let notes = adventure.recipe.notes, !notes.isEmpty { Section("Kitchen notes") { Text(notes) } }
@@ -171,7 +172,7 @@ struct CookingView: View {
                  .safeAreaInset(edge: .bottom) {
                     VStack(spacing: 10) {
                         if let action = recentAction {
-                            Text((action.undoes != nil ? "Undid · " : action.redoes != nil ? "Redid · " : action.isChecked ? "Checked · " : "Unchecked · ") + action.label)
+                            Text(L10n.text(action.undoes != nil ? "Undid · " : action.redoes != nil ? "Redid · " : action.isChecked ? "Checked · " : "Unchecked · ") + action.label)
                                 .font(.subheadline).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
                                 .accessibilityIdentifier("recent-action")
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -185,7 +186,7 @@ struct CookingView: View {
                             Spacer()
                             Button("History", systemImage: "clock.arrow.circlepath") { history = true }
                         }
-                    }.padding().background(.regularMaterial)
+                    }.padding(.horizontal).padding(.vertical, 8).background(.regularMaterial)
                     .onChange(of: adventure.history.last?.id) { _, _ in
                         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { recentAction = adventure.history.last }
                     }
@@ -202,8 +203,16 @@ struct CookingView: View {
                 actions: { Button("Choose a recipe", action: browse).buttonStyle(.borderedProminent) }
             }
         }.navigationTitle("Onionary").navigationBarTitleDisplayMode(.inline)
+            .confirmationDialog("Restart cooking? Current checks and history will be cleared; the latest recipe will be used.", isPresented: $restart, titleVisibility: .visible) {
+                Button("Restart", role: .destructive) { store.restartCurrentRecipe() }
+            }
             .toolbar { if store.current != nil {
-                Menu { Button("Adjust portions") { scaling = true }; Button("Tap history") { history = true } }
+                Menu {
+                    Button("Edit recipe") { store.editingRecipe = store.current?.recipe }
+                    Button("Share recipe copy") { store.sharingRecipe = store.current?.recipe }
+                    Button("Restart with latest recipe", role: .destructive) { restart = true }
+                    Button("Adjust portions") { scaling = true }; Button("Tap history") { history = true }
+                }
                 label: { Label("Cooking options", systemImage: "ellipsis.circle") }
             } }
             .sheet(isPresented: $scaling) { ScalingView(store: store) }
@@ -212,14 +221,14 @@ struct CookingView: View {
     func checkRow(key: String, label: String, subtitle: String, adventure: Adventure) -> some View {
         let checked = adventure.checked.contains(key)
         return Button { store.update { $0.toggle(key: key, label: label) } } label: {
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .top, spacing: 10) {
                 Image(systemName: checked ? "checkmark.circle.fill" : "circle").font(.title2).foregroundStyle(checked ? onion : .secondary)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(label).foregroundStyle(.primary).strikethrough(checked).opacity(checked ? 0.55 : 1)
                     if !subtitle.isEmpty { Text(subtitle).font(.subheadline).foregroundStyle(.secondary) }
                 }
                 Spacer(minLength: 0)
-            }.padding(.vertical, 10).frame(minHeight: 44).contentShape(Rectangle())
+            }.padding(.vertical, 3).frame(minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityLabel(label + (subtitle.isEmpty ? "" : ", " + subtitle))
             .accessibilityValue(checked ? "Checked" : "Unchecked").accessibilityHint("Double tap to toggle. Undo reverses the last change.")
             .accessibilityIdentifier(key)
@@ -242,13 +251,13 @@ struct ScalingView: View {
                 if let adventure = store.current {
                     Section {
                         Text(adventure.recipe.name).font(.headline)
-                        Text("Currently cooking for \(Numbers.display(adventure.portions)) portions")
+                        Text("Currently cooking for \(Numbers.display(adventure.portions, locale: L10n.locale)) portions")
                             .font(.subheadline).foregroundStyle(.secondary)
                         ForEach(adventure.recipe.ingredients) { ingredient in
                             HStack(alignment: .top) {
                                 Text(ingredient.name)
                                 Spacer()
-                                Text([adventure.quantity(ingredient).map { Numbers.display($0) } ?? "", ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "))
+                                Text([adventure.quantity(ingredient).map { Numbers.display($0, locale: L10n.locale) } ?? "", ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "))
                                     .monospacedDigit().foregroundStyle(.secondary)
                             }
                         }
@@ -299,10 +308,10 @@ struct ScalingView: View {
         }
     }
     func field(_ label: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading) { Text(label).font(.caption).foregroundStyle(.secondary)
-            TextField(label, text: Binding(get: {
+        VStack(alignment: .leading) { Text(LocalizedStringKey(label)).font(.caption).foregroundStyle(.secondary)
+            TextField(LocalizedStringKey(label), text: Binding(get: {
                 if editingField == label { return text.wrappedValue }
-                return (try? Numbers.parse(text.wrappedValue)).map { Numbers.display($0) } ?? text.wrappedValue
+                return (try? Numbers.parse(text.wrappedValue)).map { Numbers.display($0, locale: L10n.locale) } ?? text.wrappedValue
             }, set: { text.wrappedValue = $0 }))
                 .keyboardType(.decimalPad).focused($editingField, equals: label)
         }
@@ -337,7 +346,7 @@ struct HistoryView: View {
                 ForEach(store.current?.history.reversed() ?? []) { entry in
                     VStack(alignment: .leading, spacing: 5) {
                         Text(entry.label).font(.headline)
-                        Text((entry.redoes != nil ? "Redo · " : entry.undoes == nil ? "" : "Undo · ") + (entry.isChecked ? "Checked" : "Unchecked"))
+                        Text(L10n.text(entry.redoes != nil ? "Redo · " : entry.undoes == nil ? "" : "Undo · ") + L10n.text(entry.isChecked ? "Checked" : "Unchecked"))
                         Text(entry.timestamp.formatted(date: .abbreviated, time: .standard)).font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical, 5)
                 }

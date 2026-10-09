@@ -23,6 +23,9 @@ services:
       APP_BASE_URL: https://${BACKEND_HOST:?Set BACKEND_HOST}
       ALLOW_LEGACY_PASSWORD_AUTH: 'false'
       DEMO_HOUSEHOLD_ID: '0'
+      IMPRESSUM_NAME: ${IMPRESSUM_NAME:?Set IMPRESSUM_NAME}
+      IMPRESSUM_ADDRESS: ${IMPRESSUM_ADDRESS:?Set IMPRESSUM_ADDRESS}
+      IMPRESSUM_EMAIL: ${IMPRESSUM_EMAIL:?Set IMPRESSUM_EMAIL}
     depends_on:
       db:
         condition: service_healthy

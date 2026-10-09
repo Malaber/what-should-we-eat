@@ -4,13 +4,13 @@
 
 const authHTML = `
   <div id="auth-controls" style="display: flex; gap: 12px; align-items: center;">
-    <button id="btn-show-login" class="btn btn-secondary btn-sm" style="border-radius: var(--radius-pill);">Sign in with passkey</button>
-    <button id="btn-show-signup" class="btn btn-primary btn-sm" style="border-radius: var(--radius-pill);">Sign Up</button>
+    <button id="btn-show-login" class="btn btn-secondary btn-sm" style="border-radius: var(--radius-pill);">${window.t("auth.navsignin")}</button>
+    <button id="btn-show-signup" class="btn btn-primary btn-sm" style="border-radius: var(--radius-pill);">${window.t("auth.signup")}</button>
   </div>
   <div id="user-controls" style="display: none; gap: 12px; align-items: center;">
-    <a href="/auth/security">Passkeys</a>
+    <a href="/auth/security">${window.t("auth.keys")}</a>
     <span id="user-greeting" style="font-size: 0.9rem; font-weight: 600; color: var(--orange-dark);"></span>
-    <button id="btn-logout" class="btn btn-secondary btn-sm" style="border-radius: var(--radius-pill); border-color: var(--orange-pale);">Log Out</button>
+    <button id="btn-logout" class="btn btn-secondary btn-sm" style="border-radius: var(--radius-pill); border-color: var(--orange-pale);">${window.t("auth.logout")}</button>
   </div>
 `;
 
@@ -20,12 +20,12 @@ const loginGateHTML = `
   <div id="login-gate" class="auth-surface">
     <div class="auth-card">
       <div class="mark" aria-hidden="true">🧅</div>
-      <p class="eyebrow">YOUR COOKING COMPANION</p>
-      <h2>Welcome to Onionary.</h2>
-      <p>Your recipes. Your kitchen. Pick up where you left off.</p>
-      <button id="gate-login">Sign in with a passkey</button>
-      <button id="gate-signup">New here? Create an account</button>
-      <p class="help">Use Face ID, Touch ID, a security key, or your password manager.</p>
+      <p class="eyebrow">${window.t("auth.eyebrow")}</p>
+      <h2>${window.t("auth.welcome")}</h2>
+      <p>${window.t("auth.tagline")}</p>
+      <button id="gate-login">${window.t("auth.signin")}</button>
+      <button id="gate-signup">${window.t("auth.new")}</button>
+      <p class="help">${window.t("auth.help")}</p>
     </div>
   </div>
 `;
@@ -87,7 +87,7 @@ class AuthHandler {
     if (this.user) {
       this.$authControls.style.display = 'none';
       this.$userControls.style.display = 'flex';
-      this.$userGreeting.textContent = `Hi, ${this.user.name || this.user.email}`;
+      this.$userGreeting.textContent = window.t('feedback.greeting').replace('{name}', this.user.name || this.user.email);
     } else {
       this.$authControls.style.display = 'flex';
       this.$userControls.style.display = 'none';

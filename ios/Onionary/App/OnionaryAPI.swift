@@ -16,6 +16,11 @@ struct OnionaryAPI: Sendable {
         let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase; return decoder
     }
     func data(_ path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
+        #if DEBUG
+        if server.host == "ui-test.invalid" && ProcessInfo.processInfo.arguments.contains("--ui-testing") {
+            return try await UITestBackend.data(path, method: method, body: body)
+        }
+        #endif
         var request = URLRequest(url: server.appending(path: path))
         request.httpMethod = method; request.httpBody = body; request.timeoutInterval = 30
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

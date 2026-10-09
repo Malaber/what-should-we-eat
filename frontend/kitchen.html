@@ -1,87 +1,72 @@
 <!DOCTYPE html>
+
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kitchen - Onionary</title>
-  <meta name="description" content="Prepare and cook your selected meals." />
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🧅</text></svg>" />
+<head><script src="/translations.js"></script><script src="/i18n.js"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kitchen - Onionary</title>
+<meta content="Prepare and cook your selected meals." name="description"/>
+<link href="/styles.css" rel="stylesheet"/>
+<link href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='80'&gt;🧅&lt;/text&gt;&lt;/svg&gt;" rel="icon"/>
 </head>
-
 <body>
+<!-- ─── Navigation ─────────────────────────────────────────── -->
+<nav class="top-nav">
+<div class="container nav-container">
+<button aria-label="Toggle menu" class="burger-btn" id="burger-btn">☰</button>
+<div class="nav-links" id="nav-links">
+<a class="nav-link" data-i18n="nav.pick_meals" href="/"></a>
+<a class="nav-link active" data-i18n="nav.kitchen" href="/kitchen.html"></a>
+<a class="nav-link" data-i18n="nav.manage_recipes" href="/recipes.html"></a>
+<a class="nav-link" data-i18n="nav.households" href="/households.html"></a>
+</div>
+<div class="nav-auth-mount" id="auth-mount"></div>
+</div>
+</nav>
+<!-- ─── Header ─────────────────────────────────────────────── -->
+<header class="site-header">
+<div class="container">
+<h1 data-i18n="kitchen.header.title"></h1>
+<p class="tagline" data-i18n="kitchen.header.tagline"></p>
+</div>
+</header>
+<main class="container">
+<div id="empty-state" style="text-align:center; padding: 60px 20px; display:none;">
+<div data-i18n="kitchen.empty_emoji" style="font-size:4rem; margin-bottom:1rem;"></div>
+<h2 data-i18n="kitchen.empty.title" style="margin-bottom:1rem;"></h2>
+<p data-i18n="kitchen.empty.subtitle" style="color:var(--text-light); margin-bottom:2rem;"></p>
+<a class="btn btn-primary" data-i18n="kitchen.empty.btn_go" href="/" style="display:inline-block; text-decoration:none;"></a>
+</div>
+<section id="kitchen-section" style="display:none;">
+<div class="recipes-grid" id="kitchen-grid">
+<!-- filled by JS -->
+</div>
+</section>
+</main>
+<!-- ─── Meal Detail Modal ──────────────────────────────────── -->
+<div class="modal-overlay" id="meal-modal" style="display:none; z-index:7000;">
+<div class="modal" style="max-width:700px; width:90%; max-height:90vh; overflow-y:auto; padding:32px; position:relative;">
+<button class="btn btn-icon" id="btn-close-modal" style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
+<h2 id="modal-title" style="font-family:var(--font-display); font-size:1.8rem; margin-bottom:12px;"></h2>
+<div id="modal-meta" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px;"></div>
+<h3 data-i18n="kitchen.modal.ingredients" style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);"></h3>
+<ul id="modal-ingredients" style="list-style:none; padding:0; margin-bottom:32px;"></ul>
+<h3 data-i18n="kitchen.modal.instructions" style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);"></h3>
+<div id="modal-instructions" style="display:flex; flex-direction:column; gap:16px; margin-bottom:32px;"></div>
+<div style="text-align:center;">
+<button class="btn btn-primary" data-i18n="kitchen.modal.btn_cooked" id="btn-toggle-cooked" style="padding:16px 32px; font-size:1.2rem; width:100%; max-width:400px;"></button>
+</div>
+</div>
+</div>
+<footer class="site-footer">
+<div class="container">
+<div style="font-size: 0.85rem;">
+<a data-i18n="footer.impressum" href="/impressum.html" style="color: var(--text-muted); text-decoration: none;"></a>
+</div>
+</div>
+</footer>
 
-  <!-- ─── Navigation ─────────────────────────────────────────── -->
-  <nav class="top-nav">
-    <div class="container nav-container">
-      <button class="burger-btn" id="burger-btn" aria-label="Toggle menu">☰</button>
-      <div class="nav-links" id="nav-links">
-        <a href="/" class="nav-link" data-i18n="nav.pick_meals">Pick Meals</a>
-        <a href="/kitchen.html" class="nav-link active" data-i18n="nav.kitchen">Kitchen</a>
-        <a href="/recipes.html" class="nav-link" data-i18n="nav.manage_recipes">Manage Recipes</a>
-        <a href="/households.html" class="nav-link" data-i18n="nav.households">Households</a>
-      </div>
-      <div id="auth-mount" class="nav-auth-mount"></div>
-    </div>
-  </nav>
-
-  <!-- ─── Header ─────────────────────────────────────────────── -->
-  <header class="site-header">
-    <div class="container">
-      <h1 data-i18n="kitchen.header.title">Your <span class="accent-orange">Kitchen</span></h1>
-      <p class="tagline" data-i18n="kitchen.header.tagline">Time to cook! Tap a meal to view ingredients and instructions.</p>
-    </div>
-  </header>
-
-  <main class="container">
-    <div id="empty-state" style="text-align:center; padding: 60px 20px; display:none;">
-      <div style="font-size:4rem; margin-bottom:1rem;" data-i18n="kitchen.empty_emoji">🍽️</div>
-      <h2 style="margin-bottom:1rem;" data-i18n="kitchen.empty.title">Your kitchen is empty</h2>
-      <p style="color:var(--text-light); margin-bottom:2rem;" data-i18n="kitchen.empty.subtitle">You haven't sent any meals to the kitchen yet.</p>
-      <a href="/" class="btn btn-primary" style="display:inline-block; text-decoration:none;" data-i18n="kitchen.empty.btn_go">Go Pick Meals</a>
-    </div>
-
-    <section id="kitchen-section" style="display:none;">
-      <div class="recipes-grid" id="kitchen-grid">
-        <!-- filled by JS -->
-      </div>
-    </section>
-  </main>
-
-  <!-- ─── Meal Detail Modal ──────────────────────────────────── -->
-  <div class="modal-overlay" id="meal-modal" style="display:none; z-index:7000;">
-    <div class="modal"
-      style="max-width:700px; width:90%; max-height:90vh; overflow-y:auto; padding:32px; position:relative;">
-      <button class="btn btn-icon" id="btn-close-modal"
-        style="position:absolute; top:16px; right:16px; box-shadow:none; border:none;">✕</button>
-      <h2 id="modal-title" style="font-family:var(--font-display); font-size:1.8rem; margin-bottom:12px;"></h2>
-      <div id="modal-meta" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px;"></div>
-
-      <h3 style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);" data-i18n="kitchen.modal.ingredients">Ingredients</h3>
-      <ul id="modal-ingredients" style="list-style:none; padding:0; margin-bottom:32px;"></ul>
-
-      <h3 style="margin-bottom:12px; font-size:1.1rem; color:var(--text-light);" data-i18n="kitchen.modal.instructions">Instructions</h3>
-      <div id="modal-instructions" style="display:flex; flex-direction:column; gap:16px; margin-bottom:32px;"></div>
-
-      <div style="text-align:center;">
-        <button id="btn-toggle-cooked" class="btn btn-primary"
-          style="padding:16px 32px; font-size:1.2rem; width:100%; max-width:400px;" data-i18n="kitchen.modal.btn_cooked">✅ Mark as Cooked</button>
-      </div>
-    </div>
-  </div>
-  <footer class="site-footer">
-    <div class="container">
-      <div style="font-size: 0.85rem;">
-        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;" data-i18n="footer.impressum">Impressum</a>
-      </div>
-    </div>
-  </footer>
-
-  <script src="/i18n.js"></script>
-  <script src="/auth.js"></script>
-  <script src="/kitchen.js"></script>
+<script src="/auth.js"></script>
+<script src="/kitchen.js"></script>
 </body>
-
 </html>

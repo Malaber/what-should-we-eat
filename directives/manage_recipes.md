@@ -39,8 +39,8 @@ Create, read, update, delete, filter, and randomly select recipes via the API. A
   Set `APP_BASE_URL` to the exact HTTPS origin; local WebAuthn requires `localhost`,
   since IP addresses are not valid RP domains. Run database migrations before
   deployment. Existing users enroll via `python -m execution.enroll_passkey EMAIL`;
-  links are private, expire after 15 minutes, and are consumed when enrollment
-  starts. Password auth is disabled by default; legacy compatibility is migration-only.
+  links are private, default to 24 hours (up to 30 days), and are consumed only
+  after successful enrollment. SQLAdmin at `/admin/` is the operator UI. Password auth is disabled by default; legacy compatibility is migration-only.
 - **iOS builds**: `python3 execution/start_onionary_testflight.py VERSION BUILD`
   starts a background test/archive/upload. Use `--status` and the log in
   `.tmp/onionary-testflight/`. See `ios/Onionary/README.md` for signing setup.
@@ -59,3 +59,9 @@ Create, read, update, delete, filter, and randomly select recipes via the API. A
 - **Release versions**: Upstream API was 0.1.0 without Git tags; fork baseline is
   0.2.0. Use stable `vX.Y.Z` and development `vX.Y.Z-rc.N` tags. Container builds
   use `execution/version.py`; version and commit are embedded as OCI labels.
+
+- **Cross-instance copies**: `POST /recipe-shares` creates an expiring snapshot.
+  `POST /recipe-shares/preview` fetches a public HTTPS copy for review before the
+  normal recipe create endpoint saves it. Tokens are hashed; remote fetches pin
+  validated public DNS addresses and never forward authentication. See
+  `docs/kitchen-sharing-deployment.md` for legal identity and extension signing.

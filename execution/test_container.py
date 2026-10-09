@@ -26,7 +26,9 @@ def main():
     env = ['-e', f'DATABASE_URL=postgresql://onionary:{quote(password, safe="")}@{db}:5432/onionary',
            '-e', 'SECRET_KEY=disposable-container-test-signing-key-only',
            '-e', 'APP_BASE_URL=http://localhost:8000',
-           '-e', 'ALLOW_LEGACY_PASSWORD_AUTH=false']
+           '-e', 'ALLOW_LEGACY_PASSWORD_AUTH=false',
+           '-e', 'IMPRESSUM_NAME=Container Test', '-e', 'IMPRESSUM_ADDRESS=Test Street 1',
+           '-e', 'IMPRESSUM_EMAIL=test@example.test']
     try:
         docker('network', 'create', prefix)
         docker('run', '-d', '--name', db, '--network', prefix,

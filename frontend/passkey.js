@@ -3,7 +3,7 @@ import { publicKeyFromJSON, credentialToJSON } from '/auth/assets/fastpasskey.js
 const params = new URLSearchParams(location.search);
 const enrollment = new URLSearchParams(location.hash.slice(1)).get('enroll');
 if (enrollment) history.replaceState(null, '', location.pathname + location.search);
-document.getElementById('server').textContent = `Signing in to ${location.host}`;
+document.getElementById('server').textContent = window.t('auth.server').replace('{server}', location.host);
 if (enrollment) {
   document.getElementById('enroll').hidden = false;
   document.getElementById('sign-in').hidden = true;
@@ -15,7 +15,7 @@ async function post(path, body) {
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body),
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Sign-in failed. Please try again.');
+  if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : window.t('auth.failed'));
   return data;
 }
 
@@ -23,11 +23,11 @@ async function authenticate(kind, body = {}) {
   const error = document.getElementById('error'); error.textContent = '';
   document.querySelectorAll('button').forEach(b => b.disabled = true);
   try {
-    if (!window.PublicKeyCredential) throw new Error('This browser does not support passkeys. Open in Safari or another current browser.');
+    if (!window.PublicKeyCredential) throw new Error(window.t('auth.unsupported'));
     const options = await post(`${kind}/options`, body);
     const publicKey = publicKeyFromJSON(options);
     const credential = kind === 'login' ? await navigator.credentials.get({publicKey}) : await navigator.credentials.create({publicKey});
-    if (!credential) throw new Error('No passkey selected.');
+    if (!credential) throw new Error(window.t('auth.none'));
     const result = await post(`${kind}/verify`, {credential: credentialToJSON(credential)});
     if (params.has('state') && params.has('code_challenge')) {
       const query = new URLSearchParams({state: params.get('state'), code_challenge: params.get('code_challenge')});
@@ -37,7 +37,7 @@ async function authenticate(kind, body = {}) {
       location.assign(params.get('next') === 'security' ? '/auth/security' : params.get('next') === 'admin' ? '/admin/' : '/');
     }
   } catch (err) {
-    error.textContent = err.name === 'NotAllowedError' ? 'Passkey request cancelled. You can try again.' : err.message;
+    error.textContent = err.name === 'NotAllowedError' ? window.t('auth.cancelled') : err.message;
   } finally { document.querySelectorAll('button').forEach(b => b.disabled = false); }
 }
 

@@ -1,196 +1,177 @@
 <!DOCTYPE html>
+
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Recipes · Onionary</title>
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🧅</text></svg>" />
+<head><script src="/translations.js"></script><script src="/i18n.js"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Recipes · Onionary</title>
+<link href="/styles.css" rel="stylesheet"/>
+<link href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='80'&gt;🧅&lt;/text&gt;&lt;/svg&gt;" rel="icon"/>
 </head>
-
 <body>
+<!-- ─── Navigation ─────────────────────────────────────────── -->
+<nav class="top-nav">
+<div class="container nav-container">
+<button aria-label="Toggle menu" class="burger-btn" id="burger-btn">☰</button>
+<div class="nav-links" id="nav-links">
+<a class="nav-link" data-i18n="nav.pick_meals" href="/"></a>
+<a class="nav-link" data-i18n="nav.kitchen" href="/kitchen.html"></a>
+<a class="nav-link active" data-i18n="nav.manage_recipes" href="/recipes.html"></a>
+<a class="nav-link" data-i18n="nav.households" href="/households.html"></a>
+</div>
+<div class="nav-auth-mount" id="auth-mount"></div>
+</div>
+</nav>
+<!-- ─── Header ─────────────────────────────────────────────── -->
+<header class="site-header">
+<div class="container"><button class="btn btn-secondary" onclick="manageRecipeLinks()" data-i18n="share.manage"></button>
+<h1 data-i18n="recipes.header.title"></h1>
+<p class="tagline" data-i18n="recipes.header.tagline"></p>
+</div>
+</header>
+<main class="container">
+<div class="section-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<h2><span data-i18n="recipes.all_recipes"></span> <span class="badge" id="list-badge">0</span></h2>
+<button class="btn btn-primary" data-i18n="recipes.btn_create" id="btn-create-recipe"></button>
+</div>
+<div class="search-bar-container">
+<input class="search-input" data-i18n="recipes.search_placeholder" id="recipe-search" placeholder="" type="text"/>
+</div>
+</div>
+<!-- ─── Recipe List ──────────────────────────────────────── -->
+<div class="recipes-grid" id="manage-grid">
+<!-- filled by JS -->
+</div>
+</main>
+<!-- ─── Modals ─────────────────────────────────────────────── -->
+<!-- Recipe Edit/Create Modal -->
+<div class="modal-overlay" id="edit-modal" style="display:none;">
+<div class="modal modal-lg">
+<div class="modal-header">
+<div style="display:flex; flex-direction:column; gap:12px;">
+<h2 data-i18n="recipes.modal_edit.title" id="modal-title"></h2>
+<div id="recipe-mode-switch" style="display:none; gap:8px;">
+<button class="btn btn-secondary btn-sm" data-i18n="recipes.modal_edit.btn_manual" id="btn-mode-manual" type="button"></button>
+<button class="btn btn-secondary btn-sm" data-i18n="recipes.modal_edit.btn_import" id="btn-mode-import" type="button"></button>
+</div>
+</div>
+<button class="btn-icon" id="btn-close-modal">✕</button>
+</div>
+<div class="modal-body">
+<section id="import-panel" style="display:none; margin-bottom:24px; border:1px solid var(--border, #e7d9c7); border-radius:18px; padding:20px; background:var(--bg-soft, #fbf4ea);">
+<div style="display:flex; flex-direction:column; gap:16px;">
+<div>
+<h3 data-i18n="recipes.modal_edit.import_title" style="margin:0 0 8px 0;"></h3>
+<p data-i18n="recipes.modal_edit.import_desc" style="margin:0; color:var(--text-muted);"></p>
+</div>
+<div class="form-row">
+<div class="control-group">
+<label data-i18n="recipes.modal_edit.label_source" for="import-source"></label>
+<select id="import-source">
+<option value="chefkoch">Chefkoch</option>
+<option value="onionary">Onionary</option>
+<option data-i18n="recipes.modal_edit.source_instagram" disabled="" value="instagram"></option>
+</select>
+</div>
+<div class="control-group" style="flex:2;">
+<label data-i18n="recipes.modal_edit.label_url" for="import-url"></label>
+<input id="import-url" placeholder="https://www.chefkoch.de/..." type="url"/>
+</div>
+</div>
+<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+<button class="btn btn-primary" data-i18n="recipes.modal_edit.btn_import_submit" id="btn-import-recipe" type="button"></button>
+<span id="import-status" style="color:var(--text-muted); font-size:0.95rem;"></span>
+</div>
+<div id="import-html-fallback" style="display:none;">
+<label data-i18n="recipes.modal_edit.import_fallback" for="import-html" style="display:block; margin-bottom:8px; color:var(--text-muted);"></label>
+<textarea id="import-html" placeholder="&lt;html&gt;..." rows="8"></textarea>
+</div>
+</div>
+</section>
+<form id="recipe-form">
+<input id="recipe-id" type="hidden"/>
+<div class="form-row">
+<div class="control-group" style="flex: 2;">
+<label>Recipe Name</label>
+<input id="recipe-name" required="" type="text"/>
+</div>
+<div class="control-group">
+<label>Kcal / Serving</label>
+<input id="recipe-kcal" min="0" type="number"/>
+</div>
+</div>
+<div class="control-group" style="margin-top:16px;">
+<label for="recipe-notes">Notes</label>
+<textarea id="recipe-notes" placeholder="Optional notes, remarks, or serving tips..." rows="5"></textarea>
+</div>
+<div class="form-row">
+<div class="control-group">
+<label>Active Time (min)</label>
+<input id="recipe-active-time" min="0" type="number"/>
+</div>
+<div class="control-group">
+<label>Total Time (min)</label>
+<input id="recipe-total-time" min="0" type="number"/>
+</div>
+</div>
+<div class="control-group" style="margin-top:16px;">
+<label>Tags</label>
+<div class="tag-selector" id="edit-tag-selector">
+<!-- filled by JS -->
+</div>
+<div class="add-tag-row">
+<input id="new-tag-input" placeholder="New tag name..." type="text"/>
+<button class="btn btn-secondary btn-sm" id="btn-add-tag" type="button">Add</button>
+</div>
+</div>
+<!-- Ingredients -->
+<div class="list-editor">
+<h3>Ingredients</h3>
+<div id="ingredients-list"></div>
+<button class="btn btn-secondary btn-sm" id="btn-add-ingredient" type="button">+ Add Ingredient</button>
+</div>
+<!-- Steps -->
+<div class="list-editor">
+<h3>Instruction Steps</h3>
+<div id="steps-list"></div>
+<button class="btn btn-secondary btn-sm" id="btn-add-step" type="button">+ Add Step</button>
+</div>
+</form>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
+<button class="btn btn-primary" id="btn-save-recipe">Save Recipe</button>
+</div>
+</div>
+</div>
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="delete-modal" style="display:none;">
+<div class="modal modal-sm">
+<div class="modal-header">
+<h2>Delete Recipe</h2>
+</div>
+<div class="modal-body">
+<p>Are you sure you want to delete <strong id="delete-recipe-name"></strong>? This cannot be undone.</p>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" id="btn-cancel-delete">Cancel</button>
+<button class="btn btn-primary" id="btn-confirm-delete" style="background:#d9534f;">Delete</button>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<footer class="site-footer">
+<div class="container">
+<div style="font-size: 0.85rem;">
+<a data-i18n="footer.impressum" href="/impressum.html" style="color: var(--text-muted); text-decoration: none;"></a>
+</div>
+</div>
+</footer>
 
-  <!-- ─── Navigation ─────────────────────────────────────────── -->
-  <nav class="top-nav">
-    <div class="container nav-container">
-      <button class="burger-btn" id="burger-btn" aria-label="Toggle menu">☰</button>
-      <div class="nav-links" id="nav-links">
-        <a href="/" class="nav-link" data-i18n="nav.pick_meals">Pick Meals</a>
-        <a href="/kitchen.html" class="nav-link" data-i18n="nav.kitchen">Kitchen</a>
-        <a href="/recipes.html" class="nav-link active" data-i18n="nav.manage_recipes">Manage Recipes</a>
-        <a href="/households.html" class="nav-link" data-i18n="nav.households">Households</a>
-      </div>
-      <div id="auth-mount" class="nav-auth-mount"></div>
-    </div>
-  </nav>
-
-  <!-- ─── Header ─────────────────────────────────────────────── -->
-  <header class="site-header">
-    <div class="container">
-      <h1 data-i18n="recipes.header.title">Manage <span class="accent-orange">Your</span> <span class="accent-green">Recipes</span></h1>
-      <p class="tagline" data-i18n="recipes.header.tagline">Create, edit, and curate your meal collection.</p>
-    </div>
-  </header>
-
-  <main class="container">
-    <div class="section-header" style="flex-direction: column; align-items: stretch; gap: 16px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2><span data-i18n="recipes.all_recipes">All Recipes</span> <span class="badge" id="list-badge">0</span></h2>
-        <button class="btn btn-primary" id="btn-create-recipe" data-i18n="recipes.btn_create">
-          <span class="icon">➕</span> Create New Recipe
-        </button>
-      </div>
-      <div class="search-bar-container">
-        <input type="text" id="recipe-search" data-i18n="recipes.search_placeholder" placeholder="🔍 Search by name, tags, or ingredients..."
-          class="search-input" />
-      </div>
-    </div>
-
-    <!-- ─── Recipe List ──────────────────────────────────────── -->
-    <div class="recipes-grid" id="manage-grid">
-      <!-- filled by JS -->
-    </div>
-  </main>
-
-  <!-- ─── Modals ─────────────────────────────────────────────── -->
-
-  <!-- Recipe Edit/Create Modal -->
-  <div class="modal-overlay" id="edit-modal" style="display:none;">
-    <div class="modal modal-lg">
-      <div class="modal-header">
-        <div style="display:flex; flex-direction:column; gap:12px;">
-          <h2 id="modal-title" data-i18n="recipes.modal_edit.title">Edit Recipe</h2>
-          <div id="recipe-mode-switch" style="display:none; gap:8px;">
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-manual" data-i18n="recipes.modal_edit.btn_manual">Manual</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-mode-import" data-i18n="recipes.modal_edit.btn_import">Import</button>
-          </div>
-        </div>
-        <button class="btn-icon" id="btn-close-modal">✕</button>
-      </div>
-      <div class="modal-body">
-        <section id="import-panel" style="display:none; margin-bottom:24px; border:1px solid var(--border, #e7d9c7); border-radius:18px; padding:20px; background:var(--bg-soft, #fbf4ea);">
-          <div style="display:flex; flex-direction:column; gap:16px;">
-            <div>
-              <h3 style="margin:0 0 8px 0;" data-i18n="recipes.modal_edit.import_title">Import Recipe</h3>
-              <p style="margin:0; color:var(--text-muted);" data-i18n="recipes.modal_edit.import_desc">Send a recipe URL to the server, let it fetch and parse the page, then review the imported fields before saving.</p>
-            </div>
-            <div class="form-row">
-              <div class="control-group">
-                <label for="import-source" data-i18n="recipes.modal_edit.label_source">Source</label>
-                <select id="import-source">
-                  <option value="chefkoch">Chefkoch</option>
-                  <option value="instagram" disabled data-i18n="recipes.modal_edit.source_instagram">Instagram (later)</option>
-                </select>
-              </div>
-              <div class="control-group" style="flex:2;">
-                <label for="import-url" data-i18n="recipes.modal_edit.label_url">Recipe URL</label>
-                <input type="url" id="import-url" placeholder="https://www.chefkoch.de/..." />
-              </div>
-            </div>
-            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-              <button type="button" class="btn btn-primary" id="btn-import-recipe" data-i18n="recipes.modal_edit.btn_import_submit">Import Into Form</button>
-              <span id="import-status" style="color:var(--text-muted); font-size:0.95rem;"></span>
-            </div>
-            <div id="import-html-fallback" style="display:none;">
-              <label for="import-html" style="display:block; margin-bottom:8px; color:var(--text-muted);" data-i18n="recipes.modal_edit.import_fallback">If server-side fetch fails, paste page HTML here and try again.</label>
-              <textarea id="import-html" rows="8" placeholder="<html>..."></textarea>
-            </div>
-          </div>
-        </section>
-        <form id="recipe-form">
-          <input type="hidden" id="recipe-id" />
-
-          <div class="form-row">
-            <div class="control-group" style="flex: 2;">
-              <label>Recipe Name</label>
-              <input type="text" id="recipe-name" required />
-            </div>
-            <div class="control-group">
-              <label>Kcal / Serving</label>
-              <input type="number" id="recipe-kcal" min="0" />
-            </div>
-          </div>
-
-          <div class="control-group" style="margin-top:16px;">
-            <label for="recipe-notes">Notes</label>
-            <textarea id="recipe-notes" rows="5" placeholder="Optional notes, remarks, or serving tips..."></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="control-group">
-              <label>Active Time (min)</label>
-              <input type="number" id="recipe-active-time" min="0" />
-            </div>
-            <div class="control-group">
-              <label>Total Time (min)</label>
-              <input type="number" id="recipe-total-time" min="0" />
-            </div>
-          </div>
-
-          <div class="control-group" style="margin-top:16px;">
-            <label>Tags</label>
-            <div class="tag-selector" id="edit-tag-selector">
-              <!-- filled by JS -->
-            </div>
-            <div class="add-tag-row">
-              <input type="text" id="new-tag-input" placeholder="New tag name..." />
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-add-tag">Add</button>
-            </div>
-          </div>
-
-          <!-- Ingredients -->
-          <div class="list-editor">
-            <h3>Ingredients</h3>
-            <div id="ingredients-list"></div>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-ingredient">+ Add Ingredient</button>
-          </div>
-
-          <!-- Steps -->
-          <div class="list-editor">
-            <h3>Instruction Steps</h3>
-            <div id="steps-list"></div>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-step">+ Add Step</button>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
-        <button class="btn btn-primary" id="btn-save-recipe">Save Recipe</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Delete Confirmation Modal -->
-  <div class="modal-overlay" id="delete-modal" style="display:none;">
-    <div class="modal modal-sm">
-      <div class="modal-header">
-        <h2>Delete Recipe</h2>
-      </div>
-      <div class="modal-body">
-        <p>Are you sure you want to delete <strong id="delete-recipe-name"></strong>? This cannot be undone.</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="btn-cancel-delete">Cancel</button>
-        <button class="btn btn-primary" id="btn-confirm-delete" style="background:#d9534f;">Delete</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast"></div>
-
-  <footer class="site-footer">
-    <div class="container">
-      <div style="font-size: 0.85rem;">
-        <a href="/impressum.html" style="color: var(--text-muted); text-decoration: none;" data-i18n="footer.impressum">Impressum</a>
-      </div>
-    </div>
-  </footer>
-
-  <script src="/i18n.js"></script>
-  <script src="/auth.js"></script>
-  <script src="/manage.js"></script>
+<script src="/auth.js"></script>
+<script src="/manage.js"></script>
+<script src="/recipe-sharing.js"></script>
 </body>
-
 </html>
+
