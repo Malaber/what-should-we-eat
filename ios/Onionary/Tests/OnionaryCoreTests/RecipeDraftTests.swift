@@ -2,6 +2,11 @@ import XCTest
 @testable import OnionaryCore
 
 final class RecipeDraftTests: XCTestCase {
+    func testChefkochSharedTextAndTracking() throws {
+        let link = "https://www.chefkoch.de/rezepte/4376441747840412/Unsichtbarer-Apfelkuchen.html?utm_source=com.apple.UIKit.activity.CopyToPasteboard&utm_medium=Social"
+        XCTAssertEqual(try RecipeImportLink.sharedText("Try this recipe: " + link).absoluteString, link)
+        XCTAssertThrowsError(try RecipeImportLink.sharedText("https://chefkoch.de.evil.test/recipe"))
+    }
     func testChefkochURLBoundary() throws {
         XCTAssertNoThrow(try RecipeImportLink.chefkoch("https://www.chefkoch.de/rezepte/123"))
         for url in ["http://chefkoch.de/123", "https://chefkoch.de.evil.org/123", "https://chefkoch.de@evil.org/123", "https://chefkoch.de:8443/123", "file:///tmp/test"] {

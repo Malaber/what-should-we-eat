@@ -10,6 +10,14 @@ public enum RecipeImportLink {
         }
         return url
     }
+    public static func sharedText(_ text: String) throws -> URL {
+        if let url = try? accepted(text) { return url }
+        let detector = try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+        for match in detector.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+            if let url = match.url, let accepted = try? accepted(url.absoluteString) { return accepted }
+        }
+        throw CookingError.response("No supported recipe link found.")
+    }
     public static func accepted(_ text: String) throws -> URL {
         if let url = try? chefkoch(text) { return url }
         return try sharedRecipe(text)

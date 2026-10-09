@@ -82,6 +82,7 @@ targets:
           NSExtensionAttributes:
             NSExtensionActivationRule:
               NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsText: true
   OnionaryUITests:
     type: bundle.ui-testing
     platform: iOS
