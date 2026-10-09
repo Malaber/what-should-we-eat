@@ -69,10 +69,9 @@ def test_manage_passkeys_with_real_webauthn(page: Page):
     page.locator('#keys section').filter(has_text='Kitchen phone').get_by_role('button', name='Delete…', exact=True).click()
     page.locator('#action-form button[type=submit]').click()
     expect(page.locator('#keys section')).to_have_count(1)
-    page.locator('#delete-all').click()
-    page.locator('#confirmation').fill('DELETE ALL PASSKEYS')
-    page.locator('#action-form button[type=submit]').click()
-    expect(page.locator('#sign-in')).to_be_visible()
+    expect(page.locator('#delete-all')).to_have_count(0)
+    expect(page.locator('#keys section').get_by_role('button', name='Delete…', exact=True)).to_be_disabled()
+    expect(page.locator('#keys')).to_contain_text('Backup key')
 
 
 def test_auth_theme_follows_system(page: Page):

@@ -63,3 +63,37 @@ def test_recipe_share_link_preview_and_revoke(page):
     page.evaluate("""async id => {await fetch('/recipe-shares/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+localStorage.getItem('wswe_token')}})}""",result['id'])
     page.goto(result['url'])
     expect(page.locator('#error')).to_contain_text('expired')
+
+
+def test_dark_import_and_share_layout(page: Page):
+    login_as_test_user(page)
+    page.evaluate("localStorage.setItem('app_appearance','dark')")
+    page.goto(page.base_url + '/recipes.html')
+    page.locator('#btn-create-recipe').click()
+    page.locator('#recipe-name').fill('Long recipe name for responsive layout')
+    page.locator('#recipe-servings').fill('4.32')
+    page.locator('#btn-save-recipe').click()
+    expect(page.locator('.recipe-card')).to_have_count(1)
+    assert page.locator('#toast').evaluate('(el) => getComputedStyle(el).color !== getComputedStyle(el).backgroundColor')
+    card = page.locator('.recipe-card').first
+    assert card.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1')
+    card.get_by_text('Share recipe copy').click()
+    dialog = page.locator('dialog[open]')
+    expect(dialog).to_be_visible()
+    box = dialog.bounding_box()
+    width = page.evaluate('innerWidth')
+    assert abs(box['x'] + box['width']/2 - width/2) < 2
+    assert box['y'] >= 0
+    expect(dialog).to_have_css('opacity', '1')
+    page.screenshot(path='.tmp/onionary-polish-web-share.png', full_page=True)
+    dialog.get_by_text('Done', exact=True).click()
+    card.get_by_text('✏️ Edit').click()
+    expect(page.locator('#recipe-servings')).to_have_value('4.32')
+
+    page.locator('#btn-close-modal').click()
+    page.locator('#btn-create-recipe').click()
+    page.locator('#btn-mode-import').click()
+    panel = page.locator('#import-panel')
+    expect(panel).to_be_visible()
+    expect(panel).to_have_css('background-color', 'rgb(43, 36, 42)')
+    page.screenshot(path='.tmp/onionary-polish-web-import.png', full_page=True)

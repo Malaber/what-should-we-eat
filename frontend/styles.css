@@ -1401,10 +1401,10 @@ body::before {
   --text-light:   #A69D92;
 
   /* orange accent — warm, appetizing */
-  --orange:       #E8722A;
-  --orange-light: #F5A35C;
-  --orange-pale:  #FDE8D4;
-  --orange-dark:  #C45A1A;
+  --orange:       #7a3057;
+  --orange-light: #ab6286;
+  --orange-pale:  #f5e0e9;
+  --orange-dark:  #642244;
 
   /* green accent — fresh, natural */
   --green:        #4A9C5F;
@@ -1436,3 +1436,10 @@ body::before {
 .recipe-card-footer .btn { flex: 1 1 auto; white-space: normal; min-width: 0; }
 .recipe-card { min-width: 0; }
 .recipe-card h3 { overflow-wrap: anywhere; }
+
+:root[data-appearance="light"] .btn-primary { color: white; }
+:root[data-appearance="dark"] .btn-primary { color: #321523; }
+input, textarea, select { background: var(--bg-card); color: var(--text); }
+.toast { color: var(--bg); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: opacity .15s; } }
+footer > a { color: var(--orange-dark); display: inline-block; margin-top: .75rem; }

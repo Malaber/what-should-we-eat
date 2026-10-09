@@ -165,6 +165,7 @@ function renderRecipes(recipesToRender = allRecipes) {
         <h3>${esc(r.name)}</h3>
       </div>
       <div class="recipe-card-meta">
+        <span class="meta-chip">${window.t("recipe.servings")}: ${Number(r.servings || 1).toLocaleString(window.I18n.lang, {maximumFractionDigits: 2})}</span>
         ${r.kcal_per_serving ? `<span class="meta-chip"><span class="icon">🔥</span> ${r.kcal_per_serving} kcal</span>` : ''}
         ${r.active_cooking_time_min ? `<span class="meta-chip"><span class="icon">🧅</span> ${r.active_cooking_time_min} ${window.t('feedback.39')}</span>` : ''}
         ${r.total_time_min ? `<span class="meta-chip"><span class="icon">⏱️</span> ${r.total_time_min} ${window.t('feedback.40')}</span>` : ''}

@@ -144,3 +144,12 @@
 "Undo · " = "Undo · ";
 "Continue · %lld checked" = "Continue · %lld checked";
 "Step %lld" = "Step %lld";
+"Requires iOS 26 or later." = "Requires iOS 26 or later.";
+"Enable Apple Intelligence in Settings." = "Enable Apple Intelligence in Settings.";
+"Apple Intelligence is downloading its model." = "Apple Intelligence is downloading its model.";
+"Apple Intelligence is unavailable on this device." = "Apple Intelligence is unavailable on this device.";
+"Describe your recipe" = "Describe your recipe";
+"Paste a recipe or describe ingredients, portions and cooking steps." = "Paste a recipe or describe ingredients, portions and cooking steps.";
+"Generation stays on this device. Review ingredients, quantities and cooking instructions before saving to your backend." = "Generation stays on this device. Review ingredients, quantities and cooking instructions before saving to your backend.";
+"Create recipe draft" = "Create recipe draft";
+"Create with Intelligence" = "Create with Intelligence";

@@ -13,3 +13,9 @@ def test_servings_round_trip(client, auth_headers):
 @pytest.mark.parametrize('raw,expected', [('4 Portionen',4), (['4','Portionen'],4), ('1,5 servings',1.5), (None,1), ('0',1)])
 def test_chefkoch_servings(raw, expected):
     assert _parse_servings(raw) == expected
+
+
+def test_chefkoch_import_preserves_recipe_yield():
+    from execution.api.recipe_import import parse_recipe_html
+    draft = parse_recipe_html('chefkoch', '<script type="application/ld+json">{"@type":"Recipe","name":"Cake","recipeYield":"4 Portionen","recipeIngredient":["200 g Käse"],"recipeInstructions":["Bake"]}</script>')
+    assert draft.servings == 4

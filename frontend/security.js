@@ -18,10 +18,10 @@ async function refresh() {
 }
 function show(kind, key) {
   action = {action:kind, key_id:key?.id};
-  $('action-title').textContent = {add:window.t('security.copy_3'),rename:window.t('security.copy_15'),delete:window.t('security.copy_16'),replace:window.t('security.copy_17'),delete_all:window.t('security.copy_18')}[kind];
-  $('action-copy').textContent = kind === 'delete_all' ? window.t('security.copy_19') : kind === 'replace' ? window.t('security.copy_20') : window.t('security.copy_21');
-  $('name-label').hidden = ['delete','delete_all'].includes(kind); $('key-name').value = key?.name || ''; $('key-name').required = !$('name-label').hidden;
-  $('confirm-label').hidden = kind !== 'delete_all'; $('confirmation').value = ''; $('confirmation').required = kind === 'delete_all';
+  $('action-title').textContent = {add:window.t('security.copy_3'),rename:window.t('security.copy_15'),delete:window.t('security.copy_16')}[kind];
+  $('action-copy').textContent = window.t('security.copy_21');
+  $('name-label').hidden = kind === 'delete'; $('key-name').value = key?.name || ''; $('key-name').required = !$('name-label').hidden;
+
   $('action-dialog').showModal();
 }
 $('add').onclick = () => show('add'); $('cancel').onclick = () => $('action-dialog').close();
@@ -29,7 +29,7 @@ $('action-form').onsubmit = async event => {
   event.preventDefault(); $('error').textContent = ''; $('status').textContent = '';
   const buttons = [...document.querySelectorAll('button')]; buttons.forEach(b => b.disabled = true);
   try {
-    const options = await api('passkeys/action/options', {...action, name:$('key-name').value || 'Passkey', confirmation:$('confirmation').value});
+    const options = await api('passkeys/action/options', {...action, name:$('key-name').value || 'Passkey'});
     const proof = await navigator.credentials.get({publicKey:publicKeyFromJSON(options)});
     const result = await api('passkeys/action/verify', {credential:credentialToJSON(proof)});
     if (result.options) {
