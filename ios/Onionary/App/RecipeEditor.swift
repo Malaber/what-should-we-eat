@@ -51,6 +51,13 @@ struct RecipeEditor: View {
                     ForEach($draft.instructionSteps) { $step in
                         VStack {
                             TextField("Instruction", text: $step.description, axis: .vertical)
+                            Menu("Insert ingredient amount") {
+                                ForEach(draft.ingredients.filter { ($0.quantity ?? 0) > 0 && !$0.name.isEmpty }) { ingredient in
+                                    Button(ingredient.name) { step.description += " {{" + ingredient.name + "|100%}}" }
+                                }
+                            }
+                            Text("Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.")
+                                .font(.caption).foregroundStyle(.secondary)
                             VStack(alignment: .leading, spacing: 4) {
                         Text("Minutes").font(.caption).foregroundStyle(.secondary)
                         TextField("Minutes", value: $step.durationMin, format: .number).keyboardType(.numberPad)

@@ -163,3 +163,7 @@
 "Sort recipes" = "Sort recipes";
 
 "%lld recipes" = "%lld recipes";
+
+"Insert ingredient amount" = "Insert ingredient amount";
+
+"Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking." = "Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.";

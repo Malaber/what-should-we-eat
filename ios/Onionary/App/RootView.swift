@@ -203,7 +203,7 @@ struct CookingView: View {
                     }
                     Section("Let’s cook") {
                         ForEach(adventure.recipe.instructionSteps.sorted { $0.stepNumber < $1.stepNumber }) { step in
-                            checkRow(key: "step-\(step.id)", label: step.description,
+                            checkRow(key: "step-\(step.id)", label: IngredientPlaceholders.resolve(step.description, ingredients: adventure.recipe.ingredients, multiplier: adventure.multiplier, locale: L10n.locale),
                                      subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""), adventure: adventure)
                         }
                     }

@@ -116,3 +116,14 @@ The worker validates the archive's bundle ID and version. Archive/export command
 use the system PATH because Homebrew rsync can break Xcode's IPA packaging.
 
 See [development deployment](../../docs/development-deployment.md) for GHCR images, tag versions, separate GitHub Pages hosting, and screenshot CI.
+
+### Ingredient amounts inside steps
+
+Use explicit placeholders such as `Use {{Milk|80%}} now, then {{Milk|20%}}`.
+The ingredient name must match exactly one ingredient (case-insensitive). With
+100 ml Milk this displays 80 ml and 20 ml; changing portions scales both amounts.
+The iOS step editor's **Insert ingredient amount** menu inserts a 100% placeholder
+that you can edit. The web editor accepts the same syntax. Copies preserve it.
+Unmatched names, duplicate names, missing quantities and invalid percentages stay
+visible as raw placeholders so an incorrect quantity is never silently guessed.
+Ordinary imported prose is not rewritten. Rename placeholders when renaming an ingredient.
