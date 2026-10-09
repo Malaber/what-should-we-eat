@@ -1,51 +1,93 @@
-<!DOCTYPE html>
+<!doctype html>
 
 <html lang="de">
-<head><script src="/translations.js"></script><script src="/i18n.js"></script>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Impressum - Onionary</title>
-<link href="/styles.css" rel="stylesheet"/>
-<link href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='80'&gt;🧅&lt;/text&gt;&lt;/svg&gt;" rel="icon"/>
-</head>
-<body>
-<nav class="top-nav">
-<div class="container nav-container" style="display: flex; justify-content: space-between; width: 100%;">
-<div style="display: flex; gap: 24px; align-items: center;">
-<a class="nav-link" data-i18n="nav.pick_meals" href="/"></a>
-<a class="nav-link" data-i18n="nav.kitchen" href="/kitchen.html"></a>
-<a class="nav-link" data-i18n="nav.manage_recipes" href="/recipes.html"></a>
-<a class="nav-link" data-i18n="nav.households" href="/households.html"></a>
-</div>
-</div>
-</nav>
-<header class="site-header">
-<div class="container">
-<h1><span class="accent-orange">Impres</span><span class="accent-green">sum</span></h1>
-</div>
-</header>
-<main class="container" style="max-width: 800px; margin-bottom: 60px;">
-<section style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-sm);">
-<h3 style="font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
-        Kontakt</h3>
-<p style="margin-bottom: 24px;">
-        E-Mail: <a href="mailto:{{IMPRESSUM_EMAIL}}" style="color: var(--orange-dark); text-decoration: none;">{{IMPRESSUM_EMAIL}}</a>
-</p>
-<h3 style="font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
-        Verantwortlich für den Inhalt</h3>
-<p style="margin-bottom: 24px;">
-        {{IMPRESSUM_NAME}}<br/>
-        <span style="white-space:pre-line">{{IMPRESSUM_ADDRESS}}</span>
-      </p>
-</section>
-</main>
-<footer class="site-footer">
-<div class="container">
-<div style="font-size: 0.85rem;">
-<a data-i18n="footer.impressum" href="/impressum.html" style="color: var(--orange-dark); text-decoration: none; font-weight: 600;"></a>
-</div>
-</div>
-</footer>
-
-</body>
+  <head>
+    <script src="/translations.js"></script>
+    <script src="/i18n.js"></script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Impressum - Onionary</title>
+    <link href="/styles.css" rel="stylesheet" />
+    <link
+      href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='80'&gt;🧅&lt;/text&gt;&lt;/svg&gt;"
+      rel="icon"
+    />
+  </head>
+  <body>
+    <nav class="top-nav">
+      <div
+        class="container nav-container"
+        style="display: flex; justify-content: space-between; width: 100%"
+      >
+        <div style="display: flex; gap: 24px; align-items: center">
+          <a class="nav-link" data-i18n="nav.pick_meals" href="/"></a>
+          <a class="nav-link" data-i18n="nav.kitchen" href="/kitchen.html"></a>
+          <a class="nav-link" data-i18n="nav.manage_recipes" href="/recipes.html"></a>
+          <a class="nav-link" data-i18n="nav.households" href="/households.html"></a>
+        </div>
+      </div>
+    </nav>
+    <header class="site-header">
+      <div class="container">
+        <h1><span class="accent-orange">Impres</span><span class="accent-green">sum</span></h1>
+      </div>
+    </header>
+    <main class="container" style="max-width: 800px; margin-bottom: 60px">
+      <section
+        style="
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          padding: 32px;
+          box-shadow: var(--shadow-sm);
+        "
+      >
+        <h3
+          style="
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+          "
+        >
+          Kontakt
+        </h3>
+        <p style="margin-bottom: 24px">
+          E-Mail:
+          <a
+            href="mailto:{{IMPRESSUM_EMAIL}}"
+            style="color: var(--orange-dark); text-decoration: none"
+            >{{IMPRESSUM_EMAIL}}</a
+          >
+        </p>
+        <h3
+          style="
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+          "
+        >
+          Verantwortlich für den Inhalt
+        </h3>
+        <p style="margin-bottom: 24px">
+          {{IMPRESSUM_NAME}}<br />
+          <span style="white-space: pre-line">{{IMPRESSUM_ADDRESS}}</span>
+        </p>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="container">
+        <div style="font-size: 0.85rem">
+          <a
+            data-i18n="footer.impressum"
+            href="/impressum.html"
+            style="color: var(--orange-dark); text-decoration: none; font-weight: 600"
+          ></a>
+        </div>
+      </div>
+    </footer>
+  </body>
 </html>

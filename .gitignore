@@ -36,3 +36,5 @@ DerivedData/
 *.ipa
 
 deploy/test.env
+
+node_modules/

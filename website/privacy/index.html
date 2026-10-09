@@ -1,1 +1,96 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Privacy — Onionary</title><meta name="description" content="How Onionary handles local cooking data, passkeys, custom backends, support requests, and deletion."><link rel="canonical" href="https://app.onionary.malaber.de/privacy/"><meta property="og:title" content="Privacy — Onionary"><meta property="og:description" content="How Onionary handles local cooking data, passkeys, custom backends, support requests, and deletion."><meta property="og:image" content="https://app.onionary.malaber.de/assets/onionary.png"><meta name="theme-color" content="#803454"><link rel="icon" href="/assets/onionary.png"><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip" href="#main">Skip to content</a><header><a class="brand" href="/">Onionary</a><nav aria-label="Main navigation"><a href="/capabilities/">Features</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a></nav></header><main id="main"><article><p class="kicker">Privacy · Updated 8 October 2026</p><h1>Your kitchen.<br>Your choice of server.</h1><p class="lede">Onionary has no advertising or analytics SDK and does not track you across apps or websites. It connects to the recipe backend you choose.</p><h2>What stays on your device</h2><p>Cached recipes, recent recipes, portion adjustments, checklist states, and timestamped undo history are stored in the app’s local container. Authentication tokens are stored in Keychain. Cooking history is not uploaded by the companion. iOS backups may include app-container data according to your device settings.</p><h2>What reaches your backend</h2><p>Account registration sends your name, email address, and a passkey public credential to the selected server. Passkey sign-in exchanges cryptographic proofs; the app and server do not receive Face ID or Touch ID biometric data or your passkey’s private key. Your passkey provider manages private keys under its own settings.</p><p>The backend receives authenticated recipe requests, account identifiers, and network information such as IP address. It stores accounts, recipes, public credentials, and session records. Its operator controls retention, access, backups, and any server logs. Ask your chosen operator for its privacy policy. This app site is not that backend.</p><h2>Purposes and retention</h2><p>Account information and sessions enable authentication and access to your recipes. Local cooking data remains until app data is removed; signing out retains it for your next sign-in. Backend retention depends on the operator. Support emails are used to handle your request; avoid sending sensitive recipe or account data unless necessary.</p><h2>Deletion and privacy requests</h2><p>Contact your backend operator for account deletion, access, correction, or export requests. For app privacy questions or developer-operated backends, email <a href="mailto:onionary@schaedler.rocks">onionary@schaedler.rocks</a>. See <a href="/support/">Support</a> for deletion instructions. Remove saved passkeys separately in your password manager if desired.</p><h2>Apple services</h2><p>TestFlight and the App Store are provided by Apple. Apple may process installation, crash, and testing information under its own privacy terms and your settings.</p><h2>This website</h2><p>This static site is hosted by GitHub Pages. It sets no application cookies, uses no analytics, and loads no third-party fonts. GitHub may process request metadata for hosting and security. Email and GitHub issues are separate services; GitHub issues are public.</p></article></main><footer><span>Onionary · A little help. A lovely meal.</span><nav><a href="/capabilities/">Features</a><a href="/support/">Support</a><a href="/privacy/">Privacy</a><a href="https://github.com/Malaber/what-should-we-eat">GitHub</a></nav></footer></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy — Onionary</title>
+    <meta
+      name="description"
+      content="How Onionary handles local cooking data, passkeys, custom backends, support requests, and deletion."
+    />
+    <link rel="canonical" href="https://app.onionary.malaber.de/privacy/" />
+    <meta property="og:title" content="Privacy — Onionary" />
+    <meta
+      property="og:description"
+      content="How Onionary handles local cooking data, passkeys, custom backends, support requests, and deletion."
+    />
+    <meta property="og:image" content="https://app.onionary.malaber.de/assets/onionary.png" />
+    <meta name="theme-color" content="#803454" />
+    <link rel="icon" href="/assets/onionary.png" />
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header>
+      <a class="brand" href="/">Onionary</a>
+      <nav aria-label="Main navigation">
+        <a href="/capabilities/">Features</a><a href="/support/">Support</a
+        ><a href="/privacy/">Privacy</a>
+      </nav>
+    </header>
+    <main id="main">
+      <article>
+        <p class="kicker">Privacy · Updated 8 October 2026</p>
+        <h1>Your kitchen.<br />Your choice of server.</h1>
+        <p class="lede">
+          Onionary has no advertising or analytics SDK and does not track you across apps or
+          websites. It connects to the recipe backend you choose.
+        </p>
+        <h2>What stays on your device</h2>
+        <p>
+          Cached recipes, recent recipes, portion adjustments, checklist states, and timestamped
+          undo history are stored in the app’s local container. Authentication tokens are stored in
+          Keychain. Cooking history is not uploaded by the companion. iOS backups may include
+          app-container data according to your device settings.
+        </p>
+        <h2>What reaches your backend</h2>
+        <p>
+          Account registration sends your name, email address, and a passkey public credential to
+          the selected server. Passkey sign-in exchanges cryptographic proofs; the app and server do
+          not receive Face ID or Touch ID biometric data or your passkey’s private key. Your passkey
+          provider manages private keys under its own settings.
+        </p>
+        <p>
+          The backend receives authenticated recipe requests, account identifiers, and network
+          information such as IP address. It stores accounts, recipes, public credentials, and
+          session records. Its operator controls retention, access, backups, and any server logs.
+          Ask your chosen operator for its privacy policy. This app site is not that backend.
+        </p>
+        <h2>Purposes and retention</h2>
+        <p>
+          Account information and sessions enable authentication and access to your recipes. Local
+          cooking data remains until app data is removed; signing out retains it for your next
+          sign-in. Backend retention depends on the operator. Support emails are used to handle your
+          request; avoid sending sensitive recipe or account data unless necessary.
+        </p>
+        <h2>Deletion and privacy requests</h2>
+        <p>
+          Contact your backend operator for account deletion, access, correction, or export
+          requests. For app privacy questions or developer-operated backends, email
+          <a href="mailto:onionary@schaedler.rocks">onionary@schaedler.rocks</a>. See
+          <a href="/support/">Support</a> for deletion instructions. Remove saved passkeys
+          separately in your password manager if desired.
+        </p>
+        <h2>Apple services</h2>
+        <p>
+          TestFlight and the App Store are provided by Apple. Apple may process installation, crash,
+          and testing information under its own privacy terms and your settings.
+        </p>
+        <h2>This website</h2>
+        <p>
+          This static site is hosted by GitHub Pages. It sets no application cookies, uses no
+          analytics, and loads no third-party fonts. GitHub may process request metadata for hosting
+          and security. Email and GitHub issues are separate services; GitHub issues are public.
+        </p>
+      </article>
+    </main>
+    <footer>
+      <span>Onionary · A little help. A lovely meal.</span>
+      <nav>
+        <a href="/capabilities/">Features</a><a href="/support/">Support</a
+        ><a href="/privacy/">Privacy</a
+        ><a href="https://github.com/Malaber/what-should-we-eat">GitHub</a>
+      </nav>
+    </footer>
+  </body>
+</html>
