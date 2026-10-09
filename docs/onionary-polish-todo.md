@@ -18,4 +18,16 @@ Use the Apple design skill for interaction, accessibility and layout work.
 - [x] Keep recipe-card actions visible with responsive wrapping or scrolling.
 - [x] Center and space recipe-share dialogs; provide responsive sizing, focus handling and reduced-motion support.
 - [x] Preserve umlauts in configured Impressum values, including the Ansible-to-Compose path.
-- [ ] Run backend, web, iOS and affected deployment/release tests; fix regressions, inspect UI, push new PR. Leave GitHub CI follow-up to the user.
+- [x] Run backend, web, iOS and affected deployment/release tests; fix regressions, inspect UI, push new PR. Leave GitHub CI follow-up to the user.
+
+## Validation and release
+
+- PR: https://github.com/Malaber/what-should-we-eat/pull/4
+- Python 3.14 packaged backend: 131 tests passed; final added Chefkoch yield test and release tests: 9 passed.
+- Fresh/repeated PostgreSQL migrations and non-root API/passkey smoke checks passed.
+- Desktop Chromium: 15 passed; iPhone emulation: 15 passed; final mobile recipe/layout checks: 3 passed.
+- Swift core: 15 passed; clean isolated simulator UI build: 5 passed.
+- HTML formatter and diff checks passed; dark import and share-dialog screenshots inspected.
+- Eight deployment role tests passed, including UTF-8 Compose round-trip. Related selfhosted !30 and infra !38 merged/deployed by operator.
+- Physical-device checks remain: Chefkoch app discovery and actual Apple Intelligence generation (simulator cannot establish these).
+- TestFlight release requested: v0.2.0-rc.4 / 0.2.0 (4); upload result recorded after Apple acceptance.
