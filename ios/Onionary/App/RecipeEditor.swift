@@ -14,9 +14,18 @@ struct RecipeEditor: View {
                 Section("Recipe") {
                     TextField("Name", text: $draft.name)
                     TextField("Notes", text: Binding(get: { draft.notes ?? "" }, set: { draft.notes = $0 }), axis: .vertical)
-                    TextField("Total minutes", value: $draft.totalTimeMin, format: .number).keyboardType(.numberPad)
-                    TextField("Active minutes", value: $draft.activeCookingTimeMin, format: .number).keyboardType(.numberPad)
-                    TextField("Calories per serving", value: $draft.kcalPerServing, format: .number).keyboardType(.decimalPad)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Total minutes").font(.caption).foregroundStyle(.secondary)
+                        TextField("Total minutes", value: $draft.totalTimeMin, format: .number).keyboardType(.numberPad)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Active minutes").font(.caption).foregroundStyle(.secondary)
+                        TextField("Active minutes", value: $draft.activeCookingTimeMin, format: .number).keyboardType(.numberPad)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Calories per serving").font(.caption).foregroundStyle(.secondary)
+                        TextField("Calories per serving", value: $draft.kcalPerServing, format: .number).keyboardType(.decimalPad)
+                    }
                     TextField("Tags, separated by commas", text: Binding(get: { draft.tags.joined(separator: ", ") }, set: { draft.tags = $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }))
                 }
                 Section("Ingredients") {
@@ -24,7 +33,10 @@ struct RecipeEditor: View {
                         VStack {
                             TextField("Ingredient", text: $item.name)
                             HStack {
-                                TextField("Quantity", value: $item.quantity, format: .number).keyboardType(.decimalPad)
+                                VStack(alignment: .leading, spacing: 4) {
+                        Text("Quantity").font(.caption).foregroundStyle(.secondary)
+                        TextField("Quantity", value: $item.quantity, format: .number).keyboardType(.decimalPad)
+                    }
                                 TextField("Unit", text: Binding(get: { item.unit ?? "" }, set: { item.unit = $0 }))
                             }
                         }
@@ -35,7 +47,10 @@ struct RecipeEditor: View {
                     ForEach($draft.instructionSteps) { $step in
                         VStack {
                             TextField("Instruction", text: $step.description, axis: .vertical)
-                            TextField("Minutes", value: $step.durationMin, format: .number).keyboardType(.numberPad)
+                            VStack(alignment: .leading, spacing: 4) {
+                        Text("Minutes").font(.caption).foregroundStyle(.secondary)
+                        TextField("Minutes", value: $step.durationMin, format: .number).keyboardType(.numberPad)
+                    }
                         }
                     }.onDelete { draft.instructionSteps.remove(atOffsets: $0) }
                      .onMove { draft.instructionSteps.move(fromOffsets: $0, toOffset: $1) }

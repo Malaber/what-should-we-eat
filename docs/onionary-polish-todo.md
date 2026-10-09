@@ -5,7 +5,7 @@ regression coverage, then run the complete applicable test suites and fix failur
 Use the Apple design skill for interaction, accessibility and layout work.
 
 - [x] Dismiss iOS keyboard by tapping outside fields; retain accessible Done action.
-- [ ] Give populated numeric recipe fields persistent labels and units.
+- [x] Give populated numeric recipe fields persistent labels and units.
 - [ ] Store recipe base portions end-to-end, including Chefkoch import and editing.
 - [ ] Update portion adjustment live on field exit and +/-; remove redundant whole-recipe scaling section.
 - [ ] Add free-text Apple Intelligence recipe drafting with Hiinterval-style availability handling and draft review.
