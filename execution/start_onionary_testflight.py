@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Start a detached local build/test/upload and keep a log plus an exit status.
 
-python execution/start_onionary_testflight.py 1.0.0 1
+python execution/start_onionary_testflight.py auto 2
 python execution/start_onionary_testflight.py --status
 Uses the Apple account already configured in Xcode; no secrets in this script.
 """
@@ -33,8 +33,12 @@ def main():
     if args.status:
         print(status_file.read_text() if status_file.exists() else "No upload has been started.")
         return
+    if args.version == "auto":
+        args.version = subprocess.check_output(
+            [sys.executable, str(ROOT / "execution/version.py"), "--ios"], cwd=ROOT, text=True
+        ).strip()
     if not re.fullmatch(r"\d+\.\d+\.\d+", args.version or "") or not re.fullmatch(r"[1-9]\d*", args.build or ""):
-        parser.error("Provide a version (1.0.0) and positive build number.")
+        parser.error("Provide a version (auto for the Git-tag version, or 0.2.0) and positive build number.")
     if args.archive:
         args.archive = args.archive.resolve()
         try:

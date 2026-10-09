@@ -85,10 +85,13 @@ Xcode. App Store Connect must contain an iOS app with bundle ID and SKU
 bundle ID and cannot receive this build.
 
 ```sh
-python3 execution/start_onionary_testflight.py 1.0.0 1
+python3 execution/start_onionary_testflight.py auto 2
 python3 execution/start_onionary_testflight.py --status
 tail -f .tmp/onionary-testflight/build.log
 ```
+
+`auto` resolves the numeric version from the latest reachable Git tag, using the
+same version script as CI. Tag the tested commit before starting the upload.
 
 The detached worker tests, archives, and exports directly to App Store Connect.
 It survives terminal/chat disconnects, records the exit status, and prevents
@@ -100,13 +103,13 @@ Apple's processing or TestFlight review.
 Foreground equivalent:
 
 ```sh
-bash ios/Onionary/Scripts/upload_testflight.sh 1.0.0 1
+bash ios/Onionary/Scripts/upload_testflight.sh "$(python3 execution/version.py --ios)" 2
 ```
 
 To retry just an export after correcting App Store Connect settings:
 
 ```sh
-python3 execution/start_onionary_testflight.py 1.0.0 1 --archive /absolute/path/Onionary.xcarchive
+python3 execution/start_onionary_testflight.py auto 2 --archive /absolute/path/Onionary.xcarchive
 ```
 
 The worker validates the archive's bundle ID and version. Archive/export commands

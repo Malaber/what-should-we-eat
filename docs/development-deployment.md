@@ -110,9 +110,10 @@ python3 execution/version.py --ios
 
 Tag the tested commit. Do not move published tags. Xcode uses the numeric part
 for marketing version; increment TestFlight build numbers independently.
-**App Store Connect already accepted 1.0.0 (1)** before the fork version policy
-was set. Repository/backend starts at 0.2.0; confirm Apple's version-train rules
-before uploading a lower marketing version, or pass 1.0.0 explicitly with build 2.
+Use `python3 execution/start_onionary_testflight.py auto 2` to derive the same
+numeric version as CI. The initial manual build was 1.0.0 (1); subsequent builds
+follow repository tags. An upload failure must be resolved explicitly, never by
+silently changing the marketing version.
 
 ## App website and screenshots
 
