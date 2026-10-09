@@ -8,7 +8,7 @@ until the companion changes are merged. All new CI runs and images live in
 ## Ship this branch to a test server
 
 Use a separate hostname, for example `onionary-test.malaber.de`. The hostname
-`onionary.malaber.de` is reserved for the static app website on GitHub Pages.
+`app.onionary.malaber.de` is reserved for the static app website on GitHub Pages.
 
 1. Push the development branch and wait for **Build and test** to finish. Its
    final job publishes `ghcr.io/malaber/what-should-we-eat:development` plus an
@@ -117,17 +117,16 @@ silently changing the marketing version.
 
 ## App website and screenshots
 
-`website/` is deployed independently by **GitHub Pages**, from development for now.
+`website/` is deployed independently by **GitHub Pages**, from main.
 The backend Dockerfile does not copy it. Configure Pages source **GitHub Actions**,
-custom domain `onionary.malaber.de`, and DNS CNAME `onionary → Malaber.github.io`.
-Enable HTTPS after GitHub issues the certificate. Change the workflow branch when
-moving website ownership to main.
+custom domain `app.onionary.malaber.de`, and DNS CNAME `app.onionary → Malaber.github.io`.
+Enable HTTPS after GitHub issues the certificate. The Pages workflow deploys only main.
 
 App Store URLs:
 
-- Marketing: https://onionary.malaber.de/
-- Support: https://onionary.malaber.de/support/
-- Privacy: https://onionary.malaber.de/privacy/
+- Marketing: https://app.onionary.malaber.de/
+- Support: https://app.onionary.malaber.de/support/
+- Privacy: https://app.onionary.malaber.de/privacy/
 - Contact: onionary@schaedler.rocks
 
 **App Store screenshots** captures four real app screens in English on iPhone

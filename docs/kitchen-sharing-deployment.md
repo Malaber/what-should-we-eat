@@ -10,7 +10,7 @@ IMPRESSUM_ADDRESS=Your complete postal address
 IMPRESSUM_EMAIL=your-instance-contact@example.com
 ```
 
-These examples are placeholders; replace all three with the actual instance operator. The API refuses startup if any value is blank/missing, or if the email has an invalid shape. No bypass is provided for production. The Compose example also requires these values during interpolation. The separate `onionary.malaber.de` app website is unaffected.
+These examples are placeholders; replace all three with the actual instance operator. The API refuses startup if any value is blank/missing, or if the email has an invalid shape. No bypass is provided for production. The Compose example also requires these values during interpolation. The separate `app.onionary.malaber.de` app website is unaffected.
 
 Run the existing migration service before starting the new API image. Migration `20261009_02` adds `recipe_shares`; it does not rewrite recipes. Older app versions remain compatible with existing endpoints. Use the immutable `sha-<commit>` image for this PR, since feature branches do not overwrite the established `development` tag. After merge, `main` is also available. Follow the existing Traefik/Compose deployment guide.
 

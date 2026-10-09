@@ -1,7 +1,7 @@
 name: GitHub Pages
 on:
   push:
-    branches: [codex/onionary-ios-companion]
+    branches: [main]
     paths: ['website/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: github.repository == 'Malaber/what-should-we-eat' && github.ref == 'refs/heads/codex/onionary-ios-companion'
+    if: github.repository == 'Malaber/what-should-we-eat' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

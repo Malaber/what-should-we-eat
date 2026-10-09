@@ -30,8 +30,8 @@ struct SettingsView: View {
             }
             Section("Onionary") {
                 NavigationLink("Shared recipe links") { SharedRecipeLinksView(store: store) }
-                Link("Support", destination: URL(string: "https://onionary.malaber.de/support/")!)
-                Link("Privacy", destination: URL(string: "https://onionary.malaber.de/privacy/")!)
+                Link("Support", destination: URL(string: "https://app.onionary.malaber.de/support/")!)
+                Link("Privacy", destination: URL(string: "https://app.onionary.malaber.de/privacy/")!)
             }
         }.navigationTitle("Settings")
             .confirmationDialog("Switch backend? Your saved cooking progress will be kept.", isPresented: $confirmSwitch, titleVisibility: .visible) {
