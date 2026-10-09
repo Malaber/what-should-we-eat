@@ -44,6 +44,7 @@ public struct RecipeDraft: Codable, Sendable {
     }
     public var name = ""
     public var notes: String? = ""
+    public var servings: Decimal? = 1
     public var kcalPerServing: Decimal?
     public var activeCookingTimeMin: Int?
     public var totalTimeMin: Int?
@@ -63,6 +64,7 @@ public struct RecipeDraft: Codable, Sendable {
               ingredients.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && ($0.quantity == nil || $0.quantity! > 0) }),
               instructionSteps.allSatisfy({ !$0.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && ($0.durationMin ?? 0) >= 0 }),
               (totalTimeMin ?? 0) >= 0, (activeCookingTimeMin ?? 0) >= 0,
+              (servings ?? 1) > 0, (servings ?? 1) <= 1_000_000,
               (kcalPerServing ?? 0) >= 0 else { throw CookingError.response("Check recipe name, ingredients, steps, and positive quantities.") }
         var copy = self
         for index in copy.instructionSteps.indices { copy.instructionSteps[index].stepNumber = index + 1 }

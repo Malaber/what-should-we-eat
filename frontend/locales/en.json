@@ -214,5 +214,6 @@
   "feedback.switched": "Switched to \"{name}\"",
   "feedback.created": "Created \"{name}\"!",
   "feedback.left": "Left \"{name}\"",
-  "feedback.imported": "Successfully imported {count} recipes!"
+  "feedback.imported": "Successfully imported {count} recipes!",
+  "recipe.servings": "Original recipe serves"
 }

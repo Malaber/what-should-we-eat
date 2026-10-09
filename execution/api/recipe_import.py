@@ -75,6 +75,7 @@ def parse_recipe_html(source: str, html: str, url: str | None = None) -> RecipeD
     return RecipeDraftOut(
         name=_clean_text(recipe_data.get("name")) or "Imported Recipe",
         notes=notes,
+        servings=_parse_servings(recipe_data.get("recipeYield")),
         kcal_per_serving=kcal,
         active_cooking_time_min=prep_min,
         total_time_min=total_min,
@@ -381,3 +382,14 @@ def _clean_text(value: Any) -> str:
     if value is None:
         return ""
     return re.sub(r"\s+", " ", str(value)).strip()
+
+
+def _parse_servings(value) -> float:
+    """Schema.org recipeYield may be numeric, text or a list of labels."""
+    for item in value if isinstance(value, list) else [value]:
+        match = re.search(r"\d+(?:[.,]\d+)?", str(item or ""))
+        if match:
+            number = float(match.group().replace(',', '.'))
+            if 0 < number <= 1_000_000:
+                return number
+    return 1

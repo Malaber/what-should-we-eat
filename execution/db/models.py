@@ -134,6 +134,7 @@ class Recipe(Base):
     household_id = Column(Integer, ForeignKey("households.id"), nullable=False)
     name = Column(String(255), nullable=False)
     notes = Column(Text, nullable=True)
+    servings = Column(Float, nullable=False, default=1, server_default="1")
     kcal_per_serving = Column(Float, nullable=True)
     active_cooking_time_min = Column(Integer, nullable=True)
     total_time_min = Column(Integer, nullable=True)

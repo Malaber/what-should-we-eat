@@ -19,6 +19,7 @@ public struct Recipe: Codable, Identifiable, Equatable, Sendable {
     public let householdId: Int
     public let name: String
     public let notes: String?
+    public var servings: Decimal? = nil
     public let totalTimeMin: Int?
     public let ingredients: [Ingredient]
     public let instructionSteps: [CookingStep]
@@ -82,7 +83,7 @@ public struct Adventure: Codable, Identifiable, Equatable, Sendable {
     public var canRedo: Bool { redoStack?.isEmpty == false }
     public var portions: Decimal { baseServings * multiplier }
 
-    public init(recipe: Recipe, now: Date = Date()) { self.recipe = recipe; lastVisited = now }
+    public init(recipe: Recipe, now: Date = Date()) { self.recipe = recipe; baseServings = recipe.servings ?? 1; lastVisited = now }
     public func quantity(_ ingredient: Ingredient) -> Decimal? { ingredient.quantity.map { $0 * multiplier } }
     public mutating func scale(multiplier: Decimal) throws {
         guard !multiplier.isNaN, multiplier > 0, multiplier <= 1_000_000_000 else { throw CookingError.invalidNumber }

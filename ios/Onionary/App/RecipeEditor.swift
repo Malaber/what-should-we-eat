@@ -13,6 +13,10 @@ struct RecipeEditor: View {
             Form {
                 Section("Recipe") {
                     TextField("Name", text: $draft.name)
+                    VStack(alignment: .leading) {
+                        Text("Original recipe serves").font(.caption).foregroundStyle(.secondary)
+                        TextField("Original recipe serves", value: $draft.servings, format: .number).keyboardType(.decimalPad)
+                    }
                     TextField("Notes", text: Binding(get: { draft.notes ?? "" }, set: { draft.notes = $0 }), axis: .vertical)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Total minutes").font(.caption).foregroundStyle(.secondary)

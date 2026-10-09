@@ -28,6 +28,7 @@ const $recipeSearch = document.getElementById('recipe-search');
 const $recipeForm = document.getElementById('recipe-form');
 const $modalTitle = document.getElementById('modal-title');
 const $recipeName = document.getElementById('recipe-name');
+const $recipeServings = document.getElementById('recipe-servings');
 const $recipeKcal = document.getElementById('recipe-kcal');
 const $recipeActiveTime = document.getElementById('recipe-active-time');
 const $recipeTotalTime = document.getElementById('recipe-total-time');
@@ -221,6 +222,7 @@ function editRecipe(id) {
 
   $recipeName.value = r.name || '';
   $recipeNotes.value = r.notes || '';
+  $recipeServings.value = r.servings || 1;
   $recipeKcal.value = r.kcal_per_serving || '';
   $recipeActiveTime.value = r.active_cooking_time_min || '';
   $recipeTotalTime.value = r.total_time_min || '';
@@ -313,6 +315,7 @@ function getApiErrorMessage(data) {
 function applyImportedRecipe(recipe) {
   $recipeName.value = recipe.name || '';
   $recipeNotes.value = recipe.notes || '';
+  $recipeServings.value = recipe.servings || 1;
   $recipeKcal.value = recipe.kcal_per_serving || '';
   $recipeActiveTime.value = recipe.active_cooking_time_min || '';
   $recipeTotalTime.value = recipe.total_time_min || '';
@@ -400,6 +403,7 @@ async function saveRecipe(e) {
   const recipeData = {
     name: name,
     notes: $recipeNotes.value.trim() || null,
+    servings: Number($recipeServings.value),
     kcal_per_serving: parseFloat($recipeKcal.value) || null,
     active_cooking_time_min: parseInt($recipeActiveTime.value) || null,
     total_time_min: parseInt($recipeTotalTime.value) || null,

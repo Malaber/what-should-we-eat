@@ -212,5 +212,6 @@
   "feedback.switched": "Zu „{name}“ gewechselt",
   "feedback.created": "„{name}“ erstellt!",
   "feedback.left": "„{name}“ verlassen",
-  "feedback.imported": "{count} Rezepte erfolgreich importiert!"
+  "feedback.imported": "{count} Rezepte erfolgreich importiert!",
+  "recipe.servings": "Portionen im Originalrezept"
 }

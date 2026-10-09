@@ -65,6 +65,7 @@ class TagOut(TagBase):
 # ── Recipes ──────────────────────────────────────────────────────────
 
 class RecipeBase(BaseModel):
+    servings: float = Field(default=1, gt=0, le=1_000_000, allow_inf_nan=False)
     name: str
     notes: Optional[str] = None
     kcal_per_serving: Optional[float] = None
@@ -82,6 +83,7 @@ class RecipeCreate(RecipeBase):
 
 
 class RecipeUpdate(BaseModel):
+    servings: float = Field(default=1, gt=0, le=1_000_000, allow_inf_nan=False)
     """All fields optional for partial updates."""
     name: Optional[str] = None
     notes: Optional[str] = None
