@@ -20,3 +20,20 @@
 /* Explicit account preference overrides system appearance. */
 :root[data-appearance="light"] { color-scheme: light dark; --auth-bg: #fbf5e9; --auth-card: #fffaf2; --auth-text: #382831; --auth-muted: #6d5c65; --auth-accent: #7a3057; --auth-button-text: #fff; --auth-border: #c4a8b5; }
 :root[data-appearance="dark"] { --auth-bg: #211b20; --auth-card: #2b242a; --auth-text: #f7eee4; --auth-muted: #d0bdc8; --auth-accent: #f5a6c9; --auth-button-text: #321523; --auth-border: #846775; }
+
+/* Native dialog focus containment, with a centered responsive surface. */
+dialog.auth-surface {
+  position: fixed; inset: 0; margin: auto; box-sizing: border-box;
+  width: min(32rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem);
+  overflow: auto; padding: clamp(1rem, 4vw, 2rem); border: 1px solid var(--auth-border);
+  border-radius: 1.5rem; box-shadow: 0 1.5rem 5rem #0005;
+}
+dialog.auth-surface::backdrop { background: #0008; backdrop-filter: blur(4px); }
+dialog.auth-surface h2 { margin-top: 0; font-size: clamp(1.5rem, 4vw, 2rem); }
+dialog.auth-surface p { overflow-wrap: anywhere; }
+.auth-surface button:active { transform: scale(.98); }
+@media (prefers-reduced-motion: no-preference) {
+  dialog.auth-surface[open] { animation: dialog-arrive .18s ease-out; }
+  @keyframes dialog-arrive { from { opacity: 0; transform: translateY(.4rem); } to { opacity: 1; transform: none; } }
+}
+@media (prefers-reduced-transparency: reduce) { dialog.auth-surface::backdrop { backdrop-filter: none; background: #000b; } }
