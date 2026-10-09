@@ -32,4 +32,4 @@ Settings has a single active backend, appearance (System/Light/Dark), and langua
 
 ## Validation and CI
 
-Run backend pytest, desktop/mobile Playwright, the packaged PostgreSQL smoke test, Swift tests and simulator UI tests. No TestFlight upload is included in this PR request. GitHub CI results will be reviewed when the user returns; do not poll idle jobs.
+Run backend pytest, desktop/mobile Playwright, the packaged PostgreSQL smoke test, Swift tests and simulator UI tests. The follow-up TestFlight release uses `v0.2.0-rc.3` / `0.2.0 (3)`. The upload script preserves each target’s bundle ID and disables automatic version/build rewriting. GitHub CI results will be reviewed when the user returns; do not poll idle jobs.

@@ -20,7 +20,7 @@ else
 bash Scripts/test.sh
 env PATH=/usr/bin:/bin:/usr/sbin:/sbin /usr/bin/xcodebuild -project Onionary.xcodeproj -scheme Onionary -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$archive_path" \
-  DEVELOPMENT_TEAM=VWKG94374J PRODUCT_BUNDLE_IDENTIFIER=de.malaber.onionary \
+  DEVELOPMENT_TEAM=VWKG94374J \
   MARKETING_VERSION="$marketing_version" CURRENT_PROJECT_VERSION="$build_number" \
   CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates archive
 fi
