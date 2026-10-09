@@ -1,7 +1,7 @@
 import SwiftUI
 import OnionaryCore
 
-private let onion = Color(red: 0.48, green: 0.19, blue: 0.34)
+private let onion = OnionaryTheme.accent
 
 struct RootView: View {
     @Bindable var store: AppStore
