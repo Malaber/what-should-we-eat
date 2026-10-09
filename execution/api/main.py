@@ -45,6 +45,9 @@ def health():
     return {"status": "ok"}
 
 
+from execution.admin import configure_admin
+configure_admin(app)
+
 # Serve frontend static files (must be last — catches all unmatched routes)
 _frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
 if _frontend_dir.is_dir():

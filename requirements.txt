@@ -18,3 +18,5 @@ pytest-cov>=6.0,<7
 pytest-playwright>=0.5,<1
 
 fastpasskey @ https://github.com/Malaber/python-libs/releases/download/fastpasskey-v0.2.6/fastpasskey-0.2.6-py3-none-any.whl#sha256=b66a362eb0805860692e1d01bc51db16c8a832a684453a8c825bfe9788d0d19e
+
+sqladmin>=0.21,<1
