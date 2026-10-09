@@ -1,6 +1,7 @@
 import CryptoKit
 import Foundation
 import Observation
+import WidgetKit
 import OnionaryCore
 
 @MainActor @Observable
@@ -18,6 +19,7 @@ final class AppStore {
     var editingRecipe: Recipe?
     var sharingRecipe: Recipe?
     var backend = UserDefaults.standard.string(forKey: "backend") ?? "https://onionary-test.malaber.de"
+    var widgetNavigation: KitchenDeepLink.Destination?
     private var file: URL?
     private let signIn = BrowserSignIn()
 
@@ -32,6 +34,7 @@ final class AppStore {
         do {
             credential = try CredentialStore.read()
             if let credential { try load(credential) }
+            if credential == nil || WidgetSnapshotStore.read()?.scope != scope { clearWidget() }
         } catch { self.error = "Could not restore your kitchen: \(error.localizedDescription)" }
     }
 
@@ -45,6 +48,7 @@ final class AppStore {
             UserDefaults.standard.set(server.absoluteString, forKey: "backend")
             // Never display one account's data while loading another account.
             await stopCookingActivity()
+            clearWidget()
             kitchen = Kitchen(); file = nil; credential = next
             try load(next)
             await refresh()
@@ -71,6 +75,7 @@ final class AppStore {
             guard self.credential?.server == credential.server, self.credential?.userID == credential.userID else { return }
             var next = kitchen; next.recipes = recipes
             try persist(next)
+            await refreshWidget()
         } catch { self.error = error.localizedDescription }
     }
 
@@ -79,6 +84,46 @@ final class AppStore {
         try KitchenFile.write(next, to: file)
         kitchen = next
         synchronizeCookingActivity()
+    }
+
+    private func clearWidget() {
+        do { try WidgetSnapshotStore.write(nil); WidgetCenter.shared.reloadTimelines(ofKind: "OnionaryKitchen") }
+        catch { self.error = error.localizedDescription }
+    }
+
+    func publishWidget(_ items: [MealPlan.Item], account: String) {
+        guard account == scope, !account.isEmpty else { return }
+        do {
+            let snapshot = KitchenWidgetSnapshot(scope: account,
+                meals: items.map { .init(id: $0.recipeId, name: $0.recipe.name, cooked: $0.isCooked) },
+                language: UserDefaults.standard.string(forKey: "language") ?? "system")
+            try WidgetSnapshotStore.write(snapshot)
+            WidgetCenter.shared.reloadTimelines(ofKind: "OnionaryKitchen")
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func refreshWidget() async {
+        guard let credential else { clearWidget(); return }
+        let account = scope
+        do {
+            let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("meal-plan")
+            let plan = try OnionaryAPI.decoder.decode(MealPlan.self, from: data)
+            publishWidget(plan.items, account: account)
+        } catch {
+            // Offline snapshots retain their timestamp and expire at the week boundary.
+        }
+    }
+
+    func openWidgetURL(_ url: URL) {
+        guard let destination = KitchenDeepLink.destination(url, scope: scope) else {
+            if url.scheme == "de.malaber.onionary", url.host == "kitchen" { widgetNavigation = .kitchen }
+            return
+        }
+        if case let .recipe(id) = destination {
+            guard let recipe = kitchen.recipes.first(where: { $0.id == id }) else { widgetNavigation = .kitchen; return }
+            visit(recipe)
+        }
+        widgetNavigation = destination
     }
 
     func synchronizeCookingActivity() {
@@ -164,7 +209,7 @@ final class AppStore {
             if let credential {
                 _ = try await OnionaryAPI(server: credential.server, token: credential.token).data("auth/mobile/logout", method: "POST")
             }
-            try CredentialStore.remove(); await stopCookingActivity(); credential = nil; kitchen = Kitchen(); file = nil
+            try CredentialStore.remove(); await stopCookingActivity(); clearWidget(); credential = nil; kitchen = Kitchen(); file = nil
         } catch { self.error = "Could not sign out: \(error.localizedDescription)" }
     }
 

@@ -91,7 +91,11 @@ targets:
     type: app-extension
     platform: iOS
     deploymentTarget: '17.0'
-    sources: [Widgets, Shared]
+    sources:
+      - Widgets
+      - Shared
+      - App/en.lproj
+      - App/de.lproj
     dependencies:
       - package: OnionaryCore
     settings:

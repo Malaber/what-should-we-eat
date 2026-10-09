@@ -23,9 +23,13 @@ struct RootView: View {
                     NavigationStack { SettingsView(store: store) }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
                 }.id(locale.identifier + (store.credential?.server.absoluteString ?? "") + (store.credential?.userID ?? ""))
             }
-        }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox() } }
+        }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox(); store.synchronizeCookingActivity(); Task { await store.refreshWidget() } } }
          .onChange(of: store.credential?.userID) { store.checkImportInbox() }
-         .task { store.checkImportInbox(); store.synchronizeCookingActivity() }
+         .task { store.checkImportInbox(); store.synchronizeCookingActivity(); await store.refreshWidget() }
+         .onOpenURL { store.openWidgetURL($0) }
+         .onChange(of: store.widgetNavigation) { _, route in
+             guard let route else { return }; tab = route == .kitchen ? 3 : 0; store.widgetNavigation = nil
+         }
          .sheet(item: $store.sharingRecipe) { recipe in RecipeSharingView(store: store, recipe: recipe) }
          .sheet(item: $store.editingRecipe) { recipe in EditRecipeView(store: store, id: recipe.id) }
          .sheet(isPresented: Binding(get: { store.pendingImport != nil }, set: { if !$0 { store.pendingImport = nil } })) {

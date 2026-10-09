@@ -5,7 +5,7 @@ import OnionaryCore
 
 @main
 struct OnionaryWidgets: WidgetBundle {
-    var body: some Widget { CookingLiveActivity() }
+    var body: some Widget { KitchenWidget(); CookingLiveActivity() }
 }
 
 struct CookingLiveActivity: Widget {
