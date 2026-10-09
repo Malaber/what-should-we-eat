@@ -30,4 +30,4 @@ Use the Apple design skill for interaction, accessibility and layout work.
 - HTML formatter and diff checks passed; dark import and share-dialog screenshots inspected.
 - Eight deployment role tests passed, including UTF-8 Compose round-trip. Related selfhosted !30 and infra !38 merged/deployed by operator.
 - Physical-device checks remain: Chefkoch app discovery and actual Apple Intelligence generation (simulator cannot establish these).
-- TestFlight release requested: v0.2.0-rc.4 / 0.2.0 (4); upload result recorded after Apple acceptance.
+- TestFlight v0.2.0-rc.4 / 0.2.0 (4) uploaded and accepted by Apple on 2026-10-09 at 22:01 Europe/Berlin; processing started. Signed app/extension versions and text-share activation verified.
