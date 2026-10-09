@@ -34,7 +34,7 @@ async function authenticate(kind, body = {}) {
       location.assign(`/auth/mobile/authorize?${query}`);
     } else {
       localStorage.setItem('wswe_token', result.access_token);
-      location.assign('/');
+      location.assign(params.get('next') === 'security' ? '/auth/security' : params.get('next') === 'admin' ? '/admin/' : '/');
     }
   } catch (err) {
     error.textContent = err.name === 'NotAllowedError' ? 'Passkey request cancelled. You can try again.' : err.message;

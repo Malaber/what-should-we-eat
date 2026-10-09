@@ -8,6 +8,8 @@ Each numbered revision gets its own commit. Final regression fixes and release f
 - [x] 4. Add persistent redo alongside undo, timestamped history, and animated transient action feedback.
 - [x] 5. Align native connection, web welcome, and passkey pages with system light/dark appearance.
 - [x] 6. Show current ingredients at the top of the portion adjustment sheet.
-- [ ] 7. Add review enrollment links and full passkey management, using shared library capabilities and extending the library if needed.
-- [ ] 8. Run backend/Postgres/browser/native tests, inspect screenshots, and fix regressions.
-- [ ] 9. Release a Git-tag-derived version to TestFlight and verify upload acceptance.
+- [x] 7. Add review enrollment links and full passkey management, using shared library capabilities and extending the library if needed.
+- [ ] 8. Rebrand the complete webapp and user-facing product copy to Onionary.
+- [ ] 9. Use SQLAdmin for review/recovery link administration and document this pattern in FastPasskey.
+- [ ] 10. Run backend/Postgres/browser/native tests, inspect screenshots, and fix regressions.
+- [ ] 11. Release a Git-tag-derived version to TestFlight and verify upload acceptance.

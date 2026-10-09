@@ -23,6 +23,12 @@ struct RootView: View {
                                 Text("Progress is saved on this device separately for each backend and account.").foregroundStyle(.secondary)
                                 ConnectionView(store: store)
                             }
+                            Section("Account security") {
+                                if let server = store.credential?.server {
+                                    Link("Manage passkeys", destination: server.appending(path: "auth/security"))
+                                    Text("Add, rename, or remove passkeys in your backend’s secure browser page. Sign in there to confirm your account.").font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
                             Section {
                                 Button("Sign out", role: .destructive) { Task { await store.disconnect() } }.disabled(store.busy)
                             }

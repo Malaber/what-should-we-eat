@@ -8,6 +8,7 @@ const authHTML = `
     <button id="btn-show-signup" class="btn btn-primary btn-sm" style="border-radius: var(--radius-pill);">Sign Up</button>
   </div>
   <div id="user-controls" style="display: none; gap: 12px; align-items: center;">
+    <a href="/auth/security">Passkeys</a>
     <span id="user-greeting" style="font-size: 0.9rem; font-weight: 600; color: var(--orange-dark);"></span>
     <button id="btn-logout" class="btn btn-secondary btn-sm" style="border-radius: var(--radius-pill); border-color: var(--orange-pale);">Log Out</button>
   </div>

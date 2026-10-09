@@ -14,7 +14,7 @@ from urllib.parse import urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse, RedirectResponse
-from fastpasskey import FastPasskey, PasskeyUser
+from fastpasskey import FastPasskey, PasskeyUser, validate_passkey_name
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import delete, update
 from sqlalchemy.exc import IntegrityError
@@ -24,7 +24,7 @@ from webauthn.helpers import bytes_to_base64url
 from execution.api.auth import create_access_token, get_current_active_user
 from execution.db.database import get_db
 from execution.db.models import User, Household, HouseholdMember, generate_unique_invite_code
-from execution.db.passkeys import AuthFlow, AuthSession, Passkey
+from execution.db.passkeys import AuthFlow, AuthSession, Passkey, PasskeyAddLink
 
 router = APIRouter(prefix="/auth", tags=["passkeys"])
 COOKIE = "onionary_session"
@@ -77,8 +77,10 @@ def take_flow(db, token, kind):
 
 
 def set_cookie(response, name, token, seconds):
+    if name == COOKIE:
+        response.delete_cookie(COOKIE, path="/auth")
     response.set_cookie(name, token, max_age=seconds, httponly=True,
-                        secure=origin().startswith("https:"), samesite="strict", path="/auth")
+                        secure=origin().startswith("https:"), samesite="strict", path="/" if name == COOKIE else "/auth")
     response.headers["Cache-Control"] = "no-store"
 
 
@@ -182,7 +184,7 @@ def login_verify(body: Finish, request: Request, response: Response, db: Session
     except Exception as exc:
         raise HTTPException(401, "Invalid passkey") from exc
     updated = db.execute(update(Passkey).where(Passkey.credential_id == key.credential_id,
-        Passkey.sign_count == previous_count).values(sign_count=result.new_sign_count))
+        Passkey.sign_count == previous_count).values(sign_count=result.new_sign_count, last_used_at=now()))
     if updated.rowcount != 1:
         db.rollback()
         raise HTTPException(401, "Passkey changed. Try again.")
@@ -196,13 +198,21 @@ class Enrollment(BaseModel):
 
 @router.post("/enroll/options", dependencies=[Depends(same_origin)])
 def enroll_options(body: Enrollment, response: Response, db: Session = Depends(get_db)):
-    # Enrollment link is consumed before starting the ceremony, never by a GET.
-    data = take_flow(db, body.token, "enrollment")
+    # Opening/cancelling a ceremony never consumes a reviewer's link.
+    link_hash = digest(body.token)
+    link = db.query(PasskeyAddLink).filter(PasskeyAddLink.token_hash == link_hash,
+        PasskeyAddLink.expires_at > now(), PasskeyAddLink.used_at.is_(None),
+        PasskeyAddLink.revoked_at.is_(None)).first()
+    legacy = None if link else db.query(AuthFlow).filter(AuthFlow.token_hash == link_hash,
+        AuthFlow.kind == "enrollment", AuthFlow.expires_at > now()).first()
+    if link is None and legacy is None:
+        raise HTTPException(401, "Enrollment link expired or already used")
+    data = {"user_id": link.user_id} if link else legacy.payload
     user = db.get(User, data["user_id"])
     if not user or not user.is_active:
         raise HTTPException(401, "Account unavailable")
     start = service().begin_registration(user=PasskeyUser(id=str(user.id).encode(), name=user.email, display_name=user.name or user.email),
-        request_host=None, request_base_url=origin(), state_payload={"user_id": user.id},
+        request_host=None, request_base_url=origin(), state_payload={"user_id": user.id, "link_hash": link_hash, "legacy_link": link is None},
         exclude_credential_ids=[p.credential_id for p in db.query(Passkey).filter_by(user_id=user.id)])
     set_cookie(response, FLOW_COOKIE, save_flow(db, "enroll", start.state), 300)
     return start.options
@@ -216,12 +226,25 @@ def enroll_verify(body: Finish, request: Request, response: Response, db: Sessio
         raise HTTPException(401, "Account unavailable")
     try:
         result = service().verify_registration(credential=body.credential, state=state)
+    except Exception as exc:
+        raise HTTPException(400, "Passkey enrollment failed. You can retry your link.") from exc
+    if state.get("legacy_link"):
+        claimed = db.execute(delete(AuthFlow).where(AuthFlow.token_hash == state["link_hash"],
+            AuthFlow.kind == "enrollment", AuthFlow.expires_at > now()))
+    else:
+        claimed = db.execute(update(PasskeyAddLink).where(PasskeyAddLink.token_hash == state["link_hash"],
+            PasskeyAddLink.user_id == user.id, PasskeyAddLink.expires_at > now(),
+            PasskeyAddLink.used_at.is_(None), PasskeyAddLink.revoked_at.is_(None)).values(used_at=now()))
+    if claimed.rowcount != 1:
+        db.rollback()
+        raise HTTPException(401, "Enrollment link expired or already used")
+    try:
         db.add(Passkey(credential_id=bytes_to_base64url(result.credential_id), user_id=user.id,
                        public_key=result.credential_public_key, sign_count=result.sign_count))
         db.commit()
-    except Exception as exc:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(400, "Passkey enrollment failed. Request a new link.") from exc
+        raise HTTPException(400, "Passkey already registered. Retry with another key.") from exc
     return authenticate(user, response, db, request)
 
 
@@ -260,6 +283,7 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
     db.execute(delete(AuthSession).where(AuthSession.token_hash == digest(request.cookies.get(COOKIE, ""))))
     db.commit()
     response.delete_cookie(COOKIE, path="/auth")
+    response.delete_cookie(COOKIE, path="/")
     return {"status": "ok"}
 
 
@@ -272,3 +296,123 @@ def mobile_logout(request: Request, user: User = Depends(get_current_active_user
     db.execute(delete(AuthSession).where(AuthSession.token_hash == payload.get("sid"), AuthSession.user_id == user.id))
     db.commit()
     return Response(status_code=204)
+
+
+@router.get("/security", include_in_schema=False)
+def security_page(request: Request, db: Session = Depends(get_db)):
+    try:
+        session_user(request, db)
+    except HTTPException:
+        return RedirectResponse("/auth/login?next=security", status_code=303)
+    return FileResponse(Path(__file__).parents[3] / "frontend/security.html", headers={
+        "Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'"})
+
+
+def key_output(key):
+    return {"id": key.credential_id, "name": key.name, "created_at": key.created_at, "last_used_at": key.last_used_at}
+
+
+@router.get("/passkeys")
+def list_keys(request: Request, response: Response, db: Session = Depends(get_db)):
+    user = session_user(request, db)
+    response.headers["Cache-Control"] = "no-store"
+    return [key_output(key) for key in db.query(Passkey).filter_by(user_id=user.id).order_by(Passkey.created_at)]
+
+
+class KeyAction(BaseModel):
+    action: str = Field(pattern="^(add|rename|delete|delete_all|replace)$")
+    key_id: str | None = Field(default=None, max_length=1024)
+    name: str = Field(default="Passkey", max_length=120)
+    confirmation: str = ""
+
+
+@router.post("/passkeys/action/options", dependencies=[Depends(same_origin)])
+def key_action_options(body: KeyAction, request: Request, response: Response, db: Session = Depends(get_db)):
+    user = session_user(request, db)
+    keys = db.query(Passkey).filter_by(user_id=user.id).all()
+    if body.action in {"rename", "delete"} and body.key_id not in {key.credential_id for key in keys}:
+        raise HTTPException(404, "Passkey not found")
+    try:
+        name = validate_passkey_name(body.name)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    if body.action == "delete_all" and body.confirmation != "DELETE ALL PASSKEYS":
+        raise HTTPException(400, "Confirm removal of all passkeys")
+    start = service().begin_authentication(request_host=None, request_base_url=origin(),
+        allow_credential_ids=[key.credential_id for key in keys],
+        state_payload={"user_id": user.id, "action": body.action, "key_id": body.key_id, "name": name})
+    set_cookie(response, FLOW_COOKIE, save_flow(db, "key_action", start.state), 300)
+    return start.options
+
+
+@router.post("/passkeys/action/verify", dependencies=[Depends(same_origin)])
+def key_action_verify(body: Finish, request: Request, response: Response, db: Session = Depends(get_db)):
+    user = session_user(request, db)
+    state = take_flow(db, request.cookies.get(FLOW_COOKIE, ""), "key_action")
+    key = db.get(Passkey, body.credential.get("id", ""))
+    if state["user_id"] != user.id or key is None or key.user_id != user.id:
+        raise HTTPException(401, "Confirm using your own passkey")
+    previous_count = key.sign_count
+    try:
+        result = service().verify_authentication(credential=body.credential, state=state,
+            credential_public_key=key.public_key, credential_current_sign_count=previous_count)
+    except Exception as exc:
+        raise HTTPException(401, "Passkey verification failed") from exc
+    # Serialize account credential changes, including concurrent last-key deletion.
+    db.execute(update(User).where(User.id == user.id).values(is_active=User.is_active))
+    changed = db.execute(update(Passkey).where(Passkey.credential_id == key.credential_id,
+        Passkey.user_id == user.id, Passkey.sign_count == previous_count)
+        .values(sign_count=result.new_sign_count, last_used_at=now()))
+    if changed.rowcount != 1:
+        db.rollback()
+        raise HTTPException(401, "Passkey changed. Try again.")
+    action = state["action"]
+    if action == "rename":
+        changed = db.execute(update(Passkey).where(Passkey.credential_id == state["key_id"],
+            Passkey.user_id == user.id).values(name=state["name"]))
+        if changed.rowcount != 1:
+            db.rollback(); raise HTTPException(404, "Passkey no longer exists")
+    elif action == "delete":
+        if db.query(Passkey).filter_by(user_id=user.id).count() <= 1:
+            db.rollback(); raise HTTPException(400, "Add another key first, or explicitly delete all passkeys.")
+        db.execute(delete(Passkey).where(Passkey.credential_id == state["key_id"], Passkey.user_id == user.id))
+    elif action == "delete_all":
+        db.execute(delete(Passkey).where(Passkey.user_id == user.id))
+        db.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
+        response.delete_cookie(COOKIE, path="/")
+        response.delete_cookie(COOKIE, path="/auth")
+    db.commit()
+    if action in {"add", "replace"}:
+        start = service().begin_registration(user=PasskeyUser(id=str(user.id).encode(), name=user.email,
+            display_name=user.name or user.email), request_host=None, request_base_url=origin(),
+            exclude_credential_ids=[key.credential_id for key in db.query(Passkey).filter_by(user_id=user.id)],
+            state_payload={"user_id": user.id, "action": action, "name": state["name"]})
+        set_cookie(response, FLOW_COOKIE, save_flow(db, "key_add", start.state), 300)
+        return {"options": start.options}
+    return {"status": "ok", "signed_out": action == "delete_all"}
+
+
+@router.post("/passkeys/register/verify", dependencies=[Depends(same_origin)])
+def key_add_verify(body: Finish, request: Request, db: Session = Depends(get_db)):
+    user = session_user(request, db)
+    state = take_flow(db, request.cookies.get(FLOW_COOKIE, ""), "key_add")
+    if state["user_id"] != user.id:
+        raise HTTPException(401, "Account changed")
+    try:
+        result = service().verify_registration(credential=body.credential, state=state)
+    except Exception as exc:
+        raise HTTPException(400, "Could not create passkey") from exc
+    key = Passkey(credential_id=bytes_to_base64url(result.credential_id), user_id=user.id,
+        public_key=result.credential_public_key, sign_count=result.sign_count, name=state["name"])
+    try:
+        db.execute(update(User).where(User.id == user.id).values(is_active=User.is_active))
+        # Fail before deletion if this credential already belongs to any account.
+        if db.get(Passkey, key.credential_id) is not None:
+            raise HTTPException(400, "Passkey already exists")
+        if state["action"] == "replace":
+            db.execute(delete(Passkey).where(Passkey.user_id == user.id))
+        db.add(key); db.commit()
+    except IntegrityError as exc:
+        db.rollback(); raise HTTPException(400, "Passkey already exists") from exc
+    return key_output(key)

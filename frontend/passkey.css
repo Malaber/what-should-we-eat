@@ -2,3 +2,5 @@
 body { margin: 0; padding: 32px 20px; min-height: 85vh; display: grid; place-items: center; }
 main { max-width: 440px; width: 100%; }
 details { padding: 18px 0; } summary { cursor: pointer; } form { padding-top: 24px; }
+
+dialog { max-width: 420px; border: 1px solid var(--auth-border); border-radius: 20px; padding: 24px; } dialog::backdrop { background: #0009; } [hidden] { display: none !important; }
