@@ -38,9 +38,10 @@ struct ConnectionView: View {
     @Bindable var store: AppStore
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Image(systemName: "book.pages.fill").font(.system(size: 56)).foregroundStyle(onion).accessibilityHidden(true)
-            Text("A little help.\nA lovely meal.").font(.system(.largeTitle, design: .serif, weight: .semibold))
-            Text("Welcome to Onionary. Connect to your kitchen, choose a recipe, and make it your own.").foregroundStyle(.secondary)
+            Text("🧅").font(.system(size: 56)).accessibilityHidden(true)
+            Text("YOUR COOKING COMPANION").font(.caption2.bold()).tracking(3).foregroundStyle(onion)
+            Text("Welcome to Onionary.").font(.system(.largeTitle, design: .serif, weight: .semibold))
+            Text("Your recipes. Your kitchen. Pick up where you left off.").foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Backend address").font(.caption.bold())
                 TextField("https://onionary-test.malaber.de", text: $store.backend)
@@ -50,11 +51,12 @@ struct ConnectionView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Button { Task { await store.connect() } } label: {
-                HStack { if store.busy { ProgressView() }; Label("Continue with passkey", systemImage: "person.badge.key.fill") }
+                HStack { if store.busy { ProgressView() }; Label("Sign in with a passkey", systemImage: "person.badge.key.fill") }
                     .frame(maxWidth: .infinity).padding(.vertical, 8)
             }.buttonStyle(.borderedProminent).disabled(store.busy)
-            Text("No passwords. No separate Onionary account.").font(.footnote).foregroundStyle(.secondary)
-        }.padding(24).navigationTitle("Onionary")
+            Text("Use Face ID, Touch ID, a security key, or your password manager.").font(.footnote).foregroundStyle(.secondary)
+        }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(OnionaryTheme.background).navigationTitle("Onionary")
     }
 }
 

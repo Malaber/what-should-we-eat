@@ -13,16 +13,18 @@ const authHTML = `
   </div>
 `;
 
+const authTheme = document.createElement('link');
+authTheme.rel = 'stylesheet'; authTheme.href = '/auth-theme.css'; document.head.append(authTheme);
 const loginGateHTML = `
-  <div id="login-gate" style="position:fixed; inset:0; z-index:8000; background:rgba(0,0,0,0.55); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center;">
-    <div style="background:var(--bg-card, #fff); border-radius:20px; padding:48px 40px; text-align:center; max-width:400px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-      <div style="font-size:4rem; margin-bottom:16px;">🧄</div>
-      <h2 style="font-family:var(--font-display, inherit); font-size:1.8rem; margin-bottom:8px;">Welcome!</h2>
-      <p style="color:var(--text-muted, #888); margin-bottom:28px; font-size:1rem; line-height:1.5;">Log in or create an account to start planning your meals.</p>
-      <div style="display:flex; gap:12px; justify-content:center;">
-        <button id="gate-login" class="btn btn-primary" style="padding:12px 28px; font-size:1rem;">Sign in with passkey</button>
-        <button id="gate-signup" class="btn btn-secondary" style="padding:12px 28px; font-size:1rem;">Sign Up</button>
-      </div>
+  <div id="login-gate" class="auth-surface">
+    <div class="auth-card">
+      <div class="mark" aria-hidden="true">🧅</div>
+      <p class="eyebrow">YOUR COOKING COMPANION</p>
+      <h2>Welcome to Onionary.</h2>
+      <p>Your recipes. Your kitchen. Pick up where you left off.</p>
+      <button id="gate-login">Sign in with a passkey</button>
+      <button id="gate-signup">New here? Create an account</button>
+      <p class="help">Use Face ID, Touch ID, a security key, or your password manager.</p>
     </div>
   </div>
 `;
