@@ -263,10 +263,6 @@ struct ScalingView: View {
                         }
                     } header: { Text("Your ingredients right now") }
                 }
-                Section("Scale the whole recipe") {
-                    field("Recipe multiplier", text: $multiplier).accessibilityIdentifier("multiplier")
-                    Button("Apply multiplier") { apply { try $0.scale(multiplier: Numbers.parse(multiplier)) } }
-                }
                 Section {
                     field("Original recipe serves", text: $base)
                     HStack {
@@ -277,7 +273,7 @@ struct ScalingView: View {
                         Button { stepPortions(1) } label: { Image(systemName: "plus").frame(width: 32, height: 32) }
                             .buttonStyle(.bordered).accessibilityLabel("Increase portions by one")
                     }
-                    Button("Apply portions") { apply { try $0.scale(baseServings: Numbers.parse(base), portions: Numbers.parse(portions)) } }
+
                 } header: { Text("By portions") } footer: {
                     Text("Set how many portions the original recipe serves. Use + and − for whole-portion changes, or type any amount, such as 1.53 or 4.32.")
                 }
@@ -298,7 +294,11 @@ struct ScalingView: View {
                 }
                 if let error { Text(error).foregroundStyle(.red) }
             }.dismissibleKeyboard().navigationTitle("Make it your size").navigationBarTitleDisplayMode(.inline)
-                .toolbar { Button("Done") { dismiss() } }
+                .toolbar { Button("Done") { commitPortions(); dismiss() } }
+                .onChange(of: editingField) { old, _ in
+                    if old == "Cooking for" || old == "Original recipe serves" { commitPortions() }
+                    if old == "Amount you have", !available.isEmpty { commitIngredient() }
+                }
                 .onAppear {
                     if let adventure = store.current {
                         multiplier = Numbers.text(adventure.multiplier); base = Numbers.text(adventure.baseServings)
@@ -316,10 +316,18 @@ struct ScalingView: View {
                 .keyboardType(.decimalPad).focused($editingField, equals: label)
         }
     }
+    func commitPortions() {
+        apply { try $0.scale(baseServings: Numbers.parse(base), portions: Numbers.parse(portions)) }
+    }
+    func commitIngredient() {
+        guard let ingredient = store.current?.recipe.ingredients.first(where: { $0.id == ingredientID }) else { return }
+        apply { try $0.scale(ingredient: ingredient, available: Numbers.parse(available)) }
+    }
     func stepPortions(_ change: Decimal) {
         do {
             let value = try Numbers.parse(portions) + change
             portions = Numbers.text(try Numbers.parse(Numbers.text(value)))
+            commitPortions()
             UISelectionFeedbackGenerator().selectionChanged()
         } catch { self.error = error.localizedDescription }
     }
@@ -328,7 +336,13 @@ struct ScalingView: View {
         do {
             guard var preview = store.current else { return }; try operation(&preview)
             store.update(operation)
-            if store.error == nil { dismiss() }
+            if store.error == nil {
+                error = nil
+                if let adventure = store.current {
+                    base = Numbers.text(adventure.baseServings)
+                    portions = Numbers.text(adventure.portions)
+                }
+            }
         } catch { self.error = error.localizedDescription }
     }
 }
