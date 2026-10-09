@@ -4,7 +4,7 @@ Commit this checklist first. Implement each item in its own commit with relevant
 regression coverage, then run the complete applicable test suites and fix failures.
 Use the Apple design skill for interaction, accessibility and layout work.
 
-- [ ] Dismiss iOS keyboard by tapping outside fields; retain accessible Done action.
+- [x] Dismiss iOS keyboard by tapping outside fields; retain accessible Done action.
 - [ ] Give populated numeric recipe fields persistent labels and units.
 - [ ] Store recipe base portions end-to-end, including Chefkoch import and editing.
 - [ ] Update portion adjustment live on field exit and +/-; remove redundant whole-recipe scaling section.

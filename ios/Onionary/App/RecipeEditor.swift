@@ -42,7 +42,7 @@ struct RecipeEditor: View {
                     Button("Add step") { draft.instructionSteps.append(.init()) }
                 }
                 if let error { Section { Text(error).foregroundStyle(.red) } }
-            }.navigationTitle(LocalizedStringKey(recipeID == nil ? "Import recipe" : "Edit recipe"))
+            }.dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "Import recipe" : "Edit recipe"))
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
                     ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving) }
@@ -78,7 +78,7 @@ struct ImportRecipeView: View {
                         } }.disabled(busy)
                         if busy { ProgressView() }
                         if let error { Text(error).foregroundStyle(.red) }
-                    }.navigationTitle("Import recipe")
+                    }.dismissibleKeyboard().navigationTitle("Import recipe")
                         .toolbar { Button("Cancel") { dismiss() } }
                 }
             }

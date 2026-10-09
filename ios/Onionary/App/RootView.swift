@@ -81,7 +81,7 @@ struct RecipesView: View {
                 ContentUnavailableView(LocalizedStringKey(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes"),
                     systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
-        }.navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
+        }.dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
             .refreshable { await store.refresh() }
             .toolbar {
                 Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
@@ -202,7 +202,7 @@ struct CookingView: View {
                 } description: { Text("Choose a recipe. We’ll keep your place, even when life interrupts.") }
                 actions: { Button("Choose a recipe", action: browse).buttonStyle(.borderedProminent) }
             }
-        }.navigationTitle("Onionary").navigationBarTitleDisplayMode(.inline)
+        }.dismissibleKeyboard().navigationTitle("Onionary").navigationBarTitleDisplayMode(.inline)
             .confirmationDialog("Restart cooking? Current checks and history will be cleared; the latest recipe will be used.", isPresented: $restart, titleVisibility: .visible) {
                 Button("Restart", role: .destructive) { store.restartCurrentRecipe() }
             }
@@ -297,7 +297,7 @@ struct ScalingView: View {
                     Text("Enter the amount in the ingredient’s original unit. If a recipe needs 200 g of cheese and you have 170 g, every ingredient becomes 0.85× its original amount. Cooking times stay unchanged.")
                 }
                 if let error { Text(error).foregroundStyle(.red) }
-            }.navigationTitle("Make it your size").navigationBarTitleDisplayMode(.inline)
+            }.dismissibleKeyboard().navigationTitle("Make it your size").navigationBarTitleDisplayMode(.inline)
                 .toolbar { Button("Done") { dismiss() } }
                 .onAppear {
                     if let adventure = store.current {
@@ -350,7 +350,7 @@ struct HistoryView: View {
                         Text(entry.timestamp.formatted(date: .abbreviated, time: .standard)).font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical, 5)
                 }
-            }.navigationTitle("Tap history").toolbar {
+            }.dismissibleKeyboard().navigationTitle("Tap history").toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     HStack {
                         Button("Undo", systemImage: "arrow.uturn.backward") { store.update { $0.undo() } }.disabled(store.current?.canUndo != true)
