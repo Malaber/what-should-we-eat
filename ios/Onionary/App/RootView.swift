@@ -64,6 +64,7 @@ struct RecipesView: View {
     @Bindable var store: AppStore
     var selected: () -> Void
     @State private var search = ""
+    @State private var intelligence = false
     var filtered: [Recipe] { store.kitchen.recipes.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) } }
     var body: some View {
         List {
@@ -82,8 +83,10 @@ struct RecipesView: View {
                     systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
         }.dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
+            .sheet(isPresented: $intelligence) { IntelligenceRecipeView(store: store) }
             .refreshable { await store.refresh() }
             .toolbar {
+                Button("Create with Intelligence", systemImage: "sparkles") { intelligence = true }
                 Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
                 Button("Refresh", systemImage: "arrow.clockwise") { Task { await store.refresh() } }
             }
