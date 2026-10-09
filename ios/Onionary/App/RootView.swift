@@ -229,9 +229,25 @@ struct ScalingView: View {
     @State private var ingredientID: Int?
     @State private var available = ""
     @State private var error: String?
+    @FocusState private var editingField: String?
     var body: some View {
         NavigationStack {
             Form {
+                if let adventure = store.current {
+                    Section {
+                        Text(adventure.recipe.name).font(.headline)
+                        Text("Currently cooking for \(Numbers.display(adventure.portions)) portions")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        ForEach(adventure.recipe.ingredients) { ingredient in
+                            HStack(alignment: .top) {
+                                Text(ingredient.name)
+                                Spacer()
+                                Text([adventure.quantity(ingredient).map { Numbers.display($0) } ?? "", ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "))
+                                    .monospacedDigit().foregroundStyle(.secondary)
+                            }
+                        }
+                    } header: { Text("Your ingredients right now") }
+                }
                 Section("Scale the whole recipe") {
                     field("Recipe multiplier", text: $multiplier).accessibilityIdentifier("multiplier")
                     Button("Apply multiplier") { apply { try $0.scale(multiplier: Numbers.parse(multiplier)) } }
@@ -278,7 +294,11 @@ struct ScalingView: View {
     }
     func field(_ label: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading) { Text(label).font(.caption).foregroundStyle(.secondary)
-            TextField(label, text: text).keyboardType(.decimalPad)
+            TextField(label, text: Binding(get: {
+                if editingField == label { return text.wrappedValue }
+                return (try? Numbers.parse(text.wrappedValue)).map { Numbers.display($0) } ?? text.wrappedValue
+            }, set: { text.wrappedValue = $0 }))
+                .keyboardType(.decimalPad).focused($editingField, equals: label)
         }
     }
     func stepPortions(_ change: Decimal) {
