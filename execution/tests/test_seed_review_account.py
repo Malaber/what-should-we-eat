@@ -37,3 +37,15 @@ def test_admin_missing_and_other_active_kitchen_rejected(client, auth_headers, s
         with pytest.raises(ValueError, match='dedicated'):
             seed_review_account(db, user.email)
         assert db.query(Recipe).count() == 0
+
+
+def test_shared_personal_kitchen_is_rejected(client, auth_headers, second_user_headers):
+    from execution.db.models import HouseholdMember
+    with SessionLocal() as db:
+        alice = db.query(User).filter_by(email='alice@test.com').one()
+        bob = db.query(User).filter_by(email='bob@test.com').one()
+        db.add(HouseholdMember(household_id=alice.personal_household_id, user_id=bob.id))
+        db.commit()
+        with pytest.raises(ValueError, match='no other members'):
+            seed_review_account(db, alice.email)
+        assert db.query(Recipe).count() == 0
