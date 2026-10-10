@@ -91,7 +91,16 @@ tail -f .tmp/onionary-testflight/build.log
 ```
 
 `auto` resolves the numeric version from the latest reachable Git tag, using the
-same version script as CI. Tag the tested commit before starting the upload.
+same version script as CI. Every shipped fix, however small, requires a fresh
+version tag and TestFlight build number. Never overwrite, move, delete or
+force-push existing release tags. Publish the tested commit with:
+
+```sh
+python3 execution/tag_release.py v0.2.0-rc.7
+```
+
+The helper refuses existing local or remote tags and never force-pushes.
+Use the next unused version for subsequent changes.
 
 The detached worker tests, archives, and exports directly to App Store Connect.
 It survives terminal/chat disconnects, records the exit status, and prevents
