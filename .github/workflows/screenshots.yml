@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - device: iPhone 17 Pro Max
+          - device: iPhone 17 Pro
             family: iphone
           - device: iPad Pro 13-inch (M5)
             family: ipad
