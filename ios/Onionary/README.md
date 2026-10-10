@@ -127,3 +127,30 @@ that you can edit. The web editor accepts the same syntax. Copies preserve it.
 Unmatched names, duplicate names, missing quantities and invalid percentages stay
 visible as raw placeholders so an incorrect quantity is never silently guessed.
 Ordinary imported prose is not rewritten. Rename placeholders when renaming an ingredient.
+
+### Kitchen widget and Live Activity
+
+Add **Onionary Kitchen** from the iOS widget gallery. It displays the current
+household meal plan cached when you open/refresh Onionary or edit your Kitchen.
+The backend has no dated weekly schedule: the widget shows the currently selected
+plan as this week's kitchen. The cached snapshot expires at the next Monday;
+open Onionary to refresh it. It cannot fetch changes made elsewhere while the app
+is not running. Tapping a recipe opens cooking; links are scoped to the signed-in
+backend/account. Switching accounts/signing out clears the shared snapshot.
+
+Start **Live Activity** from Cooking options. It shows progress and the next step,
+including scaled ingredient placeholders, on the Lock Screen and Dynamic Island.
+Stop it from the same menu. Changing recipe, completing all checks, or signing out
+ends it; after three hours without an update the view asks you to reopen Onionary.
+ActivityKit controls the final system lifetime. No push service is required.
+
+The embedded target is `de.malaber.onionary.widget`, using existing App Group
+`group.de.malaber.onionary` with the main app/share extension. Shared JSON contains
+only display data and an account hash, never tokens. Local automatic signing
+creates a matching provisioning profile during archive/export. CI builds and tests
+all three targets without signing. Widget and app versions come from the same tag.
+
+Apple setup verified on 2026-10-10: Onionary widget identifier and group assigned.
+Planini PR 110 uses `de.malaber.planini.widget` with `group.de.malaber.planini.watch`;
+that identifier and group were also configured with explicit credential-sharing
+approval. No Apple records were deleted.

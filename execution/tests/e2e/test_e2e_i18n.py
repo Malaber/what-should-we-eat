@@ -13,6 +13,8 @@ def test_language_switch(page: Page):
     expect(language).to_have_value('de')
     page.locator('#account-appearance').select_option('dark')
     expect(page.locator('html')).to_have_attribute('data-appearance', 'dark')
+    expect(page.locator('#profile-name')).to_be_enabled()
+    expect(page.locator('#profile-name')).to_have_value('Test Chef')
     page.locator('#profile-name').fill('Daniel Schädler')
     page.locator('#profile-form button').click()
     expect(page.locator('#status')).to_have_text('Konto aktualisiert.')

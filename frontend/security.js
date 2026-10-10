@@ -27,7 +27,7 @@ function show(kind, key) {
 $('add').onclick = () => show('add'); $('cancel').onclick = () => $('action-dialog').close();
 $('action-form').onsubmit = async event => {
   event.preventDefault(); $('error').textContent = ''; $('status').textContent = '';
-  const buttons = [...document.querySelectorAll('button')]; buttons.forEach(b => b.disabled = true);
+  const buttons = [...document.querySelectorAll('button:not(:disabled)')]; buttons.forEach(b => b.disabled = true);
   try {
     const options = await api('passkeys/action/options', {...action, name:$('key-name').value || 'Passkey'});
     const proof = await navigator.credentials.get({publicKey:publicKeyFromJSON(options)});
@@ -48,10 +48,14 @@ $('account-language').value = localStorage.getItem('app_lang') || 'system';
 $('account-language').onchange = event => window.I18n.setLang(event.target.value);
 $('account-appearance').value = localStorage.getItem('app_appearance') || 'system';
 $('account-appearance').onchange = event => {
-  localStorage.setItem('app_appearance', event.target.value); location.reload();
+  const appearance = event.target.value;
+  localStorage.setItem('app_appearance', appearance);
+  document.documentElement.dataset.appearance = appearance;
+  document.documentElement.style.colorScheme = appearance === 'system' ? 'light dark' : appearance;
 };
 api('account/profile').then(profile => {
   $('profile-name').value = profile.name || ''; $('profile-email').textContent = profile.email;
+  $('profile-name').disabled = false; $('profile-form').querySelector('button').disabled = false;
 }).catch(error => $('error').textContent = error.message);
 $('profile-form').onsubmit = async event => {
   event.preventDefault();

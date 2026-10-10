@@ -2,6 +2,43 @@ import XCTest
 
 final class OnionaryUITests: XCTestCase {
     @MainActor
+    func testCategoryBrowsingAndIngredientSearch() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Refresh"].tap()
+        let category = app.buttons["category-vegetarian"]
+        XCTAssertTrue(category.waitForExistence(timeout: 5))
+        category.tap()
+        XCTAssertTrue(app.buttons["All recipes"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["recipe-1"].exists)
+        app.buttons["All recipes"].tap()
+        let search = app.searchFields.firstMatch
+        search.tap()
+        search.typeText("Cheese")
+        XCTAssertTrue(app.buttons["recipe-1"].waitForExistence(timeout: 5))
+        search.typeText(" nonexistent")
+        XCTAssertTrue(app.staticTexts["No matching recipes"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testLiveActivityStartAndStop() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.buttons["Choose a recipe"].tap()
+        app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["Cooking options"].tap()
+        app.buttons["Start Live Activity"].tap()
+        app.buttons["Cooking options"].tap()
+        XCTAssertTrue(app.buttons["Stop Live Activity"].waitForExistence(timeout: 5))
+        app.buttons["Stop Live Activity"].tap()
+        app.buttons["Cooking options"].tap()
+        XCTAssertTrue(app.buttons["Start Live Activity"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testKitchenEditAndImport() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
