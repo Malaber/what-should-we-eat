@@ -298,6 +298,7 @@ def mobile_logout(request: Request, user: User = Depends(get_current_active_user
     return Response(status_code=204)
 
 
+@router.get("/account", include_in_schema=False)
 @router.get("/security", include_in_schema=False)
 def security_page(request: Request, db: Session = Depends(get_db)):
     try:
@@ -321,7 +322,7 @@ def list_keys(request: Request, response: Response, db: Session = Depends(get_db
 
 
 class KeyAction(BaseModel):
-    action: str = Field(pattern="^(add|rename|delete|delete_all|replace)$")
+    action: str = Field(pattern="^(add|rename|delete)$")
     key_id: str | None = Field(default=None, max_length=1024)
     name: str = Field(default="Passkey", max_length=120)
     confirmation: str = ""
@@ -337,8 +338,6 @@ def key_action_options(body: KeyAction, request: Request, response: Response, db
         name = validate_passkey_name(body.name)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
-    if body.action == "delete_all" and body.confirmation != "DELETE ALL PASSKEYS":
-        raise HTTPException(400, "Confirm removal of all passkeys")
     start = service().begin_authentication(request_host=None, request_base_url=origin(),
         allow_credential_ids=[key.credential_id for key in keys],
         state_payload={"user_id": user.id, "action": body.action, "key_id": body.key_id, "name": name})
@@ -368,6 +367,8 @@ def key_action_verify(body: Finish, request: Request, response: Response, db: Se
         db.rollback()
         raise HTTPException(401, "Passkey changed. Try again.")
     action = state["action"]
+    if action not in {"add", "rename", "delete"}:
+        db.rollback(); raise HTTPException(400, "Unsupported passkey action")
     if action == "rename":
         changed = db.execute(update(Passkey).where(Passkey.credential_id == state["key_id"],
             Passkey.user_id == user.id).values(name=state["name"]))
@@ -375,22 +376,17 @@ def key_action_verify(body: Finish, request: Request, response: Response, db: Se
             db.rollback(); raise HTTPException(404, "Passkey no longer exists")
     elif action == "delete":
         if db.query(Passkey).filter_by(user_id=user.id).count() <= 1:
-            db.rollback(); raise HTTPException(400, "Add another key first, or explicitly delete all passkeys.")
+            db.rollback(); raise HTTPException(400, "Add another passkey before removing your last one.")
         db.execute(delete(Passkey).where(Passkey.credential_id == state["key_id"], Passkey.user_id == user.id))
-    elif action == "delete_all":
-        db.execute(delete(Passkey).where(Passkey.user_id == user.id))
-        db.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
-        response.delete_cookie(COOKIE, path="/")
-        response.delete_cookie(COOKIE, path="/auth")
     db.commit()
-    if action in {"add", "replace"}:
+    if action == "add":
         start = service().begin_registration(user=PasskeyUser(id=str(user.id).encode(), name=user.email,
             display_name=user.name or user.email), request_host=None, request_base_url=origin(),
             exclude_credential_ids=[key.credential_id for key in db.query(Passkey).filter_by(user_id=user.id)],
             state_payload={"user_id": user.id, "action": action, "name": state["name"]})
         set_cookie(response, FLOW_COOKIE, save_flow(db, "key_add", start.state), 300)
         return {"options": start.options}
-    return {"status": "ok", "signed_out": action == "delete_all"}
+    return {"status": "ok", "signed_out": False}
 
 
 @router.post("/passkeys/register/verify", dependencies=[Depends(same_origin)])
@@ -410,9 +406,27 @@ def key_add_verify(body: Finish, request: Request, db: Session = Depends(get_db)
         # Fail before deletion if this credential already belongs to any account.
         if db.get(Passkey, key.credential_id) is not None:
             raise HTTPException(400, "Passkey already exists")
-        if state["action"] == "replace":
-            db.execute(delete(Passkey).where(Passkey.user_id == user.id))
+        if state["action"] != "add":
+            raise HTTPException(400, "Unsupported passkey action")
         db.add(key); db.commit()
     except IntegrityError as exc:
         db.rollback(); raise HTTPException(400, "Passkey already exists") from exc
     return key_output(key)
+
+
+class AccountName(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+@router.get('/account/profile')
+def account_profile(request: Request, response: Response, db: Session = Depends(get_db)):
+    user = session_user(request, db)
+    response.headers['Cache-Control'] = 'no-store'
+    return {'name': user.name, 'email': user.email}
+
+@router.post('/account/profile', dependencies=[Depends(same_origin)])
+def update_account_profile(body: AccountName, request: Request, db: Session = Depends(get_db)):
+    user = session_user(request, db)
+    if not body.name.strip(): raise HTTPException(400, 'Name is required')
+    user.name = body.name.strip()
+    db.commit()
+    return {'name': user.name, 'email': user.email}

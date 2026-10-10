@@ -91,7 +91,16 @@ tail -f .tmp/onionary-testflight/build.log
 ```
 
 `auto` resolves the numeric version from the latest reachable Git tag, using the
-same version script as CI. Tag the tested commit before starting the upload.
+same version script as CI. Every shipped fix, however small, requires a fresh
+version tag and TestFlight build number. Never overwrite, move, delete or
+force-push existing release tags. Publish the tested commit with:
+
+```sh
+python3 execution/tag_release.py v0.2.0-rc.7
+```
+
+The helper refuses existing local or remote tags and never force-pushes.
+Use the next unused version for subsequent changes.
 
 The detached worker tests, archives, and exports directly to App Store Connect.
 It survives terminal/chat disconnects, records the exit status, and prevents
@@ -116,3 +125,53 @@ The worker validates the archive's bundle ID and version. Archive/export command
 use the system PATH because Homebrew rsync can break Xcode's IPA packaging.
 
 See [development deployment](../../docs/development-deployment.md) for GHCR images, tag versions, separate GitHub Pages hosting, and screenshot CI.
+
+### Ingredient amounts inside steps
+
+Use explicit placeholders such as `Use {{Milk|80%}} now, then {{Milk|20%}}`.
+The ingredient name must match exactly one ingredient (case-insensitive). With
+100 ml Milk this displays 80 ml and 20 ml; changing portions scales both amounts.
+The iOS step editor's **Insert ingredient amount** menu inserts a 100% placeholder
+that you can edit. The web editor accepts the same syntax. Copies preserve it.
+Unmatched names, duplicate names, missing quantities and invalid percentages stay
+visible as raw placeholders so an incorrect quantity is never silently guessed.
+Ordinary imported prose is not rewritten. Rename placeholders when renaming an ingredient.
+
+### Kitchen widget and Live Activity
+
+Add **Onionary Kitchen** from the iOS widget gallery. It displays the current
+household meal plan cached when you open/refresh Onionary or edit your Kitchen.
+The backend has no dated weekly schedule: the widget shows the currently selected
+plan as this week's kitchen. The cached snapshot expires at the next Monday;
+open Onionary to refresh it. It cannot fetch changes made elsewhere while the app
+is not running. Tapping a recipe opens cooking; links are scoped to the signed-in
+backend/account. Switching accounts/signing out clears the shared snapshot.
+
+Cooking interactions (checks, undo/redo and portion changes) automatically start a
+**Live Activity**. The top-left flame toggles cooking mode. Turning it off persists
+for that account and recipe until explicitly enabled again. It shows progress and the next step,
+including scaled ingredient placeholders, on the Lock Screen and Dynamic Island.
+Stop it from the same menu. Changing recipe, completing all checks, or signing out
+ends it; after three hours without an update the view asks you to reopen Onionary.
+ActivityKit controls the final system lifetime. No push service is required.
+
+The embedded target is `de.malaber.onionary.widget`, using existing App Group
+`group.de.malaber.onionary` with the main app/share extension. Shared JSON contains
+only display data and an account hash, never tokens. Local automatic signing
+creates a matching provisioning profile during archive/export. CI builds and tests
+all three targets without signing. Widget and app versions come from the same tag.
+
+Apple setup verified on 2026-10-10: Onionary widget identifier and group assigned.
+Planini PR 110 uses `de.malaber.planini.widget` with `group.de.malaber.planini.watch`;
+that identifier and group were also configured with explicit credential-sharing
+approval. No Apple records were deleted.
+
+### Contextual recipe controls
+
+Step editing shows ingredient insertion in the keyboard toolbar only while a step
+instruction has focus. The information button beside Steps explains percentages
+once on demand. Insertion appends a placeholder to the focused step.
+
+Recipes exposes a searchable Browse by tag sheet from the tag toolbar button.
+Recipe rows show all tags, and cooking details show tappable tags that open matching
+recipes. Tags are separate from the saved ingredient quantities of a cooking session.

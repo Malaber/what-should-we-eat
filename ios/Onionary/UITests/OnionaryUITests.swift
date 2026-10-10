@@ -2,6 +2,91 @@ import XCTest
 
 final class OnionaryUITests: XCTestCase {
     @MainActor
+    func testCategoryBrowsingAndIngredientSearch() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Refresh"].tap()
+        let category = app.buttons["category-vegetarian"]
+        XCTAssertTrue(category.waitForExistence(timeout: 5))
+        app.buttons["browse-tags"].tap()
+        XCTAssertTrue(app.buttons["browse-tag-vegetarian"].waitForExistence(timeout: 5))
+        app.buttons["browse-tag-vegetarian"].tap()
+        XCTAssertTrue(app.buttons["All recipes"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["recipe-1"].exists)
+        app.buttons["All recipes"].tap()
+        let search = app.searchFields.firstMatch
+        search.tap()
+        search.typeText("Cheese")
+        XCTAssertTrue(app.buttons["recipe-1"].waitForExistence(timeout: 5))
+        search.typeText(" nonexistent")
+        XCTAssertTrue(app.staticTexts["No matching recipes"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testLiveActivityStartAndStop() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.buttons["Choose a recipe"].tap()
+        app.buttons["recipe-1"].firstMatch.tap()
+        let mode = app.buttons["cooking-mode"]
+        XCTAssertTrue(mode.waitForExistence(timeout: 5))
+        app.buttons["portion-plus"].tap()
+        let on = NSPredicate(format: "value == %@", "On")
+        let off = NSPredicate(format: "value == %@", "Off")
+        expectation(for: on, evaluatedWith: mode)
+        waitForExpectations(timeout: 5)
+        mode.tap()
+        expectation(for: off, evaluatedWith: mode)
+        waitForExpectations(timeout: 5)
+        app.buttons["portion-plus"].tap()
+        XCTAssertEqual(mode.value as? String, "Off")
+        mode.tap()
+        expectation(for: on, evaluatedWith: mode)
+        waitForExpectations(timeout: 5)
+        mode.tap()
+        expectation(for: off, evaluatedWith: mode)
+        waitForExpectations(timeout: 5)
+    }
+
+    @MainActor
+    func testStepToolsAndRecipeTags() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Refresh"].tap()
+        app.buttons["recipe-1"].firstMatch.tap()
+        let tag = app.buttons["recipe-tag-vegetarian"]
+        XCTAssertTrue(tag.waitForExistence(timeout: 5))
+        tag.tap()
+        XCTAssertTrue(app.buttons["Lemon & cheese pasta"].waitForExistence(timeout: 5))
+        app.buttons["Done"].tap()
+        app.buttons["Cooking options"].tap()
+        app.buttons["Edit recipe"].tap()
+        XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["insert-ingredient-amount"].exists)
+        app.swipeUp()
+        app.swipeUp()
+        let instruction = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-")).firstMatch
+        XCTAssertTrue(instruction.waitForExistence(timeout: 5))
+        instruction.tap()
+        let insert = app.buttons["insert-ingredient-amount"]
+        XCTAssertTrue(insert.waitForExistence(timeout: 5))
+        insert.tap()
+        app.buttons["Cheese"].tap()
+        XCTAssertTrue((instruction.value as? String ?? "").contains("{{Cheese|100%}}"))
+        app.buttons["Done"].tap()
+        XCTAssertFalse(insert.exists)
+        app.buttons["step-help"].tap()
+        XCTAssertTrue(app.alerts["Ingredient amount help"].waitForExistence(timeout: 5))
+        app.alerts.buttons["Done"].tap()
+        app.buttons["Cancel"].tap()
+    }
+
+    @MainActor
     func testKitchenEditAndImport() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
@@ -18,6 +103,9 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Edit recipe"].tap()
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Total minutes"].exists)
+        XCTAssertTrue(app.staticTexts["Active minutes"].exists)
+        XCTAssertTrue(app.staticTexts["Calories per serving"].exists)
         name.tap()
         let oldName = name.value as? String ?? ""
         name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldName.count) + "Edited pasta")
@@ -36,6 +124,19 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Review recipe"].tap()
         XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
         app.buttons["Cancel"].tap()
+    }
+
+    @MainActor
+    func testIntelligenceDraftRequiresUserInput() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Create with Intelligence"].tap()
+        XCTAssertTrue(app.textViews["Describe your recipe"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Create recipe draft"].isEnabled)
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Recipe book"].exists)
     }
 
     @MainActor
@@ -70,7 +171,7 @@ final class OnionaryUITests: XCTestCase {
         capture("02-cooking-companion")
         app.buttons["ingredient-1"].tap()
         app.buttons["Adjust portions"].tap()
-        XCTAssertTrue(app.textFields["multiplier"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["portions"].waitForExistence(timeout: 5))
         capture("03-flexible-portions")
         app.buttons["Done"].tap()
         app.buttons["History"].tap()
@@ -107,10 +208,13 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(cheese.value as? String, "Checked")
         app.buttons["Adjust portions"].tap()
         XCTAssertTrue(app.staticTexts["Your ingredients right now"].exists)
-        let multiplier = app.textFields["multiplier"]
+        let multiplier = app.textFields["portions"]
         multiplier.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "Portion field must open the keyboard before testing dismissal")
         multiplier.typeText(XCUIKeyboardKey.delete.rawValue + "1.583945")
-        app.buttons["Apply multiplier"].tap()
+        app.staticTexts["By portions"].tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5), "Outside tap must dismiss the keyboard")
+        app.buttons["Done"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["1.58× recipe"].waitForExistence(timeout: 5), app.debugDescription)
         app.buttons["portion-plus"].tap()
         XCTAssertTrue(app.staticTexts["2.58× recipe"].waitForExistence(timeout: 5))

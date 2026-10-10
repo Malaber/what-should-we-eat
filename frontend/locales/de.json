@@ -212,5 +212,17 @@
   "feedback.switched": "Zu „{name}“ gewechselt",
   "feedback.created": "„{name}“ erstellt!",
   "feedback.left": "„{name}“ verlassen",
-  "feedback.imported": "{count} Rezepte erfolgreich importiert!"
+  "feedback.imported": "{count} Rezepte erfolgreich importiert!",
+  "recipe.servings": "Portionen im Originalrezept",
+  "app.website": "Onionary für iPhone und iPad",
+  "account.title": "Kontoeinstellungen",
+  "account.name": "Name",
+  "account.save": "Name speichern",
+  "account.language": "Sprache",
+  "account.appearance": "Darstellung",
+  "account.system": "System",
+  "account.light": "Hell",
+  "account.dark": "Dunkel",
+  "account.keep-key": "Mindestens ein Passkey bleibt erhalten. Füge vor dem Löschen des letzten Schlüssels einen weiteren hinzu.",
+  "account.saved": "Konto aktualisiert."
 }

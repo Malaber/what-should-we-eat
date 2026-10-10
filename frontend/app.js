@@ -310,7 +310,7 @@ function renderRecipes() {
         .map(s => `
                 <div class="step-item">
                   <span class="step-num">${s.step_number}</span>
-                  <span>${esc(s.description)}</span>
+                  <span>${esc(resolveIngredientPlaceholders(s.description, r.ingredients || []))}</span>
                   ${s.duration_min ? `<span class="step-dur">${s.duration_min} min</span>` : ''}
                 </div>
               `).join('')}

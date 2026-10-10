@@ -100,8 +100,11 @@ struct MealPlanningView: View {
     }
     private func load() async throws {
         guard let credential = store.credential else { return }
+        let account = store.scope
         let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("meal-plan")
+        guard account == store.scope else { return }
         items = try OnionaryAPI.decoder.decode(MealPlan.self, from: data).items
+        store.publishWidget(items, account: account)
     }
     private func reload() async { do { try await load(); error = nil } catch { self.error = error.localizedDescription } }
     private func run(_ action: @escaping @MainActor () async throws -> Void) {

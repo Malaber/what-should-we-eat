@@ -24,3 +24,10 @@ def test_invalid_email_refused(monkeypatch):
     monkeypatch.setenv('IMPRESSUM_EMAIL', 'bad\n@example.com')
     with pytest.raises(RuntimeError, match='IMPRESSUM_EMAIL'):
         legal_identity()
+
+
+def test_impressum_preserves_umlauts(client, monkeypatch):
+    monkeypatch.setenv('IMPRESSUM_NAME', 'Daniel Schädler')
+    response = client.get('/impressum.html')
+    assert 'Daniel Schädler' in response.text
+    assert r'Sch\u00e4dler' not in response.text

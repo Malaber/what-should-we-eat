@@ -8,6 +8,7 @@ struct OnionaryApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(store: store)
+                .dismissibleKeyboard()
                 .tint(OnionaryTheme.accent)
                 .preferredColorScheme(appearance == "system" ? nil : appearance == "dark" ? .dark : .light)
                 .environment(\.locale, language == "system" ? Locale.current : Locale(identifier: language))

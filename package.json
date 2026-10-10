@@ -1,0 +1,9 @@
+{
+  "name": "onionary-web-format",
+  "private": true,
+  "scripts": {
+    "format:html": "prettier --write 'frontend/**/*.html' 'website/**/*.html'",
+    "check:html": "prettier --check 'frontend/**/*.html' 'website/**/*.html'"
+  },
+  "devDependencies": { "prettier": "3.6.2" }
+}

@@ -1,23 +1,40 @@
-<!DOCTYPE html>
+<!doctype html>
 
 <html lang="en">
-<head><script src="/translations.js"></script><script src="/i18n.js"></script>
-<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Sign in · Onionary</title>
-<link href="/passkey.css" rel="stylesheet"/>
-<script src="/passkey.js" type="module"></script>
-</head>
-<body class="auth-surface"><main>
-<div aria-hidden="true" class="mark">🧅</div><p class="eyebrow" data-i18n="auth.eyebrow"></p>
-<h1 data-i18n="auth.welcome"></h1><p data-i18n="auth.tagline"></p>
-<p id="server"></p><p id="error" role="alert"></p>
-<button data-i18n="auth.signin" id="sign-in"></button>
-<button data-i18n="auth.enroll" hidden="" id="enroll"></button>
-<details id="registration"><summary data-i18n="auth.new"></summary>
-<form id="register"><label><span data-i18n="auth.name"></span><input autocomplete="name" maxlength="255" name="display_name" required=""/></label>
-<label><span data-i18n="auth.email"></span><input autocomplete="email" name="email" required="" type="email"/></label>
-<button data-i18n="auth.create"></button></form>
-</details>
-<p class="help" data-i18n="auth.longhelp"></p>
-</main></body></html>
-
+  <head>
+    <script src="/translations.js"></script>
+    <script src="/i18n.js"></script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>Sign in · Onionary</title>
+    <link href="/passkey.css" rel="stylesheet" />
+    <script src="/passkey.js" type="module"></script>
+  </head>
+  <body class="auth-surface">
+    <main>
+      <div aria-hidden="true" class="mark">🧅</div>
+      <p class="eyebrow" data-i18n="auth.eyebrow"></p>
+      <h1 data-i18n="auth.welcome"></h1>
+      <p data-i18n="auth.tagline"></p>
+      <p id="server"></p>
+      <p id="error" role="alert"></p>
+      <button data-i18n="auth.signin" id="sign-in"></button>
+      <button data-i18n="auth.enroll" hidden="" id="enroll"></button>
+      <details id="registration">
+        <summary data-i18n="auth.new"></summary>
+        <form id="register">
+          <label
+            ><span data-i18n="auth.name"></span
+            ><input autocomplete="name" maxlength="255" name="display_name" required=""
+          /></label>
+          <label
+            ><span data-i18n="auth.email"></span
+            ><input autocomplete="email" name="email" required="" type="email"
+          /></label>
+          <button data-i18n="auth.create"></button>
+        </form>
+      </details>
+      <p class="help" data-i18n="auth.longhelp"></p>
+    </main>
+  </body>
+</html>

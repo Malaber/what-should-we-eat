@@ -168,7 +168,7 @@ function openModal(id) {
           ${s.step_number}
         </div>
         <div style="flex:1;">
-          <p style="margin:0; font-size:1.2rem; line-height:1.6; color:var(--text-dark);">${esc(s.description)}</p>
+          <p style="margin:0; font-size:1.2rem; line-height:1.6; color:var(--text-dark);">${esc(resolveIngredientPlaceholders(s.description, recipe.ingredients || []))}</p>
           ${s.duration_min ? `<div style="margin-top:12px; font-weight:bold; color:var(--orange-dark); background:var(--orange-pale); display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.9rem;">⏱️ ${s.duration_min} min</div>` : ''}
         </div>
       </div>

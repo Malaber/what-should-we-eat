@@ -2,6 +2,20 @@ import XCTest
 @testable import OnionaryCore
 
 final class RecipeDraftTests: XCTestCase {
+    func testChefkochSharedTextAndTracking() throws {
+        let link = "https://www.chefkoch.de/rezepte/4376441747840412/Unsichtbarer-Apfelkuchen.html?utm_source=com.apple.UIKit.activity.CopyToPasteboard&utm_medium=Social"
+        XCTAssertEqual(try RecipeImportLink.sharedText("Try this recipe: " + link).absoluteString, link)
+        XCTAssertThrowsError(try RecipeImportLink.sharedText("https://chefkoch.de.evil.test/recipe"))
+    }
+    func testBaseServingsInitializeCookingRatio() throws {
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let recipe = try decoder.decode(Recipe.self, from: Data(#"{"id":1,"household_id":1,"name":"Soup","servings":4,"ingredients":[],"instruction_steps":[]}"#.utf8))
+        var adventure = Adventure(recipe: recipe)
+        XCTAssertEqual(adventure.portions, 4)
+        try adventure.scale(baseServings: 4, portions: Decimal(string: "1.53")!)
+        XCTAssertEqual(adventure.portions, Decimal(string: "1.53")!)
+        XCTAssertEqual(adventure.multiplier, Decimal(string: "0.3825")!)
+    }
     func testChefkochURLBoundary() throws {
         XCTAssertNoThrow(try RecipeImportLink.chefkoch("https://www.chefkoch.de/rezepte/123"))
         for url in ["http://chefkoch.de/123", "https://chefkoch.de.evil.org/123", "https://chefkoch.de@evil.org/123", "https://chefkoch.de:8443/123", "file:///tmp/test"] {

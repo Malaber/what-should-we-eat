@@ -12,24 +12,24 @@ async function refresh() {
   for (const key of keys) {
     const row = document.createElement('section'); const title = document.createElement('h2'); title.textContent = key.name; row.append(title);
     const dates = document.createElement('p'); dates.className = 'help'; dates.textContent = key.last_used_at ? window.t('security.copy_24').replace('{date}', new Date(key.last_used_at).toLocaleString(window.I18n.lang)) : window.t('security.copy_12'); row.append(dates);
-    for (const kind of ['rename','delete']) { const b = document.createElement('button'); b.textContent = kind === 'rename' ? window.t('security.copy_13') : window.t('security.copy_14'); b.onclick = () => show(kind, key); row.append(b); }
+    for (const kind of ['rename','delete']) { const b = document.createElement('button'); b.textContent = kind === 'rename' ? window.t('security.copy_13') : window.t('security.copy_14'); b.disabled = kind === 'delete' && keys.length <= 1; b.onclick = () => show(kind, key); row.append(b); }
     $('keys').append(row);
   }
 }
 function show(kind, key) {
   action = {action:kind, key_id:key?.id};
-  $('action-title').textContent = {add:window.t('security.copy_3'),rename:window.t('security.copy_15'),delete:window.t('security.copy_16'),replace:window.t('security.copy_17'),delete_all:window.t('security.copy_18')}[kind];
-  $('action-copy').textContent = kind === 'delete_all' ? window.t('security.copy_19') : kind === 'replace' ? window.t('security.copy_20') : window.t('security.copy_21');
-  $('name-label').hidden = ['delete','delete_all'].includes(kind); $('key-name').value = key?.name || ''; $('key-name').required = !$('name-label').hidden;
-  $('confirm-label').hidden = kind !== 'delete_all'; $('confirmation').value = ''; $('confirmation').required = kind === 'delete_all';
+  $('action-title').textContent = {add:window.t('security.copy_3'),rename:window.t('security.copy_15'),delete:window.t('security.copy_16')}[kind];
+  $('action-copy').textContent = window.t('security.copy_21');
+  $('name-label').hidden = kind === 'delete'; $('key-name').value = key?.name || ''; $('key-name').required = !$('name-label').hidden;
+
   $('action-dialog').showModal();
 }
-$('add').onclick = () => show('add'); $('replace').onclick = () => show('replace'); $('delete-all').onclick = () => show('delete_all'); $('cancel').onclick = () => $('action-dialog').close();
+$('add').onclick = () => show('add'); $('cancel').onclick = () => $('action-dialog').close();
 $('action-form').onsubmit = async event => {
   event.preventDefault(); $('error').textContent = ''; $('status').textContent = '';
-  const buttons = [...document.querySelectorAll('button')]; buttons.forEach(b => b.disabled = true);
+  const buttons = [...document.querySelectorAll('button:not(:disabled)')]; buttons.forEach(b => b.disabled = true);
   try {
-    const options = await api('passkeys/action/options', {...action, name:$('key-name').value || 'Passkey', confirmation:$('confirmation').value});
+    const options = await api('passkeys/action/options', {...action, name:$('key-name').value || 'Passkey'});
     const proof = await navigator.credentials.get({publicKey:publicKeyFromJSON(options)});
     const result = await api('passkeys/action/verify', {credential:credentialToJSON(proof)});
     if (result.options) {
@@ -40,6 +40,25 @@ $('action-form').onsubmit = async event => {
     if (result.signed_out) { localStorage.removeItem('wswe_token'); location.assign('/auth/login'); return; }
     $('status').textContent = window.t('security.copy_22'); await refresh();
   } catch (error) { $('action-dialog').close(); $('error').textContent = error.name === 'NotAllowedError' ? window.t('security.copy_23') : error.message; }
-  finally { buttons.forEach(b => b.disabled = false); }
+  finally { buttons.filter(b => b.isConnected).forEach(b => b.disabled = false); await refresh(); }
 };
 refresh().catch(error => $('error').textContent = error.message);
+
+$('account-language').value = localStorage.getItem('app_lang') || 'system';
+$('account-language').onchange = event => window.I18n.setLang(event.target.value);
+$('account-appearance').value = localStorage.getItem('app_appearance') || 'system';
+$('account-appearance').onchange = event => {
+  const appearance = event.target.value;
+  localStorage.setItem('app_appearance', appearance);
+  document.documentElement.dataset.appearance = appearance;
+  document.documentElement.style.colorScheme = appearance === 'system' ? 'light dark' : appearance;
+};
+api('account/profile').then(profile => {
+  $('profile-name').value = profile.name || ''; $('profile-email').textContent = profile.email;
+  $('profile-name').disabled = false; $('profile-form').querySelector('button').disabled = false;
+}).catch(error => $('error').textContent = error.message);
+$('profile-form').onsubmit = async event => {
+  event.preventDefault();
+  try { await api('account/profile', {name: $('profile-name').value}); $('status').textContent = window.t('account.saved'); }
+  catch(error) { $('error').textContent = error.message; }
+};

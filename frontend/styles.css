@@ -1386,3 +1386,60 @@ body::before {
   .btn-primary { color: #321523; }
   input, textarea, select { background: var(--bg-card); color: var(--text); }
 }
+
+/* Explicit account preference overrides system appearance. */
+:root[data-appearance="light"] {
+  /* warm cream background */
+  --bg:           #FDF6EC;
+  --bg-card:      #FFFFFF;
+  --bg-surface:   #FFF8F0;
+  --bg-muted:     #F5EDE1;
+
+  /* text */
+  --text:         #2D2A26;
+  --text-muted:   #7A7267;
+  --text-light:   #A69D92;
+
+  /* orange accent — warm, appetizing */
+  --orange:       #7a3057;
+  --orange-light: #ab6286;
+  --orange-pale:  #f5e0e9;
+  --orange-dark:  #642244;
+
+  /* green accent — fresh, natural */
+  --green:        #4A9C5F;
+  --green-light:  #7BC88D;
+  --green-pale:   #DFF2E3;
+  --green-dark:   #367B48;
+
+  /* misc */
+  --border:       #E8DFD3;
+  --shadow-sm:    0 1px 3px rgba(45,42,38,0.06);
+  --shadow-md:    0 4px 16px rgba(45,42,38,0.08);
+  --shadow-lg:    0 8px 32px rgba(45,42,38,0.12);
+  --radius-sm:    8px;
+  --radius-md:    14px;
+  --radius-lg:    22px;
+  --radius-pill:  999px;
+
+  /* typography */
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body:    'DM Sans', -apple-system, system-ui, sans-serif;
+}
+:root[data-appearance="dark"] { --bg: #211b20; --bg-card: #2b242a; --bg-surface: #352c33; --bg-muted: #40333c;
+    --text: #f7eee4; --text-muted: #d0bdc8; --text-light: #baa3b1; --border: #67505e;
+    --orange: #f5a6c9; --orange-dark: #ffc4dc; --orange-light: #f5a6c9; --orange-pale: #492b3c;
+    --green: #9fd4a4; --green-dark: #b5e4b9; --green-pale: #253c2a; }
+
+/* Actions remain available at narrow widths and increased text sizes. */
+.recipe-card-footer { display: flex; flex-wrap: wrap; gap: .5rem; height: auto; }
+.recipe-card-footer .btn { flex: 1 1 auto; white-space: normal; min-width: 0; }
+.recipe-card { min-width: 0; }
+.recipe-card h3 { overflow-wrap: anywhere; }
+
+:root[data-appearance="light"] .btn-primary { color: white; }
+:root[data-appearance="dark"] .btn-primary { color: #321523; }
+input, textarea, select { background: var(--bg-card); color: var(--text); }
+.toast { color: var(--bg); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: opacity .15s; } }
+footer > a { color: var(--orange-dark); display: inline-block; margin-top: .75rem; }

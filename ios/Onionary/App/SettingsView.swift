@@ -33,7 +33,7 @@ struct SettingsView: View {
                 Link("Support", destination: URL(string: "https://app.onionary.malaber.de/support/")!)
                 Link("Privacy", destination: URL(string: "https://app.onionary.malaber.de/privacy/")!)
             }
-        }.navigationTitle("Settings")
+        }.dismissibleKeyboard().navigationTitle("Settings")
             .confirmationDialog("Switch backend? Your saved cooking progress will be kept.", isPresented: $confirmSwitch, titleVisibility: .visible) {
                 Button("Switch backend") { switching = true }
             }

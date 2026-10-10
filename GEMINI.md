@@ -67,3 +67,10 @@ Errors are learning opportunities. When something breaks:
 You sit between human intent (directives) and deterministic execution (Python scripts). Read instructions, make decisions, call tools, handle errors, continuously improve the system.
 
 Be pragmatic. Be reliable. Self-anneal.
+## Release policy
+
+Every shipped change, including small follow-up fixes, gets a new version tag
+and a new TestFlight build number. Never overwrite, move, delete, or force-push
+an existing release tag. Use `python3 execution/tag_release.py vX.Y.Z-rc.N`
+to publish a fresh tag after committing and testing. An unchanged release may
+resume its interrupted upload; changed code always requires a new tag/build.

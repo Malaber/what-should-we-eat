@@ -144,3 +144,46 @@
 "Undo · " = "Rückgängig · ";
 "Continue · %lld checked" = "Fortsetzen · %lld abgehakt";
 "Step %lld" = "Schritt %lld";
+"Requires iOS 26 or later." = "Erfordert iOS 26 oder neuer.";
+"Enable Apple Intelligence in Settings." = "Aktiviere Apple Intelligence in den Einstellungen.";
+"Apple Intelligence is downloading its model." = "Apple Intelligence lädt das Modell herunter.";
+"Apple Intelligence is unavailable on this device." = "Apple Intelligence ist auf diesem Gerät nicht verfügbar.";
+"Describe your recipe" = "Beschreibe dein Rezept";
+"Paste a recipe or describe ingredients, portions and cooking steps." = "Füge ein Rezept ein oder beschreibe Zutaten, Portionen und Kochschritte.";
+"Generation stays on this device. Review ingredients, quantities and cooking instructions before saving to your backend." = "Der Entwurf entsteht auf diesem Gerät. Prüfe Zutaten, Mengen und Kochanleitung vor dem Speichern auf deinem Server.";
+"Create recipe draft" = "Rezeptentwurf erstellen";
+"Create with Intelligence" = "Mit Intelligence erstellen";
+
+"Browse by category" = "Nach Kategorie stöbern";
+
+"All recipes" = "Alle Rezepte";
+
+"Quickest first" = "Schnellste zuerst";
+
+"Sort recipes" = "Rezepte sortieren";
+
+"%lld recipes" = "%lld Rezepte";
+
+"Insert ingredient amount" = "Zutatenmenge einsetzen";
+
+"Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking." = "Ändere 100% im Platzhalter auf den Anteil für diesen Schritt, etwa 80%. Beim Kochen passen sich die Mengen an deine Portionen an.";
+
+"Start Live Activity" = "Live-Aktivität starten";
+
+"Stop Live Activity" = "Live-Aktivität beenden";
+
+"Open Onionary to refresh" = "Zum Aktualisieren Onionary öffnen";
+
+"This week’s kitchen" = "Diese Woche in der Küche";
+
+"Your household meal plan, ready to cook." = "Dein Haushaltsplan, bereit zum Kochen.";
+
+"Open Kitchen to update your plan." = "Öffne Küche, um deinen Plan zu aktualisieren.";
+
+"Ingredient amount help" = "Hilfe zu Zutatenmengen";
+"Browse by tag" = "Nach Tag stöbern";
+"Find a tag" = "Tag suchen";
+"Tags" = "Tags";
+"Cooking mode" = "Kochmodus";
+"On" = "Ein";
+"Off" = "Aus";

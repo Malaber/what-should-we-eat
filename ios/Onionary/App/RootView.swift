@@ -23,9 +23,13 @@ struct RootView: View {
                     NavigationStack { SettingsView(store: store) }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
                 }.id(locale.identifier + (store.credential?.server.absoluteString ?? "") + (store.credential?.userID ?? ""))
             }
-        }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox() } }
+        }.onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox(); store.synchronizeCookingActivity(); Task { await store.refreshWidget() } } }
          .onChange(of: store.credential?.userID) { store.checkImportInbox() }
-         .task { store.checkImportInbox() }
+         .task { store.checkImportInbox(); store.synchronizeCookingActivity(); await store.refreshWidget() }
+         .onOpenURL { store.openWidgetURL($0) }
+         .onChange(of: store.widgetNavigation) { _, route in
+             guard let route else { return }; tab = route == .kitchen ? 3 : 0; store.widgetNavigation = nil
+         }
          .sheet(item: $store.sharingRecipe) { recipe in RecipeSharingView(store: store, recipe: recipe) }
          .sheet(item: $store.editingRecipe) { recipe in EditRecipeView(store: store, id: recipe.id) }
          .sheet(isPresented: Binding(get: { store.pendingImport != nil }, set: { if !$0 { store.pendingImport = nil } })) {
@@ -64,10 +68,48 @@ struct RecipesView: View {
     @Bindable var store: AppStore
     var selected: () -> Void
     @State private var search = ""
-    var filtered: [Recipe] { store.kitchen.recipes.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) } }
+    @State private var intelligence = false
+    @State private var category: String?
+    @State private var quickestFirst = false
+    @State private var browsingTags = false
+    var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, category: category, quickestFirst: quickestFirst) }
     var body: some View {
         List {
-            if search.isEmpty && !store.kitchen.recent.isEmpty {
+            if let category {
+                Section {
+                    HStack {
+                        Label(category, systemImage: "tag.fill").font(.headline)
+                        Spacer()
+                        Button("All recipes") { self.category = nil }
+                    }
+                }
+            } else {
+                let categories = RecipeBrowsing.categories(store.kitchen.recipes, query: search)
+                if !categories.isEmpty {
+                    Section("Browse by tag") {
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 10) {
+                                ForEach(categories, id: \.self) { tag in
+                                    Button { category = tag } label: {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Label(tag, systemImage: "tag.fill").font(.headline).lineLimit(1)
+                                            Text("\(RecipeBrowsing.recipes(store.kitchen.recipes, category: tag).count) recipes")
+                                                .font(.caption).foregroundStyle(.secondary)
+                                        }.padding(.horizontal, 12).padding(.vertical, 8)
+                                            .frame(minWidth: 140, alignment: .leading)
+                                            .background(OnionaryTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+                                    }.buttonStyle(.plain).accessibilityIdentifier("category-" + tag)
+                                }
+                            }
+                        }.scrollIndicators(.hidden)
+                            .contentMargins(.horizontal, 16, for: .scrollContent)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }.compactTagSection()
+                }
+            }
+            if search.isEmpty && category == nil && !store.kitchen.recent.isEmpty {
                 Section("Recently visited") {
                     ForEach(store.kitchen.recent.prefix(8)) { adventure in
                         recipeRow(adventure.recipe, subtitle: L10n.format("Continue · %lld checked", adventure.checked.count))
@@ -81,9 +123,19 @@ struct RecipesView: View {
                 ContentUnavailableView(LocalizedStringKey(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes"),
                     systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
-        }.navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
+        }.dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
+            .sheet(isPresented: $browsingTags) {
+                TagBrowser(recipes: store.kitchen.recipes) { tag in category = tag; search = "" }
+            }
+            .sheet(isPresented: $intelligence) { IntelligenceRecipeView(store: store) }
             .refreshable { await store.refresh() }
             .toolbar {
+                Button("Browse by tag", systemImage: "tag") { browsingTags = true }
+                    .accessibilityIdentifier("browse-tags")
+                Menu {
+                    Toggle("Quickest first", isOn: $quickestFirst)
+                } label: { Label("Sort recipes", systemImage: "arrow.up.arrow.down") }
+                Button("Create with Intelligence", systemImage: "sparkles") { intelligence = true }
                 Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
                 Button("Refresh", systemImage: "arrow.clockwise") { Task { await store.refresh() } }
             }
@@ -98,6 +150,10 @@ struct RecipesView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
                     Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary)
+                    if let tags = recipe.tags, !tags.isEmpty {
+                        Text(tags.map(\.name).joined(separator: " · "))
+                            .font(.caption).foregroundStyle(onion).fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
             }.frame(minHeight: 44)
@@ -112,6 +168,7 @@ struct CookingView: View {
     @Bindable var store: AppStore
     var browse: () -> Void
     @State private var scaling = false
+    @State private var tagToBrowse: String?
     @State private var history = false
     @State private var restart = false
     @State private var recentAction: CheckChange?
@@ -152,6 +209,18 @@ struct CookingView: View {
                             Button("Adjust portions", systemImage: "slider.horizontal.3") { scaling = true }.buttonStyle(.bordered)
                         }.padding(.vertical, 4)
                     }
+                    if let tags = adventure.recipe.tags, !tags.isEmpty {
+                        Section("Tags") {
+                            ScrollView(.horizontal) {
+                                HStack {
+                                    ForEach(tags, id: \.name) { tag in
+                                        Button { tagToBrowse = tag.name } label: { Label(tag.name, systemImage: "tag") }
+                                            .buttonStyle(.bordered).accessibilityIdentifier("recipe-tag-" + tag.name)
+                                    }
+                                }
+                            }.scrollIndicators(.hidden)
+                        }
+                    }
                     Section("Gather your ingredients") {
                         ForEach(adventure.recipe.ingredients) { ingredient in
                             let amount = adventure.quantity(ingredient).map { Numbers.display($0, locale: L10n.locale) } ?? ""
@@ -161,7 +230,7 @@ struct CookingView: View {
                     }
                     Section("Let’s cook") {
                         ForEach(adventure.recipe.instructionSteps.sorted { $0.stepNumber < $1.stepNumber }) { step in
-                            checkRow(key: "step-\(step.id)", label: step.description,
+                            checkRow(key: "step-\(step.id)", label: IngredientPlaceholders.resolve(step.description, ingredients: adventure.recipe.ingredients, multiplier: adventure.multiplier, locale: L10n.locale),
                                      subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""), adventure: adventure)
                         }
                     }
@@ -202,11 +271,19 @@ struct CookingView: View {
                 } description: { Text("Choose a recipe. We’ll keep your place, even when life interrupts.") }
                 actions: { Button("Choose a recipe", action: browse).buttonStyle(.borderedProminent) }
             }
-        }.navigationTitle("Onionary").navigationBarTitleDisplayMode(.inline)
+        }.dismissibleKeyboard().navigationTitle("Onionary").navigationBarTitleDisplayMode(.inline)
             .confirmationDialog("Restart cooking? Current checks and history will be cleared; the latest recipe will be used.", isPresented: $restart, titleVisibility: .visible) {
                 Button("Restart", role: .destructive) { store.restartCurrentRecipe() }
             }
             .toolbar { if store.current != nil {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { Task { await store.toggleCookingMode() } } label: {
+                        Image(systemName: store.cookingActivity.active ? "flame.fill" : "flame")
+                    }.accessibilityLabel("Cooking mode")
+                        .accessibilityValue(Text(store.cookingActivity.active ? "On" : "Off"))
+                        .accessibilityIdentifier("cooking-mode")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Edit recipe") { store.editingRecipe = store.current?.recipe }
                     Button("Share recipe copy") { store.sharingRecipe = store.current?.recipe }
@@ -214,7 +291,16 @@ struct CookingView: View {
                     Button("Adjust portions") { scaling = true }; Button("Tap history") { history = true }
                 }
                 label: { Label("Cooking options", systemImage: "ellipsis.circle") }
+                }
             } }
+            .sheet(isPresented: Binding(get: { tagToBrowse != nil }, set: { if !$0 { tagToBrowse = nil } })) {
+                NavigationStack {
+                    List(RecipeBrowsing.recipes(store.kitchen.recipes, category: tagToBrowse)) { recipe in
+                        Button(recipe.name) { store.visit(recipe); tagToBrowse = nil }
+                    }.navigationTitle(tagToBrowse ?? L10n.text("Tags"))
+                        .toolbar { Button("Done") { tagToBrowse = nil } }
+                }
+            }
             .sheet(isPresented: $scaling) { ScalingView(store: store) }
             .sheet(isPresented: $history) { HistoryView(store: store) }
     }
@@ -263,10 +349,6 @@ struct ScalingView: View {
                         }
                     } header: { Text("Your ingredients right now") }
                 }
-                Section("Scale the whole recipe") {
-                    field("Recipe multiplier", text: $multiplier).accessibilityIdentifier("multiplier")
-                    Button("Apply multiplier") { apply { try $0.scale(multiplier: Numbers.parse(multiplier)) } }
-                }
                 Section {
                     field("Original recipe serves", text: $base)
                     HStack {
@@ -277,7 +359,7 @@ struct ScalingView: View {
                         Button { stepPortions(1) } label: { Image(systemName: "plus").frame(width: 32, height: 32) }
                             .buttonStyle(.bordered).accessibilityLabel("Increase portions by one")
                     }
-                    Button("Apply portions") { apply { try $0.scale(baseServings: Numbers.parse(base), portions: Numbers.parse(portions)) } }
+
                 } header: { Text("By portions") } footer: {
                     Text("Set how many portions the original recipe serves. Use + and − for whole-portion changes, or type any amount, such as 1.53 or 4.32.")
                 }
@@ -297,8 +379,12 @@ struct ScalingView: View {
                     Text("Enter the amount in the ingredient’s original unit. If a recipe needs 200 g of cheese and you have 170 g, every ingredient becomes 0.85× its original amount. Cooking times stay unchanged.")
                 }
                 if let error { Text(error).foregroundStyle(.red) }
-            }.navigationTitle("Make it your size").navigationBarTitleDisplayMode(.inline)
-                .toolbar { Button("Done") { dismiss() } }
+            }.dismissibleKeyboard().navigationTitle("Make it your size").navigationBarTitleDisplayMode(.inline)
+                .toolbar { Button("Done") { commitPortions(); dismiss() } }
+                .onChange(of: editingField) { old, _ in
+                    if old == "Cooking for" || old == "Original recipe serves" { commitPortions() }
+                    if old == "Amount you have", !available.isEmpty { commitIngredient() }
+                }
                 .onAppear {
                     if let adventure = store.current {
                         multiplier = Numbers.text(adventure.multiplier); base = Numbers.text(adventure.baseServings)
@@ -316,10 +402,18 @@ struct ScalingView: View {
                 .keyboardType(.decimalPad).focused($editingField, equals: label)
         }
     }
+    func commitPortions() {
+        apply { try $0.scale(baseServings: Numbers.parse(base), portions: Numbers.parse(portions)) }
+    }
+    func commitIngredient() {
+        guard let ingredient = store.current?.recipe.ingredients.first(where: { $0.id == ingredientID }) else { return }
+        apply { try $0.scale(ingredient: ingredient, available: Numbers.parse(available)) }
+    }
     func stepPortions(_ change: Decimal) {
         do {
             let value = try Numbers.parse(portions) + change
             portions = Numbers.text(try Numbers.parse(Numbers.text(value)))
+            commitPortions()
             UISelectionFeedbackGenerator().selectionChanged()
         } catch { self.error = error.localizedDescription }
     }
@@ -328,7 +422,13 @@ struct ScalingView: View {
         do {
             guard var preview = store.current else { return }; try operation(&preview)
             store.update(operation)
-            if store.error == nil { dismiss() }
+            if store.error == nil {
+                error = nil
+                if let adventure = store.current {
+                    base = Numbers.text(adventure.baseServings)
+                    portions = Numbers.text(adventure.portions)
+                }
+            }
         } catch { self.error = error.localizedDescription }
     }
 }
@@ -350,7 +450,7 @@ struct HistoryView: View {
                         Text(entry.timestamp.formatted(date: .abbreviated, time: .standard)).font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical, 5)
                 }
-            }.navigationTitle("Tap history").toolbar {
+            }.dismissibleKeyboard().navigationTitle("Tap history").toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     HStack {
                         Button("Undo", systemImage: "arrow.uturn.backward") { store.update { $0.undo() } }.disabled(store.current?.canUndo != true)
@@ -359,6 +459,40 @@ struct HistoryView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
             }
+        }
+    }
+}
+
+private struct TagBrowser: View {
+    let recipes: [Recipe]
+    var selected: (String) -> Void
+    @State private var search = ""
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            List(RecipeBrowsing.categories(recipes, query: search), id: \.self) { tag in
+                Button { selected(tag); dismiss() } label: {
+                    HStack {
+                        Label(tag, systemImage: "tag")
+                        Spacer()
+                        Text("\(RecipeBrowsing.recipes(recipes, category: tag).count)").foregroundStyle(.secondary)
+                    }
+                }.accessibilityIdentifier("browse-tag-" + tag)
+            }.searchable(text: $search, prompt: "Find a tag")
+                .navigationTitle("Browse by tag")
+                .toolbar { Button("Done") { dismiss() } }
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func compactTagSection() -> some View {
+        if #available(iOS 26.0, *) {
+            self.listSectionMargins(.horizontal, 0)
+                .listSectionMargins(.vertical, 4)
+        } else {
+            self.listSectionSpacing(8)
         }
     }
 }
