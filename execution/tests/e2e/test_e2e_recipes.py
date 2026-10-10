@@ -102,3 +102,10 @@ def test_dark_import_and_share_layout(page: Page):
     expect(panel).to_be_visible()
     expect(panel).to_have_css('background-color', 'rgb(43, 36, 42)')
     page.screenshot(path='.tmp/onionary-polish-web-import.png', full_page=True)
+
+
+def test_deployed_backend_version_visible(page: Page):
+    login_as_test_user(page)
+    page.goto(page.base_url + '/recipes.html')
+    version = page.request.get(page.base_url + '/version').json()['version']
+    expect(page.locator('#deployed-version')).to_have_text('Onionary · ' + version)

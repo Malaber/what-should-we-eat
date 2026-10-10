@@ -25,6 +25,27 @@ Append `--revoke` to remove administrator access. Each admin request checks the
 current database session and administrator flag. Forms require a session-bound
 CSRF token and same-origin submission. No password-based admin login exists.
 
+## Populate a dedicated review kitchen
+
+Create a non-admin account in **Accounts → New Account**, then run on the same
+instance (the account does not need to have redeemed a passkey link yet):
+
+```sh
+cd /srv/docker-ansible/onionary
+sudo docker compose exec api python -m execution.seed_review_account review@example.com
+```
+
+This copies the bundled sample recipes with ingredients, steps, tags and two-person
+base portions into that account's personal kitchen. It plans four meals, one marked
+cooked, so the meal plan and shopping list have content. These are demo quantities
+and nutrition, not dietary guidance. No real user data is copied.
+
+The command refuses admins, shared kitchens and existing non-demo recipes. Running
+it again on the unchanged sample kitchen does nothing. It does not overwrite edits,
+reset passkeys, delete anything or generate credentials. Cooking checkmarks/history
+are local to each iOS installation, so reviewers create their own while cooking.
+After seeding, issue a fresh one-use passkey link as described below.
+
 ## Prepare Apple's review account
 
 1. Sign in at `/admin/`. In **Accounts → New Account**, create a dedicated account

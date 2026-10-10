@@ -53,6 +53,12 @@ app.include_router(meal_plan.router)
 app.include_router(recipe_shares.router)
 
 
+@app.get("/version", tags=["health"])
+def deployed_version():
+    return Response(json.dumps({"version": app.version}), media_type="application/json",
+                    headers={"Cache-Control": "no-store"})
+
+
 @app.get("/health", tags=["health"])
 def health():
     return {"status": "ok"}

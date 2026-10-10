@@ -1443,3 +1443,5 @@ input, textarea, select { background: var(--bg-card); color: var(--text); }
 .toast { color: var(--bg); }
 @media (prefers-reduced-motion: reduce) { .toast { transition: opacity .15s; } }
 footer > a { color: var(--orange-dark); display: inline-block; margin-top: .75rem; }
+
+.deployed-version { display: block; padding: 12px 24px; text-align: center; color: var(--text-muted); overflow-wrap: anywhere; }

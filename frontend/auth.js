@@ -163,3 +163,14 @@ window.WSWEAuth = new AuthHandler();
     }
   });
 })();
+
+// Read the running backend, not a build-time value cached in static assets.
+const deployedVersion = document.createElement('small');
+deployedVersion.id = 'deployed-version';
+deployedVersion.className = 'deployed-version';
+document.body.append(deployedVersion);
+fetch('/version', {cache: 'no-store'}).then(response => {
+  if (!response.ok) throw new Error('Version unavailable');
+  return response.json();
+}).then(data => { deployedVersion.textContent = `Onionary · ${data.version}`; })
+  .catch(() => { deployedVersion.remove(); });

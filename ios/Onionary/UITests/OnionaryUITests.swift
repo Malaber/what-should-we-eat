@@ -2,17 +2,30 @@ import XCTest
 
 final class OnionaryUITests: XCTestCase {
     @MainActor
+    private func pullToRefresh(_ app: XCUIApplication) {
+        let list = app.collectionViews.firstMatch
+        XCTAssertTrue(list.waitForExistence(timeout: 5))
+        // Collection bounds include the navigation bar; begin inside a recipe row.
+        let row = app.buttons["recipe-1"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        let start = row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
+        start.press(forDuration: 0.1, thenDragTo: end)
+    }
+
+    @MainActor
     func testCategoryBrowsingAndIngredientSearch() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.tabBars.buttons["Recipes"].tap()
-        app.buttons["Refresh"].tap()
+        pullToRefresh(app)
         let category = app.buttons["category-vegetarian"]
         XCTAssertTrue(category.waitForExistence(timeout: 5))
-        app.buttons["browse-tags"].tap()
-        XCTAssertTrue(app.buttons["browse-tag-vegetarian"].waitForExistence(timeout: 5))
-        app.buttons["browse-tag-vegetarian"].tap()
+        XCTAssertFalse(app.buttons["browse-tags"].exists)
+        XCTAssertFalse(app.buttons["Refresh"].exists)
+        XCTAssertTrue(app.buttons["sort-recipes"].exists)
+        category.tap()
         XCTAssertTrue(app.buttons["All recipes"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["recipe-1"].exists)
         app.buttons["All recipes"].tap()
@@ -57,7 +70,7 @@ final class OnionaryUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.tabBars.buttons["Recipes"].tap()
-        app.buttons["Refresh"].tap()
+        pullToRefresh(app)
         app.buttons["recipe-1"].firstMatch.tap()
         let tag = app.buttons["recipe-tag-vegetarian"]
         XCTAssertTrue(tag.waitForExistence(timeout: 5))
@@ -124,6 +137,7 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Revoke link"].tap()
         app.tabBars.buttons["Recipes"].tap()
         XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
+        app.buttons["add-recipe"].tap()
         app.buttons["Import recipe"].tap()
         app.textFields["Chefkoch or Onionary URL"].tap()
         app.textFields["Chefkoch or Onionary URL"].typeText("https://www.chefkoch.de/rezepte/123")
@@ -138,6 +152,7 @@ final class OnionaryUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.tabBars.buttons["Recipes"].tap()
+        app.buttons["add-recipe"].tap()
         app.buttons["Create with Intelligence"].tap()
         XCTAssertTrue(app.textViews["Describe your recipe"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Create recipe draft"].isEnabled)
