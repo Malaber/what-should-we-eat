@@ -181,6 +181,9 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["ingredient-1"].tap()
         app.buttons["ingredient-1"].tap()
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        // Capture stable content after the transient action banner has dismissed.
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["recent-action"])
+        waitForExpectations(timeout: 8)
         capture("02-cooking-companion")
         app.buttons["Adjust portions"].tap()
         XCTAssertTrue(app.textFields["portions"].waitForExistence(timeout: 5))
