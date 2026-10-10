@@ -71,7 +71,6 @@ struct RecipesView: View {
     @State private var intelligence = false
     @State private var category: String?
     @State private var quickestFirst = false
-    @State private var browsingTags = false
     var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, category: category, quickestFirst: quickestFirst) }
     var body: some View {
         List {
@@ -116,28 +115,31 @@ struct RecipesView: View {
                     }
                 }
             }
-            Section("Your recipes") {
+            Section {
                 ForEach(filtered) { recipe in recipeRow(recipe, subtitle: recipe.totalTimeMin.map { "\($0) min" } ?? "Ready when you are") }
+            } header: {
+                HStack {
+                    Text("Your recipes")
+                    Spacer()
+                    Menu {
+                        Toggle("Quickest first", isOn: $quickestFirst)
+                    } label: { Label("Sort recipes", systemImage: "arrow.up.arrow.down").labelStyle(.iconOnly) }
+                    .accessibilityIdentifier("sort-recipes")
+                }
             }
             if filtered.isEmpty {
                 ContentUnavailableView(LocalizedStringKey(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes"),
                     systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
         }.dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
-            .sheet(isPresented: $browsingTags) {
-                TagBrowser(recipes: store.kitchen.recipes) { tag in category = tag; search = "" }
-            }
             .sheet(isPresented: $intelligence) { IntelligenceRecipeView(store: store) }
             .refreshable { await store.refresh() }
             .toolbar {
-                Button("Browse by tag", systemImage: "tag") { browsingTags = true }
-                    .accessibilityIdentifier("browse-tags")
                 Menu {
-                    Toggle("Quickest first", isOn: $quickestFirst)
-                } label: { Label("Sort recipes", systemImage: "arrow.up.arrow.down") }
-                Button("Create with Intelligence", systemImage: "sparkles") { intelligence = true }
-                Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
-                Button("Refresh", systemImage: "arrow.clockwise") { Task { await store.refresh() } }
+                    Button("Create with Intelligence", systemImage: "sparkles") { intelligence = true }
+                    Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
+                } label: { Label("Add recipe", systemImage: "plus") }
+                .accessibilityIdentifier("add-recipe")
             }
             .task {
                 if store.kitchen.recipes.isEmpty && !ProcessInfo.processInfo.arguments.contains("--ui-testing") { await store.refresh() }
@@ -473,28 +475,6 @@ struct HistoryView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
             }
-        }
-    }
-}
-
-private struct TagBrowser: View {
-    let recipes: [Recipe]
-    var selected: (String) -> Void
-    @State private var search = ""
-    @Environment(\.dismiss) private var dismiss
-    var body: some View {
-        NavigationStack {
-            List(RecipeBrowsing.categories(recipes, query: search), id: \.self) { tag in
-                Button { selected(tag); dismiss() } label: {
-                    HStack {
-                        Label(tag, systemImage: "tag")
-                        Spacer()
-                        Text("\(RecipeBrowsing.recipes(recipes, category: tag).count)").foregroundStyle(.secondary)
-                    }
-                }.accessibilityIdentifier("browse-tag-" + tag)
-            }.searchable(text: $search, prompt: "Find a tag")
-                .navigationTitle("Browse by tag")
-                .toolbar { Button("Done") { dismiss() } }
         }
     }
 }
