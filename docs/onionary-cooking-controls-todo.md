@@ -23,5 +23,7 @@ No test retries. Apple accepted TestFlight 0.2.0 (6), tag v0.2.0-rc.6
 
 ## Compact tag strip
 
-- [ ] Remove the inset section frame, put tag icons beside names, and reduce
+- [x] Remove the inset section frame, put tag icons beside names, and reduce
   spacing above and below the two-line tag cards. Build and check tag navigation.
+
+Compact strip: simulator build and existing tag-navigation UI test passed.
