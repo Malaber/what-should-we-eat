@@ -174,3 +174,9 @@ A successful Pages workflow confirms deployment, not custom-domain TLS. Verify
 `https://app.onionary.malaber.de` after DNS/certificate changes. HTTP 200 with an
 HTTPS handshake failure indicates domain/TLS configuration rather than a missing
 Pages artifact.
+
+If public DNS already resolves to GitHub but HTTPS reports no matching certificate,
+check repository **Settings → Pages**. Re-save the custom domain to restart GitHub's
+certificate provisioning, then enable **Enforce HTTPS** once the certificate is
+available. Local DNS may still cache old proxy addresses; compare a public resolver
+before changing an already-correct record.
