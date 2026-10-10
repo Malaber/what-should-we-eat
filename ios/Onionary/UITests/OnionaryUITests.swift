@@ -10,7 +10,9 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Refresh"].tap()
         let category = app.buttons["category-vegetarian"]
         XCTAssertTrue(category.waitForExistence(timeout: 5))
-        category.tap()
+        app.buttons["browse-tags"].tap()
+        XCTAssertTrue(app.buttons["browse-tag-vegetarian"].waitForExistence(timeout: 5))
+        app.buttons["browse-tag-vegetarian"].tap()
         XCTAssertTrue(app.buttons["All recipes"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["recipe-1"].exists)
         app.buttons["All recipes"].tap()
@@ -29,13 +31,59 @@ final class OnionaryUITests: XCTestCase {
         app.launch()
         app.buttons["Choose a recipe"].tap()
         app.buttons["recipe-1"].firstMatch.tap()
+        let mode = app.buttons["cooking-mode"]
+        XCTAssertTrue(mode.waitForExistence(timeout: 5))
+        app.buttons["portion-plus"].tap()
+        let on = NSPredicate(format: "value == %@", "On")
+        let off = NSPredicate(format: "value == %@", "Off")
+        expectation(for: on, evaluatedWith: mode)
+        waitForExpectations(timeout: 5)
+        mode.tap()
+        expectation(for: off, evaluatedWith: mode)
+        waitForExpectations(timeout: 5)
+        app.buttons["portion-plus"].tap()
+        XCTAssertEqual(mode.value as? String, "Off")
+        mode.tap()
+        expectation(for: on, evaluatedWith: mode)
+        waitForExpectations(timeout: 5)
+        mode.tap()
+        expectation(for: off, evaluatedWith: mode)
+        waitForExpectations(timeout: 5)
+    }
+
+    @MainActor
+    func testStepToolsAndRecipeTags() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Refresh"].tap()
+        app.buttons["recipe-1"].firstMatch.tap()
+        let tag = app.buttons["recipe-tag-vegetarian"]
+        XCTAssertTrue(tag.waitForExistence(timeout: 5))
+        tag.tap()
+        XCTAssertTrue(app.buttons["Lemon & cheese pasta"].waitForExistence(timeout: 5))
+        app.buttons["Done"].tap()
         app.buttons["Cooking options"].tap()
-        app.buttons["Start Live Activity"].tap()
-        app.buttons["Cooking options"].tap()
-        XCTAssertTrue(app.buttons["Stop Live Activity"].waitForExistence(timeout: 5))
-        app.buttons["Stop Live Activity"].tap()
-        app.buttons["Cooking options"].tap()
-        XCTAssertTrue(app.buttons["Start Live Activity"].waitForExistence(timeout: 5))
+        app.buttons["Edit recipe"].tap()
+        XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["insert-ingredient-amount"].exists)
+        app.swipeUp()
+        app.swipeUp()
+        let instruction = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-")).firstMatch
+        XCTAssertTrue(instruction.waitForExistence(timeout: 5))
+        instruction.tap()
+        let insert = app.buttons["insert-ingredient-amount"]
+        XCTAssertTrue(insert.waitForExistence(timeout: 5))
+        insert.tap()
+        app.buttons["Cheese"].tap()
+        XCTAssertTrue((instruction.value as? String ?? "").contains("{{Cheese|100%}}"))
+        app.buttons["Done"].tap()
+        XCTAssertFalse(insert.exists)
+        app.buttons["step-help"].tap()
+        XCTAssertTrue(app.alerts["Ingredient amount help"].waitForExistence(timeout: 5))
+        app.alerts.buttons["Done"].tap()
+        app.buttons["Cancel"].tap()
     }
 
     @MainActor

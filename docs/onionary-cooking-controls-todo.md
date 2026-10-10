@@ -12,3 +12,10 @@ Commit checklist first, implement features separately, then run and fix tests.
 
 Previous build: Apple accepted 0.2.0 (5), v0.2.0-rc.5 at 08:17 Europe/Berlin on
 2026-10-10. No App Store Connect records were deleted.
+
+## Validation
+
+20 core tests and all 8 simulator UI tests passed on 2026-10-10. New coverage
+checks tag-sheet navigation, tappable recipe tags, contextual keyboard insertion,
+on-demand step help and automatic Live Activity start/explicit stop/start.
+No test retries. Release upload follows the tested commit.

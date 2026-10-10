@@ -11,7 +11,7 @@ then run and fix the relevant complete test suites without retries.
 - [x] Configure Onionary widget App ID and shared App Group without deleting Apple records.
 - [x] Configure Planini phone widget App ID / group as required by PR 110.
 - [x] Test parsing, scaling, category filtering, snapshots, lifecycle, UI and signed packaging.
-- [ ] Update PR with evidence and upload the next git-versioned TestFlight build.
+- [x] Update PR with evidence and upload the next git-versioned TestFlight build.
 
 Use existing Onionary App Group `group.de.malaber.onionary` for app, share and
 widget targets. Store widget snapshots only, never authentication tokens.
@@ -27,4 +27,5 @@ Do not delete any App Store Connect or Apple Developer records.
 - Desktop Chromium: 16 passed. Mobile Chromium initially exposed a profile hydration
   race during appearance changes; fixed by applying theme in place and disabling
   profile controls until load. Final mobile suite: 16 passed; desktop account check: 1 passed.
-- Signed packaging and TestFlight upload remain part of the release step.
+- Apple accepted TestFlight 0.2.0 (5), tag v0.2.0-rc.5, on 2026-10-10 at
+  08:17 Europe/Berlin. App and both extensions use the Onionary shared group.

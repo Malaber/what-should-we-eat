@@ -235,6 +235,9 @@ final class AppStore {
     private func setupUITest() {
         file = FileManager.default.temporaryDirectory.appending(path: "onionary-ui-kitchen.json")
         if ProcessInfo.processInfo.arguments.contains("--reset") {
+            for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("cookingModeDisabled.") {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
             try? FileManager.default.removeItem(at: file!)
             UserDefaults.standard.removeObject(forKey: "appearance")
             UserDefaults.standard.removeObject(forKey: "language")

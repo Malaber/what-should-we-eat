@@ -138,7 +138,9 @@ open Onionary to refresh it. It cannot fetch changes made elsewhere while the ap
 is not running. Tapping a recipe opens cooking; links are scoped to the signed-in
 backend/account. Switching accounts/signing out clears the shared snapshot.
 
-Start **Live Activity** from Cooking options. It shows progress and the next step,
+Cooking interactions (checks, undo/redo and portion changes) automatically start a
+**Live Activity**. The top-left flame toggles cooking mode. Turning it off persists
+for that account and recipe until explicitly enabled again. It shows progress and the next step,
 including scaled ingredient placeholders, on the Lock Screen and Dynamic Island.
 Stop it from the same menu. Changing recipe, completing all checks, or signing out
 ends it; after three hours without an update the view asks you to reopen Onionary.
@@ -154,3 +156,13 @@ Apple setup verified on 2026-10-10: Onionary widget identifier and group assigne
 Planini PR 110 uses `de.malaber.planini.widget` with `group.de.malaber.planini.watch`;
 that identifier and group were also configured with explicit credential-sharing
 approval. No Apple records were deleted.
+
+### Contextual recipe controls
+
+Step editing shows ingredient insertion in the keyboard toolbar only while a step
+instruction has focus. The information button beside Steps explains percentages
+once on demand. Insertion appends a placeholder to the focused step.
+
+Recipes exposes a searchable Browse by tag sheet from the tag toolbar button.
+Recipe rows show all tags, and cooking details show tappable tags that open matching
+recipes. Tags are separate from the saved ingredient quantities of a cooking session.
