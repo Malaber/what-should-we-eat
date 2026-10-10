@@ -168,14 +168,20 @@ final class OnionaryUITests: XCTestCase {
     @MainActor
     func testMarketingScreenshots() {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()
         capture("01-recipe-book")
         app.buttons["recipe-1"].firstMatch.tap()
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
-        capture("02-cooking-companion")
         app.buttons["ingredient-1"].tap()
+        app.buttons["ingredient-2"].tap()
+        app.buttons["undo"].tap()
+        app.buttons["redo"].tap()
+        app.buttons["ingredient-1"].tap()
+        app.buttons["ingredient-1"].tap()
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        capture("02-cooking-companion")
         app.buttons["Adjust portions"].tap()
         XCTAssertTrue(app.textFields["portions"].waitForExistence(timeout: 5))
         capture("03-flexible-portions")
