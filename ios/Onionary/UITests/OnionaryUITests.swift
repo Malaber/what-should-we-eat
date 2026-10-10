@@ -62,8 +62,14 @@ final class OnionaryUITests: XCTestCase {
         let tag = app.buttons["recipe-tag-vegetarian"]
         XCTAssertTrue(tag.waitForExistence(timeout: 5))
         tag.tap()
-        XCTAssertTrue(app.buttons["Lemon & cheese pasta"].waitForExistence(timeout: 5))
+        let matchingRecipe = app.buttons["tag-recipe-1"]
+        XCTAssertTrue(matchingRecipe.waitForExistence(timeout: 5))
         app.buttons["Done"].tap()
+        XCTAssertTrue(tag.waitForExistence(timeout: 5))
+        tag.tap()
+        XCTAssertTrue(matchingRecipe.waitForExistence(timeout: 5))
+        matchingRecipe.tap()
+        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Edit recipe"].tap()
         XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))

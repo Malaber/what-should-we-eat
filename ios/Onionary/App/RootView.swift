@@ -167,9 +167,17 @@ struct RecipesView: View {
 struct CookingView: View {
     @Bindable var store: AppStore
     var browse: () -> Void
-    @State private var scaling = false
-    @State private var tagToBrowse: String?
-    @State private var history = false
+    private enum Sheet: Identifiable {
+        case portions, history, tag(String)
+        var id: String {
+            switch self {
+            case .portions: "portions"
+            case .history: "history"
+            case .tag(let name): "tag:" + name
+            }
+        }
+    }
+    @State private var sheet: Sheet?
     @State private var restart = false
     @State private var recentAction: CheckChange?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -191,7 +199,7 @@ struct CookingView: View {
                                 } label: { Image(systemName: "minus").frame(width: 32, height: 32) }
                                     .buttonStyle(.bordered).disabled(adventure.portions <= 1)
                                     .accessibilityLabel("One fewer portion").accessibilityIdentifier("portion-minus")
-                                Button { scaling = true } label: {
+                                Button { sheet = .portions } label: {
                                     VStack(spacing: 3) {
                                         Text(Numbers.display(adventure.portions, locale: L10n.locale)).font(.title2.bold()).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
                                         Text("portions · tap to edit").font(.caption2)
@@ -206,7 +214,7 @@ struct CookingView: View {
                                 .accessibilityLabel("Cooking progress")
                             Text("\(adventure.checked.count) of \(adventure.recipe.ingredients.count + adventure.recipe.instructionSteps.count) checked")
                                 .font(.caption).foregroundStyle(.secondary)
-                            Button("Adjust portions", systemImage: "slider.horizontal.3") { scaling = true }.buttonStyle(.bordered)
+                            Button("Adjust portions", systemImage: "slider.horizontal.3") { sheet = .portions }.buttonStyle(.bordered)
                         }.padding(.vertical, 4)
                     }
                     if let tags = adventure.recipe.tags, !tags.isEmpty {
@@ -214,7 +222,7 @@ struct CookingView: View {
                             ScrollView(.horizontal) {
                                 HStack {
                                     ForEach(tags, id: \.name) { tag in
-                                        Button { tagToBrowse = tag.name } label: { Label(tag.name, systemImage: "tag") }
+                                        Button { sheet = .tag(tag.name) } label: { Label(tag.name, systemImage: "tag") }
                                             .buttonStyle(.bordered).accessibilityIdentifier("recipe-tag-" + tag.name)
                                     }
                                 }
@@ -253,7 +261,7 @@ struct CookingView: View {
                             Button("Redo", systemImage: "arrow.uturn.forward") { store.update { $0.redo() } }
                                 .disabled(!adventure.canRedo).accessibilityIdentifier("redo")
                             Spacer()
-                            Button("History", systemImage: "clock.arrow.circlepath") { history = true }
+                            Button("History", systemImage: "clock.arrow.circlepath") { sheet = .history }
                         }
                     }.padding(.horizontal).padding(.vertical, 8).background(.regularMaterial)
                     .onChange(of: adventure.history.last?.id) { _, _ in
@@ -288,21 +296,27 @@ struct CookingView: View {
                     Button("Edit recipe") { store.editingRecipe = store.current?.recipe }
                     Button("Share recipe copy") { store.sharingRecipe = store.current?.recipe }
                     Button("Restart with latest recipe", role: .destructive) { restart = true }
-                    Button("Adjust portions") { scaling = true }; Button("Tap history") { history = true }
+                    Button("Adjust portions") { sheet = .portions }; Button("Tap history") { sheet = .history }
                 }
                 label: { Label("Cooking options", systemImage: "ellipsis.circle") }
                 }
             } }
-            .sheet(isPresented: Binding(get: { tagToBrowse != nil }, set: { if !$0 { tagToBrowse = nil } })) {
-                NavigationStack {
-                    List(RecipeBrowsing.recipes(store.kitchen.recipes, category: tagToBrowse)) { recipe in
-                        Button(recipe.name) { store.visit(recipe); tagToBrowse = nil }
-                    }.navigationTitle(tagToBrowse ?? L10n.text("Tags"))
-                        .toolbar { Button("Done") { tagToBrowse = nil } }
+            // One presentation owner, with destination data bound to its identity.
+            // Independent boolean/computed bindings can compete during SwiftUI updates.
+            .sheet(item: $sheet) { destination in
+                switch destination {
+                case .portions: ScalingView(store: store)
+                case .history: HistoryView(store: store)
+                case .tag(let name):
+                    NavigationStack {
+                        List(RecipeBrowsing.recipes(store.kitchen.recipes, category: name)) { recipe in
+                            Button(recipe.name) { store.visit(recipe); sheet = nil }
+                                .accessibilityIdentifier("tag-recipe-" + String(recipe.id))
+                        }.navigationTitle(name)
+                            .toolbar { Button("Done") { sheet = nil } }
+                    }
                 }
             }
-            .sheet(isPresented: $scaling) { ScalingView(store: store) }
-            .sheet(isPresented: $history) { HistoryView(store: store) }
     }
     func checkRow(key: String, label: String, subtitle: String, adventure: Adventure) -> some View {
         let checked = adventure.checked.contains(key)
