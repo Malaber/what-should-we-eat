@@ -132,6 +132,18 @@ final class AppStore {
         Task { try? await cookingActivity.synchronize(snapshot, scope: account) }
     }
 
+    private var cookingModePreference: String { "cookingModeDisabled." + scope + "." + String(current?.recipe.id ?? 0) }
+
+    func toggleCookingMode() async {
+        if cookingActivity.active {
+            UserDefaults.standard.set(true, forKey: cookingModePreference)
+            await stopCookingActivity()
+        } else {
+            UserDefaults.standard.removeObject(forKey: cookingModePreference)
+            await startCookingActivity()
+        }
+    }
+
     func startCookingActivity() async {
         guard let current else { return }
         do { try await cookingActivity.synchronize(CookingSnapshot(current, locale: L10n.locale), scope: scope, start: true) }
@@ -149,6 +161,12 @@ final class AppStore {
         guard let index = kitchen.adventures.firstIndex(where: { $0.id == kitchen.currentID }) else { return }
         do {
             var next = kitchen; try operation(&next.adventures[index]); try persist(next)
+            if !UserDefaults.standard.bool(forKey: cookingModePreference) {
+                let snapshot = current.map { CookingSnapshot($0, locale: L10n.locale) }
+                let account = scope
+                // Automatic starts never interrupt cooking with an authorization error.
+                Task { try? await cookingActivity.synchronize(snapshot, scope: account, start: true) }
+            }
         } catch { self.error = error.localizedDescription }
     }
 

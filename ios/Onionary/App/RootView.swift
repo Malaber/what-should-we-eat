@@ -272,19 +272,22 @@ struct CookingView: View {
                 Button("Restart", role: .destructive) { store.restartCurrentRecipe() }
             }
             .toolbar { if store.current != nil {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { Task { await store.toggleCookingMode() } } label: {
+                        Image(systemName: store.cookingActivity.active ? "flame.fill" : "flame")
+                    }.accessibilityLabel("Cooking mode")
+                        .accessibilityValue(Text(store.cookingActivity.active ? "On" : "Off"))
+                        .accessibilityIdentifier("cooking-mode")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button(store.cookingActivity.active ? "Stop Live Activity" : "Start Live Activity") {
-                        Task {
-                            if store.cookingActivity.active { await store.stopCookingActivity() }
-                            else { await store.startCookingActivity() }
-                        }
-                    }
                     Button("Edit recipe") { store.editingRecipe = store.current?.recipe }
                     Button("Share recipe copy") { store.sharingRecipe = store.current?.recipe }
                     Button("Restart with latest recipe", role: .destructive) { restart = true }
                     Button("Adjust portions") { scaling = true }; Button("Tap history") { history = true }
                 }
                 label: { Label("Cooking options", systemImage: "ellipsis.circle") }
+                }
             } }
             .sheet(isPresented: Binding(get: { tagToBrowse != nil }, set: { if !$0 { tagToBrowse = nil } })) {
                 NavigationStack {
