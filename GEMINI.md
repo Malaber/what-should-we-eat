@@ -74,3 +74,6 @@ and a new TestFlight build number. Never overwrite, move, delete, or force-push
 an existing release tag. Use `python3 execution/tag_release.py vX.Y.Z-rc.N`
 to publish a fresh tag after committing and testing. An unchanged release may
 resume its interrupted upload; changed code always requires a new tag/build.
+
+When adding form fields, use the existing control-group/input styling and verify
+light/dark appearance, labels and responsive layout alongside functionality.

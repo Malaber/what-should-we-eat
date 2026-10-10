@@ -247,6 +247,19 @@ final class AppStore {
             let json = #"[{"id":1,"household_id":1,"name":"Lemon & cheese pasta","notes":"Finish with lemon zest.","total_time_min":20,"ingredients":[{"id":1,"name":"Cheese","quantity":200,"unit":"g"},{"id":2,"name":"Pasta","quantity":250,"unit":"g"}],"instruction_steps":[{"id":1,"step_number":1,"description":"Boil the pasta in salted water.","duration_min":10},{"id":2,"step_number":2,"description":"Fold in cheese and lemon zest.","duration_min":null}]}]"#
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: Data(json.utf8))
         }
+        if ProcessInfo.processInfo.arguments.contains("--marketing") {
+            let names = ["Lemon & cheese pasta", "Roasted tomato soup", "Crispy chickpea bowls", "Mushroom risotto", "Apple cinnamon pancakes", "Herby potato salad"]
+            let recipes: [[String: Any]] = names.enumerated().map { index, name in
+                var recipe = UITestBackend.recipe
+                recipe["id"] = index + 1
+                recipe["name"] = name
+                recipe["total_time_min"] = [20, 35, 25, 40, 15, 30][index]
+                recipe["servings"] = 2
+                recipe["tags"] = [["id": 1, "name": "Vegetarian"], ["id": 2, "name": index % 2 == 0 ? "Quick & easy" : "Comfort food"]]
+                return recipe
+            }
+            kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: JSONSerialization.data(withJSONObject: recipes))
+        }
         credential = Credential(server: URL(string: "https://ui-test.invalid")!, token: "test", userID: "1")
     }
     #endif

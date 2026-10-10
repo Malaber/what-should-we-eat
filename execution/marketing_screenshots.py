@@ -3,7 +3,9 @@ import argparse
 import json
 from pathlib import Path
 import shutil
-import struct
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from execution.package_marketing_screenshots import validate_dimensions
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,7 +16,7 @@ def run(*args, **kwargs):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--device', default='iPhone 17 Pro Max')
+    parser.add_argument('--device', default='iPhone 17 Pro')
     parser.add_argument('--output', type=Path, default=ROOT / '.tmp/marketing')
     args = parser.parse_args()
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
@@ -45,10 +47,7 @@ def main():
                 if not name.startswith('marketing-'):
                     continue
                 source = exported / attachment['exportedFileName']
-                width,height = struct.unpack('>II',source.read_bytes()[16:24])
-                allowed = {(1260,2736),(1290,2796),(1320,2868),(1284,2778),(1242,2688),(2064,2752),(2048,2732)}
-                if (width,height) not in allowed:
-                    raise SystemExit(f'Unexpected App Store screenshot size: {width}x{height}')
+                validate_dimensions(source, 'ipad' if args.device.startswith('iPad') else 'iphone')
                 shutil.copy2(source,screenshots / (name.removeprefix('marketing-').split('.png')[0]+'.png'))
                 count += 1
         if count != 4:

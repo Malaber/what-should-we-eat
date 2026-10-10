@@ -189,3 +189,9 @@ accounts before disabling legacy password authentication.
 ## Fork development
 
 Development branch: `codex/onionary-ios-companion`. See [test-backend deployment and release guide](docs/development-deployment.md) for GitHub Actions, GHCR images, Git tags, App Store screenshots, and the separate Onionary website.
+
+## Instance administration and App Review
+
+See [administrator setup and App Review passkey links](docs/passkey-review-accounts.md)
+for granting an existing account admin access, opening SQLAdmin, and issuing
+one-use enrollment links for reviewers.

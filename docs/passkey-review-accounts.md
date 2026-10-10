@@ -6,13 +6,20 @@ live at `/auth/security` and in iOS Settings → Manage passkeys.
 
 ## Prepare an administrator
 
-Register your own account normally, then grant the exact existing account access
-on the backend server:
+Register your own account with a passkey on the target instance first. Production
+and test have separate databases: grant access separately on each instance.
+On the production backend server, from its Compose deployment directory:
 
 ```sh
 cd /srv/docker-ansible/onionary
 sudo docker compose exec api python -m execution.admin_access you@example.com
 ```
+
+Then open **https://onionary.malaber.de/admin/** and sign in with that account's
+passkey. Test administration is **https://onionary-test.malaber.de/admin/**; run
+the same command from the test instance's Compose directory to grant access there.
+The static app website at app.onionary.malaber.de has no admin interface or accounts.
+If access returns 403, verify the exact email and instance used in the command.
 
 Append `--revoke` to remove administrator access. Each admin request checks the
 current database session and administrator flag. Forms require a session-bound
@@ -31,7 +38,7 @@ CSRF token and same-origin submission. No password-based admin login exists.
 
 > Onionary uses passkeys. Open [LINK] in Safari on your review device and create
 > a passkey for the prepared account. Then open Onionary, choose backend
-> https://onionary-test.malaber.de, and sign in with that passkey. The link works
+> https://onionary.malaber.de (or the exact instance used to create this link), and sign in with that passkey. The link works
 > once and expires [UTC DATE/TIME]. Opening or cancelling does not consume it;
 > successful enrollment does. Contact onionary@schaedler.rocks for a fresh link.
 
@@ -43,17 +50,17 @@ in admin lists/details. Raw tokens only appear in the URL fragment and are not
 sent in HTTP paths or referrers. Enrollment and admin responses disable caching.
 
 For manual recovery, verify identity outside Onionary before issuing a link.
-Treat the full link like a credential. Account/passkey deletion and recovery are
-not interchangeable: deleting all passkeys keeps recipes but revokes all sessions;
-a new administrator enrollment link is then required. Removing keys here cannot
-delete their saved copies from a password manager; those copies no longer work.
+Treat the full link like a credential. Recovery links add a working passkey;
+they do not delete existing keys, recipes, or the account. Revoke an unused link
+from SQLAdmin if it is no longer needed.
 
 ## User-facing management
 
-Users can add, rename, remove, or replace keys. A fresh assertion from their own
-key confirms each operation. Removing the last key uses the separate **Delete all
-passkeys** action with an explicit warning and typed confirmation. Replacement
-removes old keys only after the new key is verified and stored successfully.
+Users manage keys on the account settings page. They can add and rename passkeys
+or remove a key when another remains. Deleting the last passkey is blocked so
+an account cannot be left without a login method. Management requires a fresh
+passkey assertion. Administrators issue enrollment links through SQLAdmin, not a
+custom recovery frontend.
 
 ## Implementation and release
 

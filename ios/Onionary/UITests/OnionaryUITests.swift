@@ -62,8 +62,14 @@ final class OnionaryUITests: XCTestCase {
         let tag = app.buttons["recipe-tag-vegetarian"]
         XCTAssertTrue(tag.waitForExistence(timeout: 5))
         tag.tap()
-        XCTAssertTrue(app.buttons["Lemon & cheese pasta"].waitForExistence(timeout: 5))
+        let matchingRecipe = app.buttons["tag-recipe-1"]
+        XCTAssertTrue(matchingRecipe.waitForExistence(timeout: 5))
         app.buttons["Done"].tap()
+        XCTAssertTrue(tag.waitForExistence(timeout: 5))
+        tag.tap()
+        XCTAssertTrue(matchingRecipe.waitForExistence(timeout: 5))
+        matchingRecipe.tap()
+        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Edit recipe"].tap()
         XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
@@ -162,14 +168,23 @@ final class OnionaryUITests: XCTestCase {
     @MainActor
     func testMarketingScreenshots() {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()
         capture("01-recipe-book")
         app.buttons["recipe-1"].firstMatch.tap()
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
-        capture("02-cooking-companion")
         app.buttons["ingredient-1"].tap()
+        app.buttons["ingredient-2"].tap()
+        app.buttons["undo"].tap()
+        app.buttons["redo"].tap()
+        app.buttons["ingredient-1"].tap()
+        app.buttons["ingredient-1"].tap()
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        // Capture stable content after the transient action banner has dismissed.
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["recent-action"])
+        waitForExpectations(timeout: 8)
+        capture("02-cooking-companion")
         app.buttons["Adjust portions"].tap()
         XCTAssertTrue(app.textFields["portions"].waitForExistence(timeout: 5))
         capture("03-flexible-portions")

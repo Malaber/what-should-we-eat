@@ -161,3 +161,22 @@ It publishes no host ports and removes only resources it creates.
 Backend images publish after backend/browser checks; iOS tests run separately.
 Before retrying a deployment, confirm the **publish-image** job succeeded for
 its commit. Prefer `sha-<full commit>` to avoid retrying an old `development` image.
+
+## App website HTTPS
+
+The app website is GitHub Pages at `app.onionary.malaber.de`, separate from
+production and test backends. Its CNAME points to `malaber.github.io`. Prefer
+DNS-only when using Cloudflare, then enable GitHub Pages HTTPS after certificate
+issuance. A proxied nested hostname needs a Cloudflare edge certificate covering
+that exact hostname; the usual `*.malaber.de` wildcard does not cover it.
+
+A successful Pages workflow confirms deployment, not custom-domain TLS. Verify
+`https://app.onionary.malaber.de` after DNS/certificate changes. HTTP 200 with an
+HTTPS handshake failure indicates domain/TLS configuration rather than a missing
+Pages artifact.
+
+If public DNS already resolves to GitHub but HTTPS reports no matching certificate,
+check repository **Settings → Pages**. Re-save the custom domain to restart GitHub's
+certificate provisioning, then enable **Enforce HTTPS** once the certificate is
+available. Local DNS may still cache old proxy addresses; compare a public resolver
+before changing an already-correct record.
