@@ -8,7 +8,7 @@ const authHTML = `
     <button id="btn-show-signup" class="btn btn-primary btn-sm" style="border-radius: var(--radius-pill);">${window.t("auth.signup")}</button>
   </div>
   <div id="user-controls" style="display: none; gap: 12px; align-items: center;">
-    <a class="btn btn-secondary btn-sm" href="/auth/account">${window.t("account.title")}</a>
+    <a class="btn btn-secondary btn-sm" href="/auth/account" aria-label="${window.t("account.title")}" title="${window.t("account.title")}"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 3-.6 2.4-2 .9L4.2 6 2.7 8.6l1.7 1.8v2.3l-1.7 1.8L4.2 17l2.2-.3 2 .9.6 2.4h3l.6-2.4 2-.9 2.2.3 1.5-2.5-1.7-1.8v-2.3l1.7-1.8L16.8 6l-2.2.3-2-.9L12 3Z" transform="translate(1.5 0.5)"/><circle cx="12" cy="12" r="3"/></svg></a>
     <span id="user-greeting" style="font-size: 0.9rem; font-weight: 600; color: var(--orange-dark);"></span>
     <button id="btn-logout" class="btn btn-secondary btn-sm" style="border-radius: var(--radius-pill); border-color: var(--orange-pale);">${window.t("auth.logout")}</button>
   </div>
