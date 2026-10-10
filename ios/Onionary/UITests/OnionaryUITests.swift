@@ -2,12 +2,21 @@ import XCTest
 
 final class OnionaryUITests: XCTestCase {
     @MainActor
+    private func pullToRefresh(_ app: XCUIApplication) {
+        let list = app.collectionViews.firstMatch
+        XCTAssertTrue(list.waitForExistence(timeout: 5))
+        let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
+        let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
+        start.press(forDuration: 0.1, thenDragTo: end)
+    }
+
+    @MainActor
     func testCategoryBrowsingAndIngredientSearch() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.tabBars.buttons["Recipes"].tap()
-        app.collectionViews.firstMatch.swipeDown()
+        pullToRefresh(app)
         let category = app.buttons["category-vegetarian"]
         XCTAssertTrue(category.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["browse-tags"].exists)
@@ -58,7 +67,7 @@ final class OnionaryUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.tabBars.buttons["Recipes"].tap()
-        app.collectionViews.firstMatch.swipeDown()
+        pullToRefresh(app)
         app.buttons["recipe-1"].firstMatch.tap()
         let tag = app.buttons["recipe-tag-vegetarian"]
         XCTAssertTrue(tag.waitForExistence(timeout: 5))
