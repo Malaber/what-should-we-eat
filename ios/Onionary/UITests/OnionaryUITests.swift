@@ -5,7 +5,10 @@ final class OnionaryUITests: XCTestCase {
     private func pullToRefresh(_ app: XCUIApplication) {
         let list = app.collectionViews.firstMatch
         XCTAssertTrue(list.waitForExistence(timeout: 5))
-        let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
+        // Collection bounds include the navigation bar; begin inside a recipe row.
+        let row = app.buttons["recipe-1"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        let start = row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
         start.press(forDuration: 0.1, thenDragTo: end)
     }
