@@ -71,6 +71,7 @@ struct RecipesView: View {
     @State private var intelligence = false
     @State private var category: String?
     @State private var quickestFirst = false
+    @State private var browsingTags = false
     var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, category: category, quickestFirst: quickestFirst) }
     var body: some View {
         List {
@@ -85,7 +86,7 @@ struct RecipesView: View {
             } else {
                 let categories = RecipeBrowsing.categories(store.kitchen.recipes, query: search)
                 if !categories.isEmpty {
-                    Section("Browse by category") {
+                    Section("Browse by tag") {
                         ScrollView(.horizontal) {
                             HStack(spacing: 10) {
                                 ForEach(categories, id: \.self) { tag in
@@ -119,9 +120,14 @@ struct RecipesView: View {
                     systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
         }.dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
+            .sheet(isPresented: $browsingTags) {
+                TagBrowser(recipes: store.kitchen.recipes) { tag in category = tag; search = "" }
+            }
             .sheet(isPresented: $intelligence) { IntelligenceRecipeView(store: store) }
             .refreshable { await store.refresh() }
             .toolbar {
+                Button("Browse by tag", systemImage: "tag") { browsingTags = true }
+                    .accessibilityIdentifier("browse-tags")
                 Menu {
                     Toggle("Quickest first", isOn: $quickestFirst)
                 } label: { Label("Sort recipes", systemImage: "arrow.up.arrow.down") }
@@ -141,8 +147,8 @@ struct RecipesView: View {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
                     Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary)
                     if let tags = recipe.tags, !tags.isEmpty {
-                        Text(tags.prefix(3).map(\.name).joined(separator: " · "))
-                            .font(.caption2).foregroundStyle(onion).lineLimit(1)
+                        Text(tags.map(\.name).joined(separator: " · "))
+                            .font(.caption).foregroundStyle(onion).fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
@@ -158,6 +164,7 @@ struct CookingView: View {
     @Bindable var store: AppStore
     var browse: () -> Void
     @State private var scaling = false
+    @State private var tagToBrowse: String?
     @State private var history = false
     @State private var restart = false
     @State private var recentAction: CheckChange?
@@ -197,6 +204,18 @@ struct CookingView: View {
                                 .font(.caption).foregroundStyle(.secondary)
                             Button("Adjust portions", systemImage: "slider.horizontal.3") { scaling = true }.buttonStyle(.bordered)
                         }.padding(.vertical, 4)
+                    }
+                    if let tags = adventure.recipe.tags, !tags.isEmpty {
+                        Section("Tags") {
+                            ScrollView(.horizontal) {
+                                HStack {
+                                    ForEach(tags, id: \.name) { tag in
+                                        Button { tagToBrowse = tag.name } label: { Label(tag.name, systemImage: "tag") }
+                                            .buttonStyle(.bordered).accessibilityIdentifier("recipe-tag-" + tag.name)
+                                    }
+                                }
+                            }.scrollIndicators(.hidden)
+                        }
                     }
                     Section("Gather your ingredients") {
                         ForEach(adventure.recipe.ingredients) { ingredient in
@@ -267,6 +286,14 @@ struct CookingView: View {
                 }
                 label: { Label("Cooking options", systemImage: "ellipsis.circle") }
             } }
+            .sheet(isPresented: Binding(get: { tagToBrowse != nil }, set: { if !$0 { tagToBrowse = nil } })) {
+                NavigationStack {
+                    List(RecipeBrowsing.recipes(store.kitchen.recipes, category: tagToBrowse)) { recipe in
+                        Button(recipe.name) { store.visit(recipe); tagToBrowse = nil }
+                    }.navigationTitle(tagToBrowse ?? L10n.text("Tags"))
+                        .toolbar { Button("Done") { tagToBrowse = nil } }
+                }
+            }
             .sheet(isPresented: $scaling) { ScalingView(store: store) }
             .sheet(isPresented: $history) { HistoryView(store: store) }
     }
@@ -425,6 +452,28 @@ struct HistoryView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
             }
+        }
+    }
+}
+
+private struct TagBrowser: View {
+    let recipes: [Recipe]
+    var selected: (String) -> Void
+    @State private var search = ""
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            List(RecipeBrowsing.categories(recipes, query: search), id: \.self) { tag in
+                Button { selected(tag); dismiss() } label: {
+                    HStack {
+                        Label(tag, systemImage: "tag")
+                        Spacer()
+                        Text("\(RecipeBrowsing.recipes(recipes, category: tag).count)").foregroundStyle(.secondary)
+                    }
+                }.accessibilityIdentifier("browse-tag-" + tag)
+            }.searchable(text: $search, prompt: "Find a tag")
+                .navigationTitle("Browse by tag")
+                .toolbar { Button("Done") { dismiss() } }
         }
     }
 }

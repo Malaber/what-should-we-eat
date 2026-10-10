@@ -4,7 +4,7 @@ Commit checklist first, implement features separately, then run and fix tests.
 
 - [x] Show ingredient insertion only above the keyboard when editing a step; move
   percentage help to an information button beside the Steps heading.
-- [ ] Show all recipe tags in recipe details and make tag browsing easy to find.
+- [x] Show all recipe tags in recipe details and make tag browsing easy to find.
 - [ ] Automatically start the Live Activity on cooking interactions; add a visible
   top-left cooking-mode symbol toggle and respect an explicit stop.
 - [ ] Verify editor focus/insertion, tag browsing and automatic activity lifecycle
