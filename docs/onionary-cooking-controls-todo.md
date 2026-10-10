@@ -20,3 +20,8 @@ checks tag-sheet navigation, tappable recipe tags, contextual keyboard insertion
 on-demand step help and automatic Live Activity start/explicit stop/start.
 No test retries. Apple accepted TestFlight 0.2.0 (6), tag v0.2.0-rc.6
 (commit af70759), at 08:50 Europe/Berlin on 2026-10-10. Processing started.
+
+## Compact tag strip
+
+- [ ] Remove the inset section frame, put tag icons beside names, and reduce
+  spacing above and below the two-line tag cards. Build and check tag navigation.
