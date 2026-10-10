@@ -17,7 +17,7 @@ private final class OutsideFieldTap: UITapGestureRecognizer, UIGestureRecognizer
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
         var candidate = touch.view
         while let current = candidate {
-            if current is UITextField || current is UITextView { return false }
+            if current is UITextField || current is UITextView || current is UIToolbar { return false }
             candidate = current.superview
         }
         return true

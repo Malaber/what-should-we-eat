@@ -2,7 +2,7 @@
 
 Commit checklist first, implement features separately, then run and fix tests.
 
-- [ ] Show ingredient insertion only above the keyboard when editing a step; move
+- [x] Show ingredient insertion only above the keyboard when editing a step; move
   percentage help to an information button beside the Steps heading.
 - [ ] Show all recipe tags in recipe details and make tag browsing easy to find.
 - [ ] Automatically start the Live Activity on cooking interactions; add a visible
