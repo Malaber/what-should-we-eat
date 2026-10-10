@@ -91,18 +91,22 @@ struct RecipesView: View {
                             HStack(spacing: 10) {
                                 ForEach(categories, id: \.self) { tag in
                                     Button { category = tag } label: {
-                                        VStack(alignment: .leading, spacing: 6) {
-                                            Image(systemName: "tag.fill").font(.title3)
-                                            Text(tag).font(.headline).lineLimit(2)
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Label(tag, systemImage: "tag.fill").font(.headline).lineLimit(1)
                                             Text("\(RecipeBrowsing.recipes(store.kitchen.recipes, category: tag).count) recipes")
                                                 .font(.caption).foregroundStyle(.secondary)
-                                        }.padding(12).frame(width: 140, alignment: .leading)
+                                        }.padding(.horizontal, 12).padding(.vertical, 8)
+                                            .frame(minWidth: 140, alignment: .leading)
                                             .background(OnionaryTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
                                     }.buttonStyle(.plain).accessibilityIdentifier("category-" + tag)
                                 }
                             }
-                        }.scrollIndicators(.hidden).listRowBackground(Color.clear)
-                    }
+                        }.scrollIndicators(.hidden)
+                            .contentMargins(.horizontal, 16, for: .scrollContent)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }.compactTagSection()
                 }
             }
             if search.isEmpty && category == nil && !store.kitchen.recent.isEmpty {
@@ -477,6 +481,18 @@ private struct TagBrowser: View {
             }.searchable(text: $search, prompt: "Find a tag")
                 .navigationTitle("Browse by tag")
                 .toolbar { Button("Done") { dismiss() } }
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func compactTagSection() -> some View {
+        if #available(iOS 26.0, *) {
+            self.listSectionMargins(.horizontal, 0)
+                .listSectionMargins(.vertical, 4)
+        } else {
+            self.listSectionSpacing(8)
         }
     }
 }
