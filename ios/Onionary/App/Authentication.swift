@@ -8,11 +8,21 @@ struct Credential: Codable {
     let server: URL
     let token: String
     let userID: String
+    var refreshToken: String? = nil
+    var accessExpiresAt: Double? = nil
+    var sessionExpiresAt: Double? = nil
 }
 
 struct TokenResponse: Decodable {
     let accessToken: String
     let userId: String
+    let refreshToken: String?
+    let accessExpiresAt: Double?
+    let sessionExpiresAt: Double?
+    func credential(server: URL) -> Credential {
+        Credential(server: server, token: accessToken, userID: userId,
+                   refreshToken: refreshToken, accessExpiresAt: accessExpiresAt, sessionExpiresAt: sessionExpiresAt)
+    }
 }
 
 @MainActor
@@ -100,7 +110,7 @@ final class BrowserSignIn: NSObject, ASWebAuthenticationPresentationContextProvi
         let body = try JSONSerialization.data(withJSONObject: ["code": code, "code_verifier": verifier])
         let response = try OnionaryAPI.decoder.decode(
             TokenResponse.self, from: await api.data("auth/mobile/token", method: "POST", body: body))
-        return Credential(server: server, token: response.accessToken, userID: response.userId)
+        return response.credential(server: server)
     }
 
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {

@@ -10,6 +10,11 @@ final class AppStore {
     var kitchen = Kitchen()
     var error: String?
     var busy = false
+    var needsReauthentication = false
+    var reauthenticationError: String?
+    var mealItems: [MealPlan.Item] = []
+    private var renewal: Task<Credential, Error>?
+
     let cookingActivity = CookingActivityController()
     var scope: String {
         guard let credential else { return "" }
@@ -49,10 +54,79 @@ final class AppStore {
             // Never display one account's data while loading another account.
             await stopCookingActivity()
             clearWidget()
-            kitchen = Kitchen(); file = nil; credential = next
+            kitchen = Kitchen(); mealItems = []; file = nil; credential = next; needsReauthentication = false
             try load(next)
             await refresh()
         } catch { self.error = error.localizedDescription }
+    }
+
+    /// All authenticated requests share one renewal. Only a rejected 401 is replayed;
+    /// uncertain network failures never repeat a mutation.
+    func request(_ path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
+        guard let original = credential else { throw APIError.unauthorized }
+        let account = scope
+        var active = original
+        if let expiry = active.accessExpiresAt, expiry <= Date().timeIntervalSince1970 + 60 {
+            active = try await renew()
+        }
+        do {
+            let data = try await OnionaryAPI(server: active.server, token: active.token).data(path, method: method, body: body)
+            guard account == scope else { throw APIError.unauthorized }
+            return data
+        } catch APIError.unauthorized {
+            // Another request may already have renewed the same credential.
+            guard account == scope, let currentCredential = credential else { throw APIError.unauthorized }
+            active = currentCredential.token != active.token ? currentCredential : try await renew()
+            guard account == scope else { throw APIError.unauthorized }
+            do {
+                let data = try await OnionaryAPI(server: active.server, token: active.token).data(path, method: method, body: body)
+                guard account == scope else { throw APIError.unauthorized }
+                return data
+            }
+            catch APIError.unauthorized { needsReauthentication = true; throw APIError.unauthorized }
+        }
+    }
+
+    private func renew() async throws -> Credential {
+        if let renewal { return try await renewal.value }
+        guard let previous = credential, let refresh = previous.refreshToken,
+              (previous.sessionExpiresAt ?? 0) > Date().timeIntervalSince1970 else {
+            needsReauthentication = true; throw APIError.unauthorized
+        }
+        let task = Task { @MainActor in
+            let data = try await OnionaryAPI(server: previous.server, token: "").data("auth/mobile/refresh", method: "POST",
+                body: JSONEncoder().encode(["refresh_token": refresh]))
+            let next = try OnionaryAPI.decoder.decode(TokenResponse.self, from: data).credential(server: previous.server)
+            guard self.credential?.token == previous.token, next.userID == previous.userID else { throw APIError.unauthorized }
+            #if DEBUG
+            if previous.server.host != "ui-test.invalid" { try CredentialStore.save(next) }
+            #else
+            try CredentialStore.save(next)
+            #endif
+            self.credential = next
+            self.needsReauthentication = false
+            return next
+        }
+        renewal = task
+        defer { renewal = nil }
+        do { return try await task.value }
+        catch APIError.unauthorized { needsReauthentication = true; throw APIError.unauthorized }
+    }
+
+    func reauthenticate() async {
+        guard !busy, let previous = credential else { return }
+        busy = true; reauthenticationError = nil
+        defer { busy = false }
+        do {
+            let next = try await signIn.signIn(server: previous.server)
+            guard next.userID == previous.userID, credential?.userID == previous.userID,
+                  credential?.server == previous.server else {
+                throw CookingError.response(L10n.text("Use the same account to reconnect. Your current kitchen has not changed."))
+            }
+            try CredentialStore.save(next)
+            credential = next; needsReauthentication = false; error = nil
+            await refresh()
+        } catch { reauthenticationError = error.localizedDescription }
     }
 
     private func load(_ credential: Credential) throws {
@@ -64,18 +138,19 @@ final class AppStore {
         let nextFile = directory.appending(path: "Onionary/\(key).json")
         let nextKitchen = try KitchenFile.read(nextFile)
         kitchen = nextKitchen; file = nextFile
+        mealItems = (try? JSONDecoder().decode([MealPlan.Item].self, from: Data(contentsOf: nextFile.appendingPathExtension("meals")))) ?? []
     }
 
     func refresh() async {
         guard let credential else { return }
         do {
-            let api = OnionaryAPI(server: credential.server, token: credential.token)
-            let recipes = try OnionaryAPI.decoder.decode([Recipe].self, from: await api.data("recipes"))
+            let recipes = try OnionaryAPI.decoder.decode([Recipe].self, from: await request("recipes"))
             // A connection may have changed while the request was in flight.
             guard self.credential?.server == credential.server, self.credential?.userID == credential.userID else { return }
             var next = kitchen; next.recipes = recipes
             try persist(next)
             await refreshWidget()
+            error = nil
         } catch { self.error = error.localizedDescription }
     }
 
@@ -94,6 +169,8 @@ final class AppStore {
     func publishWidget(_ items: [MealPlan.Item], account: String) {
         guard account == scope, !account.isEmpty else { return }
         do {
+            if let file { try JSONEncoder().encode(items).write(to: file.appendingPathExtension("meals"), options: .atomic) }
+            mealItems = items
             let snapshot = KitchenWidgetSnapshot(scope: account,
                 meals: items.map { .init(id: $0.recipeId, name: $0.recipe.name, cooked: $0.isCooked) },
                 language: UserDefaults.standard.string(forKey: "language") ?? "system")
@@ -106,8 +183,9 @@ final class AppStore {
         guard let credential else { clearWidget(); return }
         let account = scope
         do {
-            let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("meal-plan")
+            let data = try await request("meal-plan")
             let plan = try OnionaryAPI.decoder.decode(MealPlan.self, from: data)
+            guard account == scope else { return }
             publishWidget(plan.items, account: account)
         } catch {
             // Offline snapshots retain their timestamp and expire at the week boundary.
@@ -115,6 +193,7 @@ final class AppStore {
     }
 
     func openWidgetURL(_ url: URL) {
+        Task { await refresh() }
         guard let destination = KitchenDeepLink.destination(url, scope: scope) else {
             if url.scheme == "de.malaber.onionary", url.host == "kitchen" { widgetNavigation = .kitchen }
             return
@@ -183,23 +262,23 @@ final class AppStore {
         let url = try RecipeImportLink.accepted(link)
         let isCopy = (try? RecipeImportLink.sharedRecipe(link)) != nil
         let body = try JSONEncoder().encode(["source": "chefkoch", "url": url.absoluteString])
-        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data(isCopy ? "recipe-shares/preview" : "recipes/import/parse/html", method: "POST", body: body)
+        let data = try await request(isCopy ? "recipe-shares/preview" : "recipes/import/parse/html", method: "POST", body: body)
         return try OnionaryAPI.decoder.decode(RecipeDraft.self, from: data)
     }
 
     func shareRecipe(_ id: Int, hours: Int) async throws -> RecipeShareLink {
         guard let credential else { throw CookingError.response("Sign in before sharing.") }
-        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("recipe-shares", method: "POST", body: JSONEncoder().encode(["recipe_id": id, "hours": hours]))
+        let data = try await request("recipe-shares", method: "POST", body: JSONEncoder().encode(["recipe_id": id, "hours": hours]))
         return try OnionaryAPI.decoder.decode(RecipeShareLink.self, from: data)
     }
     func revokeRecipeLink(_ id: String) async throws {
         guard let credential else { return }
-        _ = try await OnionaryAPI(server: credential.server, token: credential.token).data("recipe-shares/\(id)", method: "DELETE")
+        _ = try await request("recipe-shares/\(id)", method: "DELETE")
     }
 
     func recipeDraft(id: Int) async throws -> RecipeDraft {
         guard let credential else { throw CookingError.response("Sign in before editing.") }
-        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("recipes/\(id)")
+        let data = try await request("recipes/\(id)")
         return try RecipeDraft.fromRecipeResponse(data)
     }
 
@@ -216,7 +295,7 @@ final class AppStore {
     func saveRecipe(_ draft: RecipeDraft, id: Int? = nil) async throws {
         guard let credential else { throw CookingError.response("Sign in before saving.") }
         let data = try draft.validatedData()
-        _ = try await OnionaryAPI(server: credential.server, token: credential.token).data(id.map { "recipes/\($0)" } ?? "recipes", method: id == nil ? "POST" : "PUT", body: data)
+        _ = try await request(id.map { "recipes/\($0)" } ?? "recipes", method: id == nil ? "POST" : "PUT", body: data)
         await refresh()
     }
 
@@ -225,9 +304,9 @@ final class AppStore {
         busy = true; defer { busy = false }
         do {
             if let credential {
-                _ = try await OnionaryAPI(server: credential.server, token: credential.token).data("auth/mobile/logout", method: "POST")
+                _ = try await request("auth/mobile/logout", method: "POST")
             }
-            try CredentialStore.remove(); await stopCookingActivity(); clearWidget(); credential = nil; kitchen = Kitchen(); file = nil
+            try CredentialStore.remove(); await stopCookingActivity(); clearWidget(); credential = nil; kitchen = Kitchen(); mealItems = []; file = nil; needsReauthentication = false
         } catch { self.error = "Could not sign out: \(error.localizedDescription)" }
     }
 

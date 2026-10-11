@@ -9,6 +9,19 @@ final class NoRedirects: NSObject, URLSessionTaskDelegate, Sendable {
                     completionHandler: @escaping @Sendable (URLRequest?) -> Void) { completionHandler(nil) }
 }
 
+enum APIError: Error, LocalizedError {
+    case unauthorized
+    case unavailable
+    case rejected(Int)
+    var errorDescription: String? {
+        switch self {
+        case .unauthorized: return L10n.text("Sign in again to sync. Your progress and draft are safe.")
+        case .unavailable: return L10n.text("Cannot reach your kitchen. Check your connection and try again. Your draft is still here.")
+        case .rejected(let status): return L10n.format("Your kitchen could not complete this request (HTTP %lld). Your changes are still here.", status)
+        }
+    }
+}
+
 struct OnionaryAPI: Sendable {
     let server: URL
     let token: String
@@ -29,11 +42,14 @@ struct OnionaryAPI: Sendable {
         config.httpCookieStorage = nil
         let session = URLSession(configuration: config, delegate: NoRedirects(), delegateQueue: nil)
         defer { session.finishTasksAndInvalidate() }
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do { (data, response) = try await session.data(for: request) }
+        catch { throw APIError.unavailable }
         guard let response = response as? HTTPURLResponse else { throw CookingError.response("No response from your kitchen.") }
         guard (200..<300).contains(response.statusCode) else {
-            if response.statusCode == 401 { throw CookingError.response("Your sign-in expired. Reconnect in Settings; your cooking progress is saved.") }
-            throw CookingError.response("Your backend returned HTTP \(response.statusCode). Please try again.")
+            if response.statusCode == 401 { throw APIError.unauthorized }
+            throw APIError.rejected(response.statusCode)
         }
         return data
     }

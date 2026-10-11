@@ -73,7 +73,7 @@ struct RecipeEditor: View {
                     }
                 }
                 if let error { Section { Text(error).foregroundStyle(.red) } }
-            }.dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "Import recipe" : "Edit recipe"))
+            }.connectionRecovery(store).dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "Import recipe" : "Edit recipe"))
                 .toolbar {
                     ToolbarItemGroup(placement: .keyboard) {
                         if let focusedStep {
@@ -127,7 +127,7 @@ struct ImportRecipeView: View {
                         } }.disabled(busy)
                         if busy { ProgressView() }
                         if let error { Text(error).foregroundStyle(.red) }
-                    }.dismissibleKeyboard().navigationTitle("Import recipe")
+                    }.connectionRecovery(store).dismissibleKeyboard().navigationTitle("Import recipe")
                         .toolbar { Button("Cancel") { dismiss() } }
                 }
             }
@@ -152,7 +152,7 @@ struct EditRecipeView: View {
                     }.padding().toolbar { Button("Cancel") { dismiss() } }
                 }
             }
-        }.task { await load() }
+        }.connectionRecovery(store).task(id: store.credential?.token) { if draft == nil { await load() } }
     }
     private func load() async {
         error = nil

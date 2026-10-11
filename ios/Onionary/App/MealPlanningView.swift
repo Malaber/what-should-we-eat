@@ -1,8 +1,8 @@
 import SwiftUI
 import OnionaryCore
 
-struct MealPlan: Decodable {
-    struct Item: Decodable, Identifiable {
+struct MealPlan: Codable {
+    struct Item: Codable, Identifiable {
         let id: Int
         let recipeId: Int
         let isCooked: Bool
@@ -22,7 +22,7 @@ struct ShoppingList: Decodable {
 struct MealPlanningView: View {
     @Bindable var store: AppStore
     var cook: () -> Void
-    @State private var items: [MealPlan.Item] = []
+    private var items: [MealPlan.Item] { store.mealItems }
     @State private var shopping: [ShoppingList.Item] = []
     @State private var picked: Set<Int> = []
     @State private var checked: Set<Int> = []
@@ -53,8 +53,8 @@ struct MealPlanningView: View {
                 Button("Add meals", systemImage: "plus") { picked = []; adding = true }
                 Menu {
                     Button("Shopping list") { run {
-                        guard let credential = store.credential else { return }
-                        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("shopping-list", method: "POST", body: JSONEncoder().encode(items.filter { !$0.isCooked }.map(\.recipeId)))
+                        guard store.credential != nil else { return }
+                        let data = try await store.request("shopping-list", method: "POST", body: JSONEncoder().encode(items.filter { !$0.isCooked }.map(\.recipeId)))
                         shopping = try OnionaryAPI.decoder.decode(ShoppingList.self, from: data).items
                         checked = []; showShopping = true
                     } }
@@ -95,15 +95,15 @@ struct MealPlanningView: View {
             }
     }
     private func request(_ path: String, method: String, body: Data? = nil) async throws {
-        guard let credential = store.credential else { throw CookingError.response("Sign in to your kitchen.") }
-        _ = try await OnionaryAPI(server: credential.server, token: credential.token).data(path, method: method, body: body)
+        guard store.credential != nil else { throw CookingError.response("Sign in to your kitchen.") }
+        _ = try await store.request(path, method: method, body: body)
     }
     private func load() async throws {
-        guard let credential = store.credential else { return }
+        guard store.credential != nil else { return }
         let account = store.scope
-        let data = try await OnionaryAPI(server: credential.server, token: credential.token).data("meal-plan")
+        let data = try await store.request("meal-plan")
         guard account == store.scope else { return }
-        items = try OnionaryAPI.decoder.decode(MealPlan.self, from: data).items
+        store.mealItems = try OnionaryAPI.decoder.decode(MealPlan.self, from: data).items
         store.publishWidget(items, account: account)
     }
     private func reload() async { do { try await load(); error = nil } catch { self.error = error.localizedDescription } }

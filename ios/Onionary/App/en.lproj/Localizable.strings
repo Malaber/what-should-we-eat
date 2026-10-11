@@ -189,3 +189,23 @@
 "Off" = "Off";
 
 "Add recipe" = "Add recipe";
+
+"Sign in again to sync. Your progress and draft are safe." = "Sign in again to sync. Your progress and draft are safe.";
+
+"Cannot reach your kitchen. Check your connection and try again. Your draft is still here." = "Cannot reach your kitchen. Check your connection and try again. Your draft is still here.";
+
+"Your kitchen could not complete this request (HTTP %lld). Your changes are still here." = "Your kitchen could not complete this request (HTTP %lld). Your changes are still here.";
+
+"Use the same account to reconnect. Your current kitchen has not changed." = "Use the same account to reconnect. Your current kitchen has not changed.";
+
+"Session" = "Session";
+
+"Access lasts 14 days, with 28 further days for automatic renewal. Then sign in with a passkey." = "Access lasts 14 days, with 28 further days for automatic renewal. Then sign in with a passkey.";
+
+"Access valid until" = "Access valid until";
+
+"Passkey required by" = "Passkey required by";
+
+"Refresh sign-in with passkey" = "Refresh sign-in with passkey";
+
+"Sign in with passkey" = "Sign in with passkey";

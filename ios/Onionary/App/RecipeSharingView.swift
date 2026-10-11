@@ -61,8 +61,8 @@ struct SharedRecipeLinksView: View {
         }.navigationTitle("Shared recipe links").task { await load() }.refreshable { await load() }
     }
     private func load() async {
-        guard let credential = store.credential else { return }
-        do { entries = try OnionaryAPI.decoder.decode([Entry].self, from: await OnionaryAPI(server: credential.server, token: credential.token).data("recipe-shares")) }
+        guard store.credential != nil else { return }
+        do { entries = try OnionaryAPI.decoder.decode([Entry].self, from: await store.request("recipe-shares")) }
         catch { self.error = error.localizedDescription }
     }
 }
