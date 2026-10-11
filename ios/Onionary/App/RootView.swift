@@ -69,7 +69,8 @@ struct RecipesView: View {
     @Bindable var store: AppStore
     var selected: () -> Void
     @State private var search = ""
-    @State private var intelligence = false
+    private enum Creation: String, Identifiable { case manual, intelligence; var id: String { rawValue } }
+    @State private var creation: Creation?
     @State private var category: String?
     @State private var quickestFirst = false
     var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, category: category, quickestFirst: quickestFirst) }
@@ -133,11 +134,17 @@ struct RecipesView: View {
                     systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
         }.dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
-            .sheet(isPresented: $intelligence) { IntelligenceRecipeView(store: store) }
+            .sheet(item: $creation) { choice in
+                switch choice {
+                case .manual: RecipeEditor(store: store, draft: RecipeDraft())
+                case .intelligence: IntelligenceRecipeView(store: store)
+                }
+            }
             .refreshable { await store.refresh() }
             .toolbar {
                 Menu {
-                    Button("Create with Intelligence", systemImage: "sparkles") { intelligence = true }
+                    Button("New recipe", systemImage: "square.and.pencil") { creation = .manual }
+                    Button("Create with Intelligence", systemImage: "sparkles") { creation = .intelligence }
                     Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
                 } label: { Label("Add recipe", systemImage: "plus") }
                 .accessibilityIdentifier("add-recipe")
