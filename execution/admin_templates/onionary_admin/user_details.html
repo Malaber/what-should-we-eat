@@ -21,7 +21,7 @@
       <button class="btn btn-primary" type="submit">Create passkey link</button>
     </form>
     {% else %}<p>This account is inactive.</p>{% endif %}
-    <a class="btn mt-3" href="{{ url_for('admin:list', identity='passkey-add-link') }}">View this account’s passkey links</a>
+    <a class="btn mt-3" href="{{ url_for('admin:list', identity='passkey-add-link') }}">View passkey links</a>
   </div>
 </div></div>
 {% endblock %}

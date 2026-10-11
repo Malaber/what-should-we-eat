@@ -2,8 +2,10 @@
 import hashlib
 import hmac
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import HTTPException
+from jinja2 import pass_context
 from pydantic import BaseModel, EmailStr, Field
 from sqladmin import Admin, ModelView, expose
 from sqladmin.authentication import AuthenticationBackend, login_required
@@ -24,8 +26,15 @@ from execution.passkey_links import issue_link
 class AdminHeaders(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
+        location = response.headers.get('location')
+        if location:
+            target = urlsplit(location)
+            if target.netloc == request.url.netloc and target.path.startswith('/admin/'):
+                response.headers['location'] = target.path + ('?' + target.query if target.query else '')
         response.headers['Cache-Control'] = 'no-store'
-        response.headers['Referrer-Policy'] = 'no-referrer'
+        # Native HTML POST forms need their same-origin Origin for CSRF checks.
+        # Do not send referrers to external destinations.
+        response.headers['Referrer-Policy'] = 'same-origin'
         response.headers['X-Frame-Options'] = 'DENY'
         return response
 
@@ -62,7 +71,7 @@ class AdminAuth(AuthenticationBackend):
 class OnionaryAdmin(Admin):
     @login_required
     async def index(self, request):
-        return RedirectResponse(request.url_for('admin:list', identity='user'), status_code=303)
+        return RedirectResponse(request.url_for('admin:list', identity='user').path, status_code=303)
 
 
 class NewAccount(BaseModel):
@@ -83,6 +92,10 @@ class UserAdmin(ModelView, model=User):
     can_view_details = True
     can_edit = can_delete = can_export = False
     create_template = 'onionary_admin/create.html'
+    list_template = 'onionary_admin/list.html'
+    column_formatters = {User.is_admin: lambda model, _: 'Yes' if model.is_admin else 'No',
+                         User.is_active: lambda model, _: 'Yes' if model.is_active else 'No'}
+    column_formatters_detail = column_formatters
     details_template = 'onionary_admin/user_details.html'
 
     async def insert_model(self, request, data):
@@ -130,6 +143,7 @@ class LinkAdmin(ModelView, model=PasskeyAddLink):
     can_view_details = True
     page_size = 25
     page_size_options = [25, 50, 100]
+    list_template = 'onionary_admin/list.html'
     details_template = 'onionary_admin/link_details.html'
 
     @expose('/{pk}/revoke', methods=['POST'])
@@ -138,11 +152,17 @@ class LinkAdmin(ModelView, model=PasskeyAddLink):
             db.execute(update(PasskeyAddLink).where(PasskeyAddLink.id == request.path_params['pk'],
                 PasskeyAddLink.used_at.is_(None), PasskeyAddLink.revoked_at.is_(None)).values(revoked_at=now()))
             db.commit()
-        return RedirectResponse(request.url_for('admin:details', identity=self.identity, pk=request.path_params['pk']), status_code=303)
+        return RedirectResponse(request.url_for('admin:details', identity=self.identity, pk=request.path_params['pk']).path, status_code=303)
 
 
 def configure_admin(app):
     admin = OnionaryAdmin(app, engine, title='Onionary administration', authentication_backend=AdminAuth(),
         templates_dir=str(Path(__file__).parent / 'admin_templates'), middlewares=[Middleware(AdminHeaders)])
+    @pass_context
+    def relative_url_for(context, name, **params):
+        # Backend serves plain HTTP behind Traefik. Never emit HTTP asset or form
+        # URLs onto the public HTTPS page, regardless of forwarded-header trust.
+        return context['request'].url_for(name, **params).path
+    admin.templates.env.globals['url_for'] = relative_url_for
     admin.add_view(UserAdmin); admin.add_view(LinkAdmin)
     return admin
