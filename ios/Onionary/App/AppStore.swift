@@ -118,12 +118,26 @@ final class AppStore {
         busy = true; reauthenticationError = nil
         defer { busy = false }
         do {
-            let next = try await signIn.signIn(server: previous.server)
+            let next: Credential
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--test-passkey-success") || ProcessInfo.processInfo.arguments.contains("--test-passkey-wrong-account") {
+                next = Credential(server: previous.server, token: "reauthed",
+                    userID: ProcessInfo.processInfo.arguments.contains("--test-passkey-wrong-account") ? "2" : previous.userID,
+                    refreshToken: "test-refresh", accessExpiresAt: Date().addingTimeInterval(14 * 86400).timeIntervalSince1970,
+                    sessionExpiresAt: Date().addingTimeInterval(42 * 86400).timeIntervalSince1970)
+            } else { next = try await signIn.signIn(server: previous.server) }
+            #else
+            next = try await signIn.signIn(server: previous.server)
+            #endif
             guard next.userID == previous.userID, credential?.userID == previous.userID,
                   credential?.server == previous.server else {
                 throw CookingError.response(L10n.text("Use the same account to reconnect. Your current kitchen has not changed."))
             }
+            #if DEBUG
+            if previous.server.host != "ui-test.invalid" { try CredentialStore.save(next) }
+            #else
             try CredentialStore.save(next)
+            #endif
             credential = next; needsReauthentication = false; error = nil
             await refresh()
         } catch { reauthenticationError = error.localizedDescription }
@@ -142,6 +156,9 @@ final class AppStore {
     }
 
     func refresh() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--marketing") { return }
+        #endif
         guard let credential else { return }
         do {
             let recipes = try OnionaryAPI.decoder.decode([Recipe].self, from: await request("recipes"))
@@ -340,6 +357,10 @@ final class AppStore {
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: JSONSerialization.data(withJSONObject: recipes))
         }
         credential = Credential(server: URL(string: "https://ui-test.invalid")!, token: "test", userID: "1")
+        if ProcessInfo.processInfo.arguments.contains("--renew-session") {
+            credential?.refreshToken = "test-refresh"
+            credential?.sessionExpiresAt = Date().addingTimeInterval(42 * 86400).timeIntervalSince1970
+        }
     }
     #endif
 }

@@ -48,7 +48,7 @@ struct MealPlanningView: View {
                 }
             }
         }.disabled(busy).navigationTitle("Kitchen")
-            .refreshable { await reload() }.task { await reload() }
+            .refreshable { await reload() }.task(id: store.credential?.token) { await reload() }
             .toolbar {
                 Button("Add meals", systemImage: "plus") { picked = []; adding = true }
                 Menu {

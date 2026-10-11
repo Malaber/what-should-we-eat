@@ -80,6 +80,7 @@ final class BrowserSignIn: NSObject, ASWebAuthenticationPresentationContextProvi
             url: server.appending(path: "auth/mobile/authorize"), resolvingAgainstBaseURL: false)!
         url.queryItems = [
             URLQueryItem(name: "state", value: state), URLQueryItem(name: "code_challenge", value: challenge),
+            URLQueryItem(name: "prompt", value: "login"),
         ]
         defer { session = nil }
         let callback: URL = try await withCheckedThrowingContinuation { continuation in

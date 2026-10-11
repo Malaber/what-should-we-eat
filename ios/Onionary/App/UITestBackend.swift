@@ -7,7 +7,15 @@ import OnionaryCore
     static var recipe: [String: Any] = ["id":1,"household_id":1,"name":"Lemon & cheese pasta","notes":"Finish with lemon zest.","total_time_min":20,"active_cooking_time_min":10,"kcal_per_serving":400,"tags":[["id":1,"name":"vegetarian"]],"ingredients":[["id":1,"name":"Cheese","quantity":200,"unit":"g"],["id":2,"name":"Pasta","quantity":250,"unit":"g"]],"instruction_steps":[["id":1,"step_number":1,"description":"Boil the pasta in salted water.","duration_min":10],["id":2,"step_number":2,"description":"Fold in cheese and lemon zest."]]]
     static var planned = false
     static var cooked = false
-    static func data(_ path: String, method: String, body: Data?) throws -> Data {
+    static func data(_ path: String, method: String, body: Data?, token: String) throws -> Data {
+        if ProcessInfo.processInfo.arguments.contains("--offline-save"), path == "recipes", method == "POST" { throw APIError.unavailable }
+        if path == "auth/mobile/refresh" {
+            return try JSONSerialization.data(withJSONObject: ["access_token": "renewed", "user_id": "1",
+                "refresh_token": "renewed-refresh", "access_expires_at": Date().addingTimeInterval(14 * 86400).timeIntervalSince1970,
+                "session_expires_at": Date().addingTimeInterval(42 * 86400).timeIntervalSince1970])
+        }
+        if ProcessInfo.processInfo.arguments.contains("--renew-session"), token == "test" { throw APIError.unauthorized }
+        if ProcessInfo.processInfo.arguments.contains("--expired-session"), token == "test" { throw APIError.unauthorized }
         let input = try body.map { try JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? nil
         var result: Any = [:]
         if path == "recipes" && method == "GET" { result = [recipe] }

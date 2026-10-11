@@ -190,3 +190,11 @@ def test_mobile_refresh_rejects_revocation_inactive_and_browser_cookie(client, v
     with SessionLocal() as db:
         db.query(User).update({'is_active': False}); db.commit()
     assert client.post('/auth/mobile/refresh', json={'refresh_token': session['refresh_token']}).status_code == 401
+
+
+def test_explicit_mobile_reauth_requires_passkey_even_with_cookie(client, verified_registration):
+    register(client)
+    response = client.get('/auth/mobile/authorize', params={'state': 's' * 43, 'code_challenge': 'c' * 43, 'prompt': 'login'}, follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers['location'].startswith('/auth/login?')
+    assert 'prompt=' not in response.headers['location']  # successful ceremony must not loop

@@ -91,3 +91,26 @@ core with its synchronous integer-ID database and SQL single-use flow storage;
 SQLAdmin supplies administrative tables/forms. No bespoke recovery-admin SPA.
 Run migrations before serving the updated image. Existing saved passkeys remain
 valid; old records show unknown creation time rather than an invented timestamp.
+
+## iOS session lifetime and recovery
+
+Native access tokens last 14 days. A separate, opaque refresh credential permits
+silent renewal for a further 28 days, up to an absolute 42 days after passkey
+sign-in. Renewal rotates both credentials and never extends that absolute
+boundary. Revoked or inactive accounts cannot renew. Refresh credentials are
+stored only in the device Keychain; the backend stores their hashes. Existing
+older app sessions need one passkey sign-in to receive renewable credentials.
+
+Settings shows the access expiry, final passkey deadline and a manual passkey
+refresh action. When access expires, the app renews silently before sync. At the
+final deadline it offers passkey sign-in over the current interface; cancelling
+keeps cached recipes, meal plan, cooking checkmarks and editor drafts intact.
+Reauthentication must use the same account. It resynchronizes automatically and
+does not restart the cooking adventure. Network failures do not sign users out
+or repeat uncertain writes. A save rejected with 401 can be sent once after
+successful silent renewal; other failed saves remain in the editor for review.
+
+The widget refresh icon opens Kitchen and syncs through that same session flow.
+It does not give the widget extension access to account credentials. iOS controls
+background execution; silent renewal runs when the app is active or makes a sync
+request, without presenting passkey UI until interaction is necessary.

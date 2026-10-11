@@ -2,6 +2,69 @@ import XCTest
 
 final class OnionaryUITests: XCTestCase {
     @MainActor
+    func testManualRecipeKeepsDraftWhenServerUnavailable() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--offline-save", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["add-recipe"].tap()
+        app.buttons["New recipe"].tap()
+        let name = app.textFields["Name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap(); name.typeText("My offline soup")
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.otherElements["recipe-save-error"].waitForExistence(timeout: 5) || app.staticTexts["recipe-save-error"].exists)
+        XCTAssertEqual(name.value as? String, "My offline soup")
+        XCTAssertTrue(app.buttons["Save"].isEnabled)
+        app.buttons["Cancel"].tap()
+    }
+
+    @MainActor
+    func testSilentRenewalPreservesCookingProgress() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--renew-session", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.buttons["Choose a recipe"].tap()
+        app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["ingredient-1"].tap()
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--reset" }
+        app.launch()
+        XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.staticTexts["Access valid until"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Sign in with passkey"].exists)
+    }
+
+    @MainActor
+    func testExpiredSessionLeavesCookingAvailable() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--expired-session", "--test-passkey-success", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 5))
+        app.buttons["Choose a recipe"].tap()
+        app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["ingredient-1"].tap()
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        XCTAssertTrue(app.buttons["Sign in with passkey"].exists)
+        app.buttons["Sign in with passkey"].tap()
+        XCTAssertTrue(app.buttons["Sign in with passkey"].waitForNonExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+    }
+
+    @MainActor
+    func testReauthenticationRejectsDifferentAccount() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--expired-session", "--test-passkey-wrong-account", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 5))
+        app.buttons["Sign in with passkey"].tap()
+        XCTAssertTrue(app.staticTexts["Use the same account to reconnect. Your current kitchen has not changed."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Choose a recipe"].exists)
+    }
+
+    @MainActor
     private func pullToRefresh(_ app: XCUIApplication) {
         let list = app.collectionViews.firstMatch
         XCTAssertTrue(list.waitForExistence(timeout: 5))

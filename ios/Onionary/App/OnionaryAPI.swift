@@ -31,7 +31,7 @@ struct OnionaryAPI: Sendable {
     func data(_ path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
         #if DEBUG
         if server.host == "ui-test.invalid" && ProcessInfo.processInfo.arguments.contains("--ui-testing") {
-            return try await UITestBackend.data(path, method: method, body: body)
+            return try await UITestBackend.data(path, method: method, body: body, token: token)
         }
         #endif
         var request = URLRequest(url: server.appending(path: path))

@@ -250,8 +250,11 @@ def enroll_verify(body: Finish, request: Request, response: Response, db: Sessio
 
 @router.get("/mobile/authorize")
 def authorize(request: Request, state: str = Query(pattern=r"^[A-Za-z0-9_-]{43,128}$"),
-              code_challenge: str = Query(pattern=r"^[A-Za-z0-9_-]{43}$"), db: Session = Depends(get_db)):
+              code_challenge: str = Query(pattern=r"^[A-Za-z0-9_-]{43}$"),
+              prompt: str | None = Query(None, pattern="^login$"), db: Session = Depends(get_db)):
     try:
+        if prompt == "login":
+            raise HTTPException(401, "Passkey required")
         user = session_user(request, db)
     except HTTPException:
         return RedirectResponse("/auth/login?" + urlencode({"state": state, "code_challenge": code_challenge}), status_code=303)
