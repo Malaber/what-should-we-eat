@@ -72,8 +72,16 @@ struct RecipeEditor: View {
                             .accessibilityIdentifier("step-help")
                     }
                 }
-                if let error { Section { Text(error).foregroundStyle(.red) } }
-            }.connectionRecovery(store).dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "Import recipe" : "Edit recipe"))
+
+            }.safeAreaInset(edge: .bottom) {
+                if saving { ProgressView("Saving recipe…").padding().frame(maxWidth: .infinity).background(.regularMaterial) }
+                if let error {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout).foregroundStyle(.red).padding()
+                        .frame(maxWidth: .infinity, alignment: .leading).background(.regularMaterial)
+                        .accessibilityIdentifier("recipe-save-error")
+                }
+            }.connectionRecovery(store).dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "New recipe" : "Edit recipe"))
                 .toolbar {
                     ToolbarItemGroup(placement: .keyboard) {
                         if let focusedStep {
@@ -100,7 +108,7 @@ struct RecipeEditor: View {
         }
     }
     private func save() async {
-        saving = true; defer { saving = false }
+        saving = true; error = nil; defer { saving = false }
         do { try await store.saveRecipe(draft, id: recipeID); dismiss() }
         catch { self.error = error.localizedDescription }
     }
