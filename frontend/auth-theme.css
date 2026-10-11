@@ -37,3 +37,7 @@ dialog.auth-surface p { overflow-wrap: anywhere; }
   @keyframes dialog-arrive { from { opacity: 0; transform: translateY(.4rem); } to { opacity: 1; transform: none; } }
 }
 @media (prefers-reduced-transparency: reduce) { dialog.auth-surface::backdrop { backdrop-filter: none; background: #000b; } }
+
+#login-gate [hidden] { display: none !important; }
+#gate-register { margin-top: 1rem; }
+#gate-register label { display: block; margin-top: .75rem; }

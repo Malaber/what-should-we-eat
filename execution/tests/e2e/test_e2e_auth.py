@@ -3,19 +3,20 @@ from playwright.sync_api import Page, expect
 
 
 def signup(page):
-    page.goto(page.base_url + "/auth/login")
-    page.locator("#registration summary").click()
+    page.goto(page.base_url + "/")
+    page.locator("#gate-signup").click()
     page.locator('[name="display_name"]').fill("Test User")
     page.locator('[name="email"]').fill("test@e2e.com")
-    page.locator("#register button").click()
+    page.locator("#gate-register button").click()
     expect(page.locator("#user-greeting")).to_contain_text("Hi, Test User")
 
 
 def test_auth_gate_shown(page: Page):
     page.goto(page.base_url + "/")
     expect(page.locator("#login-gate")).to_be_visible()
-    page.locator("#gate-login").click()
-    expect(page.locator("#sign-in")).to_be_visible()
+    page.locator("#gate-signup").click()
+    expect(page.locator("#gate-register")).to_be_visible()
+    assert page.url == page.base_url + "/"
     expect(page.locator('input[type="password"]')).to_have_count(0)
 
 
@@ -26,7 +27,6 @@ def test_signup_logout_and_passkey_login(page: Page):
     assert response.value.status == 200
     expect(page.locator("#login-gate")).to_be_visible()
     page.locator("#gate-login").click()
-    page.locator("#sign-in").click()
     expect(page.locator("#user-greeting")).to_contain_text("Hi, Test User")
 
 
@@ -79,9 +79,9 @@ def test_auth_theme_follows_system(page: Page):
         page.emulate_media(color_scheme=mode)
         page.goto(page.base_url + '/')
         gate_background = page.locator('#login-gate').evaluate('(el) => getComputedStyle(el).backgroundColor')
-        page.locator('#gate-login').click()
-        expect(page.locator('h1')).to_have_text('Welcome to Onionary.')
-        assert page.locator('body').evaluate('(el) => getComputedStyle(el).backgroundColor') == gate_background
+        page.locator('#gate-signup').click()
+        expect(page.locator('#gate-register')).to_be_visible()
+        assert page.locator('#login-gate').evaluate('(el) => getComputedStyle(el).backgroundColor') == gate_background
         page.screenshot(path=f'.tmp/onionary-signin-{mode}.png', full_page=True)
 
 
