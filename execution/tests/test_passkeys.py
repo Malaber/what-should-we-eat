@@ -150,3 +150,43 @@ def test_existing_email_cannot_be_taken_over(client, auth_headers, verified_regi
     assert response.status_code == 400
     with SessionLocal() as db:
         assert db.query(Passkey).count() == 0
+
+
+def native_session(client):
+    verifier = 'v' * 43
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')
+    return client.post('/auth/mobile/token', json={'code': mobile_code(client, challenge), 'code_verifier': verifier})
+
+
+def test_mobile_session_rotates_and_preserves_absolute_deadline(client, verified_registration, monkeypatch):
+    register(client)
+    first = native_session(client)
+    assert first.headers['cache-control'] == 'no-store'
+    first = first.json()
+    issued = passkeys.now()
+    assert abs(first['access_expires_at'] - issued.timestamp() - 14 * 86400) < 5
+    assert abs(first['session_expires_at'] - issued.timestamp() - 42 * 86400) < 5
+    monkeypatch.setattr(passkeys, 'now', lambda: issued + timedelta(days=20))
+    response = client.post('/auth/mobile/refresh', json={'refresh_token': first['refresh_token']})
+    assert response.status_code == 200
+    renewed = response.json()
+    assert renewed['refresh_token'] != first['refresh_token']
+    assert renewed['session_expires_at'] == first['session_expires_at']
+    assert client.post('/auth/mobile/refresh', json={'refresh_token': first['refresh_token']}).status_code == 401
+    assert client.get('/recipes', headers={'Authorization': 'Bearer ' + first['access_token']}).status_code == 401
+    monkeypatch.setattr(passkeys, 'now', lambda: issued + timedelta(days=43))
+    assert client.post('/auth/mobile/refresh', json={'refresh_token': renewed['refresh_token']}).status_code == 401
+
+
+def test_mobile_refresh_rejects_revocation_inactive_and_browser_cookie(client, verified_registration):
+    register(client)
+    cookie = client.cookies.get(passkeys.COOKIE)
+    assert client.post('/auth/mobile/refresh', json={'refresh_token': cookie}).status_code == 401
+    session = native_session(client).json()
+    headers = {'Authorization': 'Bearer ' + session['access_token']}
+    assert client.post('/auth/mobile/logout', headers=headers).status_code == 204
+    assert client.post('/auth/mobile/refresh', json={'refresh_token': session['refresh_token']}).status_code == 401
+    session = native_session(client).json()
+    with SessionLocal() as db:
+        db.query(User).update({'is_active': False}); db.commit()
+    assert client.post('/auth/mobile/refresh', json={'refresh_token': session['refresh_token']}).status_code == 401
