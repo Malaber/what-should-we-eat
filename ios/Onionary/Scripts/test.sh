@@ -11,6 +11,8 @@ mkdir -p "$result_dir"
 result_dir=$(cd "$result_dir" && pwd)
 xcodebuild -project Onionary.xcodeproj -scheme Onionary \
   -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "$result_dir/DerivedData" \
-  -parallel-testing-enabled NO -resultBundlePath "$result_dir/Onionary.xcresult" \
+  -parallel-testing-enabled NO -test-timeouts-enabled YES \
+  -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 \
+  -resultBundlePath "$result_dir/Onionary.xcresult" \
   MARKETING_VERSION="$marketing_version" CODE_SIGNING_ALLOWED=NO test
 echo "Test results: $result_dir/Onionary.xcresult"

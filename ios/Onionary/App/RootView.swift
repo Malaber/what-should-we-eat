@@ -69,7 +69,7 @@ struct RecipesView: View {
     @Bindable var store: AppStore
     var selected: () -> Void
     @State private var search = ""
-    private enum Creation: String, Identifiable { case manual, intelligence; var id: String { rawValue } }
+    private enum Creation: String, Identifiable { case manual, intelligence, importRecipe; var id: String { rawValue } }
     @State private var creation: Creation?
     @State private var category: String?
     @State private var quickestFirst = false
@@ -138,6 +138,7 @@ struct RecipesView: View {
                 switch choice {
                 case .manual: RecipeEditor(store: store, draft: RecipeDraft())
                 case .intelligence: IntelligenceRecipeView(store: store)
+                case .importRecipe: ImportRecipeView(store: store, link: "")
                 }
             }
             .refreshable { await store.refresh() }
@@ -145,7 +146,7 @@ struct RecipesView: View {
                 Menu {
                     Button("New recipe", systemImage: "square.and.pencil") { creation = .manual }
                     Button("Create with Intelligence", systemImage: "sparkles") { creation = .intelligence }
-                    Button("Import recipe", systemImage: "square.and.arrow.down") { store.pendingImport = "" }
+                    Button("Import recipe", systemImage: "square.and.arrow.down") { creation = .importRecipe }
                 } label: { Label("Add recipe", systemImage: "plus") }
                 .accessibilityIdentifier("add-recipe")
             }

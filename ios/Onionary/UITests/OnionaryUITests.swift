@@ -1,6 +1,11 @@
 import XCTest
 
 final class OnionaryUITests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        continueAfterFailure = false
+    }
+
     @MainActor
     func testManualRecipeKeepsDraftWhenServerUnavailable() {
         let app = XCUIApplication()
@@ -202,6 +207,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
         app.buttons["add-recipe"].tap()
         app.buttons["Import recipe"].tap()
+        XCTAssertTrue(app.textFields["Chefkoch or Onionary URL"].waitForExistence(timeout: 5))
         app.textFields["Chefkoch or Onionary URL"].tap()
         app.textFields["Chefkoch or Onionary URL"].typeText("https://www.chefkoch.de/rezepte/123")
         app.buttons["Review recipe"].tap()

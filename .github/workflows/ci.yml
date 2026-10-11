@@ -47,6 +47,7 @@ jobs:
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium --device='iPhone 13'
   ios:
     runs-on: macos-26
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,6 +58,7 @@ jobs:
           xcodebuild -version | head -1 | awk '{ if ($2 + 0 < 26) exit 1 }'
       - run: brew install xcodegen
       - name: Core tests, simulator build, and UI tests
+        timeout-minutes: 20
         env:
           TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
         run: bash ios/Onionary/Scripts/test.sh
