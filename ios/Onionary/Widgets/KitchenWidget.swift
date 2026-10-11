@@ -41,7 +41,13 @@ private struct KitchenWidgetView: View {
     @Environment(\.widgetFamily) private var family
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("This week’s kitchen", systemImage: "calendar").font(.headline)
+            HStack {
+                Label("This week’s kitchen", systemImage: "calendar").font(.headline)
+                Spacer(minLength: 4)
+                Link(destination: entry.snapshot?.link() ?? URL(string: "de.malaber.onionary://kitchen")!) {
+                    Image(systemName: "arrow.clockwise").frame(minWidth: 32, minHeight: 32)
+                }.accessibilityLabel("Open kitchen and refresh")
+            }
             if let snapshot = entry.snapshot, snapshot.isCurrent(at: entry.date), !snapshot.meals.isEmpty {
                 ForEach(snapshot.meals.prefix(family == .systemSmall ? 2 : family == .systemMedium ? 3 : 7)) { meal in
                     Link(destination: snapshot.link(recipeID: meal.id)) {
@@ -50,7 +56,6 @@ private struct KitchenWidgetView: View {
                     }
                 }
                 Spacer(minLength: 0)
-                Text(snapshot.updated, style: .relative).font(.caption2).foregroundStyle(.secondary)
             } else {
                 Text("Open Kitchen to update your plan.").font(.subheadline).foregroundStyle(.secondary)
             }
