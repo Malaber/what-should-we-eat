@@ -25,6 +25,14 @@ const loginGateHTML = `
       <p>${window.t("auth.tagline")}</p>
       <button id="gate-login">${window.t("auth.signin")}</button>
       <button id="gate-signup">${window.t("auth.new")}</button>
+      <form id="gate-register" hidden>
+        <label for="gate-name">${window.t("auth.name")}</label>
+        <input id="gate-name" name="display_name" autocomplete="name" maxlength="255" required>
+        <label for="gate-email">${window.t("auth.email")}</label>
+        <input id="gate-email" name="email" type="email" autocomplete="email" required>
+        <button type="submit">${window.t("auth.create")}</button>
+      </form>
+      <p id="gate-error" role="alert"></p>
       <p class="help">${window.t("auth.help")}</p>
     </div>
   </div>
@@ -62,8 +70,8 @@ class AuthHandler {
   }
 
   bindEvents() {
-    document.getElementById('btn-show-login').onclick = () => location.assign('/auth/login');
-    document.getElementById('btn-show-signup').onclick = () => location.assign('/auth/login');
+    document.getElementById('btn-show-login').onclick = () => this.login();
+    document.getElementById('btn-show-signup').onclick = () => this.registration();
     document.getElementById('btn-logout').onclick = () => this.handleLogout();
   }
 
@@ -105,10 +113,36 @@ class AuthHandler {
       // Not logged in — show gate
       if (!existing) {
         document.body.insertAdjacentHTML('beforeend', loginGateHTML);
-        document.getElementById('gate-login').onclick = () => location.assign('/auth/login');
-        document.getElementById('gate-signup').onclick = () => location.assign('/auth/login');
+        document.getElementById('gate-login').onclick = () => this.login();
+        document.getElementById('gate-signup').onclick = () => this.registration();
+        document.getElementById('gate-register').onsubmit = event => {
+          event.preventDefault(); this.ceremony('register', Object.fromEntries(new FormData(event.target)));
+        };
       }
     }
+  }
+
+  login() { return this.ceremony('login'); }
+
+  registration() {
+    this.updateLoginGate();
+    const form = document.getElementById('gate-register');
+    form.hidden = false;
+    document.getElementById('gate-name').focus();
+  }
+
+  async ceremony(kind, body = {}) {
+    const error = document.getElementById('gate-error');
+    try {
+      const {authenticate} = await import('/passkey-ceremony.js');
+      await authenticate(kind, body, {
+        error, root: document.getElementById('login-gate'),
+        onSuccess: async result => {
+          this.token = result.access_token;
+          await this.fetchCurrentUser();
+        },
+      });
+    } catch (failure) { error.textContent = failure.message; }
   }
 
   handleLogout(emit = true) {
@@ -163,3 +197,14 @@ window.WSWEAuth = new AuthHandler();
     }
   });
 })();
+
+// Read the running backend, not a build-time value cached in static assets.
+const deployedVersion = document.createElement('small');
+deployedVersion.id = 'deployed-version';
+deployedVersion.className = 'deployed-version';
+document.body.append(deployedVersion);
+fetch('/version', {cache: 'no-store'}).then(response => {
+  if (!response.ok) throw new Error('Version unavailable');
+  return response.json();
+}).then(data => { deployedVersion.textContent = `Onionary · ${data.version}`; })
+  .catch(() => { deployedVersion.remove(); });

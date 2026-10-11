@@ -8,11 +8,25 @@ struct Credential: Codable {
     let server: URL
     let token: String
     let userID: String
+    var name: String? = nil
+    var email: String? = nil
+    var refreshToken: String? = nil
+    var accessExpiresAt: Double? = nil
+    var sessionExpiresAt: Double? = nil
 }
 
 struct TokenResponse: Decodable {
     let accessToken: String
     let userId: String
+    let name: String?
+    let email: String?
+    let refreshToken: String?
+    let accessExpiresAt: Double?
+    let sessionExpiresAt: Double?
+    func credential(server: URL) -> Credential {
+        Credential(server: server, token: accessToken, userID: userId, name: name, email: email,
+                   refreshToken: refreshToken, accessExpiresAt: accessExpiresAt, sessionExpiresAt: sessionExpiresAt)
+    }
 }
 
 @MainActor
@@ -70,6 +84,7 @@ final class BrowserSignIn: NSObject, ASWebAuthenticationPresentationContextProvi
             url: server.appending(path: "auth/mobile/authorize"), resolvingAgainstBaseURL: false)!
         url.queryItems = [
             URLQueryItem(name: "state", value: state), URLQueryItem(name: "code_challenge", value: challenge),
+            URLQueryItem(name: "prompt", value: "login"),
         ]
         defer { session = nil }
         let callback: URL = try await withCheckedThrowingContinuation { continuation in
@@ -100,7 +115,7 @@ final class BrowserSignIn: NSObject, ASWebAuthenticationPresentationContextProvi
         let body = try JSONSerialization.data(withJSONObject: ["code": code, "code_verifier": verifier])
         let response = try OnionaryAPI.decoder.decode(
             TokenResponse.self, from: await api.data("auth/mobile/token", method: "POST", body: body))
-        return Credential(server: server, token: response.accessToken, userID: response.userId)
+        return response.credential(server: server)
     }
 
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {

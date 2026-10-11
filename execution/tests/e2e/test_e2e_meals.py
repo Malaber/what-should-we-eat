@@ -5,10 +5,9 @@ def login_as_test_user(page: Page):
     """Helper to log in reliably."""
     page.goto(page.base_url + "/")
     page.locator("#gate-signup").click()
-    page.locator("#registration summary").click()
     page.locator('[name="display_name"]').fill("Test Chef")
     page.locator('[name="email"]').fill("meals@e2e.com")
-    page.locator("#register button").click()
+    page.locator("#gate-register button").click()
     expect(page.locator("#user-greeting")).to_be_visible()
 
 def create_recipe(page: Page, name: str, kcal: str, time: str, tag: str):

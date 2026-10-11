@@ -77,3 +77,11 @@ resume its interrupted upload; changed code always requires a new tag/build.
 
 When adding form fields, use the existing control-group/input styling and verify
 light/dark appearance, labels and responsive layout alongside functionality.
+
+## HTML-first accessibility
+
+Web and admin pages must remain usable without CSS, icon fonts or JavaScript.
+Use semantic headings, labels, native forms and text links. Boolean values and
+critical actions need readable text; icons may supplement it. Verify admin
+account details and passkey-link creation with CSS/JS disabled. Use same-origin
+relative asset/form URLs behind Traefik; styling is progressive enhancement.

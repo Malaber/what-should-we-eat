@@ -187,3 +187,39 @@
 "Cooking mode" = "Kochmodus";
 "On" = "Ein";
 "Off" = "Aus";
+
+"Add recipe" = "Rezept hinzufügen";
+
+"Sign in again to sync. Your progress and draft are safe." = "Zum Synchronisieren erneut anmelden. Fortschritt und Entwurf bleiben erhalten.";
+
+"Cannot reach your kitchen. Check your connection and try again. Your draft is still here." = "Küche nicht erreichbar. Prüfe deine Verbindung und versuche es erneut. Dein Entwurf bleibt erhalten.";
+
+"Your kitchen could not complete this request (HTTP %lld). Your changes are still here." = "Deine Küche konnte die Anfrage nicht abschließen (HTTP %lld). Deine Änderungen bleiben erhalten.";
+
+"Use the same account to reconnect. Your current kitchen has not changed." = "Melde dich mit demselben Konto an. Deine aktuelle Küche bleibt unverändert.";
+
+"Session" = "Sitzung";
+
+"Access lasts 14 days, with 28 further days for automatic renewal. Then sign in with a passkey." = "Der Zugriff gilt 14 Tage, danach ist die automatische Erneuerung weitere 28 Tage möglich. Anschließend ist ein Passkey erforderlich.";
+
+"Access valid until" = "Zugriff gültig bis";
+
+"Passkey required by" = "Passkey erforderlich ab";
+
+"Refresh sign-in with passkey" = "Anmeldung mit Passkey erneuern";
+
+"Sign in with passkey" = "Mit Passkey anmelden";
+
+"New recipe" = "Neues Rezept";
+
+"Saving recipe…" = "Rezept wird gespeichert…";
+
+"Open kitchen and refresh" = "Küche öffnen und aktualisieren";
+
+"Sign in once to enable automatic renewal." = "Melde dich einmal an, um die automatische Erneuerung zu aktivieren.";
+
+"Check recipe name, ingredients, steps, and positive quantities." = "Prüfe Rezeptname, Zutaten, Schritte und positive Mengenangaben.";
+
+"Account" = "Konto";
+
+"Email" = "E-Mail";

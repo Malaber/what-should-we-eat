@@ -1,4 +1,5 @@
 import SwiftUI
+import OnionaryCore
 
 struct SettingsView: View {
     @Bindable var store: AppStore
@@ -10,6 +11,8 @@ struct SettingsView: View {
         Form {
             Section("Backend") {
                 LabeledContent("Connected to", value: store.credential?.server.host() ?? "")
+                if let name = store.credential?.name { LabeledContent("Account", value: name) }
+                if let email = store.credential?.email { LabeledContent("Email", value: email) }
                 Button("Switch backend") { confirmSwitch = true }.disabled(store.busy)
                 Text("One backend is active. Saved cooking progress stays separate for each account.").font(.footnote).foregroundStyle(.secondary)
             }
@@ -20,6 +23,21 @@ struct SettingsView: View {
                 Picker("Language", selection: $language) {
                     Text("System").tag("system"); Text("English").tag("en"); Text("Deutsch").tag("de")
                 }.accessibilityIdentifier("language-picker")
+            }
+            Section("Session") {
+                Text("Access lasts 14 days, with 28 further days for automatic renewal. Then sign in with a passkey.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                if store.credential?.refreshToken == nil {
+                    Text("Sign in once to enable automatic renewal.").font(.footnote).foregroundStyle(.secondary)
+                }
+                if let expires = store.credential?.accessExpiresAt {
+                    LabeledContent("Access valid until") { Text(Date(timeIntervalSince1970: expires), format: .dateTime.day().month().year().hour().minute()) }
+                }
+                if let expires = store.credential?.sessionExpiresAt {
+                    LabeledContent("Passkey required by") { Text(Date(timeIntervalSince1970: expires), format: .dateTime.day().month().year().hour().minute()) }
+                }
+                Button("Refresh sign-in with passkey") { Task { await store.reauthenticate() } }.disabled(store.busy)
+                if let error = store.reauthenticationError { Text(error).foregroundStyle(.red) }
             }
             Section("Account security") {
                 if let server = store.credential?.server {

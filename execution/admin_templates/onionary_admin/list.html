@@ -1,0 +1,36 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<section class="card p-3" aria-label="{{ model_view.name_plural }}">
+  <h2>{{ model_view.name_plural }}</h2>
+  {% if model_view.can_create %}<p><a class="btn btn-primary" href="{{ url_for('admin:create', identity=model_view.identity) }}">New Account</a></p>{% endif %}
+  {% if model_view.identity == 'passkey-add-link' %}<p>To create a passkey link, open <a href="{{ url_for('admin:list', identity='user') }}">Accounts</a> and select an account’s Details / passkey link action.</p>{% endif %}
+  <form method="get" action="{{ url_for('admin:list', identity=model_view.identity) }}" class="mb-3">
+    <label for="search">Search {{ model_view.name_plural }}</label>
+    <input class="form-control" id="search" name="search" value="{{ request.query_params.get('search', '') }}">
+    <button class="btn btn-secondary mt-2" type="submit">Search</button>
+  </form>
+  <div class="table-responsive">
+    <table class="table">
+      <caption>{{ pagination.count }} {{ model_view.name_plural }}</caption>
+      <thead><tr><th scope="col">Actions</th>{% for name in model_view._list_prop_names %}<th scope="col"><a href="?sortBy={{ name|urlencode }}&sort={{ 'desc' if request.query_params.get('sort') == 'asc' else 'asc' }}&search={{ request.query_params.get('search', '')|urlencode }}">{{ model_view._column_labels.get(name, name.replace('_', ' ').capitalize()) }}</a></th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for row in pagination.rows %}
+        <tr>
+          <td><a href="{{ url_for('admin:details', identity=model_view.identity, pk=get_object_identifier(row)) }}">{% if model_view.identity == 'user' %}Details / passkey link{% else %}Details / revoke{% endif %}</a></td>
+          {% for name in model_view._list_prop_names %}
+          {% set value = row|attr(name) %}
+          <td>{% if value is sameas true %}Yes{% elif value is sameas false %}No{% elif value is none %}—{% else %}{{ value }}{% endif %}</td>
+          {% endfor %}
+        </tr>
+        {% else %}<tr><td colspan="{{ model_view._list_prop_names|length + 1 }}">No records found.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% set order = '&sortBy=' ~ (request.query_params.get('sortBy', '')|urlencode) ~ '&sort=' ~ (request.query_params.get('sort', '')|urlencode) ~ '&pageSize=' ~ pagination.page_size %}
+  <nav aria-label="Pagination">
+    {% if pagination.page > 1 %}<a href="?page={{ pagination.page - 1 }}&search={{ request.query_params.get('search', '')|urlencode }}{{ order }}">Previous page</a>{% endif %}
+    <span>Page {{ pagination.page }}</span>
+    {% if pagination.page * pagination.page_size < pagination.count %}<a href="?page={{ pagination.page + 1 }}&search={{ request.query_params.get('search', '')|urlencode }}{{ order }}">Next page</a>{% endif %}
+  </nav>
+</section>
+{% endblock %}

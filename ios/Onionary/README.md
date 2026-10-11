@@ -172,6 +172,8 @@ Step editing shows ingredient insertion in the keyboard toolbar only while a ste
 instruction has focus. The information button beside Steps explains percentages
 once on demand. Insertion appends a placeholder to the focused step.
 
-Recipes exposes a searchable Browse by tag sheet from the tag toolbar button.
+Recipes exposes inline tag categories and searches recipe names, tags and ingredients.
+Sort sits beside Your recipes. The + menu groups Apple Intelligence and URL import;
+pull down to refresh.
 Recipe rows show all tags, and cooking details show tappable tags that open matching
 recipes. Tags are separate from the saved ingredient quantities of a cooking session.

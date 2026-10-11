@@ -72,8 +72,16 @@ struct RecipeEditor: View {
                             .accessibilityIdentifier("step-help")
                     }
                 }
-                if let error { Section { Text(error).foregroundStyle(.red) } }
-            }.dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "Import recipe" : "Edit recipe"))
+
+            }.safeAreaInset(edge: .bottom) {
+                if saving { ProgressView("Saving recipe…").padding().frame(maxWidth: .infinity).background(.regularMaterial) }
+                if let error {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout).foregroundStyle(.red).padding()
+                        .frame(maxWidth: .infinity, alignment: .leading).background(.regularMaterial)
+                        .accessibilityIdentifier("recipe-save-error")
+                }
+            }.connectionRecovery(store).dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "New recipe" : "Edit recipe"))
                 .toolbar {
                     ToolbarItemGroup(placement: .keyboard) {
                         if let focusedStep {
@@ -100,9 +108,9 @@ struct RecipeEditor: View {
         }
     }
     private func save() async {
-        saving = true; defer { saving = false }
+        saving = true; error = nil; defer { saving = false }
         do { try await store.saveRecipe(draft, id: recipeID); dismiss() }
-        catch { self.error = error.localizedDescription }
+        catch { self.error = L10n.text(error.localizedDescription) }
     }
 }
 
@@ -123,11 +131,11 @@ struct ImportRecipeView: View {
                         Button("Review recipe") { Task {
                             busy = true; defer { busy = false }
                             do { draft = try await store.importDraft(link) }
-                            catch { self.error = error.localizedDescription }
+                            catch { self.error = L10n.text(error.localizedDescription) }
                         } }.disabled(busy)
                         if busy { ProgressView() }
                         if let error { Text(error).foregroundStyle(.red) }
-                    }.dismissibleKeyboard().navigationTitle("Import recipe")
+                    }.connectionRecovery(store).dismissibleKeyboard().navigationTitle("Import recipe")
                         .toolbar { Button("Cancel") { dismiss() } }
                 }
             }
@@ -152,10 +160,10 @@ struct EditRecipeView: View {
                     }.padding().toolbar { Button("Cancel") { dismiss() } }
                 }
             }
-        }.task { await load() }
+        }.connectionRecovery(store).task(id: store.credential?.token) { if draft == nil { await load() } }
     }
     private func load() async {
         error = nil
-        do { draft = try await store.recipeDraft(id: id) } catch { self.error = error.localizedDescription }
+        do { draft = try await store.recipeDraft(id: id) } catch { self.error = L10n.text(error.localizedDescription) }
     }
 }

@@ -116,3 +116,18 @@ def test_account_profile_requires_origin(client, owner):
     assert client.post('/auth/account/profile', json={'name':'Other'}).status_code == 403
     assert client.post('/auth/account/profile', headers=ORIGIN, json={'name':'Schädler'}).status_code == 200
     assert client.get('/auth/account/profile').json()['name'] == 'Schädler'
+
+
+def test_admin_asset_urls_remain_relative_behind_tls_proxy(client, owner):
+    with SessionLocal() as db:
+        db.query(User).update({'is_admin': True}); db.commit()
+    page = client.get('/admin/user/list', headers={'X-Forwarded-Proto': 'https'})
+    assert page.status_code == 200
+    soup = BeautifulSoup(page.text, 'html.parser')
+    assets = [tag['href'] for tag in soup.select('link[rel=stylesheet]')] + [tag['src'] for tag in soup.select('script[src]')]
+    assert assets and all(url.startswith('/admin/statics/') for url in assets)
+    for url in assets:
+        assert client.get(url).status_code == 200
+    assert soup.find('a', string='Details / passkey link')
+    row = soup.find('tbody').find('tr')
+    assert [cell.get_text(strip=True) for cell in row.find_all('td')][3:5] == ['Yes', 'Yes']

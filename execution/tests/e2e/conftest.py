@@ -64,7 +64,7 @@ def _reset_tables():
 
 
 @pytest.fixture(autouse=True)
-def reset_db_data(tmp_path):
+def reset_db_data(tmp_path, monkeypatch):
     from sqlalchemy import create_engine, event
     from sqlalchemy.orm import sessionmaker
     from execution.db.database import get_db
@@ -78,7 +78,11 @@ def reset_db_data(tmp_path):
         with factory() as session:
             yield session
     app.dependency_overrides[get_db] = test_db
-    yield
+    import execution.admin as admin
+    monkeypatch.setattr(admin, 'SessionLocal', factory)
+    monkeypatch.setattr(admin.UserAdmin, 'session_maker', factory)
+    monkeypatch.setattr(admin.LinkAdmin, 'session_maker', factory)
+    yield factory
     app.dependency_overrides.pop(get_db, None)
     test_engine.dispose()
 

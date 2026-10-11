@@ -250,8 +250,11 @@ def enroll_verify(body: Finish, request: Request, response: Response, db: Sessio
 
 @router.get("/mobile/authorize")
 def authorize(request: Request, state: str = Query(pattern=r"^[A-Za-z0-9_-]{43,128}$"),
-              code_challenge: str = Query(pattern=r"^[A-Za-z0-9_-]{43}$"), db: Session = Depends(get_db)):
+              code_challenge: str = Query(pattern=r"^[A-Za-z0-9_-]{43}$"),
+              prompt: str | None = Query(None, pattern="^login$"), db: Session = Depends(get_db)):
     try:
+        if prompt == "login":
+            raise HTTPException(401, "Passkey required")
         user = session_user(request, db)
     except HTTPException:
         return RedirectResponse("/auth/login?" + urlencode({"state": state, "code_challenge": code_challenge}), status_code=303)
@@ -274,8 +277,53 @@ def exchange(body: Exchange, request: Request, response: Response, db: Session =
     user = db.get(User, data["user_id"])
     if not user:
         raise HTTPException(401, "Account unavailable")
-    result = authenticate(user, response, db, request)
-    return {**result, "user_id": str(user.id)}
+    return mobile_session(user, response, db)
+
+
+MOBILE_ACCESS_DAYS = 14
+MOBILE_SESSION_DAYS = 42  # 14 days active + 28 days renewal-only grace.
+
+
+def mobile_session(user, response, db, deadline=None):
+    if not user.is_active:
+        raise HTTPException(401, "Account inactive")
+    issued = now()
+    deadline = deadline or issued + timedelta(days=MOBILE_SESSION_DAYS)
+    access_until = min(issued + timedelta(days=MOBILE_ACCESS_DAYS), deadline)
+    refresh = secrets.token_urlsafe(32)
+    sid = digest(refresh)
+    db.add(AuthSession(token_hash=sid, user_id=user.id, expires_at=deadline))
+    db.add(AuthFlow(token_hash=sid, kind="mobile-refresh", expires_at=deadline,
+                   payload={"user_id": user.id, "deadline": deadline.timestamp()}))
+    db.commit()
+    response.headers["Cache-Control"] = "no-store"
+    return {"access_token": create_access_token({"sub": user.email, "sid": sid},
+                                                expires_delta=access_until - issued),
+            "token_type": "bearer", "user_id": str(user.id), "name": user.name, "email": user.email, "refresh_token": refresh,
+            "access_expires_at": access_until.timestamp(), "session_expires_at": deadline.timestamp()}
+
+
+class RefreshSession(BaseModel):
+    refresh_token: str = Field(pattern=r"^[A-Za-z0-9_-]{43}$")
+
+
+@router.post("/mobile/refresh")
+def mobile_refresh(body: RefreshSession, response: Response, db: Session = Depends(get_db)):
+    # Claim and replace in one transaction. A revoked session cannot be revived,
+    # and neither access tokens nor expired browser cookies can renew a session.
+    sid = digest(body.refresh_token)
+    data = db.execute(delete(AuthFlow).where(
+        AuthFlow.token_hash == sid, AuthFlow.kind == "mobile-refresh",
+        AuthFlow.expires_at > now()).returning(AuthFlow.payload)).scalar_one_or_none()
+    session = db.execute(delete(AuthSession).where(
+        AuthSession.token_hash == sid, AuthSession.expires_at > now()
+    ).returning(AuthSession.user_id)).scalar_one_or_none()
+    user = db.get(User, session) if session else None
+    if not data or not user or not user.is_active or user.id != data["user_id"]:
+        db.rollback()
+        raise HTTPException(401, "Sign in with a passkey")
+    return mobile_session(user, response, db,
+                          datetime.fromtimestamp(data["deadline"], timezone.utc))
 
 
 @router.post("/logout", dependencies=[Depends(same_origin)])

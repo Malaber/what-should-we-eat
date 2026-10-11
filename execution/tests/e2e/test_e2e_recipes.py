@@ -4,10 +4,9 @@ from playwright.sync_api import Page, expect
 def login_as_test_user(page: Page):
     page.goto(page.base_url + "/")
     page.locator("#gate-signup").click()
-    page.locator("#registration summary").click()
     page.locator('[name="display_name"]').fill("Test Chef")
     page.locator('[name="email"]').fill("recipes@e2e.com")
-    page.locator("#register button").click()
+    page.locator("#gate-register button").click()
     # Wait for the network requests to finish and the UI to update
     expect(page.locator("#user-greeting")).to_be_visible()
 
@@ -102,3 +101,10 @@ def test_dark_import_and_share_layout(page: Page):
     expect(panel).to_be_visible()
     expect(panel).to_have_css('background-color', 'rgb(43, 36, 42)')
     page.screenshot(path='.tmp/onionary-polish-web-import.png', full_page=True)
+
+
+def test_deployed_backend_version_visible(page: Page):
+    login_as_test_user(page)
+    page.goto(page.base_url + '/recipes.html')
+    version = page.request.get(page.base_url + '/version').json()['version']
+    expect(page.locator('#deployed-version')).to_have_text('Onionary · ' + version)
