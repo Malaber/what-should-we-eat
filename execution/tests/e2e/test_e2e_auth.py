@@ -7,8 +7,10 @@ def signup(page):
     page.locator("#gate-signup").click()
     page.locator('[name="display_name"]').fill("Test User")
     page.locator('[name="email"]').fill("test@e2e.com")
+    page.evaluate("window.onionaryGateDocument = true")
     page.locator("#gate-register button").click()
     expect(page.locator("#user-greeting")).to_contain_text("Hi, Test User")
+    assert page.evaluate("window.onionaryGateDocument === true"), "Registration must finish without another login page or reload"
 
 
 def test_auth_gate_shown(page: Page):
@@ -26,8 +28,10 @@ def test_signup_logout_and_passkey_login(page: Page):
         page.locator("#btn-logout").click()
     assert response.value.status == 200
     expect(page.locator("#login-gate")).to_be_visible()
+    page.evaluate("window.onionaryLoginDocument = true")
     page.locator("#gate-login").click()
     expect(page.locator("#user-greeting")).to_contain_text("Hi, Test User")
+    assert page.evaluate("window.onionaryLoginDocument === true")
 
 
 def test_invalid_proof_shows_error(page: Page):

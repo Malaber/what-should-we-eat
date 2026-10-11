@@ -23,7 +23,9 @@ If access returns 403, verify the exact email and instance used in the command.
 
 Append `--revoke` to remove administrator access. Each admin request checks the
 current database session and administrator flag. Forms require a session-bound
-CSRF token and same-origin submission. No password-based admin login exists.
+CSRF token and same-origin submission. Account flags are shown as Yes/No, and
+admin actions remain usable without CSS or JavaScript. Assets and forms use
+relative URLs so plain-HTTP containers behind Traefik work correctly over HTTPS. No password-based admin login exists.
 
 ## Populate a dedicated review kitchen
 
@@ -50,7 +52,7 @@ After seeding, issue a fresh one-use passkey link as described below.
 
 1. Sign in at `/admin/`. In **Accounts → New Account**, create a dedicated account
    using an email you control. It gets its own empty kitchen and is never admin.
-2. Open account details (eye icon) and issue an additional-passkey link.
+2. Choose **Details / passkey link**, then **Create passkey link**.
 3. Open this preparation link in a separate browser profile, add a passkey, and
    populate the kitchen with recipes for review.
 4. Issue a **fresh** link for Apple. Choose an expiry from 1–720 hours (30 days).

@@ -15,8 +15,8 @@ export async function authenticate(kind, body = {}, options = {}) {
   (options.root || document).querySelectorAll('button').forEach(b => b.disabled = true);
   try {
     if (!window.PublicKeyCredential) throw new Error(window.t('auth.unsupported'));
-    const options = await post(`${kind}/options`, body);
-    const publicKey = publicKeyFromJSON(options);
+    const challenge = await post(`${kind}/options`, body);
+    const publicKey = publicKeyFromJSON(challenge);
     const credential = kind === 'login' ? await navigator.credentials.get({publicKey}) : await navigator.credentials.create({publicKey});
     if (!credential) throw new Error(window.t('auth.none'));
     const result = await post(`${kind}/verify`, {credential: credentialToJSON(credential)});
