@@ -1,8 +1,8 @@
 {% extends "sqladmin/base.html" %}
 {% block body %}
-<header class="navbar navbar-dark px-3 py-2">
+<header class="navbar navbar-light px-3 py-2">
   <a class="navbar-brand" href="{{ url_for('admin:index') }}">{{ admin.title }}</a>
-  <nav aria-label="Administration" class="d-flex gap-3">
+  <nav aria-label="Administration" class="d-flex flex-wrap gap-3">
     <a href="{{ url_for('admin:list', identity='user') }}">Accounts</a>
     <a href="{{ url_for('admin:list', identity='passkey-add-link') }}">Passkey links</a>
     <a href="/auth/account">Account settings</a>

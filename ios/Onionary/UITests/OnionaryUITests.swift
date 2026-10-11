@@ -39,8 +39,8 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.staticTexts["Access valid until"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Test Cook"].exists)
-        XCTAssertTrue(app.staticTexts["cook@example.org"].exists)
+        XCTAssertTrue(app.staticTexts["Account, Test Cook"].exists)
+        XCTAssertTrue(app.staticTexts["Email, cook@example.org"].exists)
         XCTAssertFalse(app.buttons["Sign in with passkey"].exists)
     }
 

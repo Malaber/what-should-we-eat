@@ -9,8 +9,8 @@ from execution.db.passkeys import AuthSession
 from execution.api.routers.passkeys import digest, now
 
 
-@pytest.mark.parametrize("styles_enabled", [True, False])
-def test_admin_native_forms(browser, browser_context_args, server_url, reset_db_data, styles_enabled):
+@pytest.mark.parametrize("styles_enabled,scripts_enabled", [(True, True), (True, False), (False, False)])
+def test_admin_native_forms(browser, browser_context_args, server_url, reset_db_data, styles_enabled, scripts_enabled):
     token = secrets.token_urlsafe(32)
     with reset_db_data() as db:
         home = Household(name='Admin kitchen', invite_code='admin-demo'); db.add(home); db.flush()
@@ -19,7 +19,7 @@ def test_admin_native_forms(browser, browser_context_args, server_url, reset_db_
         db.add(admin); db.flush()
         db.add(HouseholdMember(household_id=home.id, user_id=admin.id))
         db.add(AuthSession(token_hash=digest(token), user_id=admin.id, expires_at=now()+timedelta(days=1))); db.commit()
-    context = browser.new_context(**{**browser_context_args, "java_script_enabled": False})
+    context = browser.new_context(**{**browser_context_args, "java_script_enabled": scripts_enabled})
     context.add_cookies([{'name':'onionary_session','value':token,'url':server_url}])
     if not styles_enabled:
         context.route('**/*', lambda route: route.abort() if route.request.resource_type in {'stylesheet','font','script'} else route.continue_())
@@ -37,7 +37,13 @@ def test_admin_native_forms(browser, browser_context_args, server_url, reset_db_
     assert page.url.endswith('/admin/user/list'), page.locator('body').inner_text()
     page.get_by_role('row').filter(has_text='review@example.org').get_by_role('link', name='Details / passkey link').click()
     page.get_by_label('Valid for (hours, 1–720)').fill('48')
-    page.get_by_role('button', name='Create passkey link').click()
+    if scripts_enabled:
+        page.get_by_role('button', name='Create passkey link').click()
+    else:
+        # Exercise native keyboard submission as well as the normal pointer path.
+        page.get_by_label('Valid for (hours, 1–720)').press('Tab')
+        expect(page.get_by_role('button', name='Create passkey link')).to_be_focused()
+        page.keyboard.press('Enter')
     expect(page.locator('#generated-link')).to_have_value(re.compile(re.escape(server_url) + r'/auth/login#enroll=[A-Za-z0-9_-]+&identifier=[A-Za-z0-9_-]+'))
     page.get_by_role('link', name='View passkey links').click()
     page.get_by_role('link', name='Details / revoke').click()
