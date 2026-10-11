@@ -299,7 +299,7 @@ def mobile_session(user, response, db, deadline=None):
     response.headers["Cache-Control"] = "no-store"
     return {"access_token": create_access_token({"sub": user.email, "sid": sid},
                                                 expires_delta=access_until - issued),
-            "token_type": "bearer", "user_id": str(user.id), "refresh_token": refresh,
+            "token_type": "bearer", "user_id": str(user.id), "name": user.name, "email": user.email, "refresh_token": refresh,
             "access_expires_at": access_until.timestamp(), "session_expires_at": deadline.timestamp()}
 
 

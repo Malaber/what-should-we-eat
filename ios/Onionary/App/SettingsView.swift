@@ -11,6 +11,8 @@ struct SettingsView: View {
         Form {
             Section("Backend") {
                 LabeledContent("Connected to", value: store.credential?.server.host() ?? "")
+                if let name = store.credential?.name { LabeledContent("Account", value: name) }
+                if let email = store.credential?.email { LabeledContent("Email", value: email) }
                 Button("Switch backend") { confirmSwitch = true }.disabled(store.busy)
                 Text("One backend is active. Saved cooking progress stays separate for each account.").font(.footnote).foregroundStyle(.secondary)
             }

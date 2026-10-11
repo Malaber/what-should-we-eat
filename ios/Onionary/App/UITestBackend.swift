@@ -10,7 +10,7 @@ import OnionaryCore
     static func data(_ path: String, method: String, body: Data?, token: String) throws -> Data {
         if ProcessInfo.processInfo.arguments.contains("--offline-save"), path == "recipes", method == "POST" { throw APIError.unavailable }
         if path == "auth/mobile/refresh" {
-            return try JSONSerialization.data(withJSONObject: ["access_token": "renewed", "user_id": "1",
+            return try JSONSerialization.data(withJSONObject: ["access_token": "renewed", "user_id": "1", "name": "Test Cook", "email": "cook@example.org",
                 "refresh_token": "renewed-refresh", "access_expires_at": Date().addingTimeInterval(14 * 86400).timeIntervalSince1970,
                 "session_expires_at": Date().addingTimeInterval(42 * 86400).timeIntervalSince1970])
         }
@@ -18,7 +18,8 @@ import OnionaryCore
         if ProcessInfo.processInfo.arguments.contains("--expired-session"), token == "test" { throw APIError.unauthorized }
         let input = try body.map { try JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? nil
         var result: Any = [:]
-        if path == "recipes" && method == "GET" { result = [recipe] }
+        if path == "users/me" { result = ["id": 1, "name": "Test Cook", "email": "cook@example.org"] }
+        else if path == "recipes" && method == "GET" { result = [recipe] }
         else if path == "recipes/1" && method == "GET" { result = recipe }
         else if path == "recipes/1" && method == "PUT", let input {
             for (key,value) in input { recipe[key] = value }

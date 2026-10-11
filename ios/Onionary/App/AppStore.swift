@@ -170,11 +170,26 @@ final class AppStore {
             let recipes = try OnionaryAPI.decoder.decode([Recipe].self, from: await request("recipes"))
             // A connection may have changed while the request was in flight.
             guard self.credential?.server == credential.server, self.credential?.userID == credential.userID else { return }
+            if credential.name == nil || credential.email == nil {
+                struct Profile: Decodable { let id: Int; let name: String; let email: String }
+                let profile = try OnionaryAPI.decoder.decode(Profile.self, from: await request("users/me"))
+                guard scope == SHA256.hash(data: Data((credential.server.absoluteString + "|" + String(profile.id)).utf8)).map({ String(format: "%02x", $0) }).joined() else { return }
+                if var updated = self.credential {
+                    updated.name = profile.name; updated.email = profile.email
+                    #if DEBUG
+                    if updated.server.host != "ui-test.invalid" { try CredentialStore.save(updated) }
+                    #else
+                    try CredentialStore.save(updated)
+                    #endif
+                    self.credential = updated
+                }
+            }
             var next = kitchen; next.recipes = recipes
             try persist(next)
             await refreshWidget()
             error = nil
-        } catch { self.error = error.localizedDescription }
+        } catch APIError.unauthorized { error = nil }
+        catch { self.error = error.localizedDescription }
     }
 
     private func persist(_ next: Kitchen) throws {
@@ -362,7 +377,7 @@ final class AppStore {
             }
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: JSONSerialization.data(withJSONObject: recipes))
         }
-        credential = Credential(server: URL(string: "https://ui-test.invalid")!, token: "test", userID: "1")
+        credential = Credential(server: URL(string: "https://ui-test.invalid")!, token: "test", userID: "1", name: "Test Cook", email: "cook@example.org")
         if ProcessInfo.processInfo.arguments.contains("--renew-session") {
             credential?.refreshToken = "test-refresh"
             credential?.sessionExpiresAt = Date().addingTimeInterval(42 * 86400).timeIntervalSince1970

@@ -8,6 +8,8 @@ struct Credential: Codable {
     let server: URL
     let token: String
     let userID: String
+    var name: String? = nil
+    var email: String? = nil
     var refreshToken: String? = nil
     var accessExpiresAt: Double? = nil
     var sessionExpiresAt: Double? = nil
@@ -16,11 +18,13 @@ struct Credential: Codable {
 struct TokenResponse: Decodable {
     let accessToken: String
     let userId: String
+    let name: String?
+    let email: String?
     let refreshToken: String?
     let accessExpiresAt: Double?
     let sessionExpiresAt: Double?
     func credential(server: URL) -> Credential {
-        Credential(server: server, token: accessToken, userID: userId,
+        Credential(server: server, token: accessToken, userID: userId, name: name, email: email,
                    refreshToken: refreshToken, accessExpiresAt: accessExpiresAt, sessionExpiresAt: sessionExpiresAt)
     }
 }

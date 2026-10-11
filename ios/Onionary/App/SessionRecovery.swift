@@ -1,4 +1,5 @@
 import SwiftUI
+import OnionaryCore
 
 private struct SessionRecovery: ViewModifier {
     @Bindable var store: AppStore
@@ -8,6 +9,9 @@ private struct SessionRecovery: ViewModifier {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Sign in again to sync. Your progress and draft are safe.", systemImage: "key.fill")
                         .font(.subheadline)
+                    if let email = store.credential?.email {
+                        Text(AccountIdentity.maskedEmail(email)).font(.caption).foregroundStyle(.secondary)
+                    }
                     if let error = store.reauthenticationError { Text(error).font(.caption).foregroundStyle(.red) }
                     HStack {
                         Button("Sign in with passkey") { Task { await store.reauthenticate() } }
