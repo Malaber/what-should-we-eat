@@ -25,6 +25,9 @@ struct SettingsView: View {
             Section("Session") {
                 Text("Access lasts 14 days, with 28 further days for automatic renewal. Then sign in with a passkey.")
                     .font(.footnote).foregroundStyle(.secondary)
+                if store.credential?.refreshToken == nil {
+                    Text("Sign in once to enable automatic renewal.").font(.footnote).foregroundStyle(.secondary)
+                }
                 if let expires = store.credential?.accessExpiresAt {
                     LabeledContent("Access valid until") { Text(Date(timeIntervalSince1970: expires), format: .dateTime.day().month().year().hour().minute()) }
                 }

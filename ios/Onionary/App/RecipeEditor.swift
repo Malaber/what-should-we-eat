@@ -110,7 +110,7 @@ struct RecipeEditor: View {
     private func save() async {
         saving = true; error = nil; defer { saving = false }
         do { try await store.saveRecipe(draft, id: recipeID); dismiss() }
-        catch { self.error = error.localizedDescription }
+        catch { self.error = L10n.text(error.localizedDescription) }
     }
 }
 
@@ -131,7 +131,7 @@ struct ImportRecipeView: View {
                         Button("Review recipe") { Task {
                             busy = true; defer { busy = false }
                             do { draft = try await store.importDraft(link) }
-                            catch { self.error = error.localizedDescription }
+                            catch { self.error = L10n.text(error.localizedDescription) }
                         } }.disabled(busy)
                         if busy { ProgressView() }
                         if let error { Text(error).foregroundStyle(.red) }
@@ -164,6 +164,6 @@ struct EditRecipeView: View {
     }
     private func load() async {
         error = nil
-        do { draft = try await store.recipeDraft(id: id) } catch { self.error = error.localizedDescription }
+        do { draft = try await store.recipeDraft(id: id) } catch { self.error = L10n.text(error.localizedDescription) }
     }
 }

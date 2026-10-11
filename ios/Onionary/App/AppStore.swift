@@ -110,7 +110,13 @@ final class AppStore {
         renewal = task
         defer { renewal = nil }
         do { return try await task.value }
-        catch APIError.unauthorized { needsReauthentication = true; throw APIError.unauthorized }
+        catch APIError.unauthorized {
+            // A manual passkey sign-in may finish while renewal is in flight.
+            if let current = credential, current.server == previous.server,
+               current.userID == previous.userID, current.token != previous.token { return current }
+            if credential?.token == previous.token { needsReauthentication = true }
+            throw APIError.unauthorized
+        }
     }
 
     func reauthenticate() async {
