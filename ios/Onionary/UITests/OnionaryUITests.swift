@@ -39,6 +39,8 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.staticTexts["Access valid until"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Test Cook"].exists)
+        XCTAssertTrue(app.staticTexts["cook@example.org"].exists)
         XCTAssertFalse(app.buttons["Sign in with passkey"].exists)
     }
 
@@ -48,6 +50,8 @@ final class OnionaryUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--reset", "--expired-session", "--test-passkey-success", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["c***@example.org"].exists)
+        XCTAssertFalse(app.alerts.firstMatch.exists)
         app.buttons["Choose a recipe"].tap()
         app.buttons["recipe-1"].firstMatch.tap()
         app.buttons["ingredient-1"].tap()
