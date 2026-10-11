@@ -4,10 +4,9 @@ from playwright.sync_api import Page, expect
 def login_as_test_user(page: Page):
     page.goto(page.base_url + "/")
     page.locator("#gate-signup").click()
-    page.locator("#registration summary").click()
     page.locator('[name="display_name"]').fill("Test Chef")
     page.locator('[name="email"]').fill("recipes@e2e.com")
-    page.locator("#register button").click()
+    page.locator("#gate-register button").click()
     # Wait for the network requests to finish and the UI to update
     expect(page.locator("#user-greeting")).to_be_visible()
 
