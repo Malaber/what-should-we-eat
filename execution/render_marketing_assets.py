@@ -81,9 +81,9 @@ def render(root: Path, family: str):
     decor = ImageOps.fit(art, (w, round(h*.42)), Image.Resampling.LANCZOS)
     canvas.paste(decor, (0, round(h*.58)))
     text(canvas, (w*.08, h*.045), ['ONIONARY'], w*.038)
-    text(canvas, (w*.08, h*.085), ['A little less juggling.', 'A lot more cooking.'], w*.067, serif=True)
-    text(canvas, (w*.08, h*.18), ['Flexible portions. Every step remembered.'], w*.035, color=INK)
-    device(canvas, screen, (w*.10, h*.25, w*.80, h*.70))
+    text(canvas, (w*.08, h*.085), ['A little less juggling.', 'A lot more cooking.'], min(w*.067, h*.04), serif=True)
+    text(canvas, (w*.08, h*.205), ['Flexible portions. Every step remembered.'], min(w*.035, h*.025), color=INK)
+    device(canvas, screen, (w*.10, h*.29, w*.80, h*.66))
     path = root / '05-cooking-with-onionary.png'
     canvas.save(path, icc_profile=srgb())
     outputs.append(path)

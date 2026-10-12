@@ -39,7 +39,9 @@ jobs:
         if: always()
         with:
           name: onionary-appstore-${{ matrix.family }}-en-US
-          path: .tmp/marketing/${{ matrix.family }}/
+          path: |
+            .tmp/marketing/${{ matrix.family }}/
+            !.tmp/marketing/${{ matrix.family }}/DerivedData/**
           retention-days: 14
 
   release-assets:

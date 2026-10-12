@@ -33,7 +33,9 @@ def main():
         if result.exists():
             raise SystemExit('Use a fresh output directory; an existing result bundle will not be overwritten.')
         subprocess.run(['xcodebuild','-project','Onionary.xcodeproj','-scheme','Onionary',
+            '-derivedDataPath',str(output / 'DerivedData'),
             '-destination',f'platform=iOS Simulator,id={device}', '-parallel-testing-enabled','NO',
+            '-test-timeouts-enabled','YES','-maximum-test-execution-time-allowance','180',
             '-only-testing:OnionaryUITests/OnionaryUITests/testMarketingScreenshots',
             '-resultBundlePath',str(result),'CODE_SIGNING_ALLOWED=NO','test'],cwd=PACKAGE,check=True)
         exported = output / 'attachments'
