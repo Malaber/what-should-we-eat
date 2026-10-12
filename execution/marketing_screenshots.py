@@ -52,6 +52,8 @@ def main():
                 count += 1
         if count != 4:
             raise SystemExit(f'Expected 4 marketing screenshots, found {count}. Inspect attachment manifest.')
+        from execution.render_marketing_assets import render
+        render(screenshots, 'ipad' if args.device.startswith('iPad') else 'iphone')
         print(f'Exported {count} screenshots to {screenshots}')
     finally:
         subprocess.run(['xcrun','simctl','delete',device],check=False)

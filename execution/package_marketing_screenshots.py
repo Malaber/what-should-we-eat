@@ -1,5 +1,7 @@
 """Package successful screenshot artifacts for GitHub Releases, excluding test logs."""
 import argparse
+import hashlib
+import json
 import struct
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -22,18 +24,31 @@ def package(source: Path, output: Path) -> list[Path]:
     for family in ("iphone", "ipad"):
         root = source / f"onionary-appstore-{family}-en-US" / "en-US"
         pngs = sorted(root.glob("*.png"))
-        if len(pngs) != 4 or any(p.stat().st_size == 0 for p in pngs):
-            raise ValueError(f"Expected four nonempty {family} PNGs in {root}")
+        if len(pngs) != 5 or any(p.stat().st_size == 0 for p in pngs):
+            raise ValueError(f"Expected five nonempty {family} PNGs in {root}")
         for png in pngs:
             validate_dimensions(png, family)
-        captures[family] = pngs
+        creative = root / "creative"
+        for name, size in {"header.png": (3840, 1646), "search-results.png": (3000, 2000)}.items():
+            image = creative / name
+            data = image.read_bytes()
+            if (data[:8] != b"\x89PNG\r\n\x1a\n" or len(data) < 26
+                    or struct.unpack(">II", data[16:24]) != size or data[25] != 2):
+                raise ValueError(f"Invalid opaque RGB creative: {image}")
+            pngs.append(image)
+        manifest = json.loads((creative / "manifest.json").read_text())
+        raw = list(root.glob("02-cooking-companion*.png"))
+        if (len(raw) != 1 or manifest["source"] != raw[0].name
+                or manifest["source_sha256"] != hashlib.sha256(raw[0].read_bytes()).hexdigest()):
+            raise ValueError("Marketing artwork does not match the current capture")
+        captures[family] = (root, pngs)
     output.mkdir(parents=True, exist_ok=True)
     archives = []
-    for family, pngs in captures.items():
+    for family, (root, pngs) in captures.items():
         target = output / f"onionary-appstore-{family}-en-US.zip"
         with ZipFile(target, "w", ZIP_DEFLATED) as archive:
             for png in pngs:
-                archive.write(png, f"en-US/{png.name}")
+                archive.write(png, f"en-US/{png.relative_to(root)}")
         archives.append(target)
     return archives
 

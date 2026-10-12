@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: '3.14'
           cache: pip
-      - run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt -r marketing/requirements.txt
       - run: python -m execution.db.init_db
       - run: python -m pytest
       - run: docker build -t onionary:ci .
@@ -41,7 +41,7 @@ jobs:
         with:
           python-version: '3.14'
           cache: pip
-      - run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt -r marketing/requirements.txt
       - run: python -m playwright install --with-deps chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium --device='iPhone 13'
