@@ -1,8 +1,8 @@
 name: App Store screenshots
 on:
   push:
-    branches: [main, codex/onionary-ios-companion]
-    paths: ['ios/**', 'execution/marketing_screenshots.py', 'execution/package_marketing_screenshots.py', '.github/workflows/screenshots.yml']
+    branches: [main, 'codex/**']
+    paths: ['ios/**', 'marketing/**', 'execution/render_marketing_assets.py', 'execution/marketing_screenshots.py', 'execution/package_marketing_screenshots.py', '.github/workflows/screenshots.yml']
     tags: ['v*']
   release:
     types: [published]
@@ -25,6 +25,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install -r marketing/requirements.txt
       - run: brew install xcodegen
       - name: Capture real app screenshots
         env:
@@ -35,7 +39,9 @@ jobs:
         if: always()
         with:
           name: onionary-appstore-${{ matrix.family }}-en-US
-          path: .tmp/marketing/${{ matrix.family }}/
+          path: |
+            .tmp/marketing/${{ matrix.family }}/
+            !.tmp/marketing/${{ matrix.family }}/DerivedData/**
           retention-days: 14
 
   release-assets:

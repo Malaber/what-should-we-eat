@@ -33,7 +33,9 @@ def main():
         if result.exists():
             raise SystemExit('Use a fresh output directory; an existing result bundle will not be overwritten.')
         subprocess.run(['xcodebuild','-project','Onionary.xcodeproj','-scheme','Onionary',
+            '-derivedDataPath',str(output / 'DerivedData'),
             '-destination',f'platform=iOS Simulator,id={device}', '-parallel-testing-enabled','NO',
+            '-test-timeouts-enabled','YES','-maximum-test-execution-time-allowance','180',
             '-only-testing:OnionaryUITests/OnionaryUITests/testMarketingScreenshots',
             '-resultBundlePath',str(result),'CODE_SIGNING_ALLOWED=NO','test'],cwd=PACKAGE,check=True)
         exported = output / 'attachments'
@@ -52,6 +54,8 @@ def main():
                 count += 1
         if count != 4:
             raise SystemExit(f'Expected 4 marketing screenshots, found {count}. Inspect attachment manifest.')
+        from execution.render_marketing_assets import render
+        render(screenshots, 'ipad' if args.device.startswith('iPad') else 'iphone')
         print(f'Exported {count} screenshots to {screenshots}')
     finally:
         subprocess.run(['xcrun','simctl','delete',device],check=False)
