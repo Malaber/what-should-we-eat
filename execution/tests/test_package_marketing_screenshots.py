@@ -49,6 +49,12 @@ def test_render_and_package_current_captures(tmp_path):
     with pytest.raises(ValueError, match='current capture'):
         package(tmp_path, tmp_path / 'stale')
     assert not (tmp_path / 'stale').exists()
+    Image.new('RGB', (1206, 2622), '#eebbaa').save(source)
+    header = source.parent / 'creative/header.png'
+    Image.new('RGBA', (3840, 1646), (255, 255, 255, 0)).save(header)
+    with pytest.raises(ValueError, match='opaque RGB'):
+        package(tmp_path, tmp_path / 'transparent')
+    assert not (tmp_path / 'transparent').exists()
 
 
 def test_partial_capture_cannot_be_published(tmp_path):
