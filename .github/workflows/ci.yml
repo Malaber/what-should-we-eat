@@ -71,6 +71,24 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  ios-archive:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: brew install xcodegen
+      - name: Archive Release for iOS devices and validate all bundles
+        run: |
+          bash ios/Onionary/Scripts/archive.sh "${{ runner.temp }}/Onionary.xcarchive" \
+            "$(python3 execution/version.py --ios)" "${{ github.run_number }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onionary-unsigned-device-archive
+          path: ${{ runner.temp }}/Onionary.xcarchive
+          retention-days: 7
+
   publish-image:
     needs: [backend, browser]
     if: github.event_name != 'pull_request' && github.repository == 'Malaber/what-should-we-eat'
@@ -117,7 +135,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   release-main:
-    needs: [backend, browser, ios, publish-image, html-format]
+    needs: [backend, browser, ios, ios-archive, publish-image, html-format]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Malaber/what-should-we-eat'
     runs-on: ubuntu-latest
     concurrency:
