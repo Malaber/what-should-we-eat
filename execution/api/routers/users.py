@@ -101,3 +101,12 @@ def login_for_access_token(
 def read_users_me(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     return _build_user_out(current_user, db)
 
+
+
+from execution.account_deletion import DeleteAccount, delete_account
+
+
+@router.post("/me/delete", status_code=204)
+def delete_my_account(body: DeleteAccount, current_user: User = Depends(get_current_active_user),
+                      db: Session = Depends(get_db)):
+    delete_account(db, current_user, body.email)
