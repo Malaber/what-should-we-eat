@@ -214,7 +214,7 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
-    func testKitchenEditAndImport() {
+    func testKitchenPlanAndOpenRecipe() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -226,6 +226,14 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Mark cooked"].tap()
         XCTAssertTrue(app.buttons["Mark uncooked"].waitForExistence(timeout: 5))
         app.buttons["Lemon & cheese pasta"].tap()
+        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testEditAndShareRecipe() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
         app.buttons["Cooking options"].tap()
         app.buttons["Edit recipe"].tap()
         let name = app.textFields["Name"]
@@ -245,6 +253,14 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Revoke link"].tap()
         app.tabBars.buttons["Recipes"].tap()
         XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testImportRecipePreview() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
         app.buttons["add-recipe"].tap()
         app.buttons["Import recipe"].tap()
         XCTAssertTrue(app.textFields["Chefkoch or Onionary URL"].waitForExistence(timeout: 5))
