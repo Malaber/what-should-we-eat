@@ -62,3 +62,7 @@ $('profile-form').onsubmit = async event => {
   try { await api('account/profile', {name: $('profile-name').value}); $('status').textContent = window.t('account.saved'); }
   catch(error) { $('error').textContent = error.message; }
 };
+
+// Keep the server-rendered deletion page in the selected application language.
+document.querySelector('a[href="/auth/account/delete"]').href =
+  '/auth/account/delete?lang=' + encodeURIComponent(window.I18n.lang);

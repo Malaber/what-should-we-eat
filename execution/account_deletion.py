@@ -2,7 +2,7 @@
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import or_
-from execution.db.models import User, Household, HouseholdMember, Recipe, MealPlanItem, RecipeShare
+from execution.db.models import User, Household, HouseholdMember, Recipe, MealPlanItem, RecipeShare, Tag
 from execution.db.passkeys import AuthFlow, AuthSession, Passkey, PasskeyAddLink
 
 
@@ -30,8 +30,13 @@ def delete_account(db, user, confirmation):
         recipes = db.query(Recipe).filter_by(household_id=household.id).all()
         ids = [r.id for r in recipes]
         db.query(MealPlanItem).filter(or_(MealPlanItem.household_id == household.id, MealPlanItem.recipe_id.in_(ids))).delete(synchronize_session=False)
+        tags = {tag for recipe in recipes for tag in recipe.tags}
         for recipe in recipes:
             db.delete(recipe)
+        db.flush()
+        for tag in tags:
+            if not db.query(Recipe).filter(Recipe.tags.any(id=tag.id)).count():
+                db.delete(tag)
         db.flush()
     # AuthFlow uses JSON instead of an FK, so remove related ceremonies explicitly.
     for flow in db.query(AuthFlow).all():

@@ -504,7 +504,7 @@ def deletion_page(request, user=None, error=None, deleted=False):
     copy = json.loads((Path(__file__).resolve().parents[3] / 'frontend/locales' / f'{lang}.json').read_text())
     def t(key): return escape(copy['deletion.' + key])
     if deleted:
-        content = f'<h1>{t("done")}</h1><p>{t("success")}</p><a href="/">{t("home")}</a>'
+        content = f'<script src="/account-deleted.js" defer></script><h1>{t("done")}</h1><p>{t("success")}</p><a href="/">{t("home")}</a>'
     else:
         content = f"""<h1>{t("title")}</h1><p>{t("warning")}</p>
         <p>{escape(user.email)}</p><p role="alert">{t("mismatch") if error else ""}</p>
