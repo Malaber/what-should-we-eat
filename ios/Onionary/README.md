@@ -74,8 +74,9 @@ open Onionary.xcodeproj
 ```
 
 GitHub Actions tests backend migrations, builds the container, exercises real
-WebAuthn in desktop/mobile Chromium, and builds/tests iOS. No Apple signing secrets
-are needed in CI. Workflows activate when this repository moves to GitHub.
+WebAuthn in desktop/mobile Chromium, builds/tests iOS on isolated simulators, and
+archives Release for generic iOS devices. Archive validation checks the app and
+both extensions. CI needs no Apple signing secrets; signing/export remain local.
 
 ## Background TestFlight upload
 
@@ -103,7 +104,8 @@ The helper refuses existing local or remote tags and never force-pushes.
 Use the next unused version for subsequent changes.
 
 The detached worker tests, archives, and exports directly to App Store Connect.
-It survives terminal/chat disconnects, records the exit status, and prevents
+It survives terminal/chat disconnects, records the exit status and release stage
+(tests/archive/upload/uploaded), and prevents
 concurrent uploads using a file lock. Logs remain in `.tmp/`; archives and test
 results live in the system temporary directory. Increase the build number for
 later uploads. Successful export confirms upload acceptance, not completion of
