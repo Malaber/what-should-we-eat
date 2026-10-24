@@ -13,3 +13,11 @@
 
 - Split the combined kitchen/edit/import UI case into independent flows, retaining all assertions. Xcode waited 60 seconds twice for menu animation quiescence; the old 120-second limit expired even though subsequent assertions succeeded.
 - Build-for-testing has a separate 10-minute bound; test-without-building has a 30-minute suite bound and 3-minute per-test bound. CI has a matching outer deadline. No test retries.
+
+## Build 13 preview release
+The user explicitly authorized uploading the signed 0.5.0 (13) archive for UI
+testing before the full UI suite is green. Account-deletion success and offline
+preservation tests passed. The split edit/share test currently fails because its
+setup does not select a recipe before looking for Cooking options; that test fix
+remains pending. This preview upload does not mark the regression gate complete.
+Archive signing and all three bundle versions were revalidated before upload.
