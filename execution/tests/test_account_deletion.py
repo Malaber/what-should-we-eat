@@ -39,3 +39,39 @@ def test_shared_kitchen_survives(client, auth_headers, second_user_headers):
     with SessionLocal() as db:
         assert db.query(Recipe).one().name == 'Shared'
         assert db.query(User).one().email == 'bob@test.com'
+
+
+def browser_session(client):
+    from execution.api.routers.passkeys import digest
+    with SessionLocal() as db:
+        user = db.query(User).filter_by(email='alice@test.com').one()
+        db.add(AuthSession(token_hash=digest('browser'), user_id=user.id,
+                           expires_at=datetime.now(timezone.utc)+timedelta(days=1)))
+        db.commit()
+    client.cookies.set('onionary_session', 'browser')
+
+
+def test_native_browser_form_and_csrf(client, auth_headers):
+    browser_session(client)
+    page = client.get('/auth/account/delete?lang=de')
+    assert page.status_code == 200
+    assert 'Konto dauerhaft löschen' in page.text
+    assert '<form method="post"' in page.text
+    assert '<label for="email">' in page.text
+    endpoint = '/auth/account/delete/confirm'
+    assert client.post(endpoint, data={'email':'alice@test.com'}).status_code == 403
+    headers = {'Origin':'http://localhost:8000'}
+    assert client.post(endpoint, headers=headers, data={'email':'wrong@test.com'}).status_code == 400
+    assert client.get('/users/me', headers=auth_headers).status_code == 200
+    response = client.post(endpoint, headers=headers, data={'email':'alice@test.com'})
+    assert response.status_code == 200
+    assert 'Account deleted' in response.text
+    assert 'Max-Age=0' in response.headers['set-cookie']
+    assert client.get('/users/me', headers=auth_headers).status_code == 401
+
+
+def test_browser_json_deletion_requires_origin(client, auth_headers):
+    browser_session(client)
+    assert client.post('/auth/account/delete', json={'email':'alice@test.com'}).status_code == 403
+    assert client.post('/auth/account/delete', headers={'Origin':'http://localhost:8000'},
+                       json={'email':'alice@test.com'}).json() == {'deleted':True}

@@ -224,5 +224,14 @@
   "account.light": "Hell",
   "account.dark": "Dunkel",
   "account.keep-key": "Mindestens ein Passkey bleibt erhalten. Füge vor dem Löschen des letzten Schlüssels einen weiteren hinzu.",
-  "account.saved": "Konto aktualisiert."
+  "account.saved": "Konto aktualisiert.",
+  "deletion.title": "Gefahrenzone",
+  "deletion.warning": "Lösche dein Konto, Passkeys, Sitzungen und Küchen ohne weitere Mitglieder dauerhaft, einschließlich ihrer Rezepte und Freigabelinks. Küchen mit weiteren Mitgliedern bleiben für diese erhalten. Dies kann nicht rückgängig gemacht werden.",
+  "deletion.confirm": "Gib zur Bestätigung deine Konto-E-Mail-Adresse ein",
+  "deletion.button": "Konto dauerhaft löschen",
+  "deletion.cancel": "Abbrechen",
+  "deletion.done": "Konto gelöscht",
+  "deletion.success": "Dein Konto wurde dauerhaft gelöscht. Du bist abgemeldet.",
+  "deletion.home": "Zurück zu Onionary",
+  "deletion.mismatch": "Die E-Mail-Adresse stimmt nicht mit deinem Konto überein."
 }

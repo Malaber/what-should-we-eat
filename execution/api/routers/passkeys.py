@@ -478,3 +478,64 @@ def update_account_profile(body: AccountName, request: Request, db: Session = De
     user.name = body.name.strip()
     db.commit()
     return {'name': user.name, 'email': user.email}
+
+
+from execution.account_deletion import DeleteAccount, delete_account
+
+
+@router.post('/account/delete', dependencies=[Depends(same_origin)])
+def delete_browser_account(body: DeleteAccount, request: Request, response: Response,
+                           db: Session = Depends(get_db)):
+    delete_account(db, session_user(request, db), body.email)
+    response.delete_cookie(COOKIE, path='/')
+    response.delete_cookie(COOKIE, path='/auth')
+    response.delete_cookie(FLOW_COOKIE, path='/auth')
+    response.headers['Cache-Control'] = 'no-store'
+    return {'deleted': True}
+
+
+def deletion_page(request, user=None, error=None, deleted=False):
+    """Server-rendered confirmation remains usable without JS or CSS."""
+    import json
+    from html import escape
+    from fastapi.responses import HTMLResponse
+    lang = request.query_params.get('lang', 'de' if request.headers.get('accept-language', '').startswith('de') else 'en')
+    lang = lang if lang in ('en', 'de') else 'en'
+    copy = json.loads((Path(__file__).resolve().parents[3] / 'frontend/locales' / f'{lang}.json').read_text())
+    def t(key): return escape(copy['deletion.' + key])
+    if deleted:
+        content = f'<h1>{t("done")}</h1><p>{t("success")}</p><a href="/">{t("home")}</a>'
+    else:
+        content = f"""<h1>{t("title")}</h1><p>{t("warning")}</p>
+        <p>{escape(user.email)}</p><p role="alert">{t("mismatch") if error else ""}</p>
+        <form method="post" action="/auth/account/delete/confirm?lang={lang}">
+        <label for="email">{t("confirm")}</label>
+        <input id="email" name="email" type="email" required autocomplete="off" maxlength="255">
+        <button class="danger" type="submit">{t("button")}</button>
+        <a href="/auth/security">{t("cancel")}</a></form>"""
+    return HTMLResponse(f'<!doctype html><html lang="{lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{t("title")} · Onionary</title><link rel="stylesheet" href="/passkey.css"></head><body class="auth-surface"><main>{content}</main></body></html>',
+                        headers={'Cache-Control':'no-store', 'Referrer-Policy':'same-origin'})
+
+
+@router.get('/account/delete')
+def deletion_confirmation(request: Request, db: Session = Depends(get_db)):
+    return deletion_page(request, session_user(request, db))
+
+
+@router.post('/account/delete/confirm', dependencies=[Depends(same_origin)])
+async def confirm_browser_deletion(request: Request, db: Session = Depends(get_db)):
+    user = session_user(request, db)
+    form = await request.form()
+    try:
+        delete_account(db, user, str(form.get('email', '')))
+    except HTTPException as exc:
+        if exc.status_code != 400:
+            raise
+        response = deletion_page(request, user, error=True)
+        response.status_code = 400
+        return response
+    response = deletion_page(request, deleted=True)
+    response.delete_cookie(COOKIE, path='/')
+    response.delete_cookie(COOKIE, path='/auth')
+    response.delete_cookie(FLOW_COOKIE, path='/auth')
+    return response
