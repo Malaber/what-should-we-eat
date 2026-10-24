@@ -7,6 +7,42 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
+    func testAccountDeletionConfirmationAndSuccess() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Settings"].tap()
+        app.swipeUp()
+        app.buttons["delete-account"].tap()
+        let confirm = app.buttons["confirm-delete-account"]
+        XCTAssertFalse(confirm.isEnabled)
+        let email = app.textFields["delete-account-email"]
+        email.tap(); email.typeText("cook@example.org")
+        XCTAssertTrue(confirm.isEnabled)
+        confirm.tap()
+        XCTAssertTrue(app.alerts["Account deleted"].waitForExistence(timeout: 5))
+        app.alerts.buttons["OK"].tap()
+        XCTAssertTrue(app.textFields["backend"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testAccountDeletionOfflineKeepsAccount() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--offline-delete", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Settings"].tap()
+        app.swipeUp()
+        app.buttons["delete-account"].tap()
+        let email = app.textFields["delete-account-email"]
+        email.tap(); email.typeText("cook@example.org")
+        app.buttons["confirm-delete-account"].tap()
+        XCTAssertTrue(app.staticTexts["delete-account-error"].waitForExistence(timeout: 5))
+        XCTAssertEqual(email.value as? String, "cook@example.org")
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["delete-account"].exists)
+    }
+
+    @MainActor
     func testManualRecipeKeepsDraftWhenServerUnavailable() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--offline-save", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

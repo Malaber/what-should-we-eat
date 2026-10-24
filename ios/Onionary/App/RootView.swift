@@ -23,7 +23,10 @@ struct RootView: View {
                     NavigationStack { SettingsView(store: store) }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
                 }.id(locale.identifier + (store.credential?.server.absoluteString ?? "") + (store.credential?.userID ?? ""))
             }
-        }.connectionRecovery(store)
+        }.alert("Account deleted", isPresented: $store.accountDeleted) {
+            Button("OK", role: .cancel) {}
+        } message: { Text("Your account has been permanently deleted. You are signed out.") }
+         .connectionRecovery(store)
          .onChange(of: scenePhase) { _, phase in if phase == .active { store.checkImportInbox(); store.synchronizeCookingActivity(); Task { await store.refresh() } } }
          .onChange(of: store.credential?.userID) { store.checkImportInbox() }
          .task { store.checkImportInbox(); store.synchronizeCookingActivity(); await store.refresh() }
