@@ -234,6 +234,11 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
+        app.buttons["Choose a recipe"].tap()
+        let recipe = app.buttons["recipe-1"].firstMatch
+        XCTAssertTrue(recipe.waitForExistence(timeout: 5))
+        recipe.tap()
+        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Edit recipe"].tap()
         let name = app.textFields["Name"]

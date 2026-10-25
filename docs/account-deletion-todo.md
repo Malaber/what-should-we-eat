@@ -10,6 +10,6 @@
 - Browser: three desktop cases (light, dark, no CSS/JS), two mobile cases passed.
 - HTML formatter and git diff checks passed; light/dark screenshots inspected.
 - Swift core: 13 passed. Native app and UI tests compile.
-- Simulator harness stalled before UI test execution. Stopped task-owned Xcode process and preserved .tmp/account-deletion-ios-current.log and the result bundle; native UI success/offline tests remain unverified.
+- Native UI deletion success and offline preservation passed. Full suite: 15 passed, one edit/share setup failure; recipe selection fixed, fresh regression run pending.
 - Draft PR #8. Backend must deploy before the app. Physical-iPhone recording instructions: docs/account-deletion.md.
-- Remaining: successful native UI run/CI results, physical-device recording for App Review. No deployment or TestFlight upload in this change.
+- TestFlight 0.5.0 (13) upload accepted. Remaining: full native UI pass/CI results and physical-device recording for App Review. Backend deployment is still required.

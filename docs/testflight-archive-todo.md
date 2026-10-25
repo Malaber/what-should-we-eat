@@ -21,3 +21,8 @@ preservation tests passed. The split edit/share test currently fails because its
 setup does not select a recipe before looking for Cooking options; that test fix
 remains pending. This preview upload does not mark the regression gate complete.
 Archive signing and all three bundle versions were revalidated before upload.
+
+## Follow-up validation
+- Build 13 upload accepted by App Store Connect on 2026-10-25; processing/tester availability not verified.
+- The completed UI run had 15 passes and one failure: the split edit/share test omitted recipe selection. Fixed by choosing the seeded recipe and asserting that cooking options appear before editing. No retries or removed assertions.
+- Full simulator regression run restarted after this test-only fix; result pending. The uploaded app binary is unchanged.
