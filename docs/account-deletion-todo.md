@@ -10,6 +10,6 @@
 - Browser: three desktop cases (light, dark, no CSS/JS), two mobile cases passed.
 - HTML formatter and git diff checks passed; light/dark screenshots inspected.
 - Swift core: 13 passed. Native app and UI tests compile.
-- Native UI deletion success and offline preservation passed. Full suite: 15 passed, one edit/share setup failure; recipe selection fixed, fresh regression run pending.
+- Native UI deletion success and offline preservation passed. Corrected full local suite: 16 UI tests passed. GitHub PR run passed; duplicate branch run hit an Xcode launch timeout before its first assertion. Debugger attachment disabled; new run pending.
 - Draft PR #8. Backend must deploy before the app. Physical-iPhone recording instructions: docs/account-deletion.md.
 - TestFlight 0.5.0 (13) upload accepted. Remaining: full native UI pass/CI results and physical-device recording for App Review. Backend deployment is still required.

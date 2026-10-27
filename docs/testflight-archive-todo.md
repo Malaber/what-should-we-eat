@@ -35,3 +35,8 @@ Evidence: local corrected suite passed all 16 UI tests. GitHub PR run 4016446150
 passed, while branch run 40164459002 failed in the first app launch before any
 assertion (Xcode launch timeout; DebuggerVersionStore / signal delivery errors).
 The remaining 15 tests and both unsigned archive jobs passed.
+
+Generated scheme verified: TestAction has an empty selectedDebuggerIdentifier,
+PosixSpawn launcher, and the original UI test target. All assertions remain.
+XcodeGen setting reference: https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md
+New full suite runs in background; completion is not yet verified.
