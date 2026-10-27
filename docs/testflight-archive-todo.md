@@ -26,3 +26,12 @@ Archive signing and all three bundle versions were revalidated before upload.
 - Build 13 upload accepted by App Store Connect on 2026-10-25; processing/tester availability not verified.
 - The completed UI run had 15 passes and one failure: the split edit/share test omitted recipe selection. Fixed by choosing the seeded recipe and asserting that cooking options appear before editing. No retries or removed assertions.
 - Full simulator regression run restarted after this test-only fix; result pending. The uploaded app binary is unchanged.
+
+## CI launch follow-up (2026-10-27)
+- [ ] Disable debugger attachment in the automated test action; verify generated scheme and run the suite.
+- [ ] Push the fix and record new validation without retries or skipped tests.
+
+Evidence: local corrected suite passed all 16 UI tests. GitHub PR run 40164461506
+passed, while branch run 40164459002 failed in the first app launch before any
+assertion (Xcode launch timeout; DebuggerVersionStore / signal delivery errors).
+The remaining 15 tests and both unsigned archive jobs passed.
