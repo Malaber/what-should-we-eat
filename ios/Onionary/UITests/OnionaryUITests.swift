@@ -348,6 +348,22 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
+    func testPortionButtonsWithoutKeyboard() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.buttons["Choose a recipe"].tap()
+        app.buttons["recipe-1"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["portion-plus"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
+        app.buttons["portion-plus"].tap()
+        XCTAssertTrue(app.staticTexts["2× recipe"].waitForExistence(timeout: 5))
+        app.buttons["portion-minus"].tap()
+        XCTAssertTrue(app.staticTexts["1× recipe"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["portion-minus"].isEnabled)
+    }
+
+    @MainActor
     func testCookUndoScaleAndRestoreAfterTermination() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

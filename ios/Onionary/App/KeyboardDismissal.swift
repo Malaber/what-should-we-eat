@@ -9,18 +9,27 @@ private final class OutsideFieldTap: UITapGestureRecognizer, UIGestureRecognizer
         super.init(target: nil, action: nil)
         addTarget(self, action: #selector(dismissKeyboard))
         cancelsTouchesInView = false
+        delaysTouchesBegan = false
+        delaysTouchesEnded = false
         delegate = self
     }
 
     @objc private func dismissKeyboard() { view?.endEditing(true) }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        // Do not compete with cooking controls when there is nothing to dismiss.
+        guard let window = view, Self.hasFocusedEditor(in: window) else { return false }
         var candidate = touch.view
         while let current = candidate {
             if current is UITextField || current is UITextView || current is UIToolbar { return false }
             candidate = current.superview
         }
         return true
+    }
+
+    private static func hasFocusedEditor(in view: UIView) -> Bool {
+        if view.isFirstResponder && (view is UITextField || view is UITextView) { return true }
+        return view.subviews.contains { hasFocusedEditor(in: $0) }
     }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
