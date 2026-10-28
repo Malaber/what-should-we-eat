@@ -135,4 +135,6 @@ schemes:
       targets:
         Onionary: all
     test:
+      # Automated UI assertions need XCTest, not an LLDB attachment at each launch.
+      debugEnabled: false
       targets: [OnionaryUITests]

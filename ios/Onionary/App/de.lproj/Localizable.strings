@@ -223,3 +223,11 @@
 "Account" = "Konto";
 
 "Email" = "E-Mail";
+
+"Danger zone" = "Gefahrenzone";
+"Permanently delete account" = "Konto dauerhaft löschen";
+"Delete account" = "Konto löschen";
+"Type your account email to confirm" = "Konto-E-Mail-Adresse zur Bestätigung eingeben";
+"Account deleted" = "Konto gelöscht";
+"Your account has been permanently deleted. You are signed out." = "Dein Konto wurde dauerhaft gelöscht. Du bist abgemeldet.";
+"Deleting your account permanently removes passkeys, sessions and kitchens without other members, including recipes and shared links. Shared kitchens remain for their other members. This cannot be undone." = "Dein Konto, Passkeys, Sitzungen und Küchen ohne weitere Mitglieder werden dauerhaft gelöscht, einschließlich Rezepten und Freigabelinks. Geteilte Küchen bleiben für ihre anderen Mitglieder erhalten. Dies kann nicht rückgängig gemacht werden.";

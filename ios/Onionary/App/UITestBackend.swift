@@ -18,6 +18,11 @@ import OnionaryCore
         if ProcessInfo.processInfo.arguments.contains("--expired-session"), token == "test" { throw APIError.unauthorized }
         let input = try body.map { try JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? nil
         var result: Any = [:]
+        if path == "users/me/delete" {
+            if ProcessInfo.processInfo.arguments.contains("--offline-delete") { throw APIError.unavailable }
+            guard input?["email"] as? String == "cook@example.org" else { throw APIError.unavailable }
+            return Data()
+        }
         if path == "users/me" { result = ["id": 1, "name": "Test Cook", "email": "cook@example.org"] }
         else if path == "recipes" && method == "GET" { result = [recipe] }
         else if path == "recipes/1" && method == "GET" { result = recipe }

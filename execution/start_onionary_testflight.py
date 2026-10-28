@@ -31,7 +31,14 @@ def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     status_file = OUTPUT / "status.json"
     if args.status:
-        print(status_file.read_text() if status_file.exists() else "No upload has been started.")
+        if status_file.exists():
+            state = json.loads(status_file.read_text())
+            stage_file = OUTPUT / "stage.txt"
+            if stage_file.exists():
+                state["stage"] = stage_file.read_text()
+            print(json.dumps(state, indent=2))
+        else:
+            print("No upload has been started.")
         return
     if args.version == "auto":
         args.version = subprocess.check_output(
@@ -62,7 +69,10 @@ def main():
                 command.append(str(args.archive))
                 state["archive"] = str(args.archive)
                 status_file.write_text(json.dumps(state, indent=2))
-            result = subprocess.run(command, cwd=ROOT)
+            stage_file = OUTPUT / "stage.txt"
+            stage_file.write_text("starting")
+            result = subprocess.run(command, cwd=ROOT, env={**os.environ, "ONIONARY_RELEASE_STAGE_FILE": str(stage_file)})
+            state["stage"] = stage_file.read_text()
             state.update(status="uploaded" if result.returncode == 0 else "failed", exit_code=result.returncode,
                          finished_at=datetime.now(timezone.utc).isoformat())
             status_file.write_text(json.dumps(state, indent=2))

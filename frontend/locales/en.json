@@ -226,5 +226,14 @@
   "account.light": "Light",
   "account.dark": "Dark",
   "account.keep-key": "Keep at least one passkey. Add a backup before removing your last key.",
-  "account.saved": "Account updated."
+  "account.saved": "Account updated.",
+  "deletion.title": "Danger zone",
+  "deletion.warning": "Permanently delete your account, passkeys, sessions and kitchens that have no other members, including their recipes and shared links. Kitchens with other members remain available to them. This cannot be undone.",
+  "deletion.confirm": "Type your account email to confirm",
+  "deletion.button": "Permanently delete account",
+  "deletion.cancel": "Cancel",
+  "deletion.done": "Account deleted",
+  "deletion.success": "Your account has been permanently deleted. You are signed out.",
+  "deletion.home": "Back to Onionary",
+  "deletion.mismatch": "Email confirmation does not match your account."
 }

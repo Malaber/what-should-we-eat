@@ -11,3 +11,6 @@ dialog { max-width: 420px; border: 1px solid var(--auth-border); border-radius: 
 #keys h2 { flex: 1 1 100%; font: 600 1.1rem system-ui; margin: 0; overflow-wrap: anywhere; }
 #keys p { flex: 1 1 100%; margin: 0; }
 #keys button { width: auto; padding: .6rem 1rem; margin: .25rem 0; }
+
+.auth-surface .danger { display: inline-block; background: #b42318; color: #fff; padding: .85rem 1.2rem; border: 2px solid #b42318; border-radius: .7rem; font-weight: 700; margin-block: 1rem; }
+.auth-surface .danger:hover { background: #8f1c13; color: #fff; }

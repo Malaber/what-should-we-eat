@@ -6,6 +6,7 @@ import OnionaryCore
 
 @MainActor @Observable
 final class AppStore {
+    var accountDeleted = false
     var credential: Credential?
     var kitchen = Kitchen()
     var error: String?
@@ -335,6 +336,23 @@ final class AppStore {
         let data = try draft.validatedData()
         _ = try await request(id.map { "recipes/\($0)" } ?? "recipes", method: id == nil ? "POST" : "PUT", body: data)
         await refresh()
+    }
+
+    func deleteAccount(email: String) async throws {
+        guard !busy else { throw APIError.unavailable }
+        busy = true; defer { busy = false }
+        _ = try await request("users/me/delete", method: "POST", body: JSONEncoder().encode(["email": email]))
+        renewal?.cancel(); renewal = nil
+        if let file {
+            try? FileManager.default.removeItem(at: file)
+            try? FileManager.default.removeItem(at: file.appendingPathExtension("meals"))
+        }
+        try? CredentialStore.remove()
+        await stopCookingActivity(); clearWidget()
+        credential = nil; kitchen = Kitchen(); mealItems = []; file = nil
+        pendingImport = nil; editingRecipe = nil; sharingRecipe = nil
+        needsReauthentication = false; reauthenticationError = nil; error = nil
+        accountDeleted = true
     }
 
     func disconnect() async {

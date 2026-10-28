@@ -7,6 +7,42 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
+    func testAccountDeletionConfirmationAndSuccess() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Settings"].tap()
+        app.swipeUp()
+        app.buttons["delete-account"].tap()
+        let confirm = app.buttons["confirm-delete-account"]
+        XCTAssertFalse(confirm.isEnabled)
+        let email = app.textFields["delete-account-email"]
+        email.tap(); email.typeText("cook@example.org")
+        XCTAssertTrue(confirm.isEnabled)
+        confirm.tap()
+        XCTAssertTrue(app.alerts["Account deleted"].waitForExistence(timeout: 5))
+        app.alerts.buttons["OK"].tap()
+        XCTAssertTrue(app.textFields["backend"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testAccountDeletionOfflineKeepsAccount() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--offline-delete", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Settings"].tap()
+        app.swipeUp()
+        app.buttons["delete-account"].tap()
+        let email = app.textFields["delete-account-email"]
+        email.tap(); email.typeText("cook@example.org")
+        app.buttons["confirm-delete-account"].tap()
+        XCTAssertTrue(app.staticTexts["delete-account-error"].waitForExistence(timeout: 5))
+        XCTAssertEqual(email.value as? String, "cook@example.org")
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["delete-account"].exists)
+    }
+
+    @MainActor
     func testManualRecipeKeepsDraftWhenServerUnavailable() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--offline-save", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
@@ -178,7 +214,7 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
-    func testKitchenEditAndImport() {
+    func testKitchenPlanAndOpenRecipe() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -190,6 +226,19 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Mark cooked"].tap()
         XCTAssertTrue(app.buttons["Mark uncooked"].waitForExistence(timeout: 5))
         app.buttons["Lemon & cheese pasta"].tap()
+        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testEditAndShareRecipe() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.buttons["Choose a recipe"].tap()
+        let recipe = app.buttons["recipe-1"].firstMatch
+        XCTAssertTrue(recipe.waitForExistence(timeout: 5))
+        recipe.tap()
+        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Edit recipe"].tap()
         let name = app.textFields["Name"]
@@ -209,6 +258,14 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Revoke link"].tap()
         app.tabBars.buttons["Recipes"].tap()
         XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testImportRecipePreview() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
         app.buttons["add-recipe"].tap()
         app.buttons["Import recipe"].tap()
         XCTAssertTrue(app.textFields["Chefkoch or Onionary URL"].waitForExistence(timeout: 5))
@@ -288,6 +345,22 @@ final class OnionaryUITests: XCTestCase {
         attachment.name = "marketing-" + name
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+
+    @MainActor
+    func testPortionButtonsWithoutKeyboard() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.buttons["Choose a recipe"].tap()
+        app.buttons["recipe-1"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["portion-plus"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
+        app.buttons["portion-plus"].tap()
+        XCTAssertTrue(app.staticTexts["2× recipe"].waitForExistence(timeout: 5))
+        app.buttons["portion-minus"].tap()
+        XCTAssertTrue(app.staticTexts["1× recipe"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["portion-minus"].isEnabled)
     }
 
     @MainActor
