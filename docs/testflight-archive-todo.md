@@ -40,3 +40,13 @@ Generated scheme verified: TestAction has an empty selectedDebuggerIdentifier,
 PosixSpawn launcher, and the original UI test target. All assertions remain.
 XcodeGen setting reference: https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md
 New full suite runs in background; completion is not yet verified.
+
+## Portion tap follow-up (2026-10-28)
+- [ ] Restrict keyboard dismissal recognition to active text editing; avoid delaying control touches.
+- [ ] Verify existing keyboard-dismissal, plus/minus, precision and restoration UI assertions in a fresh background run.
+
+Branch run 40579499757 failed after portion-minus: accessibility still showed
+2.58 instead of 1.58. Other 15 UI tests passed; PR run and local suite passed.
+The global keyboard recognizer currently receives every tap, even without an
+active editor, and leaves UIKit touch-end delays enabled. This is an interaction
+hazard to remove; CI confirmation remains required before calling it resolved.
