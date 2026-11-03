@@ -233,3 +233,6 @@
 "Deleting your account permanently removes passkeys, sessions and kitchens without other members, including recipes and shared links. Shared kitchens remain for their other members. This cannot be undone." = "Dein Konto, Passkeys, Sitzungen und Küchen ohne weitere Mitglieder werden dauerhaft gelöscht, einschließlich Rezepten und Freigabelinks. Geteilte Küchen bleiben für ihre anderen Mitglieder erhalten. Dies kann nicht rückgängig gemacht werden.";
 
 "Suggested tags" = "Vorgeschlagene Tags";
+
+"Recipe language" = "Rezeptsprache";
+"Detect input language" = "Eingabesprache erkennen";

@@ -5,6 +5,7 @@ import OnionaryCore
 struct IntelligenceRecipeView: View {
     @Bindable var store: AppStore
     @State private var prompt = ""
+    @State private var recipeLanguage = RecipeLanguage.automatic
     @State private var draft: RecipeDraft?
     @State private var busy = false
     @State private var error: String?
@@ -28,6 +29,11 @@ struct IntelligenceRecipeView: View {
                             .accessibilityLabel("Describe your recipe")
                         Text("Paste a recipe or describe ingredients, portions and cooking steps.").foregroundStyle(.secondary)
                     }
+                    Picker("Recipe language", selection: $recipeLanguage) {
+                        ForEach(RecipeLanguage.allCases) { language in
+                            Text(LocalizedStringKey(language.title)).tag(language)
+                        }
+                    }
                     Section("Apple Intelligence") {
                         Text("Generation stays on this device. Review ingredients, quantities and cooking instructions before saving to your backend.")
                         if let unavailable { Text(unavailable).foregroundStyle(.secondary) }
@@ -46,7 +52,7 @@ struct IntelligenceRecipeView: View {
         guard #available(iOS 26, *), unavailable == nil else { return }
         busy = true; error = nil; defer { busy = false }
         do {
-            let session = LanguageModelSession(instructions: "Create a recipe draft from the user's text, in their language. Preserve provided quantities and portions. Use explicit units. Never claim allergy safety. Return practical complete cooking instructions.")
+            let session = LanguageModelSession(instructions: recipeLanguage.instruction + " Create a recipe draft from the user's text, in their language. Preserve provided quantities and portions. Use explicit units. Never claim allergy safety. Return practical complete cooking instructions.")
             let result = try await session.respond(to: String(prompt.prefix(12000)), generating: GeneratedRecipe.self).content
             var recipe = RecipeDraft(); recipe.name = result.name; recipe.servings = Decimal(result.servings)
             recipe.ingredients = result.ingredients.map { source in
