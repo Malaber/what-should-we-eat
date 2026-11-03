@@ -60,6 +60,7 @@ struct RecipeEditor: View {
                             }
                         }
                     }.onDelete { draft.ingredients.remove(atOffsets: $0) }
+                     .onMove { draft.ingredients.move(fromOffsets: $0, toOffset: $1) }
                     Button("Add ingredient") { draft.ingredients.append(.init()) }
                 }
                 Section {
@@ -110,6 +111,7 @@ struct RecipeEditor: View {
                         }
                     }
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
+                    ToolbarItem(placement: .topBarLeading) { EditButton() }
                     ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving) }
                 }
                 .alert("Ingredient amount help", isPresented: $showingStepHelp) {

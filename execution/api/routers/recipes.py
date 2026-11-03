@@ -102,7 +102,7 @@ def create_recipe(data: RecipeCreate, current_user: User = Depends(get_current_a
         total_time_min=data.total_time_min,
     )
     recipe.ingredients = [
-        Ingredient(**ing.model_dump()) for ing in data.ingredients
+        Ingredient(**ing.model_dump(), position=index) for index, ing in enumerate(data.ingredients)
     ]
     recipe.instruction_steps = [
         InstructionStep(**step.model_dump()) for step in data.instruction_steps
@@ -148,8 +148,8 @@ def import_recipes_from_household(
         )
         
         new_recipe.ingredients = [
-            Ingredient(name=ing.name, quantity=ing.quantity, unit=ing.unit)
-            for ing in recipe.ingredients
+            Ingredient(name=ing.name, quantity=ing.quantity, unit=ing.unit, position=index)
+            for index, ing in enumerate(recipe.ingredients)
         ]
         
         new_recipe.instruction_steps = [
@@ -221,7 +221,7 @@ def update_recipe(recipe_id: int, data: RecipeUpdate, current_user: User = Depen
     # replace ingredients if provided
     if data.ingredients is not None:
         recipe.ingredients = [
-            Ingredient(**ing.model_dump()) for ing in data.ingredients
+            Ingredient(**ing.model_dump(), position=index) for index, ing in enumerate(data.ingredients)
         ]
 
     # replace instruction steps if provided

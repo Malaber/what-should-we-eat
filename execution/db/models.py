@@ -162,6 +162,7 @@ class Recipe(Base):
         "Ingredient",
         back_populates="recipe",
         cascade="all, delete-orphan",
+        order_by="(Ingredient.position, Ingredient.id)",
     )
     tags = relationship(
         "Tag",
@@ -192,6 +193,7 @@ class Ingredient(Base):
     name = Column(String(255), nullable=False)
     quantity = Column(Float, nullable=True)
     unit = Column(String(50), nullable=True)
+    position = Column(Integer, nullable=False, default=0, server_default="0")
 
     recipe = relationship("Recipe", back_populates="ingredients")
 
