@@ -12,11 +12,12 @@ public enum RecipeBrowsing {
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
-    public static func recipes(_ recipes: [Recipe], query: String = "", category: String? = nil, quickestFirst: Bool = false) -> [Recipe] {
+    public static func recipes(_ recipes: [Recipe], query: String = "", category: String? = nil, categories: Set<String> = [], quickestFirst: Bool = false) -> [Recipe] {
         let terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
         return recipes.filter { recipe in
             let tags = (recipe.tags ?? []).map(\.name)
             guard category == nil || tags.contains(category!) else { return false }
+            guard categories.allSatisfy({ selected in tags.contains { $0.localizedCaseInsensitiveCompare(selected) == .orderedSame } }) else { return false }
             let searchable = ([recipe.name] + tags + recipe.ingredients.map(\.name)).joined(separator: " ")
             return terms.allSatisfy { searchable.localizedStandardContains($0) }
         }.sorted { lhs, rhs in

@@ -74,36 +74,31 @@ struct RecipesView: View {
     @State private var search = ""
     private enum Creation: String, Identifiable { case manual, intelligence, importRecipe; var id: String { rawValue } }
     @State private var creation: Creation?
-    @State private var category: String?
+    @State private var selectedTags: Set<String> = []
     @State private var quickestFirst = false
     @State private var showAllRecent = false
-    var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, category: category, quickestFirst: quickestFirst) }
+    var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, categories: selectedTags, quickestFirst: quickestFirst) }
     var body: some View {
         List {
-            if let category {
-                Section {
-                    HStack {
-                        Label(category, systemImage: "tag.fill").font(.headline)
-                        Spacer()
-                        Button("All recipes") { self.category = nil }
-                    }
-                }
-            } else {
+            if !selectedTags.isEmpty {
+                Button("All recipes") { selectedTags.removeAll() }
+            }
+            Group {
                 let categories = RecipeBrowsing.categories(store.kitchen.recipes, query: search)
                 if !categories.isEmpty {
                     Section("Browse by tag") {
                         ScrollView(.horizontal) {
                             HStack(spacing: 10) {
                                 ForEach(categories, id: \.self) { tag in
-                                    Button { category = tag } label: {
+                                    Button { if !selectedTags.insert(tag).inserted { selectedTags.remove(tag) } } label: {
                                         VStack(alignment: .leading, spacing: 4) {
-                                            Label(tag, systemImage: "tag.fill").font(.headline).lineLimit(1)
+                                            Label(tag, systemImage: selectedTags.contains(tag) ? "checkmark.circle.fill" : "tag.fill").font(.headline).lineLimit(1)
                                             Text("\(RecipeBrowsing.recipes(store.kitchen.recipes, category: tag).count) recipes")
                                                 .font(.caption).foregroundStyle(.secondary)
                                         }.padding(.horizontal, 12).padding(.vertical, 8)
                                             .frame(minWidth: 140, alignment: .leading)
                                             .background(OnionaryTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
-                                    }.buttonStyle(.plain).accessibilityIdentifier("category-" + tag)
+                                    }.buttonStyle(.plain).accessibilityValue(selectedTags.contains(tag) ? "Selected" : "Not selected").accessibilityIdentifier("category-" + tag)
                                 }
                             }
                         }.scrollIndicators(.hidden)
@@ -114,7 +109,7 @@ struct RecipesView: View {
                     }.compactTagSection()
                 }
             }
-            if search.isEmpty && category == nil && !store.kitchen.recent.isEmpty {
+            if search.isEmpty && selectedTags.isEmpty && !store.kitchen.recent.isEmpty {
                 Section("Recently visited") {
                     ForEach(store.kitchen.recent.prefix(showAllRecent ? store.kitchen.recent.count : 3)) { adventure in
                         recipeRow(adventure.recipe, subtitle: L10n.format("Continue · %lld checked", adventure.checked.count))
