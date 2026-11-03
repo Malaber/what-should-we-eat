@@ -159,3 +159,37 @@ class TestRecipeHouseholdIsolation:
         assert alice_recipes[0]["name"] == "Alice's Dish"
         assert len(bob_recipes) == 1
         assert bob_recipes[0]["name"] == "Bob's Dish"
+
+class TestRecipeStructure:
+    def test_icon_groups_order_survive_edit_reload_and_share(self, client, auth_headers):
+        payload = make_recipe_payload()
+        payload['icon'] = '🥧'
+        payload['ingredients'] = [
+            {'name': 'Milk', 'quantity': 100, 'unit': 'ml', 'group_name': 'Filling'},
+            {'name': 'Flour', 'quantity': 200, 'unit': 'g', 'group_name': 'Dough'},
+        ]
+        payload['instruction_steps'] = [
+            {'step_number': 1, 'description': 'Mix dough', 'group_name': 'Dough'},
+            {'step_number': 2, 'description': 'Add filling', 'group_name': 'Filling'},
+        ]
+        created = client.post('/recipes', json=payload, headers=auth_headers)
+        assert created.status_code == 201, created.text
+        recipe_id = created.json()['id']
+        payload['ingredients'].reverse()
+        updated = client.put(f'/recipes/{recipe_id}', json=payload, headers=auth_headers)
+        assert updated.status_code == 200, updated.text
+        result = client.get(f'/recipes/{recipe_id}', headers=auth_headers).json()
+        assert result['icon'] == '🥧'
+        assert [i['name'] for i in result['ingredients']] == ['Flour', 'Milk']
+        assert [i['group_name'] for i in result['ingredients']] == ['Dough', 'Filling']
+        assert result['instruction_steps'][1]['group_name'] == 'Filling'
+        from execution.recipe_sharing import validate_snapshot
+        result['tags'] = [t['name'] for t in result['tags']]
+        snapshot = validate_snapshot({'format': 'onionary.recipe.v1', 'recipe': result})
+        assert snapshot['icon'] == '🥧'
+        assert snapshot['ingredients'][0]['group_name'] == 'Dough'
+
+    def test_long_group_and_icon_are_rejected(self, client, auth_headers):
+        for fields in ({'icon': 'x' * 33}, {'ingredients': [{'name': 'Milk', 'group_name': 'x' * 101}]}):
+            response = client.post('/recipes', json={'name': 'Recipe', **fields}, headers=auth_headers)
+            assert response.status_code == 422

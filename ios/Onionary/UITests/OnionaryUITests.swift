@@ -7,6 +7,30 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
+    func testRecipeToolsAndLanguageModes() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["category-Vegetarian"].tap()
+        app.buttons["category-Quick & easy"].tap()
+        XCTAssertEqual(app.buttons["category-Vegetarian"].value as? String, "Selected")
+        XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Selected")
+        app.buttons["All recipes"].tap()
+        app.buttons["Cook with what you have"].tap()
+        let pantry = app.textFields["pantry-input"]
+        XCTAssertTrue(pantry.waitForExistence(timeout: 5))
+        pantry.tap(); pantry.typeText("170 g Cheese")
+        XCTAssertTrue(app.staticTexts["Not enough"].firstMatch.waitForExistence(timeout: 5))
+        app.buttons["Done"].firstMatch.tap()
+        app.buttons["add-recipe"].tap()
+        app.buttons["Create with Intelligence"].tap()
+        XCTAssertTrue(app.staticTexts["Recipe mode"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Recipe language"].exists)
+        app.buttons["Cancel"].tap()
+    }
+
+    @MainActor
     func testAccountDeletionConfirmationAndSuccess() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
