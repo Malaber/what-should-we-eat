@@ -159,7 +159,7 @@ struct RecipesView: View {
     func recipeRow(_ recipe: Recipe, subtitle: String) -> some View {
         Button { store.visit(recipe); selected() } label: {
             HStack(spacing: 10) {
-                Image(systemName: "leaf").font(.title2).foregroundStyle(onion).frame(width: 28, height: 36)
+                Text(FoodIcons.display(recipe.icon)).font(.title2).frame(width: 28, height: 36).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
                     if !subtitle.isEmpty { Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary) }

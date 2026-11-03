@@ -15,6 +15,9 @@ struct RecipeEditor: View {
             Form {
                 Section("Recipe") {
                     TextField("Name", text: $draft.name)
+                    Picker("Food icon", selection: Binding(get: { FoodIcons.display(draft.icon) }, set: { draft.icon = $0 })) {
+                        ForEach(FoodIcons.all, id: \.self) { Text($0).tag($0) }
+                    }
                     VStack(alignment: .leading) {
                         Text("Original recipe serves").font(.caption).foregroundStyle(.secondary)
                         TextField("Original recipe serves", value: $draft.servings, format: .number).keyboardType(.decimalPad)

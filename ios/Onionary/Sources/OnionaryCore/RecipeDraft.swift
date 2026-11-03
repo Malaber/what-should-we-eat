@@ -51,6 +51,7 @@ public struct RecipeDraft: Codable, Sendable {
         public init() {}
     }
     public var name = ""
+    public var icon: String?
     public var notes: String? = ""
     public var servings: Decimal? = 1
     public var kcalPerServing: Decimal?
@@ -79,7 +80,7 @@ public struct RecipeDraft: Codable, Sendable {
         let encoder = JSONEncoder(); encoder.keyEncodingStrategy = .convertToSnakeCase
         // PUT supports partial updates: explicitly encode cleared optional metadata.
         var payload = try JSONSerialization.jsonObject(with: encoder.encode(copy)) as! [String: Any]
-        for key in ["notes", "kcal_per_serving", "active_cooking_time_min", "total_time_min"] where payload[key] == nil {
+        for key in ["icon", "notes", "kcal_per_serving", "active_cooking_time_min", "total_time_min"] where payload[key] == nil {
             payload[key] = NSNull()
         }
         return try JSONSerialization.data(withJSONObject: payload)

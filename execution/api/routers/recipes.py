@@ -94,6 +94,7 @@ def create_recipe(data: RecipeCreate, current_user: User = Depends(get_current_a
     recipe = Recipe(
         household_id=current_user.active_household_id,
         name=data.name,
+        icon=data.icon,
         notes=data.notes,
         servings=data.servings,
         kcal_per_serving=data.kcal_per_serving,
@@ -138,6 +139,7 @@ def import_recipes_from_household(
         new_recipe = Recipe(
             household_id=current_user.active_household_id,
             name=recipe.name,
+            icon=recipe.icon,
             notes=recipe.notes,
             servings=recipe.servings,
             kcal_per_serving=recipe.kcal_per_serving,
@@ -212,7 +214,7 @@ def update_recipe(recipe_id: int, data: RecipeUpdate, current_user: User = Depen
         raise HTTPException(404, "Recipe not found")
 
     # scalar fields
-    for field in ("name", "notes", "servings", "kcal_per_serving", "active_cooking_time_min", "total_time_min"):
+    for field in ("name", "notes", "icon", "servings", "kcal_per_serving", "active_cooking_time_min", "total_time_min"):
         if field in data.model_fields_set:
             setattr(recipe, field, getattr(data, field))
 
