@@ -30,6 +30,7 @@ jobs:
           python-version: '3.14'
       - run: pip install -r marketing/requirements.txt
       - run: brew install xcodegen
+      - run: brew install --cask inkscape
       - name: Capture real app screenshots
         env:
           DEVICE: ${{ matrix.device }}

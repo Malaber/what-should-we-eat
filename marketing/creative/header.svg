@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="5244" height="2950" viewBox="0 0 5244 2950">
+  <defs>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#fffaf1"/><stop offset="1" stop-color="#edddc9"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#ffffff" stop-opacity=".8"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="5244" height="2950" fill="url(#paper)"/>
+  <ellipse cx="3400" cy="1400" rx="1700" ry="1500" fill="url(#glow)"/>
+  <g fill="none" stroke="#783653" opacity=".10" stroke-width="6">
+    <path d="M-150 2700 C900 2350 700 1700 100 1400 C800 1900 1550 2470 1350 3100"/>
+    <path d="M-180 2840 C1100 2490 900 1800 200 1450 C1100 1930 1760 2540 1550 3100"/>
+    <path d="M3800 -200 C3400 400 4250 650 5400 420"/>
+    <path d="M3900 -200 C3590 330 4330 530 5400 290"/>
+  </g>
+  <text x="680" y="1170" font-family="Manrope" font-size="62" letter-spacing="12" fill="#6c7148">YOUR COOKING COMPANION</text>
+  <text x="650" y="1590" font-family="Lora" font-size="360" fill="#59223f">Onionary</text>
+  <path d="M690 1720 H1200" stroke="#a6aa7a" stroke-width="8"/>
+  <text x="680" y="1900" font-family="Manrope" font-size="84" fill="#594e51">A little less juggling. A lot more cooking.</text>
+  <image data-source="icon" x="3450" y="1020" width="900" height="900" preserveAspectRatio="xMidYMid meet"/>
+</svg>

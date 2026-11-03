@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'marketing'
 PLUM = '#59223f'
 INK = '#332832'
-CREATIVE_SIZES = {'header.png': (3840, 1646), 'search-results.png': (3000, 2000)}
+CREATIVE_SIZES = {'header.png': (5244, 2950), 'search-results.png': (5244, 2950)}
 
 
 def font(size, serif=False):
@@ -63,19 +63,8 @@ def render(root: Path, family: str):
         art = original.convert('RGB')
     creative = root / 'creative'
     creative.mkdir(exist_ok=True)
-    outputs = []
-    for name, size in CREATIVE_SIZES.items():
-        w, h = size
-        canvas = Image.new('RGB', size, '#fbf2e3')
-        decor = ImageOps.contain(art, (round(w*.60), round(h*.52)), Image.Resampling.LANCZOS)
-        canvas.paste(decor, (0, h-decor.height), feather(decor.size))
-        text(canvas, (w*.065, h*.07), ['ONIONARY'], h*.035)
-        text(canvas, (w*.065, h*.16), ['Your recipes.', 'Your rhythm.'], h*.085, serif=True)
-        text(canvas, (w*.065, h*.39), ['Scale portions. Cook step by step.'], h*.031, color=INK)
-        device(canvas, screen, (w*.64, h*.09, w*.30, h*.82))
-        path = creative / name
-        canvas.save(path, icc_profile=srgb())
-        outputs.append(path)
+    from marketing.creative.render import render as render_vectors
+    outputs = render_vectors(source, creative)
     w, h = screen.size
     canvas = Image.new('RGB', (w, h), '#fbf2e3')
     decor = ImageOps.fit(art, (w, round(h*.42)), Image.Resampling.LANCZOS)

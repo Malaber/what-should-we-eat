@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="5244" height="2950" viewBox="0 0 5244 2950">
+  <defs>
+    <linearGradient id="plum" x2="1" y2="1"><stop stop-color="#301e2a"/><stop offset="1" stop-color="#622743"/></linearGradient>
+    <clipPath id="screen"><rect x="3180" y="410" width="990" height="2150" rx="100"/></clipPath>
+  </defs>
+  <rect width="5244" height="2950" fill="url(#plum)"/>
+  <circle cx="4340" cy="1490" r="1540" fill="#f8e9d2" opacity=".045"/>
+  <g fill="none" stroke="#f5c2d6" stroke-width="5" opacity=".12">
+    <path d="M-100 2600 C1300 2300 2100 2800 2700 3200"/>
+    <path d="M-100 2720 C1300 2420 2100 2920 2700 3320"/>
+  </g>
+  <text x="650" y="770" font-family="Manrope" font-size="80" letter-spacing="12" fill="#f0abc9">ONIONARY</text>
+  <text x="630" y="1190" font-family="Lora" font-size="230" fill="#fff4e7">Your recipes.</text>
+  <text x="630" y="1490" font-family="Lora" font-size="230" fill="#fff4e7">Your rhythm.</text>
+  <text x="650" y="1790" font-family="Manrope" font-size="78" fill="#f2d9df">Scale portions. Cook step by step.</text>
+  <g fill="none" stroke="#bbce9e" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M660 1990 l22 22 45-49"/><path d="M660 2130 l22 22 45-49"/>
+  </g>
+  <text x="780" y="2015" font-family="Manrope" font-size="68" fill="#f2d9df">Flexible portions</text>
+  <text x="780" y="2155" font-family="Manrope" font-size="68" fill="#f2d9df">Every step remembered</text>
+  <rect x="3148" y="378" width="1054" height="2214" rx="132" fill="#171417" stroke="#af8496" stroke-width="5"/>
+  <image data-source="screenshot" x="3180" y="410" width="990" height="2150" preserveAspectRatio="xMidYMid meet" clip-path="url(#screen)"/>
+</svg>
