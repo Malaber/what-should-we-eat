@@ -121,7 +121,7 @@ struct RecipesView: View {
                 }
             }
             Section {
-                ForEach(filtered) { recipe in recipeRow(recipe, subtitle: recipe.totalTimeMin.map { "\($0) min" } ?? "Ready when you are") }
+                ForEach(filtered) { recipe in recipeRow(recipe, subtitle: recipe.totalTimeMin.map { "\($0) min" } ?? "") }
             } header: {
                 HStack {
                     Text("Your recipes")
@@ -163,7 +163,7 @@ struct RecipesView: View {
                 Image(systemName: "leaf").font(.title2).foregroundStyle(onion).frame(width: 28, height: 36)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
-                    Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary)
+                    if !subtitle.isEmpty { Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary) }
                     if let tags = recipe.tags, !tags.isEmpty {
                         Text(tags.map(\.name).joined(separator: " · "))
                             .font(.caption).foregroundStyle(onion).fixedSize(horizontal: false, vertical: true)
