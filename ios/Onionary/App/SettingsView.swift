@@ -3,6 +3,7 @@ import OnionaryCore
 
 struct SettingsView: View {
     @Bindable var store: AppStore
+    @AppStorage("accent") private var accent = "Onion"
     @AppStorage("appearance") private var appearance = "system"
     @AppStorage("language") private var language = "system"
     @State private var deleting = false
@@ -18,6 +19,11 @@ struct SettingsView: View {
                 Text("One backend is active. Saved cooking progress stays separate for each account.").font(.footnote).foregroundStyle(.secondary)
             }
             Section("Appearance and language") {
+                Picker("Accent color", selection: $accent) {
+                    ForEach(OnionaryTheme.accents, id: \.self) { name in
+                        Label { Text(LocalizedStringKey(name)) } icon: { Image(systemName: "circle.fill").foregroundStyle(OnionaryTheme.color(name)) }.tag(name)
+                    }
+                }
                 Picker("Appearance", selection: $appearance) {
                     Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark")
                 }.accessibilityIdentifier("appearance-picker")
