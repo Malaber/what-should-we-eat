@@ -5,6 +5,7 @@ with relevant tests; execute integrated checks after all features, then commit
 fixes separately. Long simulator tests run detached; no retries or idle CI polling.
 
 - [ ] Recipe editor: preselected existing tags and suggestions from instance tags.
+- [ ] Apple Intelligence modes: creative recipe generation versus faithful formatting; formatting preserves content and leaves missing quantities unspecified.
 - [ ] Apple Intelligence: detect input language by default; explicit recipe-language picker.
 - [ ] Recipe food icons: broad curated selection, persisted and displayed instead of leaf.
 - [ ] Remove the uninformative “Ready when you are” text.
