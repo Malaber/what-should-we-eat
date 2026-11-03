@@ -26,6 +26,7 @@ jobs:
           python-version: '3.14'
           cache: pip
       - run: pip install -r requirements.txt -r marketing/requirements.txt
+      - run: sudo apt-get update && sudo apt-get install -y inkscape
       - run: python -m execution.db.init_db
       - run: python -m pytest
       - run: docker build -t onionary:ci .

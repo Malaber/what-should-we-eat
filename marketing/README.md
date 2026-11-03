@@ -1,10 +1,12 @@
+Editable universal artwork and reusable CI instructions: [creative/README.md](creative/README.md).
+
 # Onionary App Store marketing
 
 The screenshot workflow renders current simulator captures into three extra PNGs
 inside each existing device ZIP:
 
-- `en-US/creative/header.png`: Kopfzeile, 3840×1646, opaque RGB.
-- `en-US/creative/search-results.png`: Suchergebnisse, 3000×2000, opaque RGB.
+- `en-US/creative/header.png`: Kopfzeile, 5244×2950, opaque RGB.
+- `en-US/creative/search-results.png`: Suchergebnisse, 5244×2950, opaque RGB.
 - `en-US/05-cooking-with-onionary.png`: framed device with marketing copy, same
   accepted screenshot dimensions as that device's raw captures.
 

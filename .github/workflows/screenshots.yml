@@ -71,6 +71,10 @@ jobs:
         with:
           pattern: onionary-appstore-*-en-US
           path: screenshots
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install -r marketing/requirements.txt
       - name: Package PNGs and attach to matching release
         if: steps.main.outputs.eligible == 'true'
         env:
