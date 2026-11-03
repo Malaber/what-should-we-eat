@@ -243,14 +243,23 @@ struct CookingView: View {
                         }
                     }
                     Section("Gather your ingredients") {
-                        ForEach(adventure.recipe.ingredients) { ingredient in
+                        ForEach(Array(adventure.recipe.ingredients.enumerated()), id: \.element.id) { index, ingredient in
+                            if let group = ingredient.groupName, !group.isEmpty,
+                               index == 0 || adventure.recipe.ingredients[index - 1].groupName != group {
+                                Text(group).font(.headline).accessibilityAddTraits(.isHeader)
+                            }
                             let amount = adventure.quantity(ingredient).map { Numbers.display($0, locale: L10n.locale) } ?? ""
                             checkRow(key: "ingredient-\(ingredient.id)", label: ingredient.name,
                                 subtitle: [amount, ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "), adventure: adventure)
                         }
                     }
                     Section("Let’s cook") {
-                        ForEach(adventure.recipe.instructionSteps.sorted { $0.stepNumber < $1.stepNumber }) { step in
+                        let steps = adventure.recipe.instructionSteps.sorted { $0.stepNumber < $1.stepNumber }
+                        ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
+                            if let group = step.groupName, !group.isEmpty,
+                               index == 0 || steps[index - 1].groupName != group {
+                                Text(group).font(.headline).accessibilityAddTraits(.isHeader)
+                            }
                             checkRow(key: "step-\(step.id)", label: IngredientPlaceholders.resolve(step.description, ingredients: adventure.recipe.ingredients, multiplier: adventure.multiplier, locale: L10n.locale),
                                      subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""), adventure: adventure)
                         }
@@ -366,7 +375,11 @@ struct ScalingView: View {
                         Text(adventure.recipe.name).font(.headline)
                         Text("Currently cooking for \(Numbers.display(adventure.portions, locale: L10n.locale)) portions")
                             .font(.subheadline).foregroundStyle(.secondary)
-                        ForEach(adventure.recipe.ingredients) { ingredient in
+                        ForEach(Array(adventure.recipe.ingredients.enumerated()), id: \.element.id) { index, ingredient in
+                            if let group = ingredient.groupName, !group.isEmpty,
+                               index == 0 || adventure.recipe.ingredients[index - 1].groupName != group {
+                                Text(group).font(.headline).accessibilityAddTraits(.isHeader)
+                            }
                             HStack(alignment: .top) {
                                 Text(ingredient.name)
                                 Spacer()

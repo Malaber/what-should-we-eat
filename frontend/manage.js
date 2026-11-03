@@ -326,13 +326,13 @@ function applyImportedRecipe(recipe) {
 
   $ingredientsList.innerHTML = '';
   (recipe.ingredients || []).forEach(ing => {
-    addIngredientRow(ing.name, ing.quantity ?? '', ing.unit || '');
+    addIngredientRow(ing.name, ing.quantity ?? '', ing.unit || '', ing.group_name || '');
   });
   if ((recipe.ingredients || []).length === 0) addIngredientRow();
 
   $stepsList.innerHTML = '';
   (recipe.instruction_steps || []).forEach(step => {
-    addStepRow(step.description, step.duration_min ?? '');
+    addStepRow(step.description, step.duration_min ?? '', step.group_name || '');
   });
   if ((recipe.instruction_steps || []).length === 0) addStepRow();
 }
@@ -367,10 +367,11 @@ function addNewTag() {
 
 
 // ── Dynamic Rows ───────────────────────────────────────────────
-function addIngredientRow(name = '', qty = '', unit = '') {
+function addIngredientRow(name = '', qty = '', unit = '', group = '') {
   const div = document.createElement('div');
   div.className = 'editor-row ingredient-row';
   div.innerHTML = `
+    <label class="control-group">${window.t('recipe.group')}<input class="ing-group" type="text" maxlength="100" value="${esc(group)}" /></label>
     <input type="text" placeholder="${window.t('feedback.31')}" class="ing-name" value="${esc(name)}" style="flex:2;" />
     <input type="number" placeholder="${window.t('feedback.32')}" class="ing-qty" step="any" value="${qty}" style="flex:1;" />
     <input type="text" placeholder="${window.t('feedback.33')}" class="ing-unit" value="${esc(unit)}" style="flex:1;" />
@@ -379,10 +380,11 @@ function addIngredientRow(name = '', qty = '', unit = '') {
   $ingredientsList.appendChild(div);
 }
 
-function addStepRow(desc = '', dur = '') {
+function addStepRow(desc = '', dur = '', group = '') {
   const div = document.createElement('div');
   div.className = 'editor-row step-row';
   div.innerHTML = `
+    <label class="control-group">${window.t('recipe.group')}<input class="step-group" type="text" maxlength="100" value="${esc(group)}" /></label>
     <input type="text" placeholder="${window.t('feedback.34')}" class="step-desc" value="${esc(desc)}" style="flex:3;" />
     <input type="number" placeholder="${window.t('feedback.35')}" class="step-dur" value="${dur}" style="max-width:100px;" />
     <button type="button" class="btn-icon" onclick="this.parentElement.remove()">✕</button>
@@ -421,6 +423,7 @@ async function saveRecipe(e) {
     const u = row.querySelector('.ing-unit').value.trim();
     recipeData.ingredients.push({
       name: n,
+      group_name: row.querySelector('.ing-group').value.trim() || null,
       quantity: isNaN(q) ? null : q,
       unit: u || null
     });
@@ -435,6 +438,7 @@ async function saveRecipe(e) {
     recipeData.instruction_steps.push({
       step_number: stepNum++,
       description: d,
+      group_name: row.querySelector('.step-group').value.trim() || null,
       duration_min: isNaN(dur) ? null : dur
     });
   });

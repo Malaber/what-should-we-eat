@@ -4,6 +4,7 @@ public struct Ingredient: Codable, Identifiable, Equatable, Sendable {
     public let id: Int
     public let name: String
     public let quantity: Decimal?
+    public var groupName: String? = nil
     public let unit: String?
 }
 
@@ -11,6 +12,7 @@ public struct CookingStep: Codable, Identifiable, Equatable, Sendable {
     public let id: Int
     public let stepNumber: Int
     public let description: String
+    public var groupName: String? = nil
     public let durationMin: Int?
 }
 

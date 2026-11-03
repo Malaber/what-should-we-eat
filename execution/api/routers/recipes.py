@@ -148,12 +148,12 @@ def import_recipes_from_household(
         )
         
         new_recipe.ingredients = [
-            Ingredient(name=ing.name, quantity=ing.quantity, unit=ing.unit, position=index)
+            Ingredient(name=ing.name, quantity=ing.quantity, unit=ing.unit, position=index, group_name=ing.group_name)
             for index, ing in enumerate(recipe.ingredients)
         ]
         
         new_recipe.instruction_steps = [
-            InstructionStep(step_number=step.step_number, description=step.description, duration_min=step.duration_min)
+            InstructionStep(step_number=step.step_number, description=step.description, duration_min=step.duration_min, group_name=step.group_name)
             for step in recipe.instruction_steps
         ]
         

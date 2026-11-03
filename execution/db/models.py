@@ -180,6 +180,7 @@ class InstructionStep(Base):
     step_number = Column(Integer, nullable=False)
     description = Column(Text, nullable=False)
     duration_min = Column(Integer, nullable=True)
+    group_name = Column(String(100), nullable=True)
 
     recipe = relationship("Recipe", back_populates="instruction_steps")
 
@@ -193,6 +194,7 @@ class Ingredient(Base):
     name = Column(String(255), nullable=False)
     quantity = Column(Float, nullable=True)
     unit = Column(String(50), nullable=True)
+    group_name = Column(String(100), nullable=True)
     position = Column(Integer, nullable=False, default=0, server_default="0")
 
     recipe = relationship("Recipe", back_populates="ingredients")

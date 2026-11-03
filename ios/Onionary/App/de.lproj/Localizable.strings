@@ -253,3 +253,6 @@
 "Herb" = "Kräuter";
 "Ocean" = "Ozean";
 "Paprika" = "Paprika";
+
+"Ingredient group (optional)" = "Zutatengruppe (optional)";
+"Instruction group (optional)" = "Schrittgruppe (optional)";

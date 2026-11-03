@@ -50,6 +50,7 @@ struct RecipeEditor: View {
                 Section("Ingredients") {
                     ForEach($draft.ingredients) { $item in
                         VStack {
+                            TextField("Ingredient group (optional)", text: Binding(get: { item.groupName ?? "" }, set: { item.groupName = $0.isEmpty ? nil : $0 }))
                             TextField("Ingredient", text: $item.name)
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
@@ -66,6 +67,7 @@ struct RecipeEditor: View {
                 Section {
                     ForEach($draft.instructionSteps) { $step in
                         VStack {
+                            TextField("Instruction group (optional)", text: Binding(get: { step.groupName ?? "" }, set: { step.groupName = $0.isEmpty ? nil : $0 }))
                             TextField("Instruction", text: $step.description, axis: .vertical)
                                 .focused($focusedStep, equals: step.id)
                                 .accessibilityIdentifier("instruction-" + step.id.uuidString)

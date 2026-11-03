@@ -36,18 +36,20 @@ public enum RecipeImportLink {
 public struct RecipeDraft: Codable, Sendable {
     public struct Item: Codable, Identifiable, Sendable {
         public var id: UUID = UUID()
+        public var groupName: String?
         public var name = ""
         public var quantity: Decimal?
         public var unit: String? = ""
-        enum CodingKeys: String, CodingKey { case name, quantity, unit }
+        enum CodingKeys: String, CodingKey { case name, quantity, unit, groupName }
         public init() {}
     }
     public struct Step: Codable, Identifiable, Sendable {
         public var id: UUID = UUID()
+        public var groupName: String?
         public var stepNumber = 1
         public var description = ""
         public var durationMin: Int?
-        enum CodingKeys: String, CodingKey { case stepNumber, description, durationMin }
+        enum CodingKeys: String, CodingKey { case stepNumber, description, durationMin, groupName }
         public init() {}
     }
     public var name = ""

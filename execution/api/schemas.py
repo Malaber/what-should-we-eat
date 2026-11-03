@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
 # ── Instruction Steps ────────────────────────────────────────────────
 
 class InstructionStepBase(BaseModel):
+    group_name: Optional[str] = Field(default=None, max_length=100)
     step_number: int
     description: str
     duration_min: Optional[int] = None
@@ -31,6 +32,7 @@ class InstructionStepOut(InstructionStepBase):
 # ── Ingredients ──────────────────────────────────────────────────────
 
 class IngredientBase(BaseModel):
+    group_name: Optional[str] = Field(default=None, max_length=100)
     name: str
     quantity: Optional[float] = None
     unit: Optional[str] = None
