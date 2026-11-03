@@ -239,3 +239,9 @@
 
 "Show less" = "Weniger anzeigen";
 "Show more" = "Mehr anzeigen";
+
+"Recipe mode" = "Rezeptmodus";
+"Format existing recipe" = "Vorhandenes Rezept formatieren";
+"Create a recipe" = "Rezept entwickeln";
+"Keep the supplied recipe. Only organize it into editable fields." = "Das eingegebene Rezept beibehalten und nur in bearbeitbare Felder gliedern.";
+"Create a new recipe from your ideas and ingredients." = "Aus deinen Ideen und Zutaten ein neues Rezept entwickeln.";
