@@ -77,9 +77,11 @@ struct RecipesView: View {
     @State private var selectedTags: Set<String> = []
     @State private var quickestFirst = false
     @State private var showAllRecent = false
+    @State private var pantry = false
     var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, categories: selectedTags, quickestFirst: quickestFirst) }
     var body: some View {
         List {
+            Button("Cook with what you have", systemImage: "carrot") { pantry = true }
             if !selectedTags.isEmpty {
                 Button("All recipes") { selectedTags.removeAll() }
             }
@@ -136,6 +138,7 @@ struct RecipesView: View {
                     systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
         }.dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
+            .sheet(isPresented: $pantry) { PantryView(store: store, selected: selected) }
             .sheet(item: $creation) { choice in
                 switch choice {
                 case .manual: RecipeEditor(store: store, draft: RecipeDraft())

@@ -256,3 +256,14 @@
 
 "Ingredient group (optional)" = "Zutatengruppe (optional)";
 "Instruction group (optional)" = "Schrittgruppe (optional)";
+
+"Cook with what you have" = "Kochen mit deinen Vorräten";
+"What do you have?" = "Was hast du da?";
+"3 bananas and 2 eggs" = "3 Bananen und 2 Eier";
+"One ingredient per line, or separate with ‘and’. Include quantities and units when known." = "Eine Zutat pro Zeile oder mit ‚und‘ trennen. Mengen und Einheiten angeben, wenn bekannt.";
+"Matching recipes" = "Passende Rezepte";
+"Available" = "Vorhanden";
+"Missing" = "Fehlt";
+"Not enough" = "Zu wenig";
+"Check quantity or unit" = "Menge oder Einheit prüfen";
+"Quantities refer to the original recipe. Only identical units are compared. Check your supplies before cooking." = "Mengen beziehen sich auf das Originalrezept. Nur gleiche Einheiten werden verglichen. Prüfe deine Vorräte vor dem Kochen.";
