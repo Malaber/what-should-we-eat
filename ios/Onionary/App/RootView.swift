@@ -76,6 +76,7 @@ struct RecipesView: View {
     @State private var creation: Creation?
     @State private var category: String?
     @State private var quickestFirst = false
+    @State private var showAllRecent = false
     var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, category: category, quickestFirst: quickestFirst) }
     var body: some View {
         List {
@@ -115,8 +116,11 @@ struct RecipesView: View {
             }
             if search.isEmpty && category == nil && !store.kitchen.recent.isEmpty {
                 Section("Recently visited") {
-                    ForEach(store.kitchen.recent.prefix(8)) { adventure in
+                    ForEach(store.kitchen.recent.prefix(showAllRecent ? store.kitchen.recent.count : 3)) { adventure in
                         recipeRow(adventure.recipe, subtitle: L10n.format("Continue · %lld checked", adventure.checked.count))
+                    }
+                    if store.kitchen.recent.count > 3 {
+                        Button(showAllRecent ? "Show less" : "Show more") { showAllRecent.toggle() }
                     }
                 }
             }
