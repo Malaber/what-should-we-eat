@@ -186,8 +186,8 @@ class TestRecipeStructure:
         from execution.recipe_sharing import validate_snapshot
         result['tags'] = [t['name'] for t in result['tags']]
         snapshot = validate_snapshot({'format': 'onionary.recipe.v1', 'recipe': result})
-        assert snapshot['icon'] == '🥧'
-        assert snapshot['ingredients'][0]['group_name'] == 'Dough'
+        assert snapshot.icon == '🥧'
+        assert snapshot.ingredients[0].group_name == 'Dough'
 
     def test_long_group_and_icon_are_rejected(self, client, auth_headers):
         for fields in ({'icon': 'x' * 33}, {'ingredients': [{'name': 'Milk', 'group_name': 'x' * 101}]}):

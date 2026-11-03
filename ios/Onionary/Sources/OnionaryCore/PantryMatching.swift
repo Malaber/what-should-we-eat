@@ -24,7 +24,8 @@ public enum PantryMatching {
     }
     /// One entry per line/semicolon; also accepts “3 Bananen und 2 Eier”.
     public static func parse(_ text: String) -> [Supply] {
-        let separated = text.replacingOccurrences(of: #"\s+(?:und|and)\s+"#, with: ";", options: .regularExpression)
+        let content = text.replacingOccurrences(of: #"^\s*(?:ich habe|habe|i have)\s+"#, with: "", options: [.regularExpression, .caseInsensitive])
+        let separated = content.replacingOccurrences(of: #"\s+(?:und|and)\s+"#, with: ";", options: .regularExpression)
         return separated.components(separatedBy: CharacterSet(charactersIn: ";\n")).compactMap { line in
             var words = line.split(whereSeparator: \.isWhitespace).map(String.init)
             guard !words.isEmpty else { return nil }

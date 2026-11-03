@@ -16,6 +16,7 @@ function getAuthHeaders(extra = {}) {
 let allRecipes = [];
 let allTags = [];
 let editRecipeId = null;
+let recipeIcon = null;
 let recipeModalMode = 'manual';
 
 // Form DOM refs
@@ -186,6 +187,7 @@ function renderRecipes(recipesToRender = allRecipes) {
 // ── Modals & Forms ─────────────────────────────────────────────
 function openCreateModal() {
   editRecipeId = null;
+  recipeIcon = null;
   $modalTitle.textContent = window.t('feedback.1');
   $recipeForm.reset();
   $importUrl.value = '';
@@ -216,6 +218,7 @@ function editRecipe(id) {
   if (!r) return;
 
   editRecipeId = id;
+  recipeIcon = r.icon || null;
   $modalTitle.textContent = window.t('feedback.2');
   $recipeModeSwitch.style.display = 'none';
   $importStatus.textContent = '';
@@ -232,12 +235,12 @@ function editRecipe(id) {
   renderEditTags();
 
   $ingredientsList.innerHTML = '';
-  r.ingredients.forEach(ing => addIngredientRow(ing.name, ing.quantity, ing.unit));
+  r.ingredients.forEach(ing => addIngredientRow(ing.name, ing.quantity, ing.unit, ing.group_name));
   if (r.ingredients.length === 0) addIngredientRow();
 
   $stepsList.innerHTML = '';
   const sortedSteps = [...(r.instruction_steps || [])].sort((a, b) => a.step_number - b.step_number);
-  sortedSteps.forEach(st => addStepRow(st.description, st.duration_min));
+  sortedSteps.forEach(st => addStepRow(st.description, st.duration_min, st.group_name));
   if (sortedSteps.length === 0) addStepRow();
 
   $modalOverlay.style.display = 'flex';
@@ -314,6 +317,7 @@ function getApiErrorMessage(data) {
 }
 
 function applyImportedRecipe(recipe) {
+  recipeIcon = recipe.icon || null;
   $recipeName.value = recipe.name || '';
   $recipeNotes.value = recipe.notes || '';
   $recipeServings.value = recipe.servings || 1;
@@ -404,6 +408,7 @@ async function saveRecipe(e) {
   }
 
   const recipeData = {
+    icon: recipeIcon,
     name: name,
     notes: $recipeNotes.value.trim() || null,
     servings: Number($recipeServings.value),

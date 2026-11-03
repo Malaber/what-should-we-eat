@@ -38,7 +38,7 @@ struct RecipeEditor: View {
                     TextField("Tags, separated by commas", text: Binding(get: { draft.tags.joined(separator: ", ") }, set: { draft.tags = $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }))
                 }
                 Section("Suggested tags") {
-                    ForEach(RecipeBrowsing.categories(store.kitchen.recipes), id: \.self) { tag in
+                    ForEach(Array(Set(RecipeBrowsing.categories(store.kitchen.recipes) + draft.tags)).sorted(), id: \.self) { tag in
                         Toggle(tag, isOn: Binding(
                             get: { draft.tags.contains { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame } },
                             set: { selected in

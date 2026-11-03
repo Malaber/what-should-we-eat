@@ -2,7 +2,7 @@ import XCTest
 @testable import OnionaryCore
 final class PantryMatchingTests: XCTestCase {
     func testGermanInputAndMissingQuantities() {
-        let input = PantryMatching.parse("3 Bananen und 2 Eier\n150 ml Milch\nMehl")
+        let input = PantryMatching.parse("Habe 3 Bananen und 2 Eier\n150 ml Milch\nMehl")
         XCTAssertEqual(input.count, 4)
         XCTAssertEqual(input[0].quantity, 3)
         XCTAssertEqual(input[2].unit, "ml")
