@@ -30,23 +30,55 @@ jobs:
           python-version: '3.14'
       - run: pip install -r marketing/requirements.txt
       - run: brew install xcodegen
-      - run: brew install --cask inkscape
       - name: Capture real app screenshots
         env:
           DEVICE: ${{ matrix.device }}
           FAMILY: ${{ matrix.family }}
-        run: python3 execution/marketing_screenshots.py --device "$DEVICE" --output ".tmp/marketing/$FAMILY"
+        run: python3 execution/marketing_screenshots.py --defer-creative --device "$DEVICE" --output ".tmp/marketing/$FAMILY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: onionary-appstore-${{ matrix.family }}-en-US
+          name: onionary-capture-${{ matrix.family }}-en-US
           path: |
             .tmp/marketing/${{ matrix.family }}/
             !.tmp/marketing/${{ matrix.family }}/DerivedData/**
           retention-days: 14
 
-  release-assets:
+  creative:
     needs: screenshots
+    strategy:
+      matrix:
+        family: [iphone, ipad]
+    uses: Malaber/github-workflows/.github/workflows/reusable-appstore-creative.yml@2e162b82a123229371804e967273fce54b36b19f
+    with:
+      screenshot_artifact: onionary-capture-${{ matrix.family }}-en-US
+      screenshot_glob: en-US/02-cooking-companion*.png
+      output_artifact: onionary-creative-${{ matrix.family }}-en-US
+
+  bundle:
+    needs: creative
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        family: [iphone, ipad]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: onionary-capture-${{ matrix.family }}-en-US
+          path: bundle
+      - uses: actions/download-artifact@v4
+        with:
+          name: onionary-creative-${{ matrix.family }}-en-US
+          path: bundle/creative
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onionary-appstore-${{ matrix.family }}-en-US
+          path: bundle/
+          retention-days: 14
+          if-no-files-found: error
+
+  release-assets:
+    needs: bundle
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:

@@ -49,3 +49,17 @@ python execution/render_marketing_assets.py .tmp/marketing/iphone/en-US --family
 The renderer requires exactly one fresh `02-cooking-companion*.png` and validates
 its device dimensions. It records the screenshot SHA-256 in a manifest. Missing
 or ambiguous input fails rather than falling back to a stale checked-in screen.
+
+### Shared CI renderer
+
+`screenshots.yml` calls the merged `Malaber/github-workflows` reusable creative
+workflow pinned to commit `2e162b82a123229371804e967273fce54b36b19f`.
+Capture jobs produce real UI captures and the portrait composition; Linux rendering
+jobs generate the universal SVG/PNG pair; bundle jobs reunite them before release
+packaging. No artwork is uploaded to App Store Connect automatically.
+
+Other apps supply their own renderer, requirements file, screenshot artifact/glob
+and output artifact. The contract is `--screenshot PATH --output DIRECTORY`, with
+`header.svg`, `search-results.svg` and matching opaque RGB 5244 × 2950 PNGs.
+Branding, copy, typography and layouts remain caller-owned; the shared workflow
+handles rendering dependencies and strict output validation.

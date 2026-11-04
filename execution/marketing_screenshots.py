@@ -18,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--device', default='iPhone 17 Pro')
     parser.add_argument('--output', type=Path, default=ROOT / '.tmp/marketing')
+    parser.add_argument("--defer-creative", action="store_true", help="Render creative assets in the shared CI workflow")
     args = parser.parse_args()
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
     runtimes = json.loads(run('xcrun','simctl','list','runtimes','--json'))['runtimes']
@@ -55,7 +56,7 @@ def main():
         if count != 4:
             raise SystemExit(f'Expected 4 marketing screenshots, found {count}. Inspect attachment manifest.')
         from execution.render_marketing_assets import render
-        render(screenshots, 'ipad' if args.device.startswith('iPad') else 'iphone')
+        render(screenshots, 'ipad' if args.device.startswith('iPad') else 'iphone', include_creative=not args.defer_creative)
         print(f'Exported {count} screenshots to {screenshots}')
     finally:
         subprocess.run(['xcrun','simctl','delete',device],check=False)

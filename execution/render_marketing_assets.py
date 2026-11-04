@@ -51,7 +51,7 @@ def device(canvas, screen, box):
     canvas.paste(fitted, (x, y), mask)
 
 
-def render(root: Path, family: str):
+def render(root: Path, family: str, *, include_creative: bool = True):
     sources = sorted(root.glob('02-cooking-companion*.png'))
     if len(sources) != 1:
         raise ValueError('Expected exactly one current cooking-companion screenshot')
@@ -64,7 +64,7 @@ def render(root: Path, family: str):
     creative = root / 'creative'
     creative.mkdir(exist_ok=True)
     from marketing.creative.render import render as render_vectors
-    outputs = render_vectors(source, creative)
+    outputs = render_vectors(source, creative) if include_creative else []
     w, h = screen.size
     canvas = Image.new('RGB', (w, h), '#fbf2e3')
     decor = ImageOps.fit(art, (w, round(h*.42)), Image.Resampling.LANCZOS)
