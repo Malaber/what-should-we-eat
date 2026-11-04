@@ -131,7 +131,13 @@ struct RecipeEditor: View {
                 .onAppear { if draftScope == nil { draftScope = store.scope } }
                 .onChange(of: draft) { _, _ in retain() }
                 .onDisappear { if !completed { retain() } }
-
+                .confirmationDialog("Reload cooking recipe?", isPresented: $askingReload, titleVisibility: .visible) {
+                    Button("Reload and reset progress", role: .destructive) {
+                        do { if let savedRecipe { try store.reloadCookingRecipe(savedRecipe) }; finish() }
+                        catch { self.error = error.localizedDescription }
+                    }
+                    Button("Keep cooking progress", role: .cancel) { finish() }
+                } message: { Text("The saved recipe changed. Reloading clears checks, portion adjustments and tap history for this cooking adventure.") }
         }
     }
     private var exportText: String {
@@ -156,7 +162,9 @@ struct RecipeEditor: View {
         do {
             let recipe = try await store.saveRecipe(draft, id: recipeID)
             recipeID = recipe.id; savedRecipe = recipe; retain()
-            finish()
+            if let current = store.current, current.id == recipe.id, current.recipe != recipe {
+                askingReload = true
+            } else { finish() }
         } catch {
             self.error = L10n.text("Save not confirmed. Your draft stays here. Check the server before retrying to avoid duplicates.") + "\n" + L10n.text(error.localizedDescription)
         }

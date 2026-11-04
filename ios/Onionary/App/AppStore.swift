@@ -367,7 +367,7 @@ final class AppStore {
     func reloadCookingRecipe(_ recipe: Recipe) throws {
         guard current?.id == recipe.id else { return }
         var next = kitchen
-        next.adventures.removeAll { $0.id == recipe.id }; next.visit(recipe)
+        next.reloadCurrentRecipe(recipe)
         try persist(next)
     }
 
