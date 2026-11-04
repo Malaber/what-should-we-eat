@@ -11,14 +11,14 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Recipes"].tap()
         app.buttons["category-Vegetarian"].tap()
         app.buttons["category-Quick & easy"].tap()
         XCTAssertEqual(app.buttons["category-Vegetarian"].value as? String, "Selected")
         XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Selected")
         app.buttons["All recipes"].tap()
         app.buttons["Cook with what you have"].tap()
-        let pantry = app.textFields["pantry-input"]
+        let pantry = app.descendants(matching: .any)["pantry-input"].firstMatch
         XCTAssertTrue(pantry.waitForExistence(timeout: 5))
         pantry.tap(); pantry.typeText("170 g Cheese")
         XCTAssertTrue(app.staticTexts["Not enough"].firstMatch.waitForExistence(timeout: 5))
@@ -35,7 +35,7 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons["Settings"].tap()
         app.swipeUp()
         app.buttons["delete-account"].tap()
         let confirm = app.buttons["confirm-delete-account"]
@@ -54,7 +54,7 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--offline-delete", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons["Settings"].tap()
         app.swipeUp()
         app.buttons["delete-account"].tap()
         let email = app.textFields["delete-account-email"]
@@ -71,7 +71,7 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--offline-save", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Recipes"].tap()
         app.buttons["add-recipe"].tap()
         app.buttons["New recipe"].tap()
         let name = app.textFields["Name"]
@@ -85,7 +85,7 @@ final class OnionaryUITests: XCTestCase {
         app.terminate()
         app.launchArguments.removeAll { $0 == "--reset" }
         app.launch()
-        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Recipes"].tap()
         app.buttons["saved-draft-My offline soup"].firstMatch.tap()
         XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.textFields["Name"].value as? String, "My offline soup")
@@ -104,7 +104,7 @@ final class OnionaryUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons["Settings"].tap()
         XCTAssertTrue(app.staticTexts["Access valid until"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Account, Test Cook"].exists)
         XCTAssertTrue(app.staticTexts["Email, cook@example.org"].exists)
@@ -157,7 +157,7 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Recipes"].tap()
         pullToRefresh(app)
         let category = app.buttons["category-vegetarian"]
         XCTAssertTrue(category.waitForExistence(timeout: 5))
@@ -208,7 +208,7 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Recipes"].tap()
         pullToRefresh(app)
         app.buttons["recipe-1"].firstMatch.tap()
         let tag = app.buttons["recipe-tag-vegetarian"]
@@ -249,7 +249,7 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Kitchen"].tap()
+        app.buttons["Kitchen"].tap()
         app.buttons["Add meals"].tap()
         app.buttons["Lemon & cheese pasta"].tap()
         app.buttons["Add"].tap()
@@ -281,13 +281,16 @@ final class OnionaryUITests: XCTestCase {
         let oldName = name.value as? String ?? ""
         name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldName.count) + "Edited pasta")
         app.buttons["Save"].tap()
+        let keepProgress = app.buttons["Keep cooking progress"]
+        XCTAssertTrue(keepProgress.waitForExistence(timeout: 5))
+        keepProgress.tap()
         XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Share recipe copy"].tap()
         app.buttons["Create link"].tap()
         XCTAssertTrue(app.buttons["Revoke link"].waitForExistence(timeout: 5))
         app.buttons["Revoke link"].tap()
-        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Recipes"].tap()
         XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
     }
 
@@ -296,7 +299,7 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Recipes"].tap()
         app.buttons["add-recipe"].tap()
         app.buttons["Import recipe"].tap()
         XCTAssertTrue(app.textFields["Chefkoch or Onionary URL"].waitForExistence(timeout: 5))
@@ -312,7 +315,7 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["Recipes"].tap()
         app.buttons["add-recipe"].tap()
         app.buttons["Create with Intelligence"].tap()
         XCTAssertTrue(app.textViews["Describe your recipe"].waitForExistence(timeout: 5))
@@ -326,7 +329,7 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons["Settings"].tap()
         XCTAssertTrue(app.buttons["Switch backend"].exists)
         XCTAssertFalse(app.textFields["backend"].exists)
         app.buttons["language-picker"].tap()

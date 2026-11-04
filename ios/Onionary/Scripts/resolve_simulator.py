@@ -1,22 +1,37 @@
 #!/usr/bin/env python3
-"""Resolve an installed iPhone simulator; avoid hard-coding runner device names."""
+"""Select a deterministic phone layout, rather than the first installed device."""
 import argparse
 import json
 import subprocess
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--create", action="store_true")
-args = parser.parse_args()
+DEFAULT_DEVICE = 'com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro'
 
-devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "--json"]))["devices"]
-for runtime, entries in sorted(devices.items(), reverse=True):
-    if ".iOS-" in runtime:
-        for device in entries:
-            if device["name"].startswith("iPhone"):
-                if args.create:
-                    print(subprocess.check_output(["xcrun", "simctl", "create", "Onionary Isolated Tests",
-                        device["deviceTypeIdentifier"], runtime], text=True).strip())
-                else:
-                    print(device["udid"])
-                raise SystemExit(0)
-raise SystemExit("Install an iOS simulator runtime in Xcode Settings > Components.")
+
+def select_runtime(runtimes):
+    available = [runtime for runtime in runtimes if runtime.get('isAvailable')
+                 and '.iOS-' in runtime['identifier']]
+    if not available:
+        raise ValueError('Install an iOS simulator runtime in Xcode Settings > Components.')
+    return max(available, key=lambda runtime: tuple(int(p) for p in runtime['version'].split('.')))['identifier']
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--create', action='store_true')
+    parser.add_argument('--device-type', default=DEFAULT_DEVICE)
+    args = parser.parse_args()
+    runtimes = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'runtimes', '--json']))['runtimes']
+    runtime = select_runtime(runtimes)
+    if args.create:
+        print(subprocess.check_output(['xcrun', 'simctl', 'create', 'Onionary Isolated Tests',
+                                       args.device_type, runtime], text=True).strip())
+    else:
+        devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '--json']))['devices']
+        matching = [d for d in devices.get(runtime, []) if d.get('deviceTypeIdentifier') == args.device_type]
+        if not matching:
+            raise SystemExit('No matching simulator exists; use --create.')
+        print(sorted(matching, key=lambda d: d['udid'])[0]['udid'])
+
+
+if __name__ == '__main__':
+    main()

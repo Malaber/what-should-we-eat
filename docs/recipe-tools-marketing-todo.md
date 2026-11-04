@@ -65,3 +65,14 @@ budget is now 600 seconds, with no retries and unchanged test deadlines.
 Authorized next release: `v0.6.0-rc.14`, marketing version 0.6.0, build 14.
 Detached TestFlight worker runs the full suite before signing/archive/upload.
 Upload completion remains pending until its status reports `uploaded`.
+
+### Build 14 failure diagnosis
+
+Build 14 compiled, but failed UI tests before archive/upload. Failure hierarchy
+shows an iPhone Duo 466×678 adaptive side toolbar, not the bottom TabBar assumed
+by tests. The resolver had selected the first device of the newest runtime.
+The baseline now explicitly creates iPhone 17 Pro, selects runtime versions
+numerically, and accepts an explicit device-type override. Regression test passed.
+Navigation tests query accessible buttons without assuming their parent is a
+TabBar. The edit/share test now confirms keeping cooking progress after saving.
+Build 15 uses a fresh tag; no existing tag is replaced. Full tests still gate upload.
