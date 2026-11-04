@@ -11,7 +11,8 @@ struct MealPlan: Codable {
     let items: [Item]
 }
 struct ShoppingList: Decodable {
-    struct Item: Decodable {
+    struct Item: Decodable, Identifiable {
+        var id: String { name.lowercased() + "\u{1f}" + (unit ?? "").lowercased() }
         let name: String
         let totalQuantity: Decimal?
         let unit: String?
@@ -25,13 +26,20 @@ struct MealPlanningView: View {
     private var items: [MealPlan.Item] { store.mealItems }
     @State private var shopping: [ShoppingList.Item] = []
     @State private var picked: Set<Int> = []
-    @State private var checked: Set<Int> = []
+    @State private var checked: Set<String> = []
     @State private var adding = false
     @State private var clearing = false
     @State private var busy = false
-    @State private var showShopping = false
+    @State private var preferredColumn = NavigationSplitViewColumn.sidebar
     @State private var error: String?
     var body: some View {
+        NavigationSplitView(preferredCompactColumn: $preferredColumn) {
+            plan.navigationSplitViewColumnWidth(min: 280, ideal: 360, max: 460)
+        } detail: {
+            shoppingPane
+        }.navigationSplitViewStyle(.balanced)
+    }
+    private var plan: some View {
         List {
             if let error { Text(error).foregroundStyle(.red) }
             if items.isEmpty { ContentUnavailableView("Plan your meals", systemImage: "calendar", description: Text("Add recipes to your kitchen plan.")) }
@@ -56,7 +64,8 @@ struct MealPlanningView: View {
                         guard store.credential != nil else { return }
                         let data = try await store.request("shopping-list", method: "POST", body: JSONEncoder().encode(items.filter { !$0.isCooked }.map(\.recipeId)))
                         shopping = try OnionaryAPI.decoder.decode(ShoppingList.self, from: data).items
-                        checked = []; showShopping = true
+                        checked.formIntersection(Set(shopping.map(\.id)))
+                        preferredColumn = .detail
                     } }
                     Button("Clear plan", role: .destructive) { clearing = true }
                 } label: { Image(systemName: "ellipsis.circle") }.disabled(items.isEmpty)
@@ -78,21 +87,32 @@ struct MealPlanningView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showShopping) {
-                NavigationStack {
-                    List(shopping.indices, id: \.self) { index in
-                        let item = shopping[index]
-                        Button { if !checked.insert(index).inserted { checked.remove(index) } } label: {
-                            HStack {
-                                Image(systemName: checked.contains(index) ? "checkmark.circle.fill" : "circle")
-                                Text(item.name).strikethrough(checked.contains(index))
-                                Spacer()
-                                Text([item.totalQuantity.map { Numbers.display($0, locale: L10n.locale) } ?? "", item.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "))
-                            }
-                        }
-                    }.navigationTitle("Shopping list").toolbar { Button("Done") { showShopping = false } }
-                }
+    }
+    private var shoppingPane: some View {
+        List {
+            Section {
+                Text("Shopping checks and cooking progress are saved locally on this device, not synchronized between devices.").font(.footnote).foregroundStyle(.secondary)
+                Button(shopping.isEmpty ? "Generate shopping list" : "Refresh shopping list", systemImage: "arrow.clockwise") {
+                    run {
+                        let data = try await store.request("shopping-list", method: "POST", body: JSONEncoder().encode(items.filter { !$0.isCooked }.map(\.recipeId)))
+                        shopping = try OnionaryAPI.decoder.decode(ShoppingList.self, from: data).items
+                        checked.formIntersection(Set(shopping.map(\.id)))
+                    }
+                }.disabled(busy)
+                if let error { Text(error).foregroundStyle(.red) }
             }
+            ForEach(shopping) { item in
+                Button { if !checked.insert(item.id).inserted { checked.remove(item.id) } } label: {
+                    HStack {
+                        Image(systemName: checked.contains(item.id) ? "checkmark.circle.fill" : "circle")
+                        Text(item.name).strikethrough(checked.contains(item.id))
+                        Spacer()
+                        Text([item.totalQuantity.map { Numbers.display($0, locale: L10n.locale) } ?? "", item.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "))
+                    }.frame(minHeight: 44)
+                }.accessibilityIdentifier("shopping-" + item.name)
+                    .accessibilityValue(checked.contains(item.id) ? "Checked" : "Unchecked")
+            }
+        }.navigationTitle("Shopping list").accessibilityIdentifier("shopping-list")
     }
     private func request(_ path: String, method: String, body: Data? = nil) async throws {
         guard store.credential != nil else { throw CookingError.response("Sign in to your kitchen.") }

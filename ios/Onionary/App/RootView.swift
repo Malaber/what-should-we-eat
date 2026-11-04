@@ -18,7 +18,7 @@ struct RootView: View {
                         .tabItem { Label("Cooking", systemImage: "flame") }.tag(0)
                     RecipesView(store: store, selected: { tab = 0 })
                         .tabItem { Label("Recipes", systemImage: "book.closed") }.tag(1)
-                    NavigationStack { MealPlanningView(store: store, cook: { tab = 0 }) }
+                    MealPlanningView(store: store, cook: { tab = 0 })
                         .tabItem { Label("Kitchen", systemImage: "calendar") }.tag(3)
                     NavigationStack { SettingsView(store: store) }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
                 }.id(locale.identifier + (store.credential?.server.absoluteString ?? "") + (store.credential?.userID ?? ""))
