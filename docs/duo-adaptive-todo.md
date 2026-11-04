@@ -21,3 +21,8 @@ destination. Scope queries to typed lists/fields, avoid lazy whole-tree queries.
 Use one launch for fold/marketing scenarios. Explicit termination only for actual
 persistence tests, after backgrounding to SpringBoard. Hinge changes must never
 modify domain state; layout is driven by local geometry, not device model.
+
+Banner implementation follows Tracy #31: dedicated VStack space, never a safe-area
+inset wrapped around TabView. Geometry drives workspace changes; session state
+stays owned by the existing store/editor. Compatibility-aware simulator selection
+supports explicit Duo and iPad device types rather than removing those targets.

@@ -7,11 +7,13 @@ import subprocess
 DEFAULT_DEVICE = 'com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro'
 
 
-def select_runtime(runtimes):
+def select_runtime(runtimes, device_type=DEFAULT_DEVICE):
     available = [runtime for runtime in runtimes if runtime.get('isAvailable')
-                 and '.iOS-' in runtime['identifier']]
+                 and '.iOS-' in runtime['identifier']
+                 and any(device['identifier'] == device_type
+                         for device in runtime.get('supportedDeviceTypes', []))]
     if not available:
-        raise ValueError('Install an iOS simulator runtime in Xcode Settings > Components.')
+        raise ValueError('Install an iOS runtime compatible with the selected device in Xcode Settings > Components.')
     return max(available, key=lambda runtime: tuple(int(p) for p in runtime['version'].split('.')))['identifier']
 
 
@@ -21,7 +23,7 @@ def main():
     parser.add_argument('--device-type', default=DEFAULT_DEVICE)
     args = parser.parse_args()
     runtimes = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'runtimes', '--json']))['runtimes']
-    runtime = select_runtime(runtimes)
+    runtime = select_runtime(runtimes, args.device_type)
     if args.create:
         print(subprocess.check_output(['xcrun', 'simctl', 'create', 'Onionary Isolated Tests',
                                        args.device_type, runtime], text=True).strip())
