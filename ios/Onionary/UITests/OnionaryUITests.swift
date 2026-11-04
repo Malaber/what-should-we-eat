@@ -82,6 +82,13 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(name.value as? String, "My offline soup")
         XCTAssertTrue(app.buttons["Save"].isEnabled)
         app.buttons["Cancel"].tap()
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "--reset" }
+        app.launch()
+        app.tabBars.buttons["Recipes"].tap()
+        app.buttons["My offline soup"].firstMatch.tap()
+        XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.textFields["Name"].value as? String, "My offline soup")
     }
 
     @MainActor

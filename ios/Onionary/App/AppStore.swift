@@ -334,6 +334,7 @@ final class AppStore {
     var savedDrafts: [SavedRecipeDraft] = []
     private var draftsFile: URL? { file?.appendingPathExtension("drafts") }
     func loadDrafts() {
+        savedDrafts = []
         do { savedDrafts = try draftsFile.map { try RecipeDraftFile.read($0) } ?? [] }
         catch { self.error = error.localizedDescription }
     }
@@ -409,6 +410,8 @@ final class AppStore {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             try? FileManager.default.removeItem(at: file!)
+            try? FileManager.default.removeItem(at: file!.appendingPathExtension("drafts"))
+            UserDefaults.standard.removeObject(forKey: "accent")
             UserDefaults.standard.removeObject(forKey: "appearance")
             UserDefaults.standard.removeObject(forKey: "language")
         }

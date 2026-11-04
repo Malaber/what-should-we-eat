@@ -64,7 +64,21 @@ def render(screenshot, output):
     icon = ROOT / 'ios/Onionary/AppIcon.icon/Assets/Onionary.png'
     for name in ('header', 'search-results'):
         tree = ET.parse(Path(__file__).parent / f'{name}.svg')
+        # Fit the device to the real capture ratio; never letterbox an iPad in a phone.
+        with Image.open(screenshot) as captured:
+            ratio = captured.width / captured.height
+        screen_width = 990 if ratio < .6 else 1380
+        screen_height = screen_width / ratio
+        screen_x = 3180 if ratio < .6 else 3030
+        screen_y = (2950 - screen_height) / 2
         for element in tree.getroot().iter():
+            if name == 'search-results':
+                if element.attrib.get('id') == 'device-frame':
+                    element.attrib.update(x=str(screen_x-32), y=str(screen_y-32), width=str(screen_width+64), height=str(screen_height+64))
+                elif element.attrib.get('id') == 'screen':
+                    element[0].attrib.update(x=str(screen_x), y=str(screen_y), width=str(screen_width), height=str(screen_height))
+                elif element.attrib.get('data-source') == 'screenshot':
+                    element.attrib.update(x=str(screen_x), y=str(screen_y), width=str(screen_width), height=str(screen_height))
             if element.tag == f'{{{SVG}}}text':
                 outline(element)
             elif element.tag == f'{{{SVG}}}image':

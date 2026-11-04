@@ -31,8 +31,9 @@ Inspect full-size artwork, a thumbnail, and both placement previews before appro
 ## CI and other apps
 
 Onionary's screenshot workflow captures fictional demo content on both device
-families. `execution/render_marketing_assets.py` calls this renderer with the
-current capture and includes the SVG/PNG pairs in the same screenshot artifact.
+families. Capture jobs defer universal artwork to the pinned shared workflow;
+bundle jobs reunite its SVG/PNG outputs with the captures. Local
+`execution/render_marketing_assets.py` runs both stages together.
 The existing release job validates the image sizes, full PNG decoding and source
 hash, then attaches the bundle to its matching main release.
 
@@ -41,8 +42,8 @@ To adopt this in another app:
 2. Replace branding and short benefit copy with real supported features.
 3. Bundle licensed fonts; keep all text outlined in exported SVGs.
 4. Capture demo UI in a deterministic screenshot test; publish that artifact.
-5. Call `reusable-appstore-creative.yml` in Malaber/github-workflows after its PR
-   is merged, pinned to the reviewed commit SHA. Supply the screenshot artifact,
+5. Call `reusable-appstore-creative.yml` in Malaber/github-workflows,
+   pinned to the reviewed commit SHA. Supply the screenshot artifact,
    one exact screenshot glob, renderer path and requirements path.
 6. Download its output artifact in the app's existing release packaging job.
 7. Review artwork before manually updating App Store Connect.

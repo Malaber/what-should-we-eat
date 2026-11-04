@@ -267,3 +267,15 @@
 "Not enough" = "Zu wenig";
 "Check quantity or unit" = "Menge oder Einheit prüfen";
 "Quantities refer to the original recipe. Only identical units are compared. Check your supplies before cooking." = "Mengen beziehen sich auf das Originalrezept. Nur gleiche Einheiten werden verglichen. Prüfe deine Vorräte vor dem Kochen.";
+
+"Saved drafts" = "Gespeicherte Entwürfe";
+"Delete draft" = "Entwurf löschen";
+"Delete saved draft?" = "Gespeicherten Entwurf löschen?";
+"Export draft" = "Entwurf exportieren";
+"Reload cooking recipe?" = "Kochrezept neu laden?";
+"Reload and reset progress" = "Neu laden und Fortschritt zurücksetzen";
+"Keep cooking progress" = "Kochfortschritt behalten";
+"The saved recipe changed. Reloading clears checks, portion adjustments and tap history for this cooking adventure." = "Das gespeicherte Rezept wurde geändert. Beim Neuladen werden Häkchen, Portionsanpassungen und Verlauf dieses Kochabenteuers zurückgesetzt.";
+"Could not save recovery copy. Export your draft before closing." = "Die Sicherung konnte nicht gespeichert werden. Exportiere deinen Entwurf vor dem Schließen.";
+"Reconnect to the original account before saving this draft." = "Melde dich beim ursprünglichen Konto an, bevor du diesen Entwurf speicherst.";
+"Save not confirmed. Your draft stays here. Check the server before retrying to avoid duplicates." = "Speichern nicht bestätigt. Dein Entwurf bleibt hier. Prüfe den Server vor einem weiteren Versuch, um Duplikate zu vermeiden.";

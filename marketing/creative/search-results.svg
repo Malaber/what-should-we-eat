@@ -18,6 +18,6 @@
   </g>
   <text x="780" y="2015" font-family="Manrope" font-size="68" fill="#f2d9df">Flexible portions</text>
   <text x="780" y="2155" font-family="Manrope" font-size="68" fill="#f2d9df">Every step remembered</text>
-  <rect x="3148" y="378" width="1054" height="2214" rx="132" fill="#171417" stroke="#af8496" stroke-width="5"/>
+  <rect id="device-frame" x="3148" y="378" width="1054" height="2214" rx="132" fill="#171417" stroke="#af8496" stroke-width="5"/>
   <image data-source="screenshot" x="3180" y="410" width="990" height="2150" preserveAspectRatio="xMidYMid meet" clip-path="url(#screen)"/>
 </svg>
