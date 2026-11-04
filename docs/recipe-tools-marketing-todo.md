@@ -28,3 +28,19 @@ replacement: generated previews require visual approval.
 - [ ] Remove the hard square edge around the header icon using an editable SVG mask.
 - [ ] Persist account-scoped recipe drafts offline, restore them after app restart, support retry/copy/delete; failed saves must keep the editor open.
 - [ ] After saving changes to the currently cooked recipe, offer an explicit reload/reset confirmation; declining preserves cooking progress.
+
+## Implementation / validation checkpoint (2026-11-04)
+
+All feature code is committed on `codex/recipe-tools-marketing`; checkboxes remain
+open until integrated validation completes. PR #9 is deliberately a draft.
+
+- Swift core tests passed, including incomplete draft persistence/account separation,
+  corruption handling and explicit cooking-progress reset.
+- Desktop Chromium: 23 passed. HTML formatting and `git diff --check` passed.
+- Updated header and search PNGs rendered and decoded at 5244×2950 RGB. Header
+  visually inspected: square outer edge removed; original rounded icon retained.
+- Python 3.14 backend and iOS simulator suites are running detached. Recheck
+  `.tmp/recipe-tools-backend-followup.log` and `.tmp/recipe-tools-ios-followup.log`.
+- Native recovery UI test now covers reopening after app termination. Latest
+  accessibility-identifier follow-up is included in pushed CI.
+- No TestFlight build or App Store Connect asset upload performed for this batch.
