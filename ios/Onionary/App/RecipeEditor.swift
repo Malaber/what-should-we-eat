@@ -17,7 +17,56 @@ struct RecipeEditor: View {
     @State private var showingStepHelp = false
     var body: some View {
         NavigationStack {
-            Form {
+            editorForm.safeAreaInset(edge: .bottom) {
+                if saving { ProgressView("Saving recipe…").padding().frame(maxWidth: .infinity).background(.regularMaterial) }
+                if let error {
+                    ShareLink("Export draft", item: exportText).padding(.horizontal)
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout).foregroundStyle(.red).padding()
+                        .frame(maxWidth: .infinity, alignment: .leading).background(.regularMaterial)
+                        .accessibilityIdentifier("recipe-save-error")
+                }
+            }.connectionRecovery(store).dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "New recipe" : "Edit recipe"))
+                .toolbar { editorToolbar }
+                .alert("Ingredient amount help", isPresented: $showingStepHelp) {
+                    Button("Done", role: .cancel) {}
+                } message: {
+                    Text("Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.")
+                }
+                .interactiveDismissDisabled(saving || askingReload)
+                .onAppear { if draftScope == nil { draftScope = store.scope } }
+                .onChange(of: draft) { _, _ in retain() }
+                .onDisappear { if !completed { retain() } }
+                .confirmationDialog("Reload cooking recipe?", isPresented: $askingReload, titleVisibility: .visible) {
+                    Button("Reload and reset progress", role: .destructive) {
+                        do { if let savedRecipe { try store.reloadCookingRecipe(savedRecipe) }; finish() }
+                        catch { self.error = error.localizedDescription }
+                    }
+                    Button("Keep cooking progress", role: .cancel) { finish() }
+                } message: { Text("The saved recipe changed. Reloading clears checks, portion adjustments and tap history for this cooking adventure.") }
+        }
+    }
+    @ToolbarContentBuilder private var editorToolbar: some ToolbarContent {
+
+                    ToolbarItemGroup(placement: .keyboard) {
+                        if let focusedStep {
+                            Menu {
+                                ForEach(insertableIngredients) { ingredient in
+                                    Button(ingredient.name) {
+                                        insertAmount(ingredient, into: focusedStep)
+                                    }
+                                }
+                            } label: { Label("Insert ingredient amount", systemImage: "plus.circle") }
+                            .accessibilityIdentifier("insert-ingredient-amount")
+                        }
+                    }
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
+                    ToolbarItem(placement: .topBarLeading) { EditButton() }
+                    ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving) }
+    }
+    private var editorForm: some View {
+        Form {
+
                 Section("Recipe") {
                     TextField("Name", text: $draft.name)
                     Picker("Food icon", selection: Binding(get: { FoodIcons.display(draft.icon) }, set: { draft.icon = $0 })) {
@@ -94,49 +143,7 @@ struct RecipeEditor: View {
                     }
                 }
 
-            }.safeAreaInset(edge: .bottom) {
-                if saving { ProgressView("Saving recipe…").padding().frame(maxWidth: .infinity).background(.regularMaterial) }
-                if let error {
-                    ShareLink("Export draft", item: exportText).padding(.horizontal)
-                    Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .font(.callout).foregroundStyle(.red).padding()
-                        .frame(maxWidth: .infinity, alignment: .leading).background(.regularMaterial)
-                        .accessibilityIdentifier("recipe-save-error")
-                }
-            }.connectionRecovery(store).dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "New recipe" : "Edit recipe"))
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        if let focusedStep {
-                            Menu {
-                                ForEach(insertableIngredients) { ingredient in
-                                    Button(ingredient.name) {
-                                        insertAmount(ingredient, into: focusedStep)
-                                    }
-                                }
-                            } label: { Label("Insert ingredient amount", systemImage: "plus.circle") }
-                            .accessibilityIdentifier("insert-ingredient-amount")
-                        }
-                    }
-                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
-                    ToolbarItem(placement: .topBarLeading) { EditButton() }
-                    ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving) }
-                }
-                .alert("Ingredient amount help", isPresented: $showingStepHelp) {
-                    Button("Done", role: .cancel) {}
-                } message: {
-                    Text("Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.")
-                }
-                .interactiveDismissDisabled(saving || askingReload)
-                .onAppear { if draftScope == nil { draftScope = store.scope } }
-                .onChange(of: draft) { _, _ in retain() }
-                .onDisappear { if !completed { retain() } }
-                .confirmationDialog("Reload cooking recipe?", isPresented: $askingReload, titleVisibility: .visible) {
-                    Button("Reload and reset progress", role: .destructive) {
-                        do { if let savedRecipe { try store.reloadCookingRecipe(savedRecipe) }; finish() }
-                        catch { self.error = error.localizedDescription }
-                    }
-                    Button("Keep cooking progress", role: .cancel) { finish() }
-                } message: { Text("The saved recipe changed. Reloading clears checks, portion adjustments and tap history for this cooking adventure.") }
+
         }
     }
     private var insertableIngredients: [RecipeDraft.Item] {

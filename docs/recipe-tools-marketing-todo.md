@@ -52,3 +52,16 @@ open until integrated validation completes. PR #9 is deliberately a draft.
 - [ ] Allow bounded ten-minute first-boot migration on fresh CI simulators (no retries).
 - [ ] Publish fresh immutable version tag and build; run tests, archive and upload
   in the detached release worker. Report upload acceptance separately from launch.
+
+### Recheck outcome
+
+Backend 154/154 and browser 23/23 passed. GitHub Release/device archive and
+shared App Store screenshot workflow passed. Local Debug build failed on SwiftUI
+expression complexity; splitting the form/toolbar and placeholder helper now
+passes `xcodebuild ... build-for-testing` on Xcode 27.1. GitHub's separate iOS
+failure occurred during simulator data migration, before tests: the isolated boot
+budget is now 600 seconds, with no retries and unchanged test deadlines.
+
+Authorized next release: `v0.6.0-rc.14`, marketing version 0.6.0, build 14.
+Detached TestFlight worker runs the full suite before signing/archive/upload.
+Upload completion remains pending until its status reports `uploaded`.
