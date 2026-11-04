@@ -33,8 +33,8 @@ public enum RecipeImportLink {
     }
 }
 
-public struct RecipeDraft: Codable, Sendable {
-    public struct Item: Codable, Identifiable, Sendable {
+public struct RecipeDraft: Codable, Equatable, Sendable {
+    public struct Item: Codable, Identifiable, Equatable, Sendable {
         public var id: UUID = UUID()
         public var groupName: String?
         public var name = ""
@@ -43,7 +43,7 @@ public struct RecipeDraft: Codable, Sendable {
         enum CodingKeys: String, CodingKey { case name, quantity, unit, groupName }
         public init() {}
     }
-    public struct Step: Codable, Identifiable, Sendable {
+    public struct Step: Codable, Identifiable, Equatable, Sendable {
         public var id: UUID = UUID()
         public var groupName: String?
         public var stepNumber = 1

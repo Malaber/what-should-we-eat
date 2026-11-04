@@ -78,9 +78,23 @@ struct RecipesView: View {
     @State private var quickestFirst = false
     @State private var showAllRecent = false
     @State private var pantry = false
+    @State private var recoveryDraft: SavedRecipeDraft?
+    @State private var deletingDraft: SavedRecipeDraft?
     var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, categories: selectedTags, quickestFirst: quickestFirst) }
     var body: some View {
         List {
+            if !store.savedDrafts.isEmpty {
+                Section("Saved drafts") {
+                    ForEach(store.savedDrafts) { saved in
+                        Button { recoveryDraft = saved } label: {
+                            VStack(alignment: .leading) {
+                                Text(saved.draft.name.isEmpty ? L10n.text("New recipe") : saved.draft.name)
+                                Text(saved.updatedAt, style: .date).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }.swipeActions { Button("Delete draft", role: .destructive) { deletingDraft = saved } }
+                    }
+                }
+            }
             Button("Cook with what you have", systemImage: "carrot") { pantry = true }
             if !selectedTags.isEmpty {
                 Button("All recipes") { selectedTags.removeAll() }
@@ -138,6 +152,18 @@ struct RecipesView: View {
                     systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
         }.dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
+            .sheet(item: $recoveryDraft) { saved in
+                RecipeEditor(store: store, draft: saved.draft, recipeID: saved.recipeID, draftID: saved.id)
+            }
+            .confirmationDialog("Delete saved draft?", isPresented: Binding(get: { deletingDraft != nil }, set: { if !$0 { deletingDraft = nil } })) {
+                Button("Delete draft", role: .destructive) {
+                    do { if let deletingDraft { try store.removeDraft(deletingDraft.id, scope: store.scope) } }
+                    catch { store.error = error.localizedDescription }
+                    deletingDraft = nil
+                }
+            }
+            .onAppear { store.loadDrafts() }
+            .onChange(of: store.scope) { _, _ in store.loadDrafts() }
             .sheet(isPresented: $pantry) { PantryView(store: store, selected: selected) }
             .sheet(item: $creation) { choice in
                 switch choice {

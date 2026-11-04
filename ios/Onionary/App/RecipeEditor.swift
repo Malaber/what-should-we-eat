@@ -4,7 +4,12 @@ import OnionaryCore
 struct RecipeEditor: View {
     @Bindable var store: AppStore
     @State var draft: RecipeDraft
-    var recipeID: Int? = nil
+    @State var recipeID: Int? = nil
+    @State var draftID = UUID()
+    @State private var draftScope: String?
+    @State private var savedRecipe: Recipe?
+    @State private var askingReload = false
+    @State private var completed = false
     @Environment(\.dismiss) private var dismiss
     @State private var saving = false
     @State private var error: String?
@@ -92,6 +97,7 @@ struct RecipeEditor: View {
             }.safeAreaInset(edge: .bottom) {
                 if saving { ProgressView("Saving recipe…").padding().frame(maxWidth: .infinity).background(.regularMaterial) }
                 if let error {
+                    ShareLink("Export draft", item: exportText).padding(.horizontal)
                     Label(error, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout).foregroundStyle(.red).padding()
                         .frame(maxWidth: .infinity, alignment: .leading).background(.regularMaterial)
@@ -121,13 +127,39 @@ struct RecipeEditor: View {
                 } message: {
                     Text("Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.")
                 }
-                .interactiveDismissDisabled(saving)
+                .interactiveDismissDisabled(saving || askingReload)
+                .onAppear { if draftScope == nil { draftScope = store.scope } }
+                .onChange(of: draft) { _, _ in retain() }
+                .onDisappear { if !completed { retain() } }
+
         }
+    }
+    private var exportText: String {
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return (try? encoder.encode(draft)).flatMap { String(data: $0, encoding: .utf8) } ?? draft.name
+    }
+    private func retain() {
+        guard !completed, let draftScope else { return }
+        do { try store.retainDraft(.init(id: draftID, recipeID: recipeID, draft: draft), scope: draftScope) }
+        catch { self.error = L10n.text("Could not save recovery copy. Export your draft before closing.") }
+    }
+    private func finish() {
+        do {
+            try store.removeDraft(draftID, scope: draftScope ?? store.scope)
+            completed = true; dismiss()
+        } catch { self.error = error.localizedDescription }
     }
     private func save() async {
         saving = true; error = nil; defer { saving = false }
-        do { try await store.saveRecipe(draft, id: recipeID); dismiss() }
-        catch { self.error = L10n.text(error.localizedDescription) }
+        retain()
+        guard draftScope == store.scope else { error = L10n.text("Reconnect to the original account before saving this draft."); return }
+        do {
+            let recipe = try await store.saveRecipe(draft, id: recipeID)
+            recipeID = recipe.id; savedRecipe = recipe; retain()
+            finish()
+        } catch {
+            self.error = L10n.text("Save not confirmed. Your draft stays here. Check the server before retrying to avoid duplicates.") + "\n" + L10n.text(error.localizedDescription)
+        }
     }
 }
 
