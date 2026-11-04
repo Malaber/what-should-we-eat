@@ -22,3 +22,9 @@ fixes separately. Long simulator tests run detached; no retries or idle CI polli
 Scope: native recipe UX plus backend/web compatibility for new stored fields.
 Existing release tags remain immutable. No automatic App Store Connect asset
 replacement: generated previews require visual approval.
+
+## Follow-up requests (2026-11-04)
+- [ ] Consume the merged central creative workflow at an immutable SHA; keep app-specific artwork configurable.
+- [ ] Remove the hard square edge around the header icon using an editable SVG mask.
+- [ ] Persist account-scoped recipe drafts offline, restore them after app restart, support retry/copy/delete; failed saves must keep the editor open.
+- [ ] After saving changes to the currently cooked recipe, offer an explicit reload/reset confirmation; declining preserves cooking progress.
