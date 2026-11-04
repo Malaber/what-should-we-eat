@@ -91,7 +91,8 @@ struct RecipesView: View {
                                 Text(saved.draft.name.isEmpty ? L10n.text("New recipe") : saved.draft.name)
                                 Text(saved.updatedAt, style: .date).font(.caption).foregroundStyle(.secondary)
                             }
-                        }.swipeActions { Button("Delete draft", role: .destructive) { deletingDraft = saved } }
+                        }.accessibilityIdentifier("saved-draft-" + saved.draft.name)
+                        .swipeActions { Button("Delete draft", role: .destructive) { deletingDraft = saved } }
                     }
                 }
             }
