@@ -18,7 +18,8 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Selected")
         app.buttons["All recipes"].tap()
         app.buttons["Cook with what you have"].tap()
-        let pantry = app.descendants(matching: .any)["pantry-input"].firstMatch
+        let pantry = (app.textFields.allElementsBoundByIndex + app.textViews.allElementsBoundByIndex).first { $0.identifier == "pantry-input" }!
+        // Multiline fields expose concrete TextField/TextView types across SDKs.
         XCTAssertTrue(pantry.waitForExistence(timeout: 5))
         pantry.tap(); pantry.typeText("170 g Cheese")
         XCTAssertTrue(app.staticTexts["Not enough"].firstMatch.waitForExistence(timeout: 5))
@@ -98,6 +99,7 @@ final class OnionaryUITests: XCTestCase {
         app.launch()
         app.buttons["Choose a recipe"].tap()
         app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["preview-cook"].tap()
         app.buttons["ingredient-1"].tap()
         app.terminate()
         app.launchArguments.removeAll { $0 == "--reset" }
@@ -121,6 +123,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertFalse(app.alerts.firstMatch.exists)
         app.buttons["Choose a recipe"].tap()
         app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["preview-cook"].tap()
         app.buttons["ingredient-1"].tap()
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
         XCTAssertTrue(app.buttons["Sign in with passkey"].exists)
@@ -183,6 +186,7 @@ final class OnionaryUITests: XCTestCase {
         app.launch()
         app.buttons["Choose a recipe"].tap()
         app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["preview-cook"].tap()
         let mode = app.buttons["cooking-mode"]
         XCTAssertTrue(mode.waitForExistence(timeout: 5))
         app.buttons["portion-plus"].tap()
@@ -211,6 +215,7 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Recipes"].tap()
         pullToRefresh(app)
         app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["preview-cook"].tap()
         let tag = app.buttons["recipe-tag-vegetarian"]
         XCTAssertTrue(tag.waitForExistence(timeout: 5))
         tag.tap()
@@ -269,6 +274,7 @@ final class OnionaryUITests: XCTestCase {
         let recipe = app.buttons["recipe-1"].firstMatch
         XCTAssertTrue(recipe.waitForExistence(timeout: 5))
         recipe.tap()
+        app.buttons["preview-cook"].tap()
         XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Edit recipe"].tap()
@@ -352,6 +358,7 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["Choose a recipe"].tap()
         capture("01-recipe-book")
         app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["preview-cook"].tap()
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
         app.buttons["ingredient-1"].tap()
         app.buttons["ingredient-2"].tap()
@@ -388,6 +395,7 @@ final class OnionaryUITests: XCTestCase {
         app.launch()
         app.buttons["Choose a recipe"].tap()
         app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["preview-cook"].tap()
         XCTAssertTrue(app.buttons["portion-plus"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.keyboards.firstMatch.exists)
         app.buttons["portion-plus"].tap()
@@ -404,6 +412,7 @@ final class OnionaryUITests: XCTestCase {
         app.launch()
         app.buttons["Choose a recipe"].tap()
         app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["preview-cook"].tap()
         let cheese = app.buttons["ingredient-1"]
         XCTAssertTrue(cheese.waitForExistence(timeout: 5))
         cheese.tap()

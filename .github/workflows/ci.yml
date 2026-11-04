@@ -47,27 +47,41 @@ jobs:
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium --device='iPhone 13'
   ios:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: iphone
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
+            runtime: '27.0'
+          - profile: ipad
+            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-16GB
+            runtime: '27.0'
+          - profile: duo
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
+            runtime: '27.1'
     runs-on: macos-26
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Select Xcode 26 or newer
-        run: |
-          xcodebuild -version
-          xcodebuild -version | head -1 | awk '{ if ($2 + 0 < 26) exit 1 }'
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '27.1'
+      - run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py '${{ matrix.runtime }}'
       - run: brew install xcodegen
       - name: Core tests, simulator build, and UI tests
         timeout-minutes: 45
         env:
           TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
+          SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
         run: bash ios/Onionary/Scripts/test.sh
       - name: Preserve simulator test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: onionary-ios-test-results
+          name: onionary-ios-test-results-${{ matrix.profile }}
           path: ${{ runner.temp }}/onionary-tests/Onionary.xcresult
           if-no-files-found: ignore
           retention-days: 7
