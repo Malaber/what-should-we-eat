@@ -28,7 +28,7 @@ struct WorkspacePanes<Primary: View, Secondary: View>: View {
             }
         }
     }
-    private func pane<Content: View>(split: Bool, height: CGFloat?, @ViewBuilder content: () -> Content) -> some View {
+    private func pane<Content: View>(split: Bool, height: CGFloat?, @ViewBuilder content: @escaping () -> Content) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) { content() }

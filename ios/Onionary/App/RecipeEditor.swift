@@ -61,11 +61,10 @@ struct RecipeEditor: View {
                         }
                     }
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
-                    ToolbarItem(placement: .topBarLeading) { EditButton() }
                     ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving) }
     }
     private var editorForm: some View {
-        Form {
+        WorkspacePanes(focus: focusedStep?.uuidString) {
 
                 Section("Recipe") {
                     TextField("Name", text: $draft.name)
@@ -105,7 +104,22 @@ struct RecipeEditor: View {
                     ForEach($draft.ingredients) { $item in
                         VStack {
                             TextField("Ingredient group (optional)", text: Binding(get: { item.groupName ?? "" }, set: { item.groupName = $0.isEmpty ? nil : $0 }))
-                            TextField("Ingredient", text: $item.name)
+                            HStack {
+                                TextField("Ingredient", text: $item.name)
+                                Menu {
+                                    Button("Move up") { moveIngredient(item.id, offset: -1) }
+                                    Button("Move down") { moveIngredient(item.id, offset: 1) }
+                                    Button("Delete ingredient", role: .destructive) { draft.ingredients.removeAll { $0.id == item.id } }
+                                } label: { Image(systemName: "line.3.horizontal").frame(minWidth: 44, minHeight: 44) }
+                                    .accessibilityLabel("Reorder ingredient")
+                                    .draggable(item.id.uuidString)
+                            }.dropDestination(for: String.self) { ids, _ in
+                                guard let id = ids.first.flatMap(UUID.init(uuidString:)),
+                                      let from = draft.ingredients.firstIndex(where: { $0.id == id }),
+                                      let to = draft.ingredients.firstIndex(where: { $0.id == item.id }) else { return false }
+                                draft.ingredients.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+                                return true
+                            }
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
                         Text("Quantity").font(.caption).foregroundStyle(.secondary)
@@ -114,13 +128,18 @@ struct RecipeEditor: View {
                                 TextField("Unit", text: Binding(get: { item.unit ?? "" }, set: { item.unit = $0 }))
                             }
                         }
-                    }.onDelete { draft.ingredients.remove(atOffsets: $0) }
-                     .onMove { draft.ingredients.move(fromOffsets: $0, toOffset: $1) }
+                    }
                     Button("Add ingredient") { draft.ingredients.append(.init()) }
                 }
+        } secondary: {
                 Section {
                     ForEach($draft.instructionSteps) { $step in
                         VStack {
+                            HStack {
+                                Text("Step \(step.stepNumber)").font(.caption)
+                                Spacer()
+                                Button("Delete step", role: .destructive) { draft.instructionSteps.removeAll { $0.id == step.id } }
+                            }
                             TextField("Instruction group (optional)", text: Binding(get: { step.groupName ?? "" }, set: { step.groupName = $0.isEmpty ? nil : $0 }))
                             TextField("Instruction", text: $step.description, axis: .vertical)
                                 .focused($focusedStep, equals: step.id)
@@ -130,8 +149,7 @@ struct RecipeEditor: View {
                         TextField("Minutes", value: $step.durationMin, format: .number).keyboardType(.numberPad)
                     }
                         }
-                    }.onDelete { draft.instructionSteps.remove(atOffsets: $0) }
-                     .onMove { draft.instructionSteps.move(fromOffsets: $0, toOffset: $1) }
+                    }
                     Button("Add step") { draft.instructionSteps.append(.init()) }
                 } header: {
                     HStack {
@@ -144,7 +162,13 @@ struct RecipeEditor: View {
                 }
 
 
-        }
+        }.textFieldStyle(.roundedBorder).accessibilityIdentifier("recipe-editor")
+    }
+    private func moveIngredient(_ id: UUID, offset: Int) {
+        guard let from = draft.ingredients.firstIndex(where: { $0.id == id }) else { return }
+        let to = from + offset
+        guard draft.ingredients.indices.contains(to) else { return }
+        draft.ingredients.swapAt(from, to)
     }
     private var insertableIngredients: [RecipeDraft.Item] {
         draft.ingredients.filter { item in
