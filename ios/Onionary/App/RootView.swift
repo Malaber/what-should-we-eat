@@ -16,7 +16,7 @@ struct RootView: View {
                 TabView(selection: $tab) {
                     NavigationStack { CookingView(store: store, browse: { tab = 1 }) }
                         .tabItem { Label("Cooking", systemImage: "flame") }.tag(0)
-                    NavigationStack { RecipesView(store: store, selected: { tab = 0 }) }
+                    RecipesView(store: store, selected: { tab = 0 })
                         .tabItem { Label("Recipes", systemImage: "book.closed") }.tag(1)
                     NavigationStack { MealPlanningView(store: store, cook: { tab = 0 }) }
                         .tabItem { Label("Kitchen", systemImage: "calendar") }.tag(3)
@@ -72,6 +72,8 @@ struct RecipesView: View {
     @Bindable var store: AppStore
     var selected: () -> Void
     @State private var search = ""
+    @State private var preview: Recipe?
+    @State private var preferredColumn = NavigationSplitViewColumn.sidebar
     private enum Creation: String, Identifiable { case manual, intelligence, importRecipe; var id: String { rawValue } }
     @State private var creation: Creation?
     @State private var selectedTags: Set<String> = []
@@ -82,6 +84,17 @@ struct RecipesView: View {
     @State private var deletingDraft: SavedRecipeDraft?
     var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, categories: selectedTags, quickestFirst: quickestFirst) }
     var body: some View {
+        NavigationSplitView(preferredCompactColumn: $preferredColumn) {
+            sidebar.navigationSplitViewColumnWidth(min: 280, ideal: 360, max: 460)
+        } detail: {
+            if let preview {
+                RecipePreview(store: store, recipe: preview, cook: selected)
+            } else {
+                ContentUnavailableView("Choose a recipe", systemImage: "book", description: Text("Preview a recipe without changing your cooking progress."))
+            }
+        }.navigationSplitViewStyle(.balanced)
+    }
+    private var sidebar: some View {
         List {
             if !store.savedDrafts.isEmpty {
                 Section("Saved drafts") {
@@ -187,7 +200,7 @@ struct RecipesView: View {
             }
     }
     func recipeRow(_ recipe: Recipe, subtitle: String) -> some View {
-        Button { store.visit(recipe); selected() } label: {
+        Button { preview = recipe; preferredColumn = .detail } label: {
             HStack(spacing: 10) {
                 Text(FoodIcons.display(recipe.icon)).font(.title2).frame(width: 28, height: 36).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 5) {
