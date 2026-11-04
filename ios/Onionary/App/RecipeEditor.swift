@@ -108,10 +108,9 @@ struct RecipeEditor: View {
                     ToolbarItemGroup(placement: .keyboard) {
                         if let focusedStep {
                             Menu {
-                                ForEach(draft.ingredients.filter { ($0.quantity ?? 0) > 0 && !$0.name.isEmpty }) { ingredient in
+                                ForEach(insertableIngredients) { ingredient in
                                     Button(ingredient.name) {
-                                        guard let index = draft.instructionSteps.firstIndex(where: { $0.id == focusedStep }) else { return }
-                                        draft.instructionSteps[index].description += " {{" + ingredient.name + "|100%}}"
+                                        insertAmount(ingredient, into: focusedStep)
                                     }
                                 }
                             } label: { Label("Insert ingredient amount", systemImage: "plus.circle") }
@@ -139,6 +138,16 @@ struct RecipeEditor: View {
                     Button("Keep cooking progress", role: .cancel) { finish() }
                 } message: { Text("The saved recipe changed. Reloading clears checks, portion adjustments and tap history for this cooking adventure.") }
         }
+    }
+    private var insertableIngredients: [RecipeDraft.Item] {
+        draft.ingredients.filter { item in
+            guard let quantity = item.quantity else { return false }
+            return quantity > Decimal.zero && !item.name.isEmpty
+        }
+    }
+    private func insertAmount(_ ingredient: RecipeDraft.Item, into stepID: UUID) {
+        guard let index = draft.instructionSteps.firstIndex(where: { $0.id == stepID }) else { return }
+        draft.instructionSteps[index].description += " {{" + ingredient.name + "|100%}}"
     }
     private var exportText: String {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

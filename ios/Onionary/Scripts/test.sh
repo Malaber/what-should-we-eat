@@ -11,7 +11,9 @@ else
   simulator_id=$(python3 Scripts/resolve_simulator.py --create)
   trap 'xcrun simctl delete "$simulator_id" >/dev/null 2>&1 || true' EXIT
   xcrun simctl boot "$simulator_id"
-  python3 ../../execution/run_bounded.py 180 xcrun simctl bootstatus "$simulator_id" -b
+  # Fresh hosted runners can spend several minutes migrating simulator data.
+  # Bound first boot separately; do not retry failed tests or recreate the device.
+  python3 ../../execution/run_bounded.py 600 xcrun simctl bootstatus "$simulator_id" -b
 fi
 result_dir=${TEST_RESULTS_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/onionary-tests.XXXXXX")}
 mkdir -p "$result_dir"

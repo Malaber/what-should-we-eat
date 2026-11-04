@@ -44,3 +44,11 @@ open until integrated validation completes. PR #9 is deliberately a draft.
 - Native recovery UI test now covers reopening after app termination. Latest
   accessibility-identifier follow-up is included in pushed CI.
 - No TestFlight build or App Store Connect asset upload performed for this batch.
+
+## Recheck and TestFlight delivery
+
+- [x] Backend suite: 154 passed; browser suite: 23 passed.
+- [ ] Fix compiler complexity in ingredient placeholder menu; verify Debug build.
+- [ ] Allow bounded ten-minute first-boot migration on fresh CI simulators (no retries).
+- [ ] Publish fresh immutable version tag and build; run tests, archive and upload
+  in the detached release worker. Report upload acceptance separately from launch.
