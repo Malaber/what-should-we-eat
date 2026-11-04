@@ -235,13 +235,14 @@ struct CookingView: View {
     }
     @State private var sheet: Sheet?
     @State private var restart = false
+    @State private var focusedItem: String?
     @State private var recentAction: CheckChange?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         Group {
             if let adventure = store.current {
-                List {
-                    Section {
+                WorkspacePanes(focus: focusedItem) {
+                    GroupBox {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("TODAY’S COOKING ADVENTURE").font(.caption2.bold()).tracking(2).foregroundStyle(onion)
                             Text(adventure.recipe.name).font(.system(.title2, design: .serif, weight: .semibold))
@@ -285,7 +286,8 @@ struct CookingView: View {
                             }.scrollIndicators(.hidden)
                         }
                     }
-                    Section("Gather your ingredients") {
+                    Text("Gather your ingredients").font(.headline).accessibilityAddTraits(.isHeader)
+                    Group {
                         ForEach(Array(adventure.recipe.ingredients.enumerated()), id: \.element.id) { index, ingredient in
                             if let group = ingredient.groupName, !group.isEmpty,
                                index == 0 || adventure.recipe.ingredients[index - 1].groupName != group {
@@ -296,7 +298,9 @@ struct CookingView: View {
                                 subtitle: [amount, ingredient.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " "), adventure: adventure)
                         }
                     }
-                    Section("Let’s cook") {
+                } secondary: {
+                    Text("Let’s cook").font(.headline).accessibilityAddTraits(.isHeader)
+                    Group {
                         let steps = adventure.recipe.instructionSteps.sorted { $0.stepNumber < $1.stepNumber }
                         ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
                             if let group = step.groupName, !group.isEmpty,
@@ -385,7 +389,7 @@ struct CookingView: View {
     }
     func checkRow(key: String, label: String, subtitle: String, adventure: Adventure) -> some View {
         let checked = adventure.checked.contains(key)
-        return Button { store.update { $0.toggle(key: key, label: label) } } label: {
+        return Button { focusedItem = key; store.update { $0.toggle(key: key, label: label) } } label: {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: checked ? "checkmark.circle.fill" : "circle").font(.title2).foregroundStyle(checked ? onion : .secondary)
                 VStack(alignment: .leading, spacing: 5) {
@@ -396,7 +400,7 @@ struct CookingView: View {
             }.padding(.vertical, 3).frame(minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityLabel(label + (subtitle.isEmpty ? "" : ", " + subtitle))
             .accessibilityValue(checked ? "Checked" : "Unchecked").accessibilityHint("Double tap to toggle. Undo reverses the last change.")
-            .accessibilityIdentifier(key)
+            .accessibilityIdentifier(key).id(key)
     }
 }
 
