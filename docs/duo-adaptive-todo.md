@@ -89,3 +89,11 @@ Free space rose from 1.8 to approximately 16 GiB after deletion settled.
 
 Shared creative fix: https://github.com/Malaber/github-workflows/pull/4. Caller
 pins its immutable commit for CI validation; PR is not merged automatically.
+
+## Build 17 follow-up
+
+- [ ] Use stage-specific disk reserves: full release start, one disposable simulator profile, and archive; test boundaries. Build 17 passed iPhone but incorrectly reapplied the initial 15 GiB reserve before iPad.
+- [ ] Prevent keyboard dismissal from moving sheet controls during their tap; retain iPad deletion/import regressions with the keyboard open.
+- [ ] Synchronize Duo navigation with hittable controls after fold transitions; split independent tag browsing and editor placeholder tests to keep each focused and bounded.
+- [ ] Give cold compilation its own adequate budget; retain bounded test execution and no retries.
+- [ ] Compile, push replacement CI and publish a new immutable TestFlight build.
