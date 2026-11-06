@@ -48,3 +48,14 @@ TestFlight delivery runs all three device profiles before signing/uploading.
 
 Still unverified: final UI results, visual fold screenshots, VoiceOver, large text,
 Reduce Motion, the complete language/theme matrix, and accepted TestFlight upload.
+
+## Build 16 / CI infrastructure follow-up
+
+- [ ] Match Tracy's `xcode-27` runner and verify exact Xcode 27.1 build in UI, archive and screenshot jobs (macos-26 only has Xcode 26.x).
+- [ ] Fail early with an actionable disk-space error before simulator/build creation; test the guard without allocating disk.
+- [ ] Disable build indexing for automation; preserve test results while removing disposable successful-build caches between release profiles.
+- [ ] Re-run CI and start a fresh immutable TestFlight build after local disk space is available.
+
+Build 16 failed before tests/archive/upload: `No space left on device`. All ten
+reported CI failures stopped at Xcode selection, not app assertions. Backend,
+browser and HTML checks passed. No retries or test suppression are appropriate.
