@@ -6,7 +6,7 @@ cd "$package_dir"
 archive_path=$1
 marketing_version=$2
 build_number=$3
-python3 ../../execution/check_ios_build_environment.py
+python3 ../../execution/check_ios_build_environment.py --stage archive
 xcodegen generate
 signing=(CODE_SIGNING_ALLOWED=NO)
 if [[ "${ARCHIVE_SIGNED:-0}" == 1 ]]; then

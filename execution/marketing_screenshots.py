@@ -20,7 +20,7 @@ def main():
     parser.add_argument('--output', type=Path, default=ROOT / '.tmp/marketing')
     parser.add_argument("--defer-creative", action="store_true", help="Render creative assets in the shared CI workflow")
     args = parser.parse_args()
-    subprocess.run([sys.executable, str(ROOT / 'execution/check_ios_build_environment.py')], check=True)
+    subprocess.run([sys.executable, str(ROOT / 'execution/check_ios_build_environment.py'), '--stage', 'test'], check=True)
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
     runtimes = json.loads(run('xcrun','simctl','list','runtimes','--json'))['runtimes']
     sys.path.insert(0, str(PACKAGE / 'Scripts'))

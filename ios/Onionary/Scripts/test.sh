@@ -2,7 +2,7 @@
 set -euo pipefail
 package_dir=$(cd "$(dirname "$0")/.." && pwd)
 cd "$package_dir"
-python3 ../../execution/check_ios_build_environment.py
+python3 ../../execution/check_ios_build_environment.py --stage test
 swift test
 marketing_version=$(python3 ../../execution/version.py --ios)
 xcodegen generate
@@ -23,7 +23,7 @@ result_dir=$(cd "$result_dir" && pwd)
 build_args=(-project Onionary.xcodeproj -scheme Onionary
   -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "$result_dir/DerivedData"
   MARKETING_VERSION="$marketing_version" CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO)
-python3 ../../execution/run_bounded.py 600 xcodebuild "${build_args[@]}" build-for-testing
+python3 ../../execution/run_bounded.py 1200 xcodebuild "${build_args[@]}" build-for-testing
 test_allowance=180
 if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then test_allowance=360; fi
 test_args=("${build_args[@]}" -parallel-testing-enabled NO -test-timeouts-enabled YES

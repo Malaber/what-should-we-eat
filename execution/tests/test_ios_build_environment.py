@@ -13,3 +13,13 @@ def test_disk_guard_accepts_boundary_and_rejects_insufficient_space():
     validate_disk('/build', MIN_FREE_BYTES)
     with pytest.raises(ValueError, match='Free disk space before restarting'):
         validate_disk('/build', MIN_FREE_BYTES - 1)
+
+
+@pytest.mark.parametrize('stage,gib', [('release', 12), ('test', 8), ('archive', 6)])
+def test_stage_reserves_allow_sequential_profiles_without_requiring_initial_space(stage, gib):
+    from execution.check_ios_build_environment import STAGE_GIB
+    reserve = STAGE_GIB[stage] * 1024 ** 3
+    assert reserve == gib * 1024 ** 3
+    validate_disk('/build', reserve, reserve)
+    with pytest.raises(ValueError, match='Insufficient space'):
+        validate_disk('/build', reserve - 1, reserve)
