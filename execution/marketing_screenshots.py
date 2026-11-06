@@ -18,10 +18,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--device', default='iPhone 17 Pro')
     parser.add_argument('--output', type=Path, default=ROOT / '.tmp/marketing')
+    parser.add_argument("--defer-creative", action="store_true", help="Render creative assets in the shared CI workflow")
     args = parser.parse_args()
+    subprocess.run([sys.executable, str(ROOT / 'execution/check_ios_build_environment.py'), '--stage', 'test'], check=True)
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
     runtimes = json.loads(run('xcrun','simctl','list','runtimes','--json'))['runtimes']
-    runtime = next(r['identifier'] for r in reversed(runtimes) if r['isAvailable'] and '.iOS-' in r['identifier'])
+    sys.path.insert(0, str(PACKAGE / 'Scripts'))
+    from resolve_simulator import select_runtime
+    types = json.loads(run('xcrun', 'simctl', 'list', 'devicetypes', '--json'))['devicetypes']
+    device_type = next(device['identifier'] for device in types if device['name'] == args.device)
+    runtime = select_runtime(runtimes, device_type)
     device = run('xcrun','simctl','create','Onionary Marketing',args.device,runtime).strip()
     try:
         run('xcrun','simctl','boot',device)
@@ -37,7 +43,7 @@ def main():
             '-destination',f'platform=iOS Simulator,id={device}', '-parallel-testing-enabled','NO',
             '-test-timeouts-enabled','YES','-maximum-test-execution-time-allowance','180',
             '-only-testing:OnionaryUITests/OnionaryUITests/testMarketingScreenshots',
-            '-resultBundlePath',str(result),'CODE_SIGNING_ALLOWED=NO','test'],cwd=PACKAGE,check=True)
+            '-resultBundlePath',str(result),'CODE_SIGNING_ALLOWED=NO','COMPILER_INDEX_STORE_ENABLE=NO','test'],cwd=PACKAGE,check=True)
         exported = output / 'attachments'
         run('xcrun','xcresulttool','export','attachments','--path',str(result),'--output-path',str(exported))
         manifest = json.loads((exported / 'manifest.json').read_text())
@@ -55,7 +61,7 @@ def main():
         if count != 4:
             raise SystemExit(f'Expected 4 marketing screenshots, found {count}. Inspect attachment manifest.')
         from execution.render_marketing_assets import render
-        render(screenshots, 'ipad' if args.device.startswith('iPad') else 'iphone')
+        render(screenshots, 'ipad' if args.device.startswith('iPad') else 'iphone', include_creative=not args.defer_creative)
         print(f'Exported {count} screenshots to {screenshots}')
     finally:
         subprocess.run(['xcrun','simctl','delete',device],check=False)

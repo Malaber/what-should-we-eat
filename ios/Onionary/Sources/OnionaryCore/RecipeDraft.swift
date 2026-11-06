@@ -33,24 +33,27 @@ public enum RecipeImportLink {
     }
 }
 
-public struct RecipeDraft: Codable, Sendable {
-    public struct Item: Codable, Identifiable, Sendable {
+public struct RecipeDraft: Codable, Equatable, Sendable {
+    public struct Item: Codable, Identifiable, Equatable, Sendable {
         public var id: UUID = UUID()
+        public var groupName: String?
         public var name = ""
         public var quantity: Decimal?
         public var unit: String? = ""
-        enum CodingKeys: String, CodingKey { case name, quantity, unit }
+        enum CodingKeys: String, CodingKey { case name, quantity, unit, groupName }
         public init() {}
     }
-    public struct Step: Codable, Identifiable, Sendable {
+    public struct Step: Codable, Identifiable, Equatable, Sendable {
         public var id: UUID = UUID()
+        public var groupName: String?
         public var stepNumber = 1
         public var description = ""
         public var durationMin: Int?
-        enum CodingKeys: String, CodingKey { case stepNumber, description, durationMin }
+        enum CodingKeys: String, CodingKey { case stepNumber, description, durationMin, groupName }
         public init() {}
     }
     public var name = ""
+    public var icon: String?
     public var notes: String? = ""
     public var servings: Decimal? = 1
     public var kcalPerServing: Decimal?
@@ -79,7 +82,7 @@ public struct RecipeDraft: Codable, Sendable {
         let encoder = JSONEncoder(); encoder.keyEncodingStrategy = .convertToSnakeCase
         // PUT supports partial updates: explicitly encode cleared optional metadata.
         var payload = try JSONSerialization.jsonObject(with: encoder.encode(copy)) as! [String: Any]
-        for key in ["notes", "kcal_per_serving", "active_cooking_time_min", "total_time_min"] where payload[key] == nil {
+        for key in ["icon", "notes", "kcal_per_serving", "active_cooking_time_min", "total_time_min"] where payload[key] == nil {
             payload[key] = NSNull()
         }
         return try JSONSerialization.data(withJSONObject: payload)

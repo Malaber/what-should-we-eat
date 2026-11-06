@@ -29,13 +29,19 @@ def package(source: Path, output: Path) -> list[Path]:
         for png in pngs:
             validate_dimensions(png, family)
         creative = root / "creative"
-        for name, size in {"header.png": (3840, 1646), "search-results.png": (3000, 2000)}.items():
+        for name, size in {"header.png": (5244, 2950), "search-results.png": (5244, 2950)}.items():
             image = creative / name
             data = image.read_bytes()
             if (data[:8] != b"\x89PNG\r\n\x1a\n" or len(data) < 26
                     or struct.unpack(">II", data[16:24]) != size or data[25] != 2):
                 raise ValueError(f"Invalid opaque RGB creative: {image}")
+            from PIL import Image
+            with Image.open(image) as decoded:
+                decoded.load()
+                if decoded.mode != "RGB":
+                    raise ValueError(f"Invalid opaque RGB creative: {image}")
             pngs.append(image)
+            pngs.append(creative / name.replace(".png", ".svg"))
         manifest = json.loads((creative / "manifest.json").read_text())
         raw = list(root.glob("02-cooking-companion*.png"))
         if (len(raw) != 1 or manifest["source"] != raw[0].name

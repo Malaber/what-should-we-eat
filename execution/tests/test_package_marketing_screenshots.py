@@ -38,11 +38,13 @@ def test_render_and_package_current_captures(tmp_path):
     for archive in archives:
         with ZipFile(archive) as zipped:
             names = zipped.namelist()
-            assert len(names) == 7
+            assert len(names) == 9
             assert 'en-US/creative/header.png' in names
             assert 'en-US/creative/search-results.png' in names
             assert 'en-US/05-cooking-with-onionary.png' in names
-            assert all(name.endswith('.png') for name in names)
+            assert all(name.endswith(('.png', '.svg')) for name in names)
+            assert 'en-US/creative/header.svg' in names
+            assert 'en-US/creative/search-results.svg' in names
     # A later capture must not accidentally ship with earlier artwork.
     source = tmp_path / 'onionary-appstore-iphone-en-US/en-US/02-cooking-companion.png'
     Image.new('RGB', (1206, 2622), 'blue').save(source)

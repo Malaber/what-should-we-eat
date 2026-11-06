@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
 # ── Instruction Steps ────────────────────────────────────────────────
 
 class InstructionStepBase(BaseModel):
+    group_name: Optional[str] = Field(default=None, max_length=100)
     step_number: int
     description: str
     duration_min: Optional[int] = None
@@ -31,6 +32,7 @@ class InstructionStepOut(InstructionStepBase):
 # ── Ingredients ──────────────────────────────────────────────────────
 
 class IngredientBase(BaseModel):
+    group_name: Optional[str] = Field(default=None, max_length=100)
     name: str
     quantity: Optional[float] = None
     unit: Optional[str] = None
@@ -65,6 +67,7 @@ class TagOut(TagBase):
 # ── Recipes ──────────────────────────────────────────────────────────
 
 class RecipeBase(BaseModel):
+    icon: Optional[str] = Field(default=None, max_length=32)
     servings: float = Field(default=1, gt=0, le=1_000_000, allow_inf_nan=False)
     name: str
     notes: Optional[str] = None
@@ -83,6 +86,7 @@ class RecipeCreate(RecipeBase):
 
 
 class RecipeUpdate(BaseModel):
+    icon: Optional[str] = Field(default=None, max_length=32)
     servings: float = Field(default=1, gt=0, le=1_000_000, allow_inf_nan=False)
     """All fields optional for partial updates."""
     name: Optional[str] = None

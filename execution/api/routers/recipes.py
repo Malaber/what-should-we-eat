@@ -94,6 +94,7 @@ def create_recipe(data: RecipeCreate, current_user: User = Depends(get_current_a
     recipe = Recipe(
         household_id=current_user.active_household_id,
         name=data.name,
+        icon=data.icon,
         notes=data.notes,
         servings=data.servings,
         kcal_per_serving=data.kcal_per_serving,
@@ -101,7 +102,7 @@ def create_recipe(data: RecipeCreate, current_user: User = Depends(get_current_a
         total_time_min=data.total_time_min,
     )
     recipe.ingredients = [
-        Ingredient(**ing.model_dump()) for ing in data.ingredients
+        Ingredient(**ing.model_dump(), position=index) for index, ing in enumerate(data.ingredients)
     ]
     recipe.instruction_steps = [
         InstructionStep(**step.model_dump()) for step in data.instruction_steps
@@ -138,6 +139,7 @@ def import_recipes_from_household(
         new_recipe = Recipe(
             household_id=current_user.active_household_id,
             name=recipe.name,
+            icon=recipe.icon,
             notes=recipe.notes,
             servings=recipe.servings,
             kcal_per_serving=recipe.kcal_per_serving,
@@ -146,12 +148,12 @@ def import_recipes_from_household(
         )
         
         new_recipe.ingredients = [
-            Ingredient(name=ing.name, quantity=ing.quantity, unit=ing.unit)
-            for ing in recipe.ingredients
+            Ingredient(name=ing.name, quantity=ing.quantity, unit=ing.unit, position=index, group_name=ing.group_name)
+            for index, ing in enumerate(recipe.ingredients)
         ]
         
         new_recipe.instruction_steps = [
-            InstructionStep(step_number=step.step_number, description=step.description, duration_min=step.duration_min)
+            InstructionStep(step_number=step.step_number, description=step.description, duration_min=step.duration_min, group_name=step.group_name)
             for step in recipe.instruction_steps
         ]
         
@@ -212,14 +214,14 @@ def update_recipe(recipe_id: int, data: RecipeUpdate, current_user: User = Depen
         raise HTTPException(404, "Recipe not found")
 
     # scalar fields
-    for field in ("name", "notes", "servings", "kcal_per_serving", "active_cooking_time_min", "total_time_min"):
+    for field in ("name", "notes", "icon", "servings", "kcal_per_serving", "active_cooking_time_min", "total_time_min"):
         if field in data.model_fields_set:
             setattr(recipe, field, getattr(data, field))
 
     # replace ingredients if provided
     if data.ingredients is not None:
         recipe.ingredients = [
-            Ingredient(**ing.model_dump()) for ing in data.ingredients
+            Ingredient(**ing.model_dump(), position=index) for index, ing in enumerate(data.ingredients)
         ]
 
     # replace instruction steps if provided
