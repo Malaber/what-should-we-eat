@@ -24,13 +24,15 @@ build_args=(-project Onionary.xcodeproj -scheme Onionary
   -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "$result_dir/DerivedData"
   MARKETING_VERSION="$marketing_version" CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO)
 python3 ../../execution/run_bounded.py 600 xcodebuild "${build_args[@]}" build-for-testing
+test_allowance=180
+if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then test_allowance=360; fi
 test_args=("${build_args[@]}" -parallel-testing-enabled NO -test-timeouts-enabled YES
-  -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 180
+  -default-test-execution-time-allowance "$test_allowance" -maximum-test-execution-time-allowance "$test_allowance"
   -resultBundlePath "$result_dir/Onionary.xcresult" test-without-building)
 if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then
   python3 Scripts/run_duo_tests.py "$simulator_id" "$result_dir" \
     python3 ../../execution/run_bounded.py 1800 xcodebuild "${test_args[@]}" \
-    -only-testing:OnionaryUITests/OnionaryDuoTests -maximum-test-execution-time-allowance 360 -default-test-execution-time-allowance 360
+    -only-testing:OnionaryUITests/OnionaryDuoTests
 else
   python3 ../../execution/run_bounded.py 1800 xcodebuild "${test_args[@]}" \
     -only-testing:OnionaryUITests/OnionaryUITests
