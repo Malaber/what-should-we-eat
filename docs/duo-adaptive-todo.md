@@ -51,11 +51,17 @@ Reduce Motion, the complete language/theme matrix, and accepted TestFlight uploa
 
 ## Build 16 / CI infrastructure follow-up
 
-- [ ] Match Tracy's `xcode-27` runner and verify exact Xcode 27.1 build in UI, archive and screenshot jobs (macos-26 only has Xcode 26.x).
-- [ ] Fail early with an actionable disk-space error before simulator/build creation; test the guard without allocating disk.
-- [ ] Disable build indexing for automation; preserve test results while removing disposable successful-build caches between release profiles.
+- [x] Match Tracy's `xcode-27` runner and verify exact Xcode 27.1 build in UI, archive and screenshot jobs (macos-26 only has Xcode 26.x).
+- [x] Fail early with an actionable disk-space error before simulator/build creation; test the guard without allocating disk.
+- [x] Disable build indexing for automation; preserve test results while removing disposable successful-build caches between release profiles.
 - [ ] Re-run CI and start a fresh immutable TestFlight build after local disk space is available.
 
 Build 16 failed before tests/archive/upload: `No space left on device`. All ten
 reported CI failures stopped at Xcode selection, not app assertions. Backend,
 browser and HTML checks passed. No retries or test suppression are appropriate.
+
+Validation: four focused Python 3.14 tests passed (disk boundary, exact Xcode
+version/build and compatible runtime selection). Local Xcode verification passed;
+real disk preflight correctly refused at 0.8 GiB, before creating a simulator.
+No local TestFlight restart is safe until at least 15 GiB is available. CI uses
+Tracy's xcode-27 runner for all three native job types; final run remains pending.
