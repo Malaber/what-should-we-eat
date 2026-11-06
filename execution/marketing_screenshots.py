@@ -22,7 +22,11 @@ def main():
     args = parser.parse_args()
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
     runtimes = json.loads(run('xcrun','simctl','list','runtimes','--json'))['runtimes']
-    runtime = next(r['identifier'] for r in reversed(runtimes) if r['isAvailable'] and '.iOS-' in r['identifier'])
+    sys.path.insert(0, str(PACKAGE / 'Scripts'))
+    from resolve_simulator import select_runtime
+    types = json.loads(run('xcrun', 'simctl', 'list', 'devicetypes', '--json'))['devicetypes']
+    device_type = next(device['identifier'] for device in types if device['name'] == args.device)
+    runtime = select_runtime(runtimes, device_type)
     device = run('xcrun','simctl','create','Onionary Marketing',args.device,runtime).strip()
     try:
         run('xcrun','simctl','boot',device)

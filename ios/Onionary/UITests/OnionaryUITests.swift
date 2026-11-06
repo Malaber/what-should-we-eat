@@ -7,7 +7,7 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
-    func testRecipeToolsAndLanguageModes() {
+    func testRecipeToolsAndLanguageModes() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -18,7 +18,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Selected")
         app.buttons["All recipes"].tap()
         app.buttons["Cook with what you have"].tap()
-        let pantry = (app.textFields.allElementsBoundByIndex + app.textViews.allElementsBoundByIndex).first { $0.identifier == "pantry-input" }!
+        let pantry = try XCTUnwrap((app.textFields.allElementsBoundByIndex + app.textViews.allElementsBoundByIndex).first { $0.identifier == "pantry-input" })
         // Multiline fields expose concrete TextField/TextView types across SDKs.
         XCTAssertTrue(pantry.waitForExistence(timeout: 5))
         pantry.tap(); pantry.typeText("170 g Cheese")

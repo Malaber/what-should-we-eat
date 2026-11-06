@@ -279,3 +279,18 @@
 "Could not save recovery copy. Export your draft before closing." = "Die Sicherung konnte nicht gespeichert werden. Exportiere deinen Entwurf vor dem Schließen.";
 "Reconnect to the original account before saving this draft." = "Melde dich beim ursprünglichen Konto an, bevor du diesen Entwurf speicherst.";
 "Save not confirmed. Your draft stays here. Check the server before retrying to avoid duplicates." = "Speichern nicht bestätigt. Dein Entwurf bleibt hier. Prüfe den Server vor einem weiteren Versuch, um Duplikate zu vermeiden.";
+
+"Recipe preview" = "Rezeptvorschau";
+"Preview a recipe without changing your cooking progress." = "Sieh dir ein Rezept an, ohne deinen Kochfortschritt zu ändern.";
+"Cook this recipe" = "Dieses Rezept kochen";
+"Resume cooking" = "Weiterkochen";
+"Generate shopping list" = "Einkaufsliste erstellen";
+"Refresh shopping list" = "Einkaufsliste aktualisieren";
+"Shopping checks and cooking progress are saved locally on this device, not synchronized between devices." = "Einkaufshäkchen und Kochfortschritt werden lokal auf diesem Gerät gespeichert und nicht zwischen Geräten synchronisiert.";
+"Reorder ingredient" = "Zutat umsortieren";
+"Move up" = "Nach oben";
+"Move down" = "Nach unten";
+"Delete ingredient" = "Zutat löschen";
+"Delete step" = "Schritt löschen";
+
+"Reorder step" = "Schritt umsortieren";

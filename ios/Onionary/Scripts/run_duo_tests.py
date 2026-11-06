@@ -27,6 +27,19 @@ def main():
                 self.send_response(204); self.end_headers()
             except (subprocess.SubprocessError, OSError) as error:
                 self.send_error(500, str(error))
+        def do_GET(self):
+            if self.path not in ('/capture/0', '/capture/90', '/capture/180'):
+                self.send_error(404); return
+            angle = self.path.rsplit('/', 1)[1]
+            capture = root / ('pose-' + angle + '.png')
+            try:
+                display = 'primary' if angle == '0' else 'primary-1'
+                subprocess.run(['xcrun', 'simctl', 'io', simulator, 'screenshot', '--display=' + display, str(capture)], check=True, timeout=45)
+                data = capture.read_bytes()
+                self.send_response(200); self.send_header('Content-Type', 'image/png')
+                self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)
+            except (subprocess.SubprocessError, OSError) as error:
+                self.send_error(500, str(error))
         def log_message(self, *_):
             pass
 

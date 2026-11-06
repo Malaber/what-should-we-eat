@@ -88,7 +88,7 @@ struct RecipesView: View {
             sidebar.navigationSplitViewColumnWidth(min: 280, ideal: 360, max: 460)
         } detail: {
             if let preview {
-                RecipePreview(store: store, recipe: preview, cook: selected)
+                RecipePreview(store: store, recipe: store.kitchen.recipes.first(where: { $0.id == preview.id }) ?? preview, cook: selected)
             } else {
                 ContentUnavailableView("Choose a recipe", systemImage: "book", description: Text("Preview a recipe without changing your cooking progress."))
             }

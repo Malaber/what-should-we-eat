@@ -93,6 +93,7 @@ struct MealPlanningView: View {
             Section {
                 Text("Shopping checks and cooking progress are saved locally on this device, not synchronized between devices.").font(.footnote).foregroundStyle(.secondary)
                 Button(shopping.isEmpty ? "Generate shopping list" : "Refresh shopping list", systemImage: "arrow.clockwise") {
+                    preferredColumn = .detail
                     run {
                         let data = try await store.request("shopping-list", method: "POST", body: JSONEncoder().encode(items.filter { !$0.isCooked }.map(\.recipeId)))
                         shopping = try OnionaryAPI.decoder.decode(ShoppingList.self, from: data).items
@@ -102,7 +103,7 @@ struct MealPlanningView: View {
                 if let error { Text(error).foregroundStyle(.red) }
             }
             ForEach(shopping) { item in
-                Button { if !checked.insert(item.id).inserted { checked.remove(item.id) } } label: {
+                Button { preferredColumn = .detail; if !checked.insert(item.id).inserted { checked.remove(item.id) } } label: {
                     HStack {
                         Image(systemName: checked.contains(item.id) ? "checkmark.circle.fill" : "circle")
                         Text(item.name).strikethrough(checked.contains(item.id))

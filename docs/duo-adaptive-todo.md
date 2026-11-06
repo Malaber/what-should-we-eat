@@ -26,3 +26,25 @@ Banner implementation follows Tracy #31: dedicated VStack space, never a safe-ar
 inset wrapped around TabView. Geometry drives workspace changes; session state
 stays owned by the existing store/editor. Compatibility-aware simulator selection
 supports explicit Duo and iPad device types rather than removing those targets.
+
+## Integration checkpoint
+
+Xcode 27.1 `build-for-testing` passes for arm64 and x86_64 simulator targets,
+including the Duo test harness. Python 3.14 runtime selection regression tests:
+2 passed. Shell syntax, Python compilation and `git diff --check` pass.
+
+Implementation commits cover all four adaptive workspaces. Final UI validation
+remains pending; the checklist above deliberately stays open until execution and
+visual review. Duo tests exercise 0/90/180-degree folds, cooking undo/redo,
+non-mutating previews, editor drafts, shopping refresh/checks and auth navigation.
+They attach host-captured outer/inner display images for inspection. Full iPhone
+and iPad regression suites run separately. No retries or weakened assertions.
+
+Follow-up integration fixes split editor expressions for Swift type checking,
+restore step ordering controls, retain step focus anchors, refresh selected recipe
+previews from the store, and fix actor isolation in the fold test harness. Release
+and screenshot jobs select Xcode 27.1 and compatible simulator runtimes. Local
+TestFlight delivery runs all three device profiles before signing/uploading.
+
+Still unverified: final UI results, visual fold screenshots, VoiceOver, large text,
+Reduce Motion, the complete language/theme matrix, and accepted TestFlight upload.

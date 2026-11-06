@@ -22,7 +22,13 @@ if [[ $# -ge 3 ]]; then
 else
 # A release must pass both core and simulator UI tests before archiving.
 stage tests
-bash Scripts/test.sh
+# One compact regression suite, one iPad suite, and the Duo continuity suite.
+# Each creates its own compatible simulator; any failure stops the release.
+for device in com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro \
+              com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-16GB \
+              com.apple.CoreSimulator.SimDeviceType.iPhone-Duo; do
+  SIMULATOR_DEVICE_TYPE="$device" bash Scripts/test.sh
+done
 stage archive
 ARCHIVE_SIGNED=1 bash Scripts/archive.sh "$archive_path" "$marketing_version" "$build_number"
 fi

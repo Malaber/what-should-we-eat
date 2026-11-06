@@ -29,6 +29,10 @@ jobs:
         with:
           python-version: '3.14'
       - run: pip install -r marketing/requirements.txt
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '27.1'
+      - run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py 27.0
       - run: brew install xcodegen
       - name: Capture real app screenshots
         env:

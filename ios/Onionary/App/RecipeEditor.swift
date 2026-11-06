@@ -66,6 +66,14 @@ struct RecipeEditor: View {
     private var editorForm: some View {
         WorkspacePanes(focus: focusedStep?.uuidString) {
 
+            metadataSection
+            tagsSection
+            ingredientsSection
+        } secondary: {
+            stepsSection
+        }.textFieldStyle(.roundedBorder).accessibilityIdentifier("recipe-editor")
+    }
+    private var metadataSection: some View {
                 Section("Recipe") {
                     TextField("Name", text: $draft.name)
                     Picker("Food icon", selection: Binding(get: { FoodIcons.display(draft.icon) }, set: { draft.icon = $0 })) {
@@ -90,6 +98,8 @@ struct RecipeEditor: View {
                     }
                     TextField("Tags, separated by commas", text: Binding(get: { draft.tags.joined(separator: ", ") }, set: { draft.tags = $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }))
                 }
+    }
+    private var tagsSection: some View {
                 Section("Suggested tags") {
                     ForEach(Array(Set(RecipeBrowsing.categories(store.kitchen.recipes) + draft.tags)).sorted(), id: \.self) { tag in
                         Toggle(tag, isOn: Binding(
@@ -100,57 +110,24 @@ struct RecipeEditor: View {
                             }))
                     }
                 }
+    }
+    private var ingredientsSection: some View {
                 Section("Ingredients") {
                     ForEach($draft.ingredients) { $item in
-                        VStack {
-                            TextField("Ingredient group (optional)", text: Binding(get: { item.groupName ?? "" }, set: { item.groupName = $0.isEmpty ? nil : $0 }))
-                            HStack {
-                                TextField("Ingredient", text: $item.name)
-                                Menu {
-                                    Button("Move up") { moveIngredient(item.id, offset: -1) }
-                                    Button("Move down") { moveIngredient(item.id, offset: 1) }
-                                    Button("Delete ingredient", role: .destructive) { draft.ingredients.removeAll { $0.id == item.id } }
-                                } label: { Image(systemName: "line.3.horizontal").frame(minWidth: 44, minHeight: 44) }
-                                    .accessibilityLabel("Reorder ingredient")
-                                    .draggable(item.id.uuidString)
-                            }.dropDestination(for: String.self) { ids, _ in
-                                guard let id = ids.first.flatMap(UUID.init(uuidString:)),
-                                      let from = draft.ingredients.firstIndex(where: { $0.id == id }),
-                                      let to = draft.ingredients.firstIndex(where: { $0.id == item.id }) else { return false }
-                                draft.ingredients.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
-                                return true
-                            }
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                        Text("Quantity").font(.caption).foregroundStyle(.secondary)
-                        TextField("Quantity", value: $item.quantity, format: .number).keyboardType(.decimalPad)
-                    }
-                                TextField("Unit", text: Binding(get: { item.unit ?? "" }, set: { item.unit = $0 }))
-                            }
-                        }
+                        IngredientDraftRow(item: $item,
+                            move: { moveIngredient(item.id, offset: $0) },
+                            remove: { draft.ingredients.removeAll { $0.id == item.id } },
+                            drop: { moveIngredient($0, before: item.id) })
                     }
                     Button("Add ingredient") { draft.ingredients.append(.init()) }
                 }
-        } secondary: {
+    }
+    private var stepsSection: some View {
                 Section {
                     ForEach($draft.instructionSteps) { $step in
-                        VStack {
-                            HStack {
-                                Text("Step \(step.stepNumber)").font(.caption)
-                                Spacer()
-                                Button("Delete step", role: .destructive) { draft.instructionSteps.removeAll { $0.id == step.id } }
-                            }
-                            TextField("Instruction group (optional)", text: Binding(get: { step.groupName ?? "" }, set: { step.groupName = $0.isEmpty ? nil : $0 }))
-                            TextField("Instruction", text: $step.description, axis: .vertical)
-                                .focused($focusedStep, equals: step.id)
-                                .accessibilityIdentifier("instruction-" + step.id.uuidString)
-                            VStack(alignment: .leading, spacing: 4) {
-                        Text("Minutes").font(.caption).foregroundStyle(.secondary)
-                        TextField("Minutes", value: $step.durationMin, format: .number).keyboardType(.numberPad)
-                    }
-                        }
-                    }
-                    Button("Add step") { draft.instructionSteps.append(.init()) }
+                        stepRow($step)
+                    }.id("instruction-steps")
+                    Button("Add step") { var step = RecipeDraft.Step(); step.stepNumber = draft.instructionSteps.count + 1; draft.instructionSteps.append(step) }
                 } header: {
                     HStack {
                         Text("Steps")
@@ -162,7 +139,45 @@ struct RecipeEditor: View {
                 }
 
 
-        }.textFieldStyle(.roundedBorder).accessibilityIdentifier("recipe-editor")
+    }
+    private func stepRow(_ binding: Binding<RecipeDraft.Step>) -> some View {
+        let id = binding.wrappedValue.id
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Step \(binding.wrappedValue.stepNumber)").font(.caption)
+                Spacer()
+                Menu {
+                    Button("Move up") { moveStep(id, offset: -1) }
+                    Button("Move down") { moveStep(id, offset: 1) }
+                    Button("Delete step", role: .destructive) { draft.instructionSteps.removeAll { $0.id == id }; numberSteps() }
+                } label: { Image(systemName: "line.3.horizontal").frame(width: 44, height: 44) }
+                .accessibilityLabel("Reorder step")
+            }
+            TextField("Instruction group (optional)", text: Binding(
+                get: { binding.wrappedValue.groupName ?? "" },
+                set: { binding.wrappedValue.groupName = $0.isEmpty ? nil : $0 }))
+            TextField("Instruction", text: binding.description, axis: .vertical)
+                .focused($focusedStep, equals: id)
+                .accessibilityIdentifier("instruction-" + id.uuidString)
+            Text("Minutes").font(.caption).foregroundStyle(.secondary)
+            TextField("Minutes", value: binding.durationMin, format: .number).keyboardType(.numberPad)
+        }.id(id.uuidString)
+    }
+    private func numberSteps() {
+        for index in draft.instructionSteps.indices { draft.instructionSteps[index].stepNumber = index + 1 }
+    }
+    private func moveStep(_ id: UUID, offset: Int) {
+        guard let from = draft.instructionSteps.firstIndex(where: { $0.id == id }),
+              draft.instructionSteps.indices.contains(from + offset) else { return }
+        draft.instructionSteps.swapAt(from, from + offset)
+        numberSteps()
+    }
+    private func moveIngredient(_ text: String?, before target: UUID) -> Bool {
+        guard let text, let id = UUID(uuidString: text),
+              let from = draft.ingredients.firstIndex(where: { $0.id == id }),
+              let to = draft.ingredients.firstIndex(where: { $0.id == target }) else { return false }
+        draft.ingredients.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+        return true
     }
     private func moveIngredient(_ id: UUID, offset: Int) {
         guard let from = draft.ingredients.firstIndex(where: { $0.id == id }) else { return }
@@ -262,5 +277,33 @@ struct EditRecipeView: View {
     private func load() async {
         error = nil
         do { draft = try await store.recipeDraft(id: id) } catch { self.error = L10n.text(error.localizedDescription) }
+    }
+}
+
+private struct IngredientDraftRow: View {
+    @Binding var item: RecipeDraft.Item
+    var move: (Int) -> Void
+    var remove: () -> Void
+    var drop: (String?) -> Bool
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Ingredient group (optional)", text: Binding(get: { item.groupName ?? "" }, set: { item.groupName = $0.isEmpty ? nil : $0 }))
+            HStack {
+                TextField("Ingredient", text: $item.name)
+                Menu {
+                    Button("Move up") { move(-1) }
+                    Button("Move down") { move(1) }
+                    Button("Delete ingredient", role: .destructive, action: remove)
+                } label: { Image(systemName: "line.3.horizontal").frame(minWidth: 44, minHeight: 44) }
+                    .accessibilityLabel("Reorder ingredient").draggable(item.id.uuidString)
+            }.dropDestination(for: String.self) { ids, _ in drop(ids.first) }
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Quantity").font(.caption).foregroundStyle(.secondary)
+                    TextField("Quantity", value: $item.quantity, format: .number).keyboardType(.decimalPad)
+                }
+                TextField("Unit", text: Binding(get: { item.unit ?? "" }, set: { item.unit = $0 }))
+            }
+        }.padding(12).background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 }
