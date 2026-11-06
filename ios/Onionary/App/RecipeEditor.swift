@@ -37,7 +37,7 @@ struct RecipeEditor: View {
                 .onAppear { if draftScope == nil { draftScope = store.scope } }
                 .onChange(of: draft) { _, _ in retain() }
                 .onDisappear { if !completed { retain() } }
-                .confirmationDialog("Reload cooking recipe?", isPresented: $askingReload, titleVisibility: .visible) {
+                .alert("Reload cooking recipe?", isPresented: $askingReload) {
                     Button("Reload and reset progress", role: .destructive) {
                         do { if let savedRecipe { try store.reloadCookingRecipe(savedRecipe) }; finish() }
                         catch { self.error = error.localizedDescription }
