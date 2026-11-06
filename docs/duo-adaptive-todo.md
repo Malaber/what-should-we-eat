@@ -73,3 +73,19 @@ Tracy's xcode-27 runner for all three native job types; final run remains pendin
 - [ ] Diagnose missing save confirmation from xcresult and exercise disabled AI creation after scrolling it into view.
 - [ ] Fix creative dependency installation timeout without job retries.
 - [ ] Remove only disposable test simulators/build caches; preserve logs, archives and user data. Restart a fresh TestFlight release after focused checks.
+
+Failure evidence: xcresult showed the reload dialog as a popover containing only
+its destructive action; the cancel-role keep-progress button was omitted. Use a
+native alert so both choices remain explicit on every size class. iPad navigation
+queries now select the hittable match; AI creation test scrolls the actual form
+before asserting its empty-input disabled state. Duo timeout options are emitted
+once; three shell-entry-point regression cases exercise each profile's arguments.
+Seven focused Python tests pass.
+
+Cleanup removed three shutdown test-only simulators (Planini E2E, Turniere iPad
+verification, Tracy Duo review) and generated Xcode/Onionary build caches. Logs,
+xcresult evidence, archives, normal simulators and app/source data were retained.
+Free space rose from 1.8 to approximately 16 GiB after deletion settled.
+
+Shared creative fix: https://github.com/Malaber/github-workflows/pull/4. Caller
+pins its immutable commit for CI validation; PR is not merged automatically.

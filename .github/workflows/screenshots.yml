@@ -54,7 +54,7 @@ jobs:
     strategy:
       matrix:
         family: [iphone, ipad]
-    uses: Malaber/github-workflows/.github/workflows/reusable-appstore-creative.yml@2e162b82a123229371804e967273fce54b36b19f
+    uses: Malaber/github-workflows/.github/workflows/reusable-appstore-creative.yml@0fa17543c28e0d43ff74d14ffbbe9c86ddde3bf2
     with:
       screenshot_artifact: onionary-capture-${{ matrix.family }}-en-US
       screenshot_glob: en-US/02-cooking-companion*.png
