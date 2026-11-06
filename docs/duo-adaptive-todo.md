@@ -97,3 +97,23 @@ pins its immutable commit for CI validation; PR is not merged automatically.
 - [ ] Synchronize Duo navigation with hittable controls after fold transitions; split independent tag browsing and editor placeholder tests to keep each focused and bounded.
 - [ ] Give cold compilation its own adequate budget; retain bounded test execution and no retries.
 - [ ] Compile, push replacement CI and publish a new immutable TestFlight build.
+
+Build 17 evidence: the local iPhone suite passed in 1092 seconds; the next profile
+was rejected at 11.9 GiB because the initial 15 GiB reserve was reapplied. Reserve
+checks now distinguish release start (12 GiB), one isolated test profile (8 GiB),
+and archive (6 GiB), reflecting the observed roughly 4 GiB profile footprint. Each
+profile still deletes its simulator/build cache and retains its xcresult. All
+three profile suites remain required; iPad runs first and status names the profile.
+
+CI evidence: one iPad cold build exhausted 600 seconds before app compilation
+finished; its compile-only budget is now 1200 seconds, with enclosing job/step
+budgets covering boot, compile and tests. One iPhone test reached its final Cancel
+action at 180 seconds; split independent tag and placeholder scenarios instead of
+increasing test allowance. Duo's fold controller returns before accessibility
+layout is stable; navigation now waits for a hittable button, never retries taps.
+
+Keyboard dismissal previously called endEditing synchronously inside the window
+tap recognizer. Form sheet controls could move during touch delivery. UIControls
+and semantic buttons are excluded, and background dismissal runs after the touch.
+Existing deletion/import tests retain their keyboard-open assertions. Ten focused
+Python tests pass; native validation and final delivery remain pending.

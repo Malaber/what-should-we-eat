@@ -217,7 +217,7 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
-    func testStepToolsAndRecipeTags() throws {
+    func testRecipeTagsOpenMatchingRecipes() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -235,6 +235,17 @@ final class OnionaryUITests: XCTestCase {
         tag.tap()
         XCTAssertTrue(matchingRecipe.waitForExistence(timeout: 5))
         matchingRecipe.tap()
+        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testStepAmountTools() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        app.buttons["recipe-1"].firstMatch.tap()
+        app.buttons["preview-cook"].tap()
         XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Edit recipe"].tap()

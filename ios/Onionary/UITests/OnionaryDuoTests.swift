@@ -5,8 +5,11 @@ final class OnionaryDuoTests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
     @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
-        let matches = app.buttons.matching(identifier: title).allElementsBoundByIndex
-        let button = try XCTUnwrap(matches.first(where: { $0.isHittable }), "No visible control: \(title)")
+        let query = app.buttons.matching(identifier: title)
+        let visible = NSPredicate { _, _ in query.allElementsBoundByIndex.contains(where: { $0.isHittable }) }
+        let ready = XCTNSPredicateExpectation(predicate: visible, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed, "Navigation did not settle after folding: \(title)")
+        let button = try XCTUnwrap(query.allElementsBoundByIndex.first(where: { $0.isHittable }), "No visible control: \(title)")
         button.tap()
     }
 
