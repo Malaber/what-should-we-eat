@@ -65,3 +65,11 @@ version/build and compatible runtime selection). Local Xcode verification passed
 real disk preflight correctly refused at 0.8 GiB, before creating a simulator.
 No local TestFlight restart is safe until at least 15 GiB is available. CI uses
 Tracy's xcode-27 runner for all three native job types; final run remains pending.
+
+## Native regression follow-up
+
+- [ ] Remove duplicate Duo timeout flags and test constructed xcodebuild arguments.
+- [ ] Select visible native navigation controls on iPad; assert destinations without assuming one accessibility match.
+- [ ] Diagnose missing save confirmation from xcresult and exercise disabled AI creation after scrolling it into view.
+- [ ] Fix creative dependency installation timeout without job retries.
+- [ ] Remove only disposable test simulators/build caches; preserve logs, archives and user data. Restart a fresh TestFlight release after focused checks.
