@@ -117,3 +117,15 @@ tap recognizer. Form sheet controls could move during touch delivery. UIControls
 and semantic buttons are excluded, and background dismissal runs after the touch.
 Existing deletion/import tests retain their keyboard-open assertions. Ten focused
 Python tests pass; native validation and final delivery remain pending.
+
+## Build 18 CI follow-up
+
+- [ ] Replace Add recipe and Cooking options toolbar menus with native action dialogs. Both failed iPhone runs spend two minutes waiting for menu animation completion; preserve actions and existing behavioral assertions.
+- [ ] Clamp fold pane dimensions when keyboard/reserved regions exceed available geometry; preserve scroll access in split panes.
+- [ ] Background before explicit persistence-test termination, following Tracy's lifecycle handling.
+- [ ] Compile and start all device checks, push PR fixes, then attempt a fresh immutable TestFlight release. Do not retry failed tests or wait idle for suites.
+
+Evidence: PR run 42211483335 stalls opening Add recipe; tag run 42211476153
+stalls opening Cooking options. Local Duo spindump shows an idle application main
+thread while XCTest waits for quiescence. These fixes require fresh device runs;
+no all-green or TestFlight delivery claim until those complete.
