@@ -136,8 +136,9 @@ Full simulator suites and the screenshot launch case remain pending.
 
 ## Release disk preflight correction
 
-- [ ] Align release entry reserve with the first sequential test stage (8 GiB), retaining per-profile checks, post-profile build cleanup and the 6 GiB archive check.
-- [ ] Test the 8 GiB boundary and the reported 12.53 GB available-space case; publish a fresh tag/build because release code changes.
+- [x] Align release entry reserve with the first sequential test stage (8 GiB), retaining per-profile checks, post-profile build cleanup and the 6 GiB archive check.
+- [x] Test the 8 GiB boundary and the reported 12.53 GB available-space case (10 focused tests passed).
+- [ ] Publish fresh rc.20/build 20 and complete background TestFlight delivery.
 
 The initial 12 GiB check incorrectly blocks a release that satisfies every stage's
 own reserve. Profiles execute serially and delete DerivedData before the next.

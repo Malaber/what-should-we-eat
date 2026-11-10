@@ -6,8 +6,11 @@ import subprocess
 import tempfile
 
 EXPECTED_XCODE = "Xcode 27.1\nBuild version 27A9275"
-MIN_FREE_BYTES = 12 * 1024 ** 3
-STAGE_GIB = {"release": 12, "test": 8, "archive": 6}
+# Release profiles are sequential and remove DerivedData between devices. Entry
+# needs one test profile's reserve, not an additional cumulative-build reserve.
+# test.sh and archive.sh independently recheck space immediately before their work.
+STAGE_GIB = {"release": 8, "test": 8, "archive": 6}
+MIN_FREE_BYTES = STAGE_GIB["release"] * 1024 ** 3
 
 
 def validate_xcode(output):
@@ -17,7 +20,7 @@ def validate_xcode(output):
 
 def validate_disk(path, free_bytes, minimum_bytes=MIN_FREE_BYTES):
     if free_bytes < minimum_bytes:
-        raise ValueError(f"Insufficient space at {path}: {free_bytes / 1024 ** 3:.1f} GiB free; at least {minimum_bytes / 1024 ** 3:g} GiB required. Free disk space before restarting. No files were deleted.")
+        raise ValueError(f"Insufficient space at {path}: {free_bytes / 10 ** 9:.2f} GB ({free_bytes / 1024 ** 3:.2f} GiB) free; at least {minimum_bytes / 1024 ** 3:g} GiB required. Free disk space before restarting. No files were deleted.")
 
 
 def main():

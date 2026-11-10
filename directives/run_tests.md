@@ -109,3 +109,10 @@ the foreground accessibility session without sleeping or retrying the test.
 Inspect XCTest's action timeline when a deadline expires: time spent waiting for
 animation completion is distinct from an application main-thread hang. Preserve
 spindumps and xcresults; do not increase deadlines to hide repeated idle waits.
+
+Local TestFlight runs profiles sequentially and deletes each successful profile's
+DerivedData. Its entry disk reserve therefore equals one test profile (8 GiB),
+with another check before every profile and 6 GiB before archive. Do not sum the
+space for all three device builds. Report decimal GB and binary GiB explicitly;
+Finder may include purgeable capacity. Time Machine snapshots can retain blocks
+from deleted caches; do not delete backups as part of build-cache cleanup.
