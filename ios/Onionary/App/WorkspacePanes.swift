@@ -1,4 +1,5 @@
 import SwiftUI
+import OnionaryCore
 
 /// Two persistent subtrees: changing the layout never recreates their state.
 struct WorkspacePanes<Primary: View, Secondary: View>: View {
@@ -33,7 +34,9 @@ struct WorkspacePanes<Primary: View, Secondary: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) { content() }
                     .padding(16).frame(maxWidth: 760, alignment: .leading).frame(maxWidth: .infinity)
-            }.scrollDisabled(!split)
+            // Override the disabled outer scroller for each split pane. Calling
+            // scrollDisabled(false) cannot undo an ancestor's disabled value.
+            }.environment(\.isScrollEnabled, split)
                 .fixedSize(horizontal: false, vertical: !split)
                 .frame(height: split ? max(120, height ?? 300) : nil)
                 .onChange(of: split) { _, _ in if let focus { proxy.scrollTo(focus, anchor: .center) } }
@@ -41,12 +44,12 @@ struct WorkspacePanes<Primary: View, Secondary: View>: View {
     }
     private func activeDivision(in geometry: GeometryProxy) -> CGRect? {
         if #available(iOS 27.1, *) {
-            return geometry.reservedRegions(kind: .division).first(where: { $0.isActive }).map { region in
+            return geometry.reservedRegions(kind: .division).first(where: { $0.isActive }).flatMap { region in
                 let frame = region.frame
-                return CGRect(x: max(0, frame.minX - region.margins.leading),
-                              y: max(0, frame.minY - region.margins.top),
+                return WorkspaceDivision.visible(CGRect(x: frame.minX - region.margins.leading,
+                              y: frame.minY - region.margins.top,
                               width: frame.width + region.margins.leading + region.margins.trailing,
-                              height: frame.height + region.margins.top + region.margins.bottom)
+                              height: frame.height + region.margins.top + region.margins.bottom), in: geometry.size)
             }
         }
         return nil
