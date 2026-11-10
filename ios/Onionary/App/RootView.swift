@@ -76,6 +76,7 @@ struct RecipesView: View {
     @State private var preferredColumn = NavigationSplitViewColumn.sidebar
     private enum Creation: String, Identifiable { case manual, intelligence, importRecipe; var id: String { rawValue } }
     @State private var creation: Creation?
+    @State private var showCreationActions = false
     @State private var selectedTags: Set<String> = []
     @State private var quickestFirst = false
     @State private var showAllRecent = false
@@ -188,12 +189,14 @@ struct RecipesView: View {
             }
             .refreshable { await store.refresh() }
             .toolbar {
-                Menu {
-                    Button("New recipe", systemImage: "square.and.pencil") { creation = .manual }
-                    Button("Create with Intelligence", systemImage: "sparkles") { creation = .intelligence }
-                    Button("Import recipe", systemImage: "square.and.arrow.down") { creation = .importRecipe }
-                } label: { Label("Add recipe", systemImage: "plus") }
-                .accessibilityIdentifier("add-recipe")
+                Button { showCreationActions = true } label: { Label("Add recipe", systemImage: "plus") }
+                    .accessibilityIdentifier("add-recipe")
+                    .confirmationDialog("Add recipe", isPresented: $showCreationActions, titleVisibility: .visible) {
+                        Button("New recipe") { creation = .manual }
+                        Button("Create with Intelligence") { creation = .intelligence }
+                        Button("Import recipe") { creation = .importRecipe }
+                        Button("Cancel", role: .cancel) {}
+                    }
             }
             .task {
                 if store.kitchen.recipes.isEmpty && !ProcessInfo.processInfo.arguments.contains("--ui-testing") { await store.refresh() }
@@ -235,6 +238,7 @@ struct CookingView: View {
     }
     @State private var sheet: Sheet?
     @State private var restart = false
+    @State private var showCookingActions = false
     @State private var focusedItem: String?
     @State private var recentAction: CheckChange?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -361,13 +365,15 @@ struct CookingView: View {
                         .accessibilityIdentifier("cooking-mode")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button("Edit recipe") { store.editingRecipe = store.current?.recipe }
-                    Button("Share recipe copy") { store.sharingRecipe = store.current?.recipe }
-                    Button("Restart with latest recipe", role: .destructive) { restart = true }
-                    Button("Adjust portions") { sheet = .portions }; Button("Tap history") { sheet = .history }
-                }
-                label: { Label("Cooking options", systemImage: "ellipsis.circle") }
+                    Button { showCookingActions = true } label: { Label("Cooking options", systemImage: "ellipsis.circle") }
+                        .confirmationDialog("Cooking options", isPresented: $showCookingActions, titleVisibility: .visible) {
+                            Button("Edit recipe") { store.editingRecipe = store.current?.recipe }
+                            Button("Share recipe copy") { store.sharingRecipe = store.current?.recipe }
+                            Button("Restart with latest recipe", role: .destructive) { restart = true }
+                            Button("Adjust portions") { sheet = .portions }
+                            Button("Tap history") { sheet = .history }
+                            Button("Cancel", role: .cancel) {}
+                        }
                 }
             } }
             // One presentation owner, with destination data bound to its identity.
