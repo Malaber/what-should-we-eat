@@ -102,3 +102,10 @@ view actually enters a window, rather than relying on a single queued callback.
 - E2e tests spin up a real uvicorn server with `port=0` (OS-assigned port) to avoid conflicts.
 - `DEMO_HOUSEHOLD_ID=99999` in tests prevents accidental collision with test-created households.
 - SQLite in-memory uses `StaticPool` so all sessions share the same DB instance across threads.
+
+For persistence UI tests, activate SpringBoard and verify it reaches foreground
+before terminating Onionary; verify `.notRunning` before relaunch. This detaches
+the foreground accessibility session without sleeping or retrying the test.
+Inspect XCTest's action timeline when a deadline expires: time spent waiting for
+animation completion is distinct from an application main-thread hang. Preserve
+spindumps and xcresults; do not increase deadlines to hide repeated idle waits.

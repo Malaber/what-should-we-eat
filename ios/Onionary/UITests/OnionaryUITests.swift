@@ -7,6 +7,17 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
+    private func terminateFromBackground(_ app: XCUIApplication) {
+        // Let SpringBoard detach the foreground accessibility session before
+        // terminating. Keep persistence assertions after the subsequent launch.
+        let home = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        home.activate()
+        XCTAssertTrue(home.wait(for: .runningForeground, timeout: 10))
+        app.terminate()
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 10))
+    }
+
+    @MainActor
     private func tapNavigation(_ title: String, in app: XCUIApplication) throws {
         let query = app.buttons.matching(identifier: title)
         XCTAssertTrue(query.firstMatch.waitForExistence(timeout: 5))
@@ -92,7 +103,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(name.value as? String, "My offline soup")
         XCTAssertTrue(app.buttons["Save"].isEnabled)
         app.buttons["Cancel"].tap()
-        app.terminate()
+        terminateFromBackground(app)
         app.launchArguments.removeAll { $0 == "--reset" }
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -110,7 +121,7 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["recipe-1"].firstMatch.tap()
         app.buttons["preview-cook"].tap()
         app.buttons["ingredient-1"].tap()
-        app.terminate()
+        terminateFromBackground(app)
         app.launchArguments.removeAll { $0 == "--reset" }
         app.launch()
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
@@ -467,7 +478,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["2.58× recipe"].waitForExistence(timeout: 5))
         app.buttons["portion-minus"].tap()
         XCTAssertTrue(app.staticTexts["1.58× recipe"].waitForExistence(timeout: 5), app.debugDescription)
-        app.terminate()
+        terminateFromBackground(app)
         app.launchArguments = ["--ui-testing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
