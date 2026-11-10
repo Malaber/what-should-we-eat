@@ -133,3 +133,13 @@ no all-green or TestFlight delivery claim until those complete.
 Focused validation: 31 Swift tests (22 XCTest + 9 Swift Testing), including
 keyboard-clipped/offscreen hinge cases, and 10 Python CI-harness tests passed.
 Full simulator suites and the screenshot launch case remain pending.
+
+## Release disk preflight correction
+
+- [ ] Align release entry reserve with the first sequential test stage (8 GiB), retaining per-profile checks, post-profile build cleanup and the 6 GiB archive check.
+- [ ] Test the 8 GiB boundary and the reported 12.53 GB available-space case; publish a fresh tag/build because release code changes.
+
+The initial 12 GiB check incorrectly blocks a release that satisfies every stage's
+own reserve. Profiles execute serially and delete DerivedData before the next.
+Three local Time Machine snapshots retain recently removed cache blocks; do not
+remove backups as part of temporary build cleanup.
