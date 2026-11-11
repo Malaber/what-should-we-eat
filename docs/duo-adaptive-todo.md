@@ -144,3 +144,16 @@ The initial 12 GiB check incorrectly blocks a release that satisfies every stage
 own reserve. Profiles execute serially and delete DerivedData before the next.
 Three local Time Machine snapshots retain recently removed cache blocks; do not
 remove backups as part of temporary build cleanup.
+
+## Build 20 Duo failures
+
+- [ ] Select the declared simulator runtime exactly, including when a newer runtime is installed; cover incompatibility/missing-runtime failures without fallback.
+- [ ] Avoid booting/indexing a disposable simulator during compilation; boot after build-for-testing and before UI tests.
+- [ ] Include fold-controller error bodies in XCTest failures and host logs, so HTTP 500 cannot hide a spawn timeout.
+- [ ] Run focused harness regressions, push PR fixes and start fresh rc.21/build 21; leave long device suites running.
+
+CI run 42898506468 fails with HTTP 500 after a fold screenshot; the job declares
+27.1 but selects installed 27.2. Local build 20 passed iPad, then its Duo runner
+aborted in XCTest accessibility initialization: main thread loading UIKit's
+accessibility bundle through dyld, before any test method. No archive or upload.
+Do not hide this infrastructure failure by skipping Duo or retrying tests.
