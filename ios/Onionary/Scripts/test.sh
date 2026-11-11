@@ -21,7 +21,7 @@ result_dir=$(cd "$result_dir" && pwd)
 build_args=(-project Onionary.xcodeproj -scheme Onionary
   -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "$result_dir/DerivedData"
   MARKETING_VERSION="$marketing_version" CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO)
-python3 ../../execution/run_bounded.py 1200 xcodebuild "${build_args[@]}" build-for-testing
+python3 ../../execution/run_bounded.py --log "$result_dir/build.log" 1200 xcodebuild "${build_args[@]}" build-for-testing
 if [[ "$created_simulator" == true ]]; then
   # Compile against a shutdown device. Fresh runtime indexing and cold Swift
   # compilation must not compete for memory/disk before XCTest loads accessibility.
@@ -35,10 +35,10 @@ test_args=("${build_args[@]}" -parallel-testing-enabled NO -test-timeouts-enable
   -resultBundlePath "$result_dir/Onionary.xcresult" test-without-building)
 if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then
   python3 Scripts/run_duo_tests.py "$simulator_id" "$result_dir" \
-    python3 ../../execution/run_bounded.py 1800 xcodebuild "${test_args[@]}" \
+    python3 ../../execution/run_bounded.py --log "$result_dir/tests.log" 1800 xcodebuild "${test_args[@]}" \
     -only-testing:OnionaryUITests/OnionaryDuoTests
 else
-  python3 ../../execution/run_bounded.py 1800 xcodebuild "${test_args[@]}" \
+  python3 ../../execution/run_bounded.py --log "$result_dir/tests.log" 1800 xcodebuild "${test_args[@]}" \
     -only-testing:OnionaryUITests/OnionaryUITests
 fi
 echo "Test results: $result_dir/Onionary.xcresult"

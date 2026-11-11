@@ -84,7 +84,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: onionary-ios-test-results-${{ matrix.profile }}
-          path: ${{ runner.temp }}/onionary-tests/Onionary.xcresult
+          path: |
+            ${{ runner.temp }}/onionary-tests/Onionary.xcresult
+            ${{ runner.temp }}/onionary-tests/*.log
           if-no-files-found: ignore
           retention-days: 7
 

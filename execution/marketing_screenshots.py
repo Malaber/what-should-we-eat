@@ -21,7 +21,11 @@ def capture_tests(device, output, result):
             '-destination', f'platform=iOS Simulator,id={device}',
             'CODE_SIGNING_ALLOWED=NO', 'COMPILER_INDEX_STORE_ENABLE=NO']
     def bounded(seconds, command):
-        subprocess.run([sys.executable, str(ROOT / 'execution/run_bounded.py'), str(seconds), *command],
+        log_args = []
+        if command[0] == 'xcodebuild':
+            name = 'build.log' if 'build-for-testing' in command else 'tests.log'
+            log_args = ['--log', str(output / name)]
+        subprocess.run([sys.executable, str(ROOT / 'execution/run_bounded.py'), *log_args, str(seconds), *command],
                        cwd=PACKAGE, check=True)
     bounded(1200, [*base, 'build-for-testing'])
     bounded(600, ['xcrun', 'simctl', 'bootstatus', device, '-b'])
