@@ -225,3 +225,8 @@ had an empty AX value; the picker now exposes its localized selection.
 regressions run before the next release worker; full three-profile suites still
 gate archive/upload. Build 24 was explicitly stopped during tests to avoid
 shipping modified source under its old tag. No upload occurred.
+
+- [ ] Fix pantry accessibility/query ambiguity: the result bundle also records
+  a 180-second hang querying the first "Not enough" static text; the app's
+  sampled main thread was inside XCTest snapshot filtering. Expose recipe-specific
+  summaries and assert the exact recipe's missing/short ingredient data.
