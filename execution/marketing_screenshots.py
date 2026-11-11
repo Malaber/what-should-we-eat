@@ -14,6 +14,28 @@ PACKAGE = ROOT / 'ios/Onionary'
 def run(*args, **kwargs):
     return subprocess.check_output(args, text=True, **kwargs)
 
+def capture_tests(device, output, result):
+    """Compile before first boot; execute the real capture test once, bounded."""
+    base = ['xcodebuild', '-project', 'Onionary.xcodeproj', '-scheme', 'Onionary',
+            '-derivedDataPath', str(output / 'DerivedData'),
+            '-destination', f'platform=iOS Simulator,id={device}',
+            'CODE_SIGNING_ALLOWED=NO', 'COMPILER_INDEX_STORE_ENABLE=NO']
+    def bounded(seconds, command):
+        subprocess.run([sys.executable, str(ROOT / 'execution/run_bounded.py'), str(seconds), *command],
+                       cwd=PACKAGE, check=True)
+    bounded(1200, [*base, 'build-for-testing'])
+    bounded(60, ['xcrun', 'simctl', 'boot', device])
+    bounded(600, ['xcrun', 'simctl', 'bootstatus', device, '-b'])
+    bounded(30, ['xcrun', 'simctl', 'ui', device, 'appearance', 'light'])
+    bounded(30, ['xcrun', 'simctl', 'status_bar', device, 'override', '--time', '9:41',
+                 '--dataNetwork', 'wifi', '--wifiMode', 'active', '--wifiBars', '3',
+                 '--batteryState', 'charged', '--batteryLevel', '100'])
+    bounded(300, [*base, '-parallel-testing-enabled', 'NO', '-test-timeouts-enabled', 'YES',
+                  '-maximum-test-execution-time-allowance', '180',
+                  '-only-testing:OnionaryUITests/OnionaryUITests/testMarketingScreenshots',
+                  '-resultBundlePath', str(result), 'test-without-building'])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--device', default='iPhone 17 Pro')
@@ -30,20 +52,11 @@ def main():
     runtime = select_runtime(runtimes, device_type)
     device = run('xcrun','simctl','create','Onionary Marketing',args.device,runtime).strip()
     try:
-        run('xcrun','simctl','boot',device)
-        run('xcrun','simctl','bootstatus',device,'-b')
-        run('xcrun','simctl','ui',device,'appearance','light')
-        run('xcrun','simctl','status_bar',device,'override','--time','9:41','--dataNetwork','wifi','--wifiMode','active','--wifiBars','3','--batteryState','charged','--batteryLevel','100')
         subprocess.run(['xcodegen','generate'],cwd=PACKAGE,check=True)
         result = output / 'Screenshots.xcresult'
         if result.exists():
             raise SystemExit('Use a fresh output directory; an existing result bundle will not be overwritten.')
-        subprocess.run(['xcodebuild','-project','Onionary.xcodeproj','-scheme','Onionary',
-            '-derivedDataPath',str(output / 'DerivedData'),
-            '-destination',f'platform=iOS Simulator,id={device}', '-parallel-testing-enabled','NO',
-            '-test-timeouts-enabled','YES','-maximum-test-execution-time-allowance','180',
-            '-only-testing:OnionaryUITests/OnionaryUITests/testMarketingScreenshots',
-            '-resultBundlePath',str(result),'CODE_SIGNING_ALLOWED=NO','COMPILER_INDEX_STORE_ENABLE=NO','test'],cwd=PACKAGE,check=True)
+        capture_tests(device, output, result)
         exported = output / 'attachments'
         run('xcrun','xcresulttool','export','attachments','--path',str(result),'--output-path',str(exported))
         manifest = json.loads((exported / 'manifest.json').read_text())
