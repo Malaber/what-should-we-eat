@@ -25,9 +25,8 @@ def capture_tests(device, output, result):
                        cwd=PACKAGE, check=True)
     bounded(1200, [*base, 'build-for-testing'])
     bounded(600, ['xcrun', 'simctl', 'bootstatus', device, '-b'])
-    bounded(30, ['xcrun', 'simctl', 'status_bar', device, 'override', '--time', '9:41',
-                 '--dataNetwork', 'wifi', '--wifiMode', 'active', '--wifiBars', '3',
-                 '--batteryState', 'charged', '--batteryLevel', '100'])
+    # Capture the actual system status bar. Cosmetic SpringBoard overrides can
+    # block independently of app readiness; they are not required for UI capture.
     bounded(300, [*base, '-parallel-testing-enabled', 'NO', '-test-timeouts-enabled', 'YES',
                   '-maximum-test-execution-time-allowance', '180',
                   '-only-testing:OnionaryUITests/OnionaryUITests/testMarketingScreenshots',
