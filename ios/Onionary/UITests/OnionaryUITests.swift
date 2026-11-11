@@ -324,7 +324,10 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Share recipe copy"].tap()
-        app.buttons["Create link"].tap()
+        let createLink = app.buttons["create-recipe-share"]
+        XCTAssertTrue(createLink.waitForExistence(timeout: 5))
+        XCTAssertTrue(createLink.isHittable)
+        createLink.tap()
         XCTAssertTrue(app.buttons["Revoke link"].waitForExistence(timeout: 5))
         app.buttons["Revoke link"].tap()
         try tapNavigation("Recipes", in: app)
