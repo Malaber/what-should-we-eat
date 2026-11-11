@@ -254,3 +254,7 @@ share revocation accessibility lookup and screenshot XCTest startup. Prior
 spindump shows the app main thread blocked in writev during XCTest snapshot
 filtering. Startup failure has no XCTest output; collect logs rather than assume
 an app assertion failed or extend deadlines.
+
+- [ ] Reuse one release-local DerivedData directory across sequential device
+  profiles. Avoid repeated APFS delete/rebuild churn while retaining separate
+  xcresults and all three test gates. No disk thresholds are lowered.
