@@ -243,9 +243,9 @@ covered by the full suites in the next release worker, not that earlier binary.
 
 ## Suite reliability follow-up after build 25
 
-- [ ] Isolate UI-test lifecycle and explicitly wait for keyboard focus before email entry.
-- [ ] Give share-link revocation a stable identifier and wait for its dismissal.
-- [ ] Write verbose native command output directly to retained files, avoiding CI console backpressure; preserve exit codes, deadlines, logs and assertions.
+- [x] Isolate UI-test lifecycle and explicitly wait for keyboard focus before email entry.
+- [x] Give share-link revocation a stable identifier and wait for its dismissal.
+- [x] Write verbose native command output directly to retained files, avoiding CI console backpressure; preserve exit codes, deadlines, logs and assertions.
 - [ ] Add harness regressions, publish changes and run full native verification in background.
 
 Build 25 passed Duo and all 19 iPad tests locally. It stopped before iPhone at
@@ -255,6 +255,11 @@ spindump shows the app main thread blocked in writev during XCTest snapshot
 filtering. Startup failure has no XCTest output; collect logs rather than assume
 an app assertion failed or extend deadlines.
 
-- [ ] Reuse one release-local DerivedData directory across sequential device
+- [x] Reuse one release-local DerivedData directory across sequential device
   profiles. Avoid repeated APFS delete/rebuild churn while retaining separate
   xcresults and all three test gates. No disk thresholds are lowered.
+
+Validation: 37 harness tests passed, shell syntax/whitespace passed, native
+build-for-testing passed for arm64 and x86_64 after a separate Swift isolation
+correction. Full native runtime checks remain pending. These results do not
+establish that all CI startup stalls are resolved. Build 26 uses a new tag.

@@ -148,3 +148,15 @@ When an automatic activity assertion fails, inspect the recording and first
 assert the triggering recipe change. A missed portion tap cannot start an activity;
 do not diagnose ActivityKit from the final toggle value alone. Portion controls
 need full rectangular hit areas of at least 44 points, including in scaling forms.
+
+Native xcodebuild output goes directly to retained build.log/tests.log files via
+run_bounded.py --log. Only a bounded tail reaches the console. Keep logs alongside
+xcresults in CI artifacts, including failures before XCTest starts. Preserve
+command exit status and the existing process/test deadlines; no test retries.
+Use explicit app teardown between UI cases, keyboard readiness before typing,
+and dismissal before navigating behind a sheet.
+
+Local releases reuse one release-specific DerivedData directory across sequential
+device profiles while keeping separate xcresults. This avoids repeated cold
+compilation/deletion and APFS snapshot disk churn. Do not lower free-space guards
+or delete Time Machine snapshots to force a release through.
