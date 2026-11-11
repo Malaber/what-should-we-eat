@@ -226,7 +226,13 @@ regressions run before the next release worker; full three-profile suites still
 gate archive/upload. Build 24 was explicitly stopped during tests to avoid
 shipping modified source under its old tag. No upload occurred.
 
-- [ ] Fix pantry accessibility/query ambiguity: the result bundle also records
+- [x] Fix pantry accessibility/query ambiguity: the result bundle also records
   a 180-second hang querying the first "Not enough" static text; the app's
   sampled main thread was inside XCTest snapshot filtering. Expose recipe-specific
   summaries and assert the exact recipe's missing/short ingredient data.
+
+The focused native run passed Live Activity and marketing capture. Pantry result
+buttons now expose localized summaries and stable recipe IDs; the UI test checks
+both insufficient cheese and missing pasta, then uses the explicit close button
+instead of an ambiguous keyboard/sheet Done match. Native verification remains
+pending for that final change.
