@@ -421,6 +421,9 @@ final class AppStore {
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: Data(json.utf8))
         }
         if ProcessInfo.processInfo.arguments.contains("--marketing") {
+            // Keep screenshot appearance local to this Debug fixture. A global
+            // simulator appearance RPC can race cold SpringBoard startup.
+            UserDefaults.standard.set("light", forKey: "appearance")
             let names = ["Lemon & cheese pasta", "Roasted tomato soup", "Crispy chickpea bowls", "Mushroom risotto", "Apple cinnamon pancakes", "Herby potato salad"]
             let recipes: [[String: Any]] = names.enumerated().map { index, name in
                 var recipe = UITestBackend.recipe

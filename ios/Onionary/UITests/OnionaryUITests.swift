@@ -397,6 +397,9 @@ final class OnionaryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
+        try tapNavigation("Settings", in: app)
+        XCTAssertEqual(app.buttons["appearance-picker"].value as? String, "Light")
+        try tapNavigation("Cooking", in: app)
         app.buttons["Choose a recipe"].tap()
         capture("01-recipe-book")
         app.buttons["recipe-1"].firstMatch.tap()
