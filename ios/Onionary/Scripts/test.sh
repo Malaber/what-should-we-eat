@@ -6,13 +6,11 @@ python3 ../../execution/check_ios_build_environment.py --stage test
 swift test
 marketing_version=$(python3 ../../execution/version.py --ios)
 xcodegen generate
-runtime_args=()
-if [[ -n "${SIMULATOR_RUNTIME:-}" ]]; then runtime_args=(--runtime "$SIMULATOR_RUNTIME"); fi
 created_simulator=false
 if [[ -n "${SIMULATOR_ID:-}" ]]; then
   simulator_id=$SIMULATOR_ID
 else
-  simulator_id=$(python3 Scripts/resolve_simulator.py --create --device-type "${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro}" "${runtime_args[@]}")
+  simulator_id=$(python3 Scripts/resolve_simulator.py --create --device-type "${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro}" --runtime "${SIMULATOR_RUNTIME:-}")
   trap 'xcrun simctl delete "$simulator_id" >/dev/null 2>&1 || true' EXIT
   created_simulator=true
 fi

@@ -44,7 +44,8 @@ elif 'xcodebuild' in sys.argv:
 
 
 @pytest.mark.parametrize('build_fails', [False, True])
-def test_compile_precedes_boot_and_declared_runtime_reaches_selector(tmp_path, build_fails):
+@pytest.mark.parametrize('runtime_override', [None, '27.1'])
+def test_compile_precedes_boot_and_declared_runtime_reaches_selector(tmp_path, build_fails, runtime_override):
     bins = tmp_path / 'bin'; bins.mkdir()
     capture = tmp_path / 'commands.jsonl'
     shim = '''#!PYTHON
@@ -60,12 +61,15 @@ if 'build-for-testing' in sys.argv and os.environ['FAIL_BUILD'] == '1': sys.exit
     env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
            'CAPTURE_ARGS': str(capture), 'FAIL_BUILD': str(int(build_fails)),
            'SIMULATOR_DEVICE_TYPE': 'com.apple.CoreSimulator.SimDeviceType.iPhone-Duo',
-           'SIMULATOR_RUNTIME': '27.1', 'TEST_RESULTS_DIR': str(tmp_path / 'results')}
+           'TEST_RESULTS_DIR': str(tmp_path / 'results')}
+    env.pop('SIMULATOR_RUNTIME', None)
+    if runtime_override is not None:
+        env['SIMULATOR_RUNTIME'] = runtime_override
     env.pop('SIMULATOR_ID', None)
     result = subprocess.run(['bash', str(SCRIPT)], env=env)
     commands = [json.loads(line) for line in capture.read_text().splitlines()]
     resolve = next(c for c in commands if any(a.endswith('resolve_simulator.py') for a in c))
-    assert resolve[resolve.index('--runtime') + 1] == '27.1'
+    assert resolve[resolve.index('--runtime') + 1] == (runtime_override or '')
     build = next(i for i, c in enumerate(commands) if 'build-for-testing' in c)
     assert result.returncode == (42 if build_fails else 0)
     if build_fails:

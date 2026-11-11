@@ -164,3 +164,9 @@ feedback, with iPad and iPhone still required before archive/upload.
 
 Integrated harness validation: 19 tests passed; shell syntax checks passed.
 Actual installed selection verified as iPhone 17 Pro/iOS 27.0 and Duo/iOS 27.1.
+
+Build 21's immediate startup verification found macOS Bash 3 rejecting an empty
+runtime-argument array under `set -u`. Use a scalar optional runtime argument;
+regression cases now run the shell entry point with both an explicit CI version
+and an unset local override, with successful and failed builds. Build 21 never
+reached simulator tests. Changed harness requires a fresh rc.22/build 22.
