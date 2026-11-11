@@ -124,3 +124,10 @@ falls back to a newer installed release. Local defaults match the CI profiles
 then boot and await bootstatus before XCTest, avoiding overlapping cold compiler
 work and simulator first-boot indexing. Keep all device tests mandatory and
 preserve bootstrap crashes separately from failures inside test methods.
+
+Duo fold commands reuse one simulator-only IOKit helper process, with bounded
+READY/angle acknowledgements. Timeout, exit or malformed acknowledgement kills
+the session; never retry the command. Capture fold evidence using XCTest's app
+screenshot connection, not a newly spawned simctl screenshot process per angle.
+Marketing capture also separates build-for-testing, boot readiness and one bounded
+test-without-building invocation. Keep UI assertions and artifact dimensions intact.
