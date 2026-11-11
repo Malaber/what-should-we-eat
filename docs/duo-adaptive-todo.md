@@ -147,9 +147,9 @@ remove backups as part of temporary build cleanup.
 
 ## Build 20 Duo failures
 
-- [ ] Select the declared simulator runtime exactly, including when a newer runtime is installed; cover incompatibility/missing-runtime failures without fallback.
-- [ ] Avoid booting/indexing a disposable simulator during compilation; boot after build-for-testing and before UI tests.
-- [ ] Include fold-controller error bodies in XCTest failures and host logs, so HTTP 500 cannot hide a spawn timeout.
+- [x] Select the declared simulator runtime exactly, including when a newer runtime is installed; cover incompatibility/missing-runtime failures without fallback.
+- [x] Avoid booting/indexing a disposable simulator during compilation; boot after build-for-testing and before UI tests.
+- [x] Include fold-controller error bodies in XCTest failures and host logs, so HTTP 500 cannot hide a spawn timeout.
 - [ ] Run focused harness regressions, push PR fixes and start fresh rc.21/build 21; leave long device suites running.
 
 CI run 42898506468 fails with HTTP 500 after a fold screenshot; the job declares
@@ -157,3 +157,10 @@ CI run 42898506468 fails with HTTP 500 after a fold screenshot; the job declares
 aborted in XCTest accessibility initialization: main thread loading UIKit's
 accessibility bundle through dyld, before any test method. No archive or upload.
 Do not hide this infrastructure failure by skipping Duo or retrying tests.
+
+The local bootstrap mitigation requires a fresh full run; no claim that the
+XCTest framework crash is proven resolved. Duo now runs first locally for earlier
+feedback, with iPad and iPhone still required before archive/upload.
+
+Integrated harness validation: 19 tests passed; shell syntax checks passed.
+Actual installed selection verified as iPhone 17 Pro/iOS 27.0 and Duo/iOS 27.1.

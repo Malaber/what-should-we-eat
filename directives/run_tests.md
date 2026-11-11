@@ -116,3 +116,11 @@ with another check before every profile and 6 GiB before archive. Do not sum the
 space for all three device builds. Report decimal GB and binary GiB explicitly;
 Finder may include purgeable capacity. Time Machine snapshots can retain blocks
 from deleted caches; do not delete backups as part of build-cache cleanup.
+
+Runtime installation is not runtime selection. CI must pass SIMULATOR_RUNTIME
+from its matrix; the selector requires that exact compatible runtime and never
+falls back to a newer installed release. Local defaults match the CI profiles
+(27.0 phone/tablet, 27.1 Duo). Compile against the shutdown disposable device,
+then boot and await bootstatus before XCTest, avoiding overlapping cold compiler
+work and simulator first-boot indexing. Keep all device tests mandatory and
+preserve bootstrap crashes separately from failures inside test methods.
