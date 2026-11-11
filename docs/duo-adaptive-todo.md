@@ -170,3 +170,15 @@ runtime-argument array under `set -u`. Use a scalar optional runtime argument;
 regression cases now run the shell entry point with both an explicit CI version
 and an unset local override, with successful and failed builds. Build 21 never
 reached simulator tests. Changed harness requires a fresh rc.22/build 22.
+
+## Build 22 reliability follow-up
+
+- [ ] Diagnose failed iPhone share-link screen and preserve the full create/revoke regression.
+- [ ] Keep one simulator fold helper alive for the scenario instead of spawning/loading IOKit for every fold; bound acknowledgements and test failure propagation without retries.
+- [ ] Align screenshot capture with build-before-boot staging and bounded commands; retain real UI capture and exact asset validation.
+- [ ] Check generated release artifacts/storage before the next immutable build; keep existing successful device evidence and all test requirements.
+
+CI fold diagnostics now confirm repeated `simctl spawn` timeouts, plus a separate
+`simctl io screenshot` timeout. Screenshot job fails launching Onionary via Xcode.
+Local build 22 passed Duo and iPad, then correctly stopped at 7.17 GiB before the
+8 GiB iPhone stage. No archive/upload occurred.
