@@ -240,3 +240,17 @@ pending for that final change.
 Focused native outcome: all four iPad tests passed (Live Activity, marketing
 capture, localized appearance, portion controls). The final pantry change is
 covered by the full suites in the next release worker, not that earlier binary.
+
+## Suite reliability follow-up after build 25
+
+- [ ] Isolate UI-test lifecycle and explicitly wait for keyboard focus before email entry.
+- [ ] Give share-link revocation a stable identifier and wait for its dismissal.
+- [ ] Write verbose native command output directly to retained files, avoiding CI console backpressure; preserve exit codes, deadlines, logs and assertions.
+- [ ] Add harness regressions, publish changes and run full native verification in background.
+
+Build 25 passed Duo and all 19 iPad tests locally. It stopped before iPhone at
+5.33 GiB free; no archive/upload. CI iPad failures span account email focus,
+share revocation accessibility lookup and screenshot XCTest startup. Prior
+spindump shows the app main thread blocked in writev during XCTest snapshot
+filtering. Startup failure has no XCTest output; collect logs rather than assume
+an app assertion failed or extend deadlines.
