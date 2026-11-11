@@ -387,6 +387,7 @@ final class OnionaryUITests: XCTestCase {
         german.name = "validation-settings-german"; german.lifetime = .keepAlways; add(german)
         app.buttons["appearance-picker"].tap()
         app.buttons["Dunkel"].tap()
+        XCTAssertEqual(app.buttons["appearance-picker"].value as? String, "Dunkel")
         app.buttons["language-picker"].tap()
         app.buttons["Englisch"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))

@@ -27,6 +27,7 @@ struct SettingsView: View {
                 Picker("Appearance", selection: $appearance) {
                     Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark")
                 }.accessibilityIdentifier("appearance-picker")
+                    .accessibilityValue(Text(appearance == "light" ? "Light" : appearance == "dark" ? "Dark" : "System"))
                 Picker("Language", selection: $language) {
                     Text("System").tag("system"); Text("English").tag("en"); Text("Deutsch").tag("de")
                 }.accessibilityIdentifier("language-picker")
