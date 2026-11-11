@@ -25,7 +25,7 @@ python3 ../../execution/run_bounded.py 1200 xcodebuild "${build_args[@]}" build-
 if [[ "$created_simulator" == true ]]; then
   # Compile against a shutdown device. Fresh runtime indexing and cold Swift
   # compilation must not compete for memory/disk before XCTest loads accessibility.
-  xcrun simctl boot "$simulator_id"
+  # Start monitoring before boot, rather than attaching after boot returned.
   python3 ../../execution/run_bounded.py 600 xcrun simctl bootstatus "$simulator_id" -b
 fi
 test_allowance=180

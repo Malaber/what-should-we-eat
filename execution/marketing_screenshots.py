@@ -24,9 +24,7 @@ def capture_tests(device, output, result):
         subprocess.run([sys.executable, str(ROOT / 'execution/run_bounded.py'), str(seconds), *command],
                        cwd=PACKAGE, check=True)
     bounded(1200, [*base, 'build-for-testing'])
-    bounded(60, ['xcrun', 'simctl', 'boot', device])
     bounded(600, ['xcrun', 'simctl', 'bootstatus', device, '-b'])
-    bounded(30, ['xcrun', 'simctl', 'ui', device, 'appearance', 'light'])
     bounded(30, ['xcrun', 'simctl', 'status_bar', device, 'override', '--time', '9:41',
                  '--dataNetwork', 'wifi', '--wifiMode', 'active', '--wifiBars', '3',
                  '--batteryState', 'charged', '--batteryLevel', '100'])

@@ -43,9 +43,9 @@ elif 'xcodebuild' in sys.argv:
     assert '-retry-tests-on-failure' not in test
 
 
-@pytest.mark.parametrize('build_fails', [False, True])
+@pytest.mark.parametrize('failure_stage', ['none', 'build', 'boot'])
 @pytest.mark.parametrize('runtime_override', [None, '27.1'])
-def test_compile_precedes_boot_and_declared_runtime_reaches_selector(tmp_path, build_fails, runtime_override):
+def test_compile_precedes_boot_and_declared_runtime_reaches_selector(tmp_path, failure_stage, runtime_override):
     bins = tmp_path / 'bin'; bins.mkdir()
     capture = tmp_path / 'commands.jsonl'
     shim = '''#!PYTHON
@@ -54,12 +54,13 @@ with open(os.environ['CAPTURE_ARGS'], 'a') as output:
     output.write(json.dumps([os.path.basename(sys.argv[0]), *sys.argv[1:]]) + '\\n')
 if any(arg.endswith('version.py') for arg in sys.argv): print('0.6.0')
 if any(arg.endswith('resolve_simulator.py') for arg in sys.argv): print('isolated-test-device')
-if 'build-for-testing' in sys.argv and os.environ['FAIL_BUILD'] == '1': sys.exit(42)
+if 'build-for-testing' in sys.argv and os.environ['FAIL_STAGE'] == 'build': sys.exit(42)
+if 'bootstatus' in sys.argv and os.environ['FAIL_STAGE'] == 'boot': sys.exit(43)
 '''.replace('PYTHON', __import__('sys').executable)
     for name in ('python3', 'swift', 'xcodegen', 'xcrun'):
         path = bins / name; path.write_text(shim); path.chmod(0o755)
     env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
-           'CAPTURE_ARGS': str(capture), 'FAIL_BUILD': str(int(build_fails)),
+           'CAPTURE_ARGS': str(capture), 'FAIL_STAGE': failure_stage,
            'SIMULATOR_DEVICE_TYPE': 'com.apple.CoreSimulator.SimDeviceType.iPhone-Duo',
            'TEST_RESULTS_DIR': str(tmp_path / 'results')}
     env.pop('SIMULATOR_RUNTIME', None)
@@ -71,12 +72,15 @@ if 'build-for-testing' in sys.argv and os.environ['FAIL_BUILD'] == '1': sys.exit
     resolve = next(c for c in commands if any(a.endswith('resolve_simulator.py') for a in c))
     assert resolve[resolve.index('--runtime') + 1] == (runtime_override or '')
     build = next(i for i, c in enumerate(commands) if 'build-for-testing' in c)
-    assert result.returncode == (42 if build_fails else 0)
-    if build_fails:
+    assert result.returncode == {'none': 0, 'build': 42, 'boot': 43}[failure_stage]
+    assert not any('boot' in c for c in commands)
+    if failure_stage == 'build':
         assert not any('boot' in c or 'test-without-building' in c for c in commands)
+    elif failure_stage == 'boot':
+        assert any('bootstatus' in c for c in commands)
+        assert not any('test-without-building' in c for c in commands)
     else:
-        boot = next(i for i, c in enumerate(commands) if 'boot' in c)
         ready = next(i for i, c in enumerate(commands) if 'bootstatus' in c)
         test = next(i for i, c in enumerate(commands) if 'test-without-building' in c)
-        assert build < boot < ready < test
+        assert build < ready < test
     assert commands[-1] == ['xcrun', 'simctl', 'delete', 'isolated-test-device']
