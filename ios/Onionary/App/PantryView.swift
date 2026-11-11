@@ -27,14 +27,24 @@ struct PantryView: View {
                                 detail("Check quantity or unit", match.unchecked)
                             }.foregroundStyle(.primary)
                         }
+                        .accessibilityLabel(match.recipe.name)
+                        .accessibilityValue(summary(match))
+                        .accessibilityIdentifier("pantry-match-\(match.id)")
                     }
                     if !input.isEmpty && matches.isEmpty { Text("No matching recipes") }
                 }
                 Text("Quantities refer to the original recipe. Only identical units are compared. Check your supplies before cooking.")
                     .font(.footnote).foregroundStyle(.secondary)
             }.dismissibleKeyboard().navigationTitle("Cook with what you have")
-                .toolbar { Button("Done") { dismiss() } }
+                .toolbar { Button("Done") { dismiss() }.accessibilityIdentifier("close-pantry") }
         }
+    }
+    private func summary(_ match: PantryMatching.Match) -> String {
+        [("Available", match.matched), ("Missing", match.missing),
+         ("Not enough", match.short), ("Check quantity or unit", match.unchecked)]
+            .filter { !$0.1.isEmpty }
+            .map { L10n.text($0.0) + ": " + $0.1.joined(separator: ", ") }
+            .joined(separator: "; ")
     }
     @ViewBuilder private func detail(_ title: LocalizedStringKey, _ names: [String]) -> some View {
         if !names.isEmpty { HStack(alignment: .top) { Text(title).fontWeight(.medium); Text(names.joined(separator: ", ")) }.font(.caption) }

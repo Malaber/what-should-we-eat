@@ -42,8 +42,11 @@ final class OnionaryUITests: XCTestCase {
         // Multiline fields expose concrete TextField/TextView types across SDKs.
         XCTAssertTrue(pantry.waitForExistence(timeout: 5))
         pantry.tap(); pantry.typeText("170 g Cheese")
-        XCTAssertTrue(app.staticTexts["Not enough"].firstMatch.waitForExistence(timeout: 5))
-        app.buttons["Done"].firstMatch.tap()
+        let match = app.buttons["pantry-match-1"]
+        XCTAssertTrue(match.waitForExistence(timeout: 5))
+        XCTAssertTrue((match.value as? String ?? "").contains("Not enough: Cheese"))
+        XCTAssertTrue((match.value as? String ?? "").contains("Missing: Pasta"))
+        app.buttons["close-pantry"].tap()
         app.buttons["add-recipe"].tap()
         app.buttons["Create with Intelligence"].tap()
         XCTAssertTrue(app.staticTexts["Recipe mode"].waitForExistence(timeout: 5))
