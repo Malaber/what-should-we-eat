@@ -193,12 +193,18 @@ remain pending; these results do not prove every simulator launch issue resolved
 
 ## Build 23 startup follow-up
 
-- [ ] Use one bounded `simctl bootstatus -b` operation to boot and monitor the disposable device; remove the separate unmonitored boot call from both harnesses.
-- [ ] Set screenshot appearance through the Debug marketing fixture instead of a global simulator appearance RPC; retain production appearance behavior.
-- [ ] Test boot/setup failure propagation and run a real cold-device readiness check before publishing a fresh release attempt.
+- [x] Use one bounded `simctl bootstatus -b` operation to boot and monitor the disposable device; remove the separate unmonitored boot call from both harnesses.
+- [x] Set screenshot appearance through the Debug marketing fixture instead of a global simulator appearance RPC; retain production appearance behavior.
+- [x] Test boot/setup failure propagation and run a real cold-device readiness check before publishing a fresh release attempt.
 
 Both failing runs printed "Device already booted, nothing to do" before their
 first UI operation stalled. iPad capture timed out in `simctl ui appearance
 light`; iPhone timed out launching Onionary before account-deletion actions.
 These are startup failures, not failed account-deletion assertions. Do not relax
 those assertions or the existing UI-test deadlines.
+
+Validation: 33 focused harness tests passed; shell syntax and whitespace checks
+passed. A fresh iPhone 17 Pro / iOS 27.0 reached terminal Finished in 40 seconds
+using the single boot operation, then launched Settings successfully. The test
+simulator was removed. Full app suites and TestFlight build 24 remain pending;
+this readiness probe does not establish that all UI tests pass.

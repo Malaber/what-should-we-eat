@@ -131,3 +131,9 @@ the session; never retry the command. Capture fold evidence using XCTest's app
 screenshot connection, not a newly spawned simctl screenshot process per angle.
 Marketing capture also separates build-for-testing, boot readiness and one bounded
 test-without-building invocation. Keep UI assertions and artifact dimensions intact.
+
+For a new shutdown simulator, call `simctl bootstatus <id> -b` once under the
+boot deadline. Do not issue `simctl boot` first and only then attach the monitor:
+that can take the "already booted" path before the first UI operation. Marketing
+light appearance belongs to the Debug fixture's existing appearance preference;
+avoid a global SpringBoard appearance RPC solely to render that fixture.
