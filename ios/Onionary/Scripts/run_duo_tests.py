@@ -26,6 +26,7 @@ def main():
                 subprocess.run(['xcrun', 'simctl', 'spawn', simulator, str(binary), self.path.rsplit('/', 1)[1]], check=True, timeout=20)
                 self.send_response(204); self.end_headers()
             except (subprocess.SubprocessError, OSError) as error:
+                print(f"Duo controller {self.path}: {error}", file=sys.stderr, flush=True)
                 self.send_error(500, str(error))
         def do_GET(self):
             if self.path not in ('/capture/0', '/capture/90', '/capture/180'):
@@ -39,6 +40,7 @@ def main():
                 self.send_response(200); self.send_header('Content-Type', 'image/png')
                 self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)
             except (subprocess.SubprocessError, OSError) as error:
+                print(f"Duo controller {self.path}: {error}", file=sys.stderr, flush=True)
                 self.send_error(500, str(error))
         def log_message(self, *_):
             pass

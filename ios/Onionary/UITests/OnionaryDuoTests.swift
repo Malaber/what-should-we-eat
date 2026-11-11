@@ -18,8 +18,9 @@ final class OnionaryDuoTests: XCTestCase {
         let port = try String(contentsOf: config, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
         let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(port)/pose/\(angle)"))
         var request = URLRequest(url: url, timeoutInterval: 30); request.httpMethod = "POST"
-        let (_, response) = try await URLSession.shared.data(for: request)
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 204)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 204,
+                       "Fold to \(angle)° failed: \(String(decoding: data, as: UTF8.self))")
     }
 
     @MainActor private func capture(_ angle: Int) async throws {
