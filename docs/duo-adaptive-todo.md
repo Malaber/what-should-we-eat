@@ -211,7 +211,17 @@ this readiness probe does not establish that all UI tests pass.
 
 ## Build 24 regression follow-up
 
-- [ ] Expose the selected appearance as an accessible value and verify it in native tests.
-- [ ] Diagnose screenshot status-bar setup timeout; retain real captures and bounded failures.
-- [ ] Diagnose iPad cooking-mode activation failure with native result evidence.
+- [x] Expose the selected appearance as an accessible value and verify it in native tests.
+- [x] Diagnose screenshot status-bar setup timeout; retain real captures and bounded failures.
+- [x] Diagnose iPad cooking-mode activation failure with native result evidence.
 - [ ] Run focused regressions, push fixes, and start a fresh immutable release with full suites gating upload.
+
+Evidence: screenshot jobs timed out in cosmetic status_bar override after boot
+Finished. The failed iPad recording still showed one portion after the plus tap;
+activity assertion now first requires the portion change. Selected appearance
+had an empty AX value; the picker now exposes its localized selection.
+
+32 harness tests and native build-for-testing passed. Four focused native iPad
+regressions run before the next release worker; full three-profile suites still
+gate archive/upload. Build 24 was explicitly stopped during tests to avoid
+shipping modified source under its old tag. No upload occurred.

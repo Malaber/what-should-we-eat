@@ -137,3 +137,14 @@ boot deadline. Do not issue `simctl boot` first and only then attach the monitor
 that can take the "already booted" path before the first UI operation. Marketing
 light appearance belongs to the Debug fixture's existing appearance preference;
 avoid a global SpringBoard appearance RPC solely to render that fixture.
+
+Screenshot fixtures set app appearance through the app preference, with an explicit
+localized accessibility value on the picker. Do not assume SwiftUI menu pickers
+expose their selected text as an accessibility value automatically. Capture the
+real system status bar; do not make screenshots depend on cosmetic `simctl
+status_bar` overrides. Validate captures and app behavior as before.
+
+When an automatic activity assertion fails, inspect the recording and first
+assert the triggering recipe change. A missed portion tap cannot start an activity;
+do not diagnose ActivityKit from the final toggle value alone. Portion controls
+need full rectangular hit areas of at least 44 points, including in scaling forms.
