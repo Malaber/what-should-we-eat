@@ -236,3 +236,7 @@ buttons now expose localized summaries and stable recipe IDs; the UI test checks
 both insufficient cheese and missing pasta, then uses the explicit close button
 instead of an ambiguous keyboard/sheet Done match. Native verification remains
 pending for that final change.
+
+Focused native outcome: all four iPad tests passed (Live Activity, marketing
+capture, localized appearance, portion controls). The final pantry change is
+covered by the full suites in the next release worker, not that earlier binary.
