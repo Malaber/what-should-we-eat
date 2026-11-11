@@ -190,3 +190,15 @@ inline sheet title and immediate busy state. Full create/revoke assertions remai
 Validation: 30 focused harness tests passed; native helper compiled and five real
 Duo fold commands were acknowledged by one process. Full app UI/marketing runs
 remain pending; these results do not prove every simulator launch issue resolved.
+
+## Build 23 startup follow-up
+
+- [ ] Use one bounded `simctl bootstatus -b` operation to boot and monitor the disposable device; remove the separate unmonitored boot call from both harnesses.
+- [ ] Set screenshot appearance through the Debug marketing fixture instead of a global simulator appearance RPC; retain production appearance behavior.
+- [ ] Test boot/setup failure propagation and run a real cold-device readiness check before publishing a fresh release attempt.
+
+Both failing runs printed "Device already booted, nothing to do" before their
+first UI operation stalled. iPad capture timed out in `simctl ui appearance
+light`; iPhone timed out launching Onionary before account-deletion actions.
+These are startup failures, not failed account-deletion assertions. Do not relax
+those assertions or the existing UI-test deadlines.
