@@ -9,13 +9,13 @@ final class OnionaryUITests: XCTestCase {
     override func tearDown() async throws {
         await MainActor.run {
             let app = XCUIApplication()
-            if app.state != .notRunning { terminateFromBackground(app) }
+            if app.state != .notRunning { Self.terminateFromBackground(app) }
         }
         try await super.tearDown()
     }
 
     @MainActor
-    private func terminateFromBackground(_ app: XCUIApplication) {
+    private static func terminateFromBackground(_ app: XCUIApplication) {
         // Let SpringBoard detach the foreground accessibility session before
         // terminating. Keep persistence assertions after the subsequent launch.
         let home = XCUIApplication(bundleIdentifier: "com.apple.springboard")
@@ -122,7 +122,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(name.value as? String, "My offline soup")
         XCTAssertTrue(app.buttons["Save"].isEnabled)
         app.buttons["Cancel"].tap()
-        terminateFromBackground(app)
+        Self.terminateFromBackground(app)
         app.launchArguments.removeAll { $0 == "--reset" }
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -140,7 +140,7 @@ final class OnionaryUITests: XCTestCase {
         app.buttons["recipe-1"].firstMatch.tap()
         app.buttons["preview-cook"].tap()
         app.buttons["ingredient-1"].tap()
-        terminateFromBackground(app)
+        Self.terminateFromBackground(app)
         app.launchArguments.removeAll { $0 == "--reset" }
         app.launch()
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
@@ -508,7 +508,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["2.58× recipe"].waitForExistence(timeout: 5))
         app.buttons["portion-minus"].tap()
         XCTAssertTrue(app.staticTexts["1.58× recipe"].waitForExistence(timeout: 5), app.debugDescription)
-        terminateFromBackground(app)
+        Self.terminateFromBackground(app)
         app.launchArguments = ["--ui-testing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
