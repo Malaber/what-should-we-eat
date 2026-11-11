@@ -208,3 +208,10 @@ passed. A fresh iPhone 17 Pro / iOS 27.0 reached terminal Finished in 40 seconds
 using the single boot operation, then launched Settings successfully. The test
 simulator was removed. Full app suites and TestFlight build 24 remain pending;
 this readiness probe does not establish that all UI tests pass.
+
+## Build 24 regression follow-up
+
+- [ ] Expose the selected appearance as an accessible value and verify it in native tests.
+- [ ] Diagnose screenshot status-bar setup timeout; retain real captures and bounded failures.
+- [ ] Diagnose iPad cooking-mode activation failure with native result evidence.
+- [ ] Run focused regressions, push fixes, and start a fresh immutable release with full suites gating upload.
