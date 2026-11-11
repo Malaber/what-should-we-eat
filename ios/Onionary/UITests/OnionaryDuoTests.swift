@@ -23,13 +23,10 @@ final class OnionaryDuoTests: XCTestCase {
                        "Fold to \(angle)° failed: \(String(decoding: data, as: UTF8.self))")
     }
 
-    @MainActor private func capture(_ angle: Int) async throws {
-        let config = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "duo-port", withExtension: "txt"))
-        let port = try String(contentsOf: config, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
-        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(port)/capture/\(angle)"))
-        let (data, response) = try await URLSession.shared.data(from: url)
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
-        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.png")
+    @MainActor private func capture(_ angle: Int, in app: XCUIApplication) {
+        // Capture the active app through the existing automation connection;
+        // spawning simctl screenshot for every fold can stall the display service.
+        let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Duo-workspace-\(angle)"; attachment.lifetime = .keepAlways; add(attachment)
     }
 
@@ -54,7 +51,7 @@ final class OnionaryDuoTests: XCTestCase {
             XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
             XCTAssertTrue(app.staticTexts["2× recipe"].exists)
             XCTAssertTrue(app.buttons["undo"].isEnabled)
-            try await capture(angle)
+            capture(angle, in: app)
         }
         try tap("undo", in: app)
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Unchecked")

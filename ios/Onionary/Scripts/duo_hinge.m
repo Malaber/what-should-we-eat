@@ -6,6 +6,8 @@
 #import <dlfcn.h>
 #import <mach/mach_time.h>
 #import <math.h>
+#import <stdio.h>
+#import <string.h>
 
 int main(int argc, const char *argv[]) {
 #if !TARGET_OS_SIMULATOR
@@ -13,9 +15,7 @@ int main(int argc, const char *argv[]) {
 #else
     @autoreleasepool {
         if (argc != 2) return 2;
-        char *end = NULL;
-        double angle = strtod(argv[1], &end);
-        if (!end || *end || !isfinite(angle) || angle < 0 || angle > 180) return 2;
+        BOOL serving = strcmp(argv[1], "--serve") == 0;
         void *library = dlopen("/System/Library/Frameworks/IOKit.framework/IOKit", RTLD_NOW);
         if (!library) return 3;
         CFDataRef (*serialize)(CFTypeRef, CFOptionFlags) = dlsym(library, "IOCFSerialize");
@@ -23,19 +23,34 @@ int main(int argc, const char *argv[]) {
         CFTypeRef (*createClient)(CFAllocatorRef) = dlsym(library, "IOHIDEventSystemClientCreate");
         void (*dispatch)(CFTypeRef, CFTypeRef) = dlsym(library, "IOHIDEventSystemClientDispatchEvent");
         if (!serialize || !createEvent || !createClient || !dispatch) return 3;
-        NSDictionary *payload = @{ @"provider": @"com.apple.Virtualization.VirtualMachines",
-                                  @"source": @"hinge-slider-control", @"type": @"range", @"value": @(angle) };
-        CFDataRef data = serialize((__bridge CFTypeRef)payload, 1);
-        if (!data) return 4;
-        CFTypeRef event = createEvent(kCFAllocatorDefault, mach_absolute_time(), 0xff61, 0x5b, 0,
-                                     (uint8_t *)CFDataGetBytePtr(data), CFDataGetLength(data), 0);
         CFTypeRef client = createClient(kCFAllocatorDefault);
-        if (event && client) dispatch(client, event);
-        BOOL sent = event && client;
-        if (client) CFRelease(client);
-        if (event) CFRelease(event);
-        CFRelease(data);
-        return sent ? 0 : 4;
+        if (!client) return 4;
+        if (serving) { puts("READY"); fflush(stdout); }
+        char input[64];
+        do {
+            const char *value = argv[1];
+            if (serving) {
+                if (!fgets(input, sizeof(input), stdin)) break;
+                input[strcspn(input, "\r\n")] = 0;
+                value = input;
+            }
+            char *end = NULL;
+            double angle = strtod(value, &end);
+            if (!end || end == value || *end || !isfinite(angle) || angle < 0 || angle > 180) return 2;
+            NSDictionary *payload = @{ @"provider": @"com.apple.Virtualization.VirtualMachines",
+                                      @"source": @"hinge-slider-control", @"type": @"range", @"value": @(angle) };
+            CFDataRef data = serialize((__bridge CFTypeRef)payload, 1);
+            if (!data) return 4;
+            CFTypeRef event = createEvent(kCFAllocatorDefault, mach_absolute_time(), 0xff61, 0x5b, 0,
+                                         (uint8_t *)CFDataGetBytePtr(data), CFDataGetLength(data), 0);
+            if (!event) { CFRelease(data); return 4; }
+            dispatch(client, event);
+            CFRelease(event);
+            CFRelease(data);
+            if (serving) { printf("OK %s\n", value); fflush(stdout); }
+        } while (serving);
+        CFRelease(client);
+        return 0;
     }
 #endif
 }
