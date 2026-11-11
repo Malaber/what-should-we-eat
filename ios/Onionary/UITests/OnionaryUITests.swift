@@ -6,6 +6,14 @@ final class OnionaryUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    override func tearDown() async throws {
+        await MainActor.run {
+            let app = XCUIApplication()
+            if app.state != .notRunning { terminateFromBackground(app) }
+        }
+        try await super.tearDown()
+    }
+
     @MainActor
     private func terminateFromBackground(_ app: XCUIApplication) {
         // Let SpringBoard detach the foreground accessibility session before
@@ -65,7 +73,11 @@ final class OnionaryUITests: XCTestCase {
         let confirm = app.buttons["confirm-delete-account"]
         XCTAssertFalse(confirm.isEnabled)
         let email = app.textFields["delete-account-email"]
-        email.tap(); email.typeText("cook@example.org")
+        XCTAssertTrue(email.waitForExistence(timeout: 5))
+        email.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "Email entry requires keyboard focus")
+        email.typeText("cook@example.org")
+        XCTAssertEqual(email.value as? String, "cook@example.org")
         XCTAssertTrue(confirm.isEnabled)
         confirm.tap()
         XCTAssertTrue(app.alerts["Account deleted"].waitForExistence(timeout: 5))
@@ -82,7 +94,11 @@ final class OnionaryUITests: XCTestCase {
         app.swipeUp()
         app.buttons["delete-account"].tap()
         let email = app.textFields["delete-account-email"]
-        email.tap(); email.typeText("cook@example.org")
+        XCTAssertTrue(email.waitForExistence(timeout: 5))
+        email.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "Email entry requires keyboard focus")
+        email.typeText("cook@example.org")
+        XCTAssertEqual(email.value as? String, "cook@example.org")
         app.buttons["confirm-delete-account"].tap()
         XCTAssertTrue(app.staticTexts["delete-account-error"].waitForExistence(timeout: 5))
         XCTAssertEqual(email.value as? String, "cook@example.org")
@@ -332,8 +348,11 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertTrue(createLink.waitForExistence(timeout: 5))
         XCTAssertTrue(createLink.isHittable)
         createLink.tap()
-        XCTAssertTrue(app.buttons["Revoke link"].waitForExistence(timeout: 5))
-        app.buttons["Revoke link"].tap()
+        let revoke = app.buttons["revoke-recipe-share"]
+        XCTAssertTrue(revoke.waitForExistence(timeout: 5))
+        XCTAssertTrue(revoke.isHittable)
+        revoke.tap()
+        XCTAssertTrue(revoke.waitForNonExistence(timeout: 5), "Successful revocation dismisses the sheet")
         try tapNavigation("Recipes", in: app)
         XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
     }

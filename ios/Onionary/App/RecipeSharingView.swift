@@ -25,7 +25,7 @@ struct RecipeSharingView: View {
                     Button("Revoke link", role: .destructive) { Task {
                         do { try await store.revokeRecipeLink(link.id); dismiss() }
                         catch { self.error = error.localizedDescription }
-                    } }
+                    } }.accessibilityIdentifier("revoke-recipe-share")
                 } else {
                     Stepper("Expires in \(hours) hours", value: $hours, in: 1...168)
                     Button {
