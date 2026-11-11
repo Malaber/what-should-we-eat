@@ -41,3 +41,38 @@ elif 'xcodebuild' in sys.argv:
         assert test[test.index(option) + 1] == allowance
     assert f'-only-testing:OnionaryUITests/{suite}' in test
     assert '-retry-tests-on-failure' not in test
+
+
+@pytest.mark.parametrize('build_fails', [False, True])
+def test_compile_precedes_boot_and_declared_runtime_reaches_selector(tmp_path, build_fails):
+    bins = tmp_path / 'bin'; bins.mkdir()
+    capture = tmp_path / 'commands.jsonl'
+    shim = '''#!PYTHON
+import json, os, sys
+with open(os.environ['CAPTURE_ARGS'], 'a') as output:
+    output.write(json.dumps([os.path.basename(sys.argv[0]), *sys.argv[1:]]) + '\\n')
+if any(arg.endswith('version.py') for arg in sys.argv): print('0.6.0')
+if any(arg.endswith('resolve_simulator.py') for arg in sys.argv): print('isolated-test-device')
+if 'build-for-testing' in sys.argv and os.environ['FAIL_BUILD'] == '1': sys.exit(42)
+'''.replace('PYTHON', __import__('sys').executable)
+    for name in ('python3', 'swift', 'xcodegen', 'xcrun'):
+        path = bins / name; path.write_text(shim); path.chmod(0o755)
+    env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
+           'CAPTURE_ARGS': str(capture), 'FAIL_BUILD': str(int(build_fails)),
+           'SIMULATOR_DEVICE_TYPE': 'com.apple.CoreSimulator.SimDeviceType.iPhone-Duo',
+           'SIMULATOR_RUNTIME': '27.1', 'TEST_RESULTS_DIR': str(tmp_path / 'results')}
+    env.pop('SIMULATOR_ID', None)
+    result = subprocess.run(['bash', str(SCRIPT)], env=env)
+    commands = [json.loads(line) for line in capture.read_text().splitlines()]
+    resolve = next(c for c in commands if any(a.endswith('resolve_simulator.py') for a in c))
+    assert resolve[resolve.index('--runtime') + 1] == '27.1'
+    build = next(i for i, c in enumerate(commands) if 'build-for-testing' in c)
+    assert result.returncode == (42 if build_fails else 0)
+    if build_fails:
+        assert not any('boot' in c or 'test-without-building' in c for c in commands)
+    else:
+        boot = next(i for i, c in enumerate(commands) if 'boot' in c)
+        ready = next(i for i, c in enumerate(commands) if 'bootstatus' in c)
+        test = next(i for i, c in enumerate(commands) if 'test-without-building' in c)
+        assert build < boot < ready < test
+    assert commands[-1] == ['xcrun', 'simctl', 'delete', 'isolated-test-device']

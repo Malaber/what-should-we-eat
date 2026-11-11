@@ -25,8 +25,9 @@ python3 ../../execution/check_ios_build_environment.py
 stage tests
 # One compact regression suite, one iPad suite, and the Duo continuity suite.
 # Each creates its own compatible simulator; any failure stops the release.
-for device in com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-16GB \
-              com.apple.CoreSimulator.SimDeviceType.iPhone-Duo \
+# Exercise the previously failing profile first; every profile remains required.
+for device in com.apple.CoreSimulator.SimDeviceType.iPhone-Duo \
+              com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-16GB \
               com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro; do
   stage "tests:${device##*.}"
   profile_results="$release_dir/tests-${device##*.}"
