@@ -257,7 +257,7 @@ struct CookingView: View {
                             HStack(spacing: 16) {
                                 Button {
                                     store.update { try $0.scale(baseServings: $0.baseServings, portions: $0.portions - 1) }
-                                } label: { Image(systemName: "minus").frame(width: 32, height: 32) }
+                                } label: { Image(systemName: "minus").frame(width: 44, height: 44).contentShape(Rectangle()) }
                                     .buttonStyle(.bordered).disabled(adventure.portions <= 1)
                                     .accessibilityLabel("One fewer portion").accessibilityIdentifier("portion-minus")
                                 Button { sheet = .portions } label: {
@@ -268,7 +268,7 @@ struct CookingView: View {
                                 }.buttonStyle(.plain).accessibilityLabel("\(Numbers.display(adventure.portions, locale: L10n.locale)) portions. Edit amount")
                                 Button {
                                     store.update { try $0.scale(baseServings: $0.baseServings, portions: $0.portions + 1) }
-                                } label: { Image(systemName: "plus").frame(width: 32, height: 32) }
+                                } label: { Image(systemName: "plus").frame(width: 44, height: 44).contentShape(Rectangle()) }
                                     .buttonStyle(.bordered).accessibilityLabel("One more portion").accessibilityIdentifier("portion-plus")
                             }
                             ProgressView(value: Double(adventure.checked.count), total: Double(max(1, adventure.recipe.ingredients.count + adventure.recipe.instructionSteps.count)))
@@ -446,10 +446,10 @@ struct ScalingView: View {
                     field("Original recipe serves", text: $base)
                     HStack {
                         field("Cooking for", text: $portions).accessibilityIdentifier("portions")
-                        Button { stepPortions(-1) } label: { Image(systemName: "minus").frame(width: 32, height: 32) }
+                        Button { stepPortions(-1) } label: { Image(systemName: "minus").frame(width: 44, height: 44).contentShape(Rectangle()) }
                             .buttonStyle(.bordered).accessibilityLabel("Decrease portions by one")
                             .disabled((try? Numbers.parse(portions)) == nil || ((try? Numbers.parse(portions)) ?? 0) <= 1)
-                        Button { stepPortions(1) } label: { Image(systemName: "plus").frame(width: 32, height: 32) }
+                        Button { stepPortions(1) } label: { Image(systemName: "plus").frame(width: 44, height: 44).contentShape(Rectangle()) }
                             .buttonStyle(.bordered).accessibilityLabel("Increase portions by one")
                     }
 

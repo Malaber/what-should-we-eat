@@ -210,6 +210,7 @@ final class OnionaryUITests: XCTestCase {
         let mode = app.buttons["cooking-mode"]
         XCTAssertTrue(mode.waitForExistence(timeout: 5))
         app.buttons["portion-plus"].tap()
+        XCTAssertTrue(app.staticTexts["2× recipe"].waitForExistence(timeout: 5), "The first portion tap must update the recipe before starting its activity")
         let on = NSPredicate(format: "value == %@", "On")
         let off = NSPredicate(format: "value == %@", "Off")
         expectation(for: on, evaluatedWith: mode)
