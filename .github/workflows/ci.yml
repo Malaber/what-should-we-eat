@@ -77,6 +77,7 @@ jobs:
         env:
           TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
+          SIMULATOR_RUNTIME: ${{ matrix.runtime }}
         run: bash ios/Onionary/Scripts/test.sh
       - name: Preserve simulator test diagnostics
         if: always()

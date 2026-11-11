@@ -3,27 +3,36 @@
 import argparse
 import json
 import subprocess
+import sys
 
 DEFAULT_DEVICE = 'com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro'
 
 
-def select_runtime(runtimes, device_type=DEFAULT_DEVICE):
+def default_runtime(device_type):
+    return '27.1' if device_type.endswith('.iPhone-Duo') else '27.0'
+
+
+def select_runtime(runtimes, device_type=DEFAULT_DEVICE, version=None):
+    version = version or default_runtime(device_type)
     available = [runtime for runtime in runtimes if runtime.get('isAvailable')
-                 and '.iOS-' in runtime['identifier']
+                 and runtime['identifier'] == 'com.apple.CoreSimulator.SimRuntime.iOS-' + version.replace('.', '-')
+                 and runtime['version'] == version
                  and any(device['identifier'] == device_type
                          for device in runtime.get('supportedDeviceTypes', []))]
     if not available:
-        raise ValueError('Install an iOS runtime compatible with the selected device in Xcode Settings > Components.')
-    return max(available, key=lambda runtime: tuple(int(p) for p in runtime['version'].split('.')))['identifier']
+        raise ValueError(f'Install iOS {version} compatible with {device_type}; no fallback to a different runtime is allowed.')
+    return available[0]['identifier']
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--create', action='store_true')
     parser.add_argument('--device-type', default=DEFAULT_DEVICE)
+    parser.add_argument('--runtime', help='Exact iOS version; defaults to the profile pin')
     args = parser.parse_args()
     runtimes = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'runtimes', '--json']))['runtimes']
-    runtime = select_runtime(runtimes, args.device_type)
+    runtime = select_runtime(runtimes, args.device_type, args.runtime)
+    print(f"Selected {runtime} for {args.device_type}", file=sys.stderr)
     if args.create:
         print(subprocess.check_output(['xcrun', 'simctl', 'create', 'Onionary Isolated Tests',
                                        args.device_type, runtime], text=True).strip())
