@@ -32,8 +32,10 @@ elif 'xcodebuild' in sys.argv:
     subprocess.run(['bash', str(SCRIPT)], check=True, env={**os.environ,
         'PATH': str(bins) + os.pathsep + os.environ['PATH'], 'CAPTURE_ARGS': str(capture),
         'SIMULATOR_ID': 'test-only', 'SIMULATOR_DEVICE_TYPE': device,
-        'TEST_RESULTS_DIR': str(tmp_path / 'results')})
+        'TEST_RESULTS_DIR': str(tmp_path / 'results'), 'TEST_DERIVED_DATA_DIR': str(tmp_path / 'shared-build')})
     build, test = [json.loads(line) for line in capture.read_text().splitlines()]
+    assert build[build.index('-derivedDataPath') + 1] == str(tmp_path / 'shared-build')
+    assert test[test.index('-derivedDataPath') + 1] == str(tmp_path / 'shared-build')
     assert 'build-for-testing' in build
     assert 'test-without-building' in test
     for option in ('-default-test-execution-time-allowance', '-maximum-test-execution-time-allowance'):

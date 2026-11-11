@@ -31,10 +31,13 @@ for device in com.apple.CoreSimulator.SimDeviceType.iPhone-Duo \
               com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro; do
   stage "tests:${device##*.}"
   profile_results="$release_dir/tests-${device##*.}"
-  TEST_RESULTS_DIR="$profile_results" SIMULATOR_DEVICE_TYPE="$device" bash Scripts/test.sh
-  # A completed profile retains its xcresult; its isolated build is reproducible.
-  rm -rf "$profile_results/DerivedData"
+  # Same source/SDK, sequential destinations: reuse Xcode's validated build cache.
+  # Repeated delete/rebuild cycles retain old blocks in APFS snapshots and can
+  # exhaust disk despite deleting each previous profile's DerivedData.
+  TEST_RESULTS_DIR="$profile_results" TEST_DERIVED_DATA_DIR="$release_dir/DerivedData" \
+    SIMULATOR_DEVICE_TYPE="$device" bash Scripts/test.sh
 done
+rm -rf "$release_dir/DerivedData"
 stage archive
 ARCHIVE_SIGNED=1 bash Scripts/archive.sh "$archive_path" "$marketing_version" "$build_number"
 fi

@@ -19,7 +19,7 @@ mkdir -p "$result_dir"
 result_dir=$(cd "$result_dir" && pwd)
 # Give compilation its own budget: cold builds must not consume UI test time.
 build_args=(-project Onionary.xcodeproj -scheme Onionary
-  -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "$result_dir/DerivedData"
+  -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "${TEST_DERIVED_DATA_DIR:-$result_dir/DerivedData}"
   MARKETING_VERSION="$marketing_version" CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO)
 python3 ../../execution/run_bounded.py --log "$result_dir/build.log" 1200 xcodebuild "${build_args[@]}" build-for-testing
 if [[ "$created_simulator" == true ]]; then
