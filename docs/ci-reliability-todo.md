@@ -216,7 +216,7 @@ GitHub native gates remain mandatory. The verified iPad pair is unaffected.
 
 ## Native Duo selection contract
 
-- [ ] Give native tabs explicit accessibility identifiers using the supported TabContent API on iOS 18+, keeping the existing iOS 17 fallback, labels and selection values.
+- [x] Evaluate explicit TabContent identifiers. Local Duo inspection proved this SDK drops those IDs after folding while retaining labels; reject the app-side experiment before push and retain existing native tab rendering.
 - [ ] Replace Duo's custom visibility predicate/bulk snapshots with direct identifier queries and native existence waits. Retain frame validity, real hittability, physical-display geometry and every feature assertion.
 - [ ] Run Duo test methods synchronously, matching ordinary UI tests, rather than mixing async MainActor methods with blocking XCTest waits. Keep existing case/step deadlines and all fold sequences.
 - [ ] Await the complete intended editor input before starting folds. The local synchronous run captured an expected suffix of "Du" while typing was still committing; after folding, the actual field correctly contained the complete "Duo draft" suffix. Derive the expected value before typing and verify it, rather than treating a partial snapshot as expected data.
