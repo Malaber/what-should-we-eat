@@ -4,11 +4,10 @@ import XCTest
 final class OnionaryDuoTests: OnionaryUITestCase {
 
     @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
-        let query = app.buttons.matching(identifier: title)
-        let visible = NSPredicate { _, _ in query.allElementsBoundByIndex.contains(where: { $0.isHittable }) }
+        let visible = NSPredicate { _, _ in !UIReadiness.visibleButtons(title, in: app).isEmpty }
         let ready = XCTNSPredicateExpectation(predicate: visible, object: nil)
         XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed, "Navigation did not settle after folding: \(title)")
-        let button = try XCTUnwrap(query.allElementsBoundByIndex.first(where: { $0.isHittable }), "No visible control: \(title)")
+        let button = try XCTUnwrap(UIReadiness.visibleButtons(title, in: app).first, "No visible control: \(title)")
         button.tap()
     }
 
@@ -16,10 +15,9 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertEqual(OnionarySetHingeAngle(Double(angle)), 0, "Native hinge dispatch failed at \(angle)°")
         XCUIDevice.shared.orientation = angle == 0 ? .portrait : .landscapeLeft
         // Native dispatch confirms injection, not completion of the display handoff.
-        // Match Tracy's active-display readiness check before reading any UI.
-        let expectedArea: CGFloat = angle == 0 ? 466 * 678 : 669 * 951
+        // Require the selected display bounds before reading any UI.
         let displayChanged = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            abs(app.frame.width * app.frame.height - expectedArea) < 2
+            UIReadiness.duoViewport(app.frame, angle: angle)
         }, object: nil)
         await fulfillment(of: [displayChanged], timeout: 15)
 
@@ -36,6 +34,20 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         for angle in [-1.0, 181.0, Double.nan, Double.infinity] {
             XCTAssertEqual(OnionarySetHingeAngle(angle), 1)
         }
+    }
+
+    func testReadinessRejectsWrongDisplayAndHiddenFrames() {
+        XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 466, height: 678), angle: 0))
+        XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 678, height: 466), angle: 0))
+        XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 951, height: 669), angle: 180))
+        XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 669, height: 951), angle: 180))
+        // Same area as the outer display, but not a valid display shape.
+        XCTAssertFalse(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 233, height: 1356), angle: 0))
+        let viewport = CGRect(x: 0, y: 0, width: 466, height: 678)
+        XCTAssertTrue(UIReadiness.validControlFrame(CGRect(x: 12, y: 600, width: 44, height: 44), in: viewport))
+        XCTAssertFalse(UIReadiness.validControlFrame(.zero, in: viewport))
+        XCTAssertFalse(UIReadiness.validControlFrame(.null, in: viewport))
+        XCTAssertFalse(UIReadiness.validControlFrame(CGRect(x: 12, y: 900, width: 44, height: 44), in: viewport))
     }
 
     @MainActor func testCookingPreviewAndDraftSurviveFolds() async throws {
@@ -100,7 +112,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         for angle in [0, 180, 90] {
             try await pose(angle, in: app)
             try tap("Settings", in: app)
-            XCTAssertTrue(app.buttons.matching(identifier: "Sign in with passkey").allElementsBoundByIndex.contains(where: { $0.isHittable }))
+            XCTAssertTrue(!UIReadiness.visibleButtons("Sign in with passkey", in: app).isEmpty)
             try tap("Recipes", in: app)
             XCTAssertTrue(app.buttons["add-recipe"].exists)
         }
