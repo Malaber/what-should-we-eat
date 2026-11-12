@@ -109,6 +109,17 @@ before terminating Onionary; verify `.notRunning`, then create a fresh
 `--reset`; reuse device data and keep every restoration assertion. Do not reuse
 an automation handle whose process was terminated.
 
+All UI profiles inherit `OnionaryUITestCase` and share synchronous process
+cleanup in `tearDownWithError`. XCTest's synchronous UI lifecycle hooks run on
+the main thread; `MainActor.assumeIsolated` enforces that contract. An actor hop
+from async teardown stalled after an async case failed; the synchronous hook
+was verified to activate SpringBoard and terminate the failed app immediately. Keep
+feature scenarios independent: tag filtering, pantry matching and Intelligence
+options each have their own case, fixture and unchanged per-case deadline.
+Recipe selection waits for the named list's loaded state, then resolves an
+indexed identifier query inside that list. Avoid global lazy `firstMatch`
+queries during split-view navigation.
+
 Inspect XCTest action timelines and retain logs/xcresults. Do not add retries,
 sleeps or skip feature failures. Run xcodebuild with `-collect-test-diagnostics
 never`: it disables verbose simulator-wide sysdiagnose, not XCTest results,
@@ -134,7 +145,12 @@ DuoHinge.m, following the in-process approach documented by Appium's
 XCUIDevice+FBHinge. It is never linked into the app/extensions. No host helper,
 HTTP server, port file or startup handshake. Initialization uses dispatch_once;
 a failure is terminal. Wait for active-display geometry after each dispatch and
-retain all fold/checklist/draft/navigation assertions. Source reference:
+retain all fold/checklist/draft/navigation assertions. Duo's app-level frame
+can remain 669×951 while rotated window/control frames are 951×669. Check
+physical-display edge lengths separately from control visibility: compare button
+frames with actual window frames, reject empty/nonfinite/offscreen controls,
+then require real hittability. A failed navigation wait retains the hierarchy,
+window/control bounds and normal XCTest attachments. Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 
 Marketing capture runs once per device inside the normal UI suite. After that

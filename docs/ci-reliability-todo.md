@@ -72,7 +72,34 @@ Structural verification in progress:
 
 ## Remaining query/readiness failures
 
-- [ ] Split the combined tag/pantry/AI test into independent feature cases, retaining its assertions. CI completed its actions at 178.9 seconds then exceeded the 180-second allowance during teardown; keep the allowance unchanged.
-- [ ] Centralize recipe selection through the named list and indexed identifier query, replacing global firstMatch lookups that can stall during navigation.
-- [ ] Inspect Duo navigation snapshot frames and prevent probing hidden/invalid activation points while retaining real hittability checks and all navigation assertions.
+- [x] Split the combined tag/pantry/AI test into independent feature cases, retaining its assertions. CI completed its actions at 178.9 seconds then exceeded the 180-second allowance during teardown; keep the allowance unchanged.
+- [x] Centralize recipe selection through the named list and indexed identifier query, replacing global firstMatch lookups that can stall during navigation.
+- [x] Inspect Duo navigation snapshot frames and prevent probing hidden/invalid activation points while retaining real hittability checks and all navigation assertions.
 - [ ] Verify these exact cases locally, lint workflows and push CI-only fixes. Full GitHub gates remain required; no tags/uploads.
+
+Current diagnosis uses both branch and PR runs at b49ddec. The iPhone PR job
+passed; the branch job reached AI cancellation at 178.9 seconds, then hit the
+180-second limit during teardown. iPad PR stalled resolving a global recipe row;
+Duo branch failed probing an invalid navigation activation point after a fold.
+All three have separate regression targets; no feature assertion is removed.
+
+Harness/export checks: 41 passed. Workflow lint and whitespace checks passed.
+Native verification remains in progress; do not treat compilation alone as a
+passed scenario. New local geometry checks caught a too-strict axis assumption
+and an unreachable folded toolbar control before push. Preserve those results
+and inspect actual accessibility frames before changing geometry policy again.
+
+Measured Duo correction: after rotation, application bounds were 669×951,
+window bounds 951×669 and the visible toolbar control was at x=884. Visibility
+now compares coordinates with actual windows; the display-edge check remains
+separate. A native regression covers this exact geometry plus hidden/invalid
+frames. All real hittability and fold/state assertions remain. The deliberate
+failed diagnostic also proved synchronous cleanup finishes immediately instead
+of stalling in async teardown.
+
+Current native app/test targets compile. Full four-case Duo verification runs
+locally, followed sequentially by iPad edit/share + silent renewal and the three
+split iPhone features. Status: `.tmp/ci30-local-status.json`; results/logs stay in
+`.tmp/ci30-*-verified` and `.tmp/ci30-*-focused`. This batch has no retries,
+archive/upload steps or release tags. It stops if Duo fails or test sources
+change. Native results and fresh full GitHub gates remain pending at push.
