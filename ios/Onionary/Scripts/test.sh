@@ -30,7 +30,9 @@ if [[ "$created_simulator" == true ]]; then
 fi
 test_allowance=180
 if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then test_allowance=360; fi
-test_args=("${build_args[@]}" -parallel-testing-enabled NO -test-timeouts-enabled YES
+# Keep XCTest failures/attachments, but avoid Xcode's simulator-wide sysdiagnose
+# collector (which stalls for 600 seconds even after a fully passed suite).
+test_args=("${build_args[@]}" -parallel-testing-enabled NO -collect-test-diagnostics never -test-timeouts-enabled YES
   -default-test-execution-time-allowance "$test_allowance" -maximum-test-execution-time-allowance "$test_allowance"
   -resultBundlePath "$result_dir/Onionary.xcresult" test-without-building)
 if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then

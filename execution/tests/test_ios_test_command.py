@@ -43,6 +43,8 @@ elif 'xcodebuild' in sys.argv:
         assert test[test.index(option) + 1] == allowance
     assert f'-only-testing:OnionaryUITests/{suite}' in test
     assert '-retry-tests-on-failure' not in test
+    assert test[test.index('-collect-test-diagnostics') + 1] == 'never'
+    assert '-resultBundlePath' in test
 
 
 @pytest.mark.parametrize('failure_stage', ['none', 'build', 'boot'])
