@@ -24,6 +24,11 @@ def render_capture(screenshots, family, defer_creative):
 def export_captures(result, output, family, defer_creative=False):
     if not result.is_dir():
         raise ValueError(f'Native result bundle does not exist: {result}')
+    summary = json.loads(subprocess.check_output(
+        ['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(result.resolve())], text=True))
+    if (summary.get('result') != 'Passed' or summary.get('failedTests') != 0
+            or summary.get('skippedTests', 0) != 0 or summary.get('passedTests', 0) < 1):
+        raise ValueError('Captures require a completed, passing native result with no failed/skipped tests')
     output.mkdir(parents=True, exist_ok=False)
     exported = output/'attachments'
     subprocess.run(['xcrun', 'xcresulttool', 'export', 'attachments', '--path', str(result.resolve()),

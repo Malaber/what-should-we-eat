@@ -12,7 +12,9 @@ SCENES = ['01-recipe-book', '02-cooking-companion', '03-flexible-portions', '04-
 def export_fixture(monkeypatch, tmp_path):
     result = tmp_path/'passed.xcresult'; result.mkdir()
     output = tmp_path/'output'
-    state = {'scenes': list(SCENES), 'size': (1206, 2622), 'rendered': []}
+    state = {'scenes': list(SCENES), 'size': (1206, 2622), 'rendered': [],
+             'summary': {'result': 'Passed', 'passedTests': 19, 'failedTests': 0, 'skippedTests': 0}}
+    monkeypatch.setattr(capture.subprocess, 'check_output', lambda *args, **kwargs: json.dumps(state['summary']))
     def export(command, **kwargs):
         assert command[:4] == ['xcrun', 'xcresulttool', 'export', 'attachments']
         assert command[command.index('--path')+1] == str(result)
@@ -66,3 +68,16 @@ def test_existing_output_is_preserved(export_fixture):
     output.mkdir(); (output/'keep.txt').write_text('existing')
     with pytest.raises(FileExistsError): capture.export_captures(result, output, 'iphone')
     assert (output/'keep.txt').read_text() == 'existing'
+
+
+@pytest.mark.parametrize('summary', [
+    {'result': 'Failed', 'passedTests': 18, 'failedTests': 1, 'skippedTests': 0},
+    {'result': 'Passed', 'passedTests': 18, 'failedTests': 0, 'skippedTests': 1},
+    {'result': 'Passed', 'passedTests': 0, 'failedTests': 0, 'skippedTests': 0},
+])
+def test_failed_skipped_or_empty_suite_cannot_publish(export_fixture, summary):
+    result, output, state = export_fixture; state['summary'] = summary
+    with pytest.raises(ValueError, match='passing native result'):
+        capture.export_captures(result, output, 'iphone')
+    assert not output.exists()
+    assert state['rendered'] == []
