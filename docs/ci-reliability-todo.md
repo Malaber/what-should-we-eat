@@ -27,3 +27,18 @@ Implementation and verification:
   targets compiled after a scoped ActivityKit Swift 6 interop correction.
 - Full iPhone/Duo/iPad runtime verification and fresh GitHub checks remain pending.
   No release tag or TestFlight upload is authorized in this CI-only round.
+
+## Structural follow-up after recurring failures
+
+- [ ] Remove the Duo host process/HTTP sidecar. Inject folds inside the XCTest runner using the existing simulator-only HID event format; preserve all continuity checks and device geometry waits.
+- [ ] Use a fresh XCUIApplication object after each intentional termination/relaunch; retain the same on-device files, arguments and progress assertions.
+- [ ] Export marketing captures from the normal UI suite's xcresult. Remove the second screenshot simulator/test launch and its inconsistent outer deadline; preserve all four captures, dimension checks, shared renderer, bundles and release attachments.
+- [ ] Validate actual native folds/relaunch, artifact export and workflow wiring before push. No TestFlight or new release tag.
+
+Evidence: both previous/current Duo failures are in the host helper startup/RPC,
+not fold assertions. iPad renewal now fails at app.launch after termination with
+"does not have a process ID". The screenshot case is killed by a 300-second
+outer deadline after long XCTest startup, while its own test has not reached its
+180-second deadline. The same marketing case already runs in the normal suite.
+Local full iPhone suite passed; the local batch stopped on disk reserve before
+Duo, so it never established Duo/iPad runtime success.
