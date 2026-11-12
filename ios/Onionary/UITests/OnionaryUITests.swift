@@ -342,7 +342,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    func testEditAndShareRecipe() throws {
+    func testEditRecipeKeepsCookingProgress() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -365,6 +365,19 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(keepProgress.waitForExistence(timeout: 5))
         keepProgress.tap()
         XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].waitForExistence(timeout: 5))
+        try tapNavigation("Recipes", in: app)
+        XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testShareRecipeCopyAndRevokeLink() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.buttons["Choose a recipe"].tap()
+        try selectRecipe(in: app)
+        app.buttons["preview-cook"].tap()
+        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Share recipe copy"].tap()
         let createLink = app.buttons["create-recipe-share"]
@@ -376,8 +389,6 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(revoke.isHittable)
         revoke.tap()
         XCTAssertTrue(revoke.waitForNonExistence(timeout: 5), "Successful revocation dismisses the sheet")
-        try tapNavigation("Recipes", in: app)
-        XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
     }
 
     @MainActor
