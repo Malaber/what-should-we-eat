@@ -365,6 +365,7 @@ struct CookingView: View {
                     }.accessibilityLabel("Cooking mode")
                         .accessibilityValue(Text(store.cookingActivity.active ? "On" : "Off"))
                         .accessibilityIdentifier("cooking-mode")
+                        .accessibilityHint(store.cookingActivity.lastFailure ?? "")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showCookingActions = true } label: { Label("Cooking options", systemImage: "ellipsis.circle") }
