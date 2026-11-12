@@ -13,7 +13,7 @@ final class OnionaryDuoTests: XCTestCase {
         button.tap()
     }
 
-    @MainActor private func pose(_ angle: Int) async throws {
+    @MainActor private func pose(_ angle: Int, in app: XCUIApplication) async throws {
         let config = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "duo-port", withExtension: "txt"))
         let port = try String(contentsOf: config, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
         let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(port)/pose/\(angle)"))
@@ -21,6 +21,15 @@ final class OnionaryDuoTests: XCTestCase {
         let (data, response) = try await URLSession.shared.data(for: request)
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 204,
                        "Fold to \(angle)° failed: \(String(decoding: data, as: UTF8.self))")
+        XCUIDevice.shared.orientation = angle == 0 ? .portrait : .landscapeLeft
+        // A helper ACK confirms dispatch, not completion of the display handoff.
+        // Match Tracy's active-display readiness check before reading any UI.
+        let expectedArea: CGFloat = angle == 0 ? 466 * 678 : 669 * 951
+        let displayChanged = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            abs(app.frame.width * app.frame.height - expectedArea) < 2
+        }, object: nil)
+        await fulfillment(of: [displayChanged], timeout: 15)
+
     }
 
     @MainActor private func capture(_ angle: Int, in app: XCUIApplication) {
@@ -46,8 +55,7 @@ final class OnionaryDuoTests: XCTestCase {
         try tap("portion-plus", in: app)
         try tap("ingredient-1", in: app)
         for angle in [0, 180, 90, 180, 0, 180] {
-            try await pose(angle)
-            XCUIDevice.shared.orientation = angle == 0 ? .portrait : .landscapeLeft
+            try await pose(angle, in: app)
             XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
             XCTAssertTrue(app.staticTexts["2× recipe"].exists)
             XCTAssertTrue(app.buttons["undo"].isEnabled)
@@ -64,8 +72,7 @@ final class OnionaryDuoTests: XCTestCase {
         name.tap(); name.typeText(" Duo draft")
         let expected = name.value as? String
         for angle in [0, 90, 180] {
-            try await pose(angle)
-            XCUIDevice.shared.orientation = angle == 0 ? .portrait : .landscapeLeft
+            try await pose(angle, in: app)
             XCTAssertEqual(app.textFields["Name"].value as? String, expected)
         }
         try tap("Cancel", in: app)
@@ -79,8 +86,7 @@ final class OnionaryDuoTests: XCTestCase {
         XCTAssertTrue(app.buttons["shopping-cheese"].waitForExistence(timeout: 5))
         try tap("shopping-cheese", in: app)
         for angle in [0, 180] {
-            try await pose(angle)
-            XCUIDevice.shared.orientation = angle == 0 ? .portrait : .landscapeLeft
+            try await pose(angle, in: app)
             XCTAssertEqual(app.buttons["shopping-cheese"].value as? String, "Checked")
         }
         try tap("Refresh shopping list", in: app)
@@ -93,7 +99,7 @@ final class OnionaryDuoTests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 10))
         for angle in [0, 180, 90] {
-            try await pose(angle)
+            try await pose(angle, in: app)
             try tap("Settings", in: app)
             XCTAssertTrue(app.buttons.matching(identifier: "Sign in with passkey").allElementsBoundByIndex.contains(where: { $0.isHittable }))
             try tap("Recipes", in: app)
