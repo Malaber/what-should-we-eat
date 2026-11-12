@@ -50,7 +50,7 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
-    func testRecipeToolsAndLanguageModes() throws {
+    func testMultipleTagFilters() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -60,9 +60,17 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(app.buttons["category-Vegetarian"].value as? String, "Selected")
         XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Selected")
         app.buttons["All recipes"].tap()
+        XCTAssertTrue(app.buttons["All recipes"].waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testPantryMatchingQuantities() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
         app.buttons["Cook with what you have"].tap()
         let pantry = try XCTUnwrap((app.textFields.allElementsBoundByIndex + app.textViews.allElementsBoundByIndex).first { $0.identifier == "pantry-input" })
-        // Multiline fields expose concrete TextField/TextView types across SDKs.
         XCTAssertTrue(pantry.waitForExistence(timeout: 5))
         pantry.tap(); pantry.typeText("170 g Cheese")
         let match = app.buttons["pantry-match-1"]
@@ -70,6 +78,15 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertTrue((match.value as? String ?? "").contains("Not enough: Cheese"))
         XCTAssertTrue((match.value as? String ?? "").contains("Missing: Pasta"))
         app.buttons["close-pantry"].tap()
+        XCTAssertTrue(app.buttons["close-pantry"].waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testIntelligenceModeAndLanguageOptions() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
         app.buttons["add-recipe"].tap()
         app.buttons["Create with Intelligence"].tap()
         XCTAssertTrue(app.staticTexts["Recipe mode"].waitForExistence(timeout: 5))
