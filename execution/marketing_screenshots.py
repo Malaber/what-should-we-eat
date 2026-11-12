@@ -1,84 +1,71 @@
-"""Capture real iPhone/iPad App Store screenshots from deterministic Debug fixtures."""
+"""Export App Store captures from the normal, successful native UI test result.
+
+This command never starts a simulator or runs tests. CI captures each device once
+in testMarketingScreenshots, then exports that same run's four original images.
+"""
 import argparse
 import json
 from pathlib import Path
+import re
 import shutil
+import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from execution.package_marketing_screenshots import validate_dimensions
-import subprocess
 
-ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / 'ios/Onionary'
+NAMES = {'01-recipe-book', '02-cooking-companion', '03-flexible-portions', '04-every-tap-remembered'}
 
-def run(*args, **kwargs):
-    return subprocess.check_output(args, text=True, **kwargs)
 
-def capture_tests(device, output, result):
-    """Compile before first boot; execute the real capture test once, bounded."""
-    base = ['xcodebuild', '-project', 'Onionary.xcodeproj', '-scheme', 'Onionary',
-            '-derivedDataPath', str(output / 'DerivedData'),
-            '-destination', f'platform=iOS Simulator,id={device}',
-            'CODE_SIGNING_ALLOWED=NO', 'COMPILER_INDEX_STORE_ENABLE=NO']
-    def bounded(seconds, command):
-        log_args = []
-        if command[0] == 'xcodebuild':
-            name = 'build.log' if 'build-for-testing' in command else 'tests.log'
-            log_args = ['--log', str(output / name)]
-        subprocess.run([sys.executable, str(ROOT / 'execution/run_bounded.py'), *log_args, str(seconds), *command],
-                       cwd=PACKAGE, check=True)
-    bounded(1200, [*base, 'build-for-testing'])
-    bounded(600, ['xcrun', 'simctl', 'bootstatus', device, '-b'])
-    # Capture the actual system status bar. Cosmetic SpringBoard overrides can
-    # block independently of app readiness; they are not required for UI capture.
-    bounded(300, [*base, '-parallel-testing-enabled', 'NO', '-test-timeouts-enabled', 'YES',
-                  '-maximum-test-execution-time-allowance', '180',
-                  '-only-testing:OnionaryUITests/OnionaryUITests/testMarketingScreenshots',
-                  '-resultBundlePath', str(result), 'test-without-building'])
+def render_capture(screenshots, family, defer_creative):
+    from execution.render_marketing_assets import render
+    render(screenshots, family, include_creative=not defer_creative)
+
+
+def export_captures(result, output, family, defer_creative=False):
+    if not result.is_dir():
+        raise ValueError(f'Native result bundle does not exist: {result}')
+    output.mkdir(parents=True, exist_ok=False)
+    exported = output/'attachments'
+    subprocess.run(['xcrun', 'xcresulttool', 'export', 'attachments', '--path', str(result.resolve()),
+                    '--output-path', str(exported)], check=True)
+    manifest = json.loads((exported/'manifest.json').read_text())
+    captures = {}
+    for test in manifest:
+        for attachment in test.get('attachments', []):
+            name = attachment.get('suggestedHumanReadableName', '')
+            if not name.startswith('marketing-'):
+                continue
+            match = re.match(r'marketing-([^._]+)(?:_|\.png|$)', name)
+            key = match.group(1) if match else ''
+            if key not in NAMES or key in captures:
+                raise ValueError(f'Unexpected or duplicate marketing capture: {name}')
+            source = (exported/attachment['exportedFileName']).resolve()
+            if not source.is_relative_to(exported.resolve()):
+                raise ValueError('Capture path is outside the attachment export')
+            validate_dimensions(source, family)
+            from PIL import Image
+            with Image.open(source) as image:
+                image.load()
+            captures[key] = source
+    if set(captures) != NAMES:
+        raise ValueError(f'Expected four marketing scenes; missing {sorted(NAMES - set(captures))}')
+    screenshots = output/'en-US'
+    screenshots.mkdir()
+    for key, source in captures.items():
+        shutil.copy2(source, screenshots/(key+'.png'))
+    render_capture(screenshots, family, defer_creative)
+    print(f'Exported four original {family} captures from {result} to {screenshots}')
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--device', default='iPhone 17 Pro')
-    parser.add_argument('--output', type=Path, default=ROOT / '.tmp/marketing')
-    parser.add_argument("--defer-creative", action="store_true", help="Render creative assets in the shared CI workflow")
+    parser.add_argument('--result-bundle', type=Path, required=True)
+    parser.add_argument('--family', choices=['iphone', 'ipad'], required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--defer-creative', action='store_true')
     args = parser.parse_args()
-    subprocess.run([sys.executable, str(ROOT / 'execution/check_ios_build_environment.py'), '--stage', 'test'], check=True)
-    output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
-    runtimes = json.loads(run('xcrun','simctl','list','runtimes','--json'))['runtimes']
-    sys.path.insert(0, str(PACKAGE / 'Scripts'))
-    from resolve_simulator import select_runtime
-    types = json.loads(run('xcrun', 'simctl', 'list', 'devicetypes', '--json'))['devicetypes']
-    device_type = next(device['identifier'] for device in types if device['name'] == args.device)
-    runtime = select_runtime(runtimes, device_type)
-    device = run('xcrun','simctl','create','Onionary Marketing',args.device,runtime).strip()
-    try:
-        subprocess.run(['xcodegen','generate'],cwd=PACKAGE,check=True)
-        result = output / 'Screenshots.xcresult'
-        if result.exists():
-            raise SystemExit('Use a fresh output directory; an existing result bundle will not be overwritten.')
-        capture_tests(device, output, result)
-        exported = output / 'attachments'
-        run('xcrun','xcresulttool','export','attachments','--path',str(result),'--output-path',str(exported))
-        manifest = json.loads((exported / 'manifest.json').read_text())
-        screenshots = output / 'en-US'; screenshots.mkdir(exist_ok=True)
-        count = 0
-        for test in manifest:
-            for attachment in test.get('attachments',[]):
-                name = attachment.get('suggestedHumanReadableName','')
-                if not name.startswith('marketing-'):
-                    continue
-                source = exported / attachment['exportedFileName']
-                validate_dimensions(source, 'ipad' if args.device.startswith('iPad') else 'iphone')
-                shutil.copy2(source,screenshots / (name.removeprefix('marketing-').split('.png')[0]+'.png'))
-                count += 1
-        if count != 4:
-            raise SystemExit(f'Expected 4 marketing screenshots, found {count}. Inspect attachment manifest.')
-        from execution.render_marketing_assets import render
-        render(screenshots, 'ipad' if args.device.startswith('iPad') else 'iphone', include_creative=not args.defer_creative)
-        print(f'Exported {count} screenshots to {screenshots}')
-    finally:
-        subprocess.run(['xcrun','simctl','delete',device],check=False)
+    export_captures(args.result_bundle, args.output, args.family, args.defer_creative)
+
 
 if __name__ == '__main__':
     main()

@@ -1,56 +1,10 @@
 name: App Store screenshots
 on:
-  push:
-    branches: [main, 'codex/**']
-    paths: ['ios/**', 'marketing/**', 'execution/render_marketing_assets.py', 'execution/marketing_screenshots.py', 'execution/package_marketing_screenshots.py', '.github/workflows/screenshots.yml']
-    tags: ['v*']
-  release:
-    types: [published]
-  workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 jobs:
-  screenshots:
-    runs-on: xcode-27
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
-    timeout-minutes: 40
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - device: iPhone 17 Pro
-            family: iphone
-          - device: iPad Pro 13-inch (M5)
-            family: ipad
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
-      - run: pip install -r marketing/requirements.txt
-      - name: Verify matching Xcode build
-        run: python3 execution/check_ios_build_environment.py --xcode-only
-      - run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py 27.0
-      - run: brew install xcodegen
-      - name: Capture real app screenshots
-        env:
-          DEVICE: ${{ matrix.device }}
-          FAMILY: ${{ matrix.family }}
-        run: python3 execution/marketing_screenshots.py --defer-creative --device "$DEVICE" --output ".tmp/marketing/$FAMILY"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: onionary-capture-${{ matrix.family }}-en-US
-          path: |
-            .tmp/marketing/${{ matrix.family }}/
-            !.tmp/marketing/${{ matrix.family }}/DerivedData/**
-          retention-days: 14
-
   creative:
-    needs: screenshots
     strategy:
       matrix:
         family: [iphone, ipad]

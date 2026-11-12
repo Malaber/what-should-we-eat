@@ -82,6 +82,27 @@ jobs:
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
           SIMULATOR_RUNTIME: ${{ matrix.runtime }}
         run: bash ios/Onionary/Scripts/test.sh
+      - uses: actions/setup-python@v5
+        if: matrix.profile != 'duo'
+        with:
+          python-version: '3.14'
+      - run: pip install -r marketing/requirements.txt
+        if: matrix.profile != 'duo'
+      - name: Export captures from this test run
+        if: matrix.profile != 'duo'
+        env:
+          FAMILY: ${{ matrix.profile }}
+          RESULT_BUNDLE: ${{ runner.temp }}/onionary-tests/Onionary.xcresult
+        run: python3 execution/marketing_screenshots.py --result-bundle "$RESULT_BUNDLE" --family "$FAMILY" --output ".tmp/marketing/$FAMILY" --defer-creative
+      - uses: actions/upload-artifact@v4
+        if: matrix.profile != 'duo'
+        with:
+          name: onionary-capture-${{ matrix.profile }}-en-US
+          path: |
+            .tmp/marketing/${{ matrix.profile }}/
+            !.tmp/marketing/${{ matrix.profile }}/attachments/**
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve simulator test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -92,6 +113,12 @@ jobs:
             ${{ runner.temp }}/onionary-tests/*.log
           if-no-files-found: ignore
           retention-days: 7
+
+  appstore-screenshots:
+    needs: ios
+    uses: ./.github/workflows/screenshots.yml
+    permissions:
+      contents: write
 
   ios-archive:
     runs-on: xcode-27
@@ -161,7 +188,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   release-main:
-    needs: [backend, browser, ios, ios-archive, publish-image, html-format]
+    needs: [backend, browser, ios, ios-archive, publish-image, html-format, appstore-screenshots]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Malaber/what-should-we-eat'
     runs-on: ubuntu-latest
     concurrency:
