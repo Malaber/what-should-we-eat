@@ -5,7 +5,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     private static func relaunchPreservingData(_ app: XCUIApplication) -> XCUIApplication {
         let arguments = app.launchArguments.filter { $0 != "--reset" }
         let environment = app.launchEnvironment
-        UIAppLifecycle.terminate(app)
+        UIAppLifecycle.terminate()
         // XCUIApplication owns an automation connection/PID. A new object must
         // represent the new process; only the on-device data is reused.
         let relaunched = XCUIApplication()
