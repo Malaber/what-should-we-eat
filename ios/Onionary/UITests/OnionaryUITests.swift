@@ -59,9 +59,17 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.launch()
         try tapNavigation("Recipes", in: app)
         app.buttons["Cook with what you have"].tap()
-        let pantry = try XCTUnwrap((app.textFields.allElementsBoundByIndex + app.textViews.allElementsBoundByIndex).first { $0.identifier == "pantry-input" })
+        // A multiline SwiftUI input may expose either text role. Resolve its
+        // identifier directly instead of retaining an index from the sheet's
+        // transient field list while it is still being presented.
+        let textRoles = NSPredicate(format: "elementType IN %@", [XCUIElement.ElementType.textField.rawValue, XCUIElement.ElementType.textView.rawValue])
+        let pantry = app.descendants(matching: .any).matching(textRoles)
+            .matching(identifier: "pantry-input").element(boundBy: 0)
         XCTAssertTrue(pantry.waitForExistence(timeout: 5))
-        pantry.tap(); pantry.typeText("170 g Cheese")
+        pantry.tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
+        pantry.typeText("170 g Cheese")
+        XCTAssertEqual(pantry.value as? String, "170 g Cheese")
         let match = app.buttons["pantry-match-1"]
         XCTAssertTrue(match.waitForExistence(timeout: 5))
         XCTAssertTrue((match.value as? String ?? "").contains("Not enough: Cheese"))
