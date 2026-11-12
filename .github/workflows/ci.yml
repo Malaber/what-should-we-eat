@@ -198,7 +198,6 @@ jobs:
       contents: write
       packages: write
       pull-requests: read
-      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -228,11 +227,21 @@ jobs:
           build-args: |
             APP_VERSION=${{ steps.release.outputs.version }}
             VCS_REF=${{ github.sha }}
-      - name: Generate screenshots for this release
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: onionary-appstore-*-en-US
+          path: screenshots
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install -r marketing/requirements.txt
+      - name: Attach this run's verified screenshot bundles
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
-        run: gh workflow run screenshots.yml --ref "$RELEASE_TAG"
+        run: |
+          python3 execution/package_marketing_screenshots.py screenshots release-assets
+          gh release upload "$RELEASE_TAG" release-assets/*.zip --clobber
 
   html-format:
     runs-on: ubuntu-latest
