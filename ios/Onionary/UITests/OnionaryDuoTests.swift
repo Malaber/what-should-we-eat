@@ -6,7 +6,17 @@ final class OnionaryDuoTests: OnionaryUITestCase {
     @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
         let visible = NSPredicate { _, _ in !UIReadiness.visibleButtons(title, in: app).isEmpty }
         let ready = XCTNSPredicateExpectation(predicate: visible, object: nil)
-        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed, "Navigation did not settle after folding: \(title)")
+        let result = XCTWaiter.wait(for: [ready], timeout: 10)
+        if result != .completed {
+            print("Unreachable control: \(title); app: \(app.frame)")
+            for window in app.windows.allElementsBoundByIndex { print("Window: \(window.frame)") }
+            for candidate in app.buttons.matching(identifier: title).allElementsBoundByIndex {
+                print("Candidate: \(candidate.frame); enabled: \(candidate.isEnabled)")
+            }
+            let snapshot = XCTAttachment(string: app.debugDescription)
+            snapshot.name = "Unreachable control hierarchy"; snapshot.lifetime = .keepAlways; add(snapshot)
+        }
+        XCTAssertEqual(result, .completed, "Navigation did not settle after folding: \(title)")
         let button = try XCTUnwrap(UIReadiness.visibleButtons(title, in: app).first, "No visible control: \(title)")
         button.tap()
     }
@@ -48,6 +58,10 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertFalse(UIReadiness.validControlFrame(.zero, in: viewport))
         XCTAssertFalse(UIReadiness.validControlFrame(.null, in: viewport))
         XCTAssertFalse(UIReadiness.validControlFrame(CGRect(x: 12, y: 900, width: 44, height: 44), in: viewport))
+        let landscapeWindow = CGRect(x: 0, y: 0, width: 951, height: 669)
+        let toolbar = CGRect(x: 884, y: 185, width: 38, height: 38)
+        XCTAssertFalse(UIReadiness.validControlFrame(toolbar, in: CGRect(x: 0, y: 0, width: 669, height: 951)))
+        XCTAssertTrue(UIReadiness.validControlFrame(toolbar, in: landscapeWindow))
     }
 
     @MainActor func testCookingPreviewAndDraftSurviveFolds() async throws {

@@ -12,11 +12,15 @@ enum UIReadiness {
 
     @MainActor static func visibleButtons(_ title: String, in app: XCUIApplication) -> [XCUIElement] {
         guard app.state == .runningForeground else { return [] }
-        let viewport = app.frame
+        // Duo's application frame stays in display coordinates while window
+        // and control frames follow interface orientation (669×951 vs 951×669).
+        // Compare controls only with windows in the same coordinate space.
+        let viewports = app.windows.allElementsBoundByIndex.map(\.frame)
         let recipeID = title.hasPrefix("recipe-") && !title.dropFirst(7).isEmpty && title.dropFirst(7).allSatisfy(\.isNumber)
         let query = recipeID ? app.collectionViews["recipe-list"].buttons.matching(identifier: title) : app.buttons.matching(identifier: title)
         return query.allElementsBoundByIndex.filter {
-            validControlFrame($0.frame, in: viewport) && $0.isHittable
+            let frame = $0.frame
+            return viewports.contains { validControlFrame(frame, in: $0) } && $0.isHittable
         }
     }
 
