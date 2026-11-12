@@ -22,6 +22,9 @@ build_args=(-project Onionary.xcodeproj -scheme Onionary
   -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "${TEST_DERIVED_DATA_DIR:-$result_dir/DerivedData}"
   MARKETING_VERSION="$marketing_version" CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO)
 python3 ../../execution/run_bounded.py --log "$result_dir/build.log" 1200 xcodebuild "${build_args[@]}" build-for-testing
+if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then
+  python3 Scripts/run_duo_tests.py --prepare "$result_dir"
+fi
 if [[ "$created_simulator" == true ]]; then
   # Compile against a shutdown device. Fresh runtime indexing and cold Swift
   # compilation must not compete for memory/disk before XCTest loads accessibility.

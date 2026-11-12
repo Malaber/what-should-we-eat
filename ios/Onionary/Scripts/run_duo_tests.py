@@ -11,14 +11,36 @@ import threading
 from hinge_process import HingeProcess
 
 
-def main():
-    simulator, result, *command = sys.argv[1:]
+def test_bundle(command):
+    if command.count('-derivedDataPath') != 1:
+        raise ValueError('Duo tests require one explicit -derivedDataPath from the build command')
+    derived = Path(command[command.index('-derivedDataPath') + 1]).resolve()
+    bundle = derived / 'Build/Products/Debug-iphonesimulator/OnionaryUITests-Runner.app/PlugIns/OnionaryUITests.xctest'
+    if not bundle.is_dir():
+        raise FileNotFoundError(f'Build the Duo test bundle before starting the simulator: {bundle}')
+    return bundle
+
+
+def prepare(result):
     root = Path(result).resolve()
+    root.mkdir(parents=True, exist_ok=True)
     binary = root / 'duo-hinge'
     subprocess.run(['xcrun', '--sdk', 'iphonesimulator', 'clang', '-target',
                     'arm64-apple-ios27.1-simulator', '-fobjc-arc', '-framework', 'Foundation',
-                    str(Path(__file__).with_name('duo_hinge.m')), '-o', str(binary)], check=True)
+                    str(Path(__file__).with_name('duo_hinge.m')), '-o', str(binary)], check=True, timeout=120)
 
+
+def main(argv=None):
+    args = sys.argv[1:] if argv is None else argv
+    if args[0] == '--prepare':
+        prepare(args[1])
+        return 0
+    simulator, result, *command = args
+    root = Path(result).resolve()
+    bundle = test_bundle(command)
+    binary = root / 'duo-hinge'
+    if not binary.is_file():
+        raise FileNotFoundError(f'Compile the Duo helper before boot using --prepare {root}')
     hinge = HingeProcess(['xcrun', 'simctl', 'spawn', simulator, str(binary), '--serve'])
 
     class Handler(BaseHTTPRequestHandler):
@@ -38,7 +60,6 @@ def main():
     serving = False
     try:
         server = HTTPServer(('127.0.0.1', 0), Handler)
-        bundle = root / 'DerivedData/Build/Products/Debug-iphonesimulator/OnionaryUITests-Runner.app/PlugIns/OnionaryUITests.xctest'
         (bundle / 'duo-port.txt').write_text(str(server.server_port))
         threading.Thread(target=server.serve_forever, daemon=True).start()
         serving = True
