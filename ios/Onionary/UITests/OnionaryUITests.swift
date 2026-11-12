@@ -1,35 +1,11 @@
 import XCTest
 
-final class OnionaryUITests: XCTestCase {
-    override func setUp() {
-        super.setUp()
-        continueAfterFailure = false
-    }
-
-    override func tearDown() async throws {
-        await MainActor.run {
-            let app = XCUIApplication()
-            if app.state != .notRunning { Self.terminateFromBackground(app) }
-        }
-        try await super.tearDown()
-    }
-
-    @MainActor
-    private static func terminateFromBackground(_ app: XCUIApplication) {
-        // Let SpringBoard detach the foreground accessibility session before
-        // terminating. Keep persistence assertions after the subsequent launch.
-        let home = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        home.activate()
-        XCTAssertTrue(home.wait(for: .runningForeground, timeout: 10))
-        app.terminate()
-        XCTAssertTrue(app.wait(for: .notRunning, timeout: 10))
-    }
-
+final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
     private static func relaunchPreservingData(_ app: XCUIApplication) -> XCUIApplication {
         let arguments = app.launchArguments.filter { $0 != "--reset" }
         let environment = app.launchEnvironment
-        terminateFromBackground(app)
+        UIAppLifecycle.terminate(app)
         // XCUIApplication owns an automation connection/PID. A new object must
         // represent the new process; only the on-device data is reused.
         let relaunched = XCUIApplication()

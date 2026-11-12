@@ -1,8 +1,7 @@
 import XCTest
 
 /// Runs on the dedicated Duo CI profile. Other profiles run the full compact suite.
-final class OnionaryDuoTests: XCTestCase {
-    override func setUp() { continueAfterFailure = false }
+final class OnionaryDuoTests: OnionaryUITestCase {
 
     @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
         let query = app.buttons.matching(identifier: title)
