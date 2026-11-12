@@ -213,3 +213,18 @@ directories; current logs/results, build cache and archives were retained.
 Available capacity remained below the guard. No native test was retried or
 counted as passed. The additional local phone result is unverified; full fresh
 GitHub native gates remain mandatory. The verified iPad pair is unaffected.
+
+## Native Duo selection contract
+
+- [ ] Give native tabs explicit accessibility identifiers using the supported TabContent API on iOS 18+, keeping the existing iOS 17 fallback, labels and selection values.
+- [ ] Replace Duo's custom visibility predicate/bulk snapshots with direct identifier queries and native existence waits. Retain frame validity, real hittability, physical-display geometry and every feature assertion.
+- [ ] Run Duo test methods synchronously, matching ordinary UI tests, rather than mixing async MainActor methods with blocking XCTest waits. Keep existing case/step deadlines and all fold sequences.
+- [ ] Validate actual Duo behavior and ordinary navigation locally; record results and push CI-only fixes. No retries, skipped behavior, timeout increases, local archives, tags or TestFlight.
+
+At 0d74733 both iPhone and iPad jobs passed in branch and PR runs. Both Duo
+jobs failed in the custom visibility layer despite visible navigation controls;
+its window/snapshot/frame RPCs consumed the ten-second predicate allowance.
+The PR cooking case also stalled at a synchronous preview query inside its async
+test method and was terminated. There is no failed recipe/checklist assertion
+in that trace. These observations motivate direct native selectors and one
+synchronous UI execution model, rather than another timing adjustment.
