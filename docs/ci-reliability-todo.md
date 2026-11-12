@@ -69,3 +69,10 @@ Structural verification in progress:
   upload this run's verified bundles directly; no capture redispatch.
 - Final GitHub checks remain pending until the pushed revision completes. No
   TestFlight run or release tag was created. Full CI success is still required.
+
+## Remaining query/readiness failures
+
+- [ ] Split the combined tag/pantry/AI test into independent feature cases, retaining its assertions. CI completed its actions at 178.9 seconds then exceeded the 180-second allowance during teardown; keep the allowance unchanged.
+- [ ] Centralize recipe selection through the named list and indexed identifier query, replacing global firstMatch lookups that can stall during navigation.
+- [ ] Inspect Duo navigation snapshot frames and prevent probing hidden/invalid activation points while retaining real hittability checks and all navigation assertions.
+- [ ] Verify these exact cases locally, lint workflows and push CI-only fixes. Full GitHub gates remain required; no tags/uploads.
