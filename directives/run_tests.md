@@ -173,3 +173,15 @@ Backend/browser CI use Ubuntu 24.04 and configure_ci_apt.py. The canonical Ubunt
 archive serves noble-security as well as base/updates; keep signed keyring and
 security suites, strict update errors and zero retries. Reference:
 https://archive.ubuntu.com/ubuntu/dists/noble-security/Release
+
+Duo control service starts the native helper on POST /ready only after XCTest
+has launched Onionary and observed its initial UI. Bootstatus alone does not
+establish that the simulator event system can start this helper. A failed READY
+remains terminal; do not restart it. Give the HTTP request enough time to return
+the existing 20-second native deadline's error, preserving XCTest deadlines.
+
+Live Activity lifecycle decisions are unit-tested through CookingActivityBackend;
+retain successful request handles independently of the platform discovery list,
+serialize updates/stops, and keep real ActivityKit UI coverage. When the user
+requests CI-only stabilization, run test.sh profiles without the archive/upload
+wrapper. Defer release tags and TestFlight until requested again.
