@@ -11,6 +11,30 @@ import threading
 from hinge_process import HingeProcess
 
 
+class FoldController:
+    """One session, started only after XCTest has established a working app UI."""
+    def __init__(self, command):
+        self.command = command
+        self.helper = None
+        self.attempted = False
+
+    def start(self):
+        if self.helper is not None:
+            return
+        if self.attempted:
+            raise RuntimeError('Duo helper startup already failed; no retry')
+        self.attempted = True
+        self.helper = HingeProcess(self.command)
+
+    def pose(self, angle):
+        self.start()
+        self.helper.pose(angle)
+
+    def close(self):
+        if self.helper is not None:
+            self.helper.close()
+
+
 def test_bundle(command):
     if command.count('-derivedDataPath') != 1:
         raise ValueError('Duo tests require one explicit -derivedDataPath from the build command')
@@ -41,14 +65,17 @@ def main(argv=None):
     binary = root / 'duo-hinge'
     if not binary.is_file():
         raise FileNotFoundError(f'Compile the Duo helper before boot using --prepare {root}')
-    hinge = HingeProcess(['xcrun', 'simctl', 'spawn', simulator, str(binary), '--serve'])
+    hinge = FoldController(['xcrun', 'simctl', 'spawn', simulator, str(binary), '--serve'])
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):
-            if self.path not in ('/pose/0', '/pose/90', '/pose/180'):
+            if self.path not in ('/ready', '/pose/0', '/pose/90', '/pose/180'):
                 self.send_error(404); return
             try:
-                hinge.pose(int(self.path.rsplit('/', 1)[1]))
+                if self.path == '/ready':
+                    hinge.start()
+                else:
+                    hinge.pose(int(self.path.rsplit('/', 1)[1]))
                 self.send_response(204); self.end_headers()
             except (subprocess.SubprocessError, OSError, RuntimeError) as error:
                 print(f"Duo controller {self.path}: {error}", file=sys.stderr, flush=True)

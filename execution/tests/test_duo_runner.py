@@ -28,10 +28,11 @@ def test_uses_built_bundle_and_propagates_test_failure(runner, monkeypatch, tmp_
     events = []
     class Hinge:
         def __init__(self, command): events.append('helper')
+        def pose(self, angle): events.append(('pose', angle))
         def close(self): events.append('closed')
     class Server:
         server_port = 12345
-        def __init__(self, *args): pass
+        def __init__(self, address, handler): self.__class__.handler = handler
         def serve_forever(self): pass
         def shutdown(self): events.append('shutdown')
         def server_close(self): events.append('server_closed')
@@ -42,10 +43,17 @@ def test_uses_built_bundle_and_propagates_test_failure(runner, monkeypatch, tmp_
     def execute(actual, **kwargs):
         assert actual == command
         assert (bundle/'duo-port.txt').read_text() == '12345'
+        assert events == [], 'Native helper must not start before XCTest/app launch'
+        request = SimpleNamespace(path='/ready', send_response=lambda status: events.append(('http', status)),
+                                  end_headers=lambda: None)
+        Server.handler.do_POST(request)
+        for angle in (0, 180):
+            request.path = f'/pose/{angle}'
+            Server.handler.do_POST(request)
         return SimpleNamespace(returncode=65)
     monkeypatch.setattr(runner.subprocess, 'run', execute)
     assert runner.main(['test-device', str(results), *command]) == 65
-    assert events == ['helper', 'shutdown', 'server_closed', 'closed']
+    assert events == ['helper', ('http', 204), ('pose', 0), ('http', 204), ('pose', 180), ('http', 204), 'shutdown', 'server_closed', 'closed']
     if shared:
         assert not (results/'DerivedData').exists()
     assert bundle.exists()
@@ -64,3 +72,21 @@ def test_prepare_only_compiles_without_starting_simulator(runner, monkeypatch, t
     assert runner.main(['--prepare', str(tmp_path/'results')]) == 0
     assert calls[0][0][0:4] == ['xcrun', '--sdk', 'iphonesimulator', 'clang']
     assert calls[0][1] == {'check': True, 'timeout': 120}
+
+
+def test_failed_lazy_start_never_retries(runner, monkeypatch):
+    attempts = []
+    def fail(command):
+        attempts.append(command)
+        raise TimeoutError('not ready')
+    monkeypatch.setattr(runner, 'HingeProcess', fail)
+    controller = runner.FoldController(['native-helper'])
+    with pytest.raises(TimeoutError): controller.start()
+    with pytest.raises(RuntimeError, match='no retry'): controller.pose(180)
+    controller.close()
+    assert len(attempts) == 1
+
+
+def test_unused_controller_does_not_spawn(runner, monkeypatch):
+    monkeypatch.setattr(runner, 'HingeProcess', lambda *_: pytest.fail('Unexpected native setup'))
+    runner.FoldController(['native-helper']).close()
