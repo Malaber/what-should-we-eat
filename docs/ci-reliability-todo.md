@@ -179,8 +179,8 @@ Verification at 42b300b:
 
 ## Edit/share scenario scope
 
-- [ ] Split editing and link creation/revocation into independent native cases, preserving existing assertions and the 180-second allowance. The combined branch-iPad case finished assertions at 177.48 seconds, then timed out during cleanup.
-- [ ] Scope the keep-progress action to the presented reload alert and verify an actual checked ingredient survives saving the edited recipe.
+- [x] Split editing and link creation/revocation into independent native cases, preserving existing assertions and the 180-second allowance. The combined branch-iPad case finished assertions at 177.48 seconds, then timed out during cleanup.
+- [x] Scope the keep-progress action to the presented reload alert and verify an actual checked ingredient survives saving the edited recipe.
 - [ ] Verify both cases locally, update PR evidence and push CI-only changes; leave longer suites running. No retries, skipped behavior, release tags or TestFlight.
 
 At 0803b92 every PR check passed, including all native profiles, archives and
@@ -188,3 +188,20 @@ screenshot render/bundle jobs. The only branch failure is the combined
 edit/share case. The previous background settings→pantry pair also passed both
 cases. The combined case spent over 40 seconds resolving the global
 keep-progress button before completing edit, sharing and revocation assertions.
+
+Current verification:
+
+- iPad: both independent cases passed, zero failures/skips, command exit 0.
+  Editing/preserved progress took 71.3 seconds; sharing/revocation took 29.1.
+- Existing editor labels, old cooking snapshot, persisted edited name, actionable
+  link creation/revocation and sheet-dismissal assertions remain. Editing adds
+  keyboard/typed-value checks, alert dismissal and a checked ingredient verified
+  before and after saving. The keep action is scoped to the native reload alert.
+- Ordinary native suite now has 22 cases; each retains the 180-second allowance.
+  No retry, skipped behavior or increased deadline. Other feature cases and
+  all Duo cases are unchanged.
+- 37 Swift core and 41 harness/export tests passed; workflow lint and whitespace
+  checks passed. The earlier background settings→pantry sequence passed both cases.
+- Additional iPhone edit/share cross-check runs in background; status is
+  `.tmp/ci33-local-status.json`. Fresh full CI remains the merge gate.
+  No TestFlight, local archive or version tag was created.

@@ -121,6 +121,11 @@ from async teardown stalled after an async case failed; the synchronous hook
 was verified to return to SpringBoard and terminate the failed app. Keep
 feature scenarios independent: tag filtering, pantry matching and Intelligence
 options each have their own case, fixture and unchanged per-case deadline.
+Editing with preserved cooking progress and temporary share-link lifecycle also
+have independent cases. Keep their complete user outcomes and assertions;
+do not combine unrelated flows until cleanup consumes the case's deadline.
+Address the reload choice through the presented native alert, and verify an
+actual checked ingredient survives choosing to keep cooking progress.
 Ordinary navigation resolves a single indexed accessible button, then checks
 existence/hittability. Do not enumerate windows and all matching controls inside
 a short predicate wait: those AX RPCs can consume the budget before evaluation.
