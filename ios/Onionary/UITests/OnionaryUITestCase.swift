@@ -17,11 +17,13 @@ class OnionaryUITestCase: XCTestCase {
         super.setUp()
         continueAfterFailure = false
     }
-    override func tearDown() async throws {
-        await MainActor.run {
+    override func tearDownWithError() throws {
+        // XCTest invokes synchronous UI lifecycle hooks on the main thread.
+        // Keep cleanup synchronous, including after an async test aborts.
+        MainActor.assumeIsolated {
             let app = XCUIApplication()
             if app.state != .notRunning { UIAppLifecycle.terminate(app) }
         }
-        try await super.tearDown()
+        try super.tearDownWithError()
     }
 }
