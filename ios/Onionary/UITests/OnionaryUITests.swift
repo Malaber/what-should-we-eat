@@ -137,7 +137,11 @@ final class OnionaryUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--reset", "--renew-session", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()
-        app.buttons["recipe-1"].firstMatch.tap()
+        let recipe = app.buttons.matching(identifier: "recipe-1").element(boundBy: 0)
+        XCTAssertTrue(app.collectionViews["recipe-list"].waitForExistence(timeout: 5))
+        XCTAssertTrue(recipe.waitForExistence(timeout: 5))
+        recipe.tap()
+        XCTAssertTrue(app.buttons["preview-cook"].waitForExistence(timeout: 5))
         app.buttons["preview-cook"].tap()
         app.buttons["ingredient-1"].tap()
         Self.terminateFromBackground(app)
