@@ -106,9 +106,9 @@ change. Native results and fresh full GitHub gates remain pending at push.
 
 ## Snapshot cost and process lifecycle follow-up
 
-- [ ] Replace the generic multi-snapshot visibility poll in ordinary tab navigation with a scoped native query; retain actual hittability and existing deadlines. The five-second predicate spent its budget obtaining window and button snapshots before checking candidates.
-- [ ] Resolve recipe-list readiness without a second full-list accessibility snapshot; inspect expired-session state and keep offline cooking/reauthentication assertions.
-- [ ] Diagnose the iPad termination error from the recorded app/process sequence, implement one deterministic lifecycle transition, and keep all persisted progress assertions.
+- [x] Replace the generic multi-snapshot visibility poll in ordinary tab navigation with one indexed accessible-button query; retain actual hittability and existing deadlines. The five-second predicate spent its budget obtaining window and button snapshots before checking candidates.
+- [x] Resolve recipe-list readiness without a second full-list accessibility snapshot; inspect expired-session state and keep offline cooking/reauthentication assertions.
+- [x] Diagnose the iPad termination error from the recorded app/process sequence, implement one deterministic lifecycle transition, and keep all persisted progress assertions.
 - [ ] Run focused native regressions, update evidence and push without tags/TestFlight. Leave longer suites running rather than polling GitHub.
 
 At d8ac7f7, Duo passed both full CI jobs and all four local cases. The local
@@ -116,3 +116,26 @@ iPad follow-up never started: its disk guard observed 7.75 GiB while the Duo
 device was still being disposed. Current CI failures are ordinary navigation,
 expired-session list readiness and one iPad termination RPC. Both iPad edit/share
 scenarios now pass. Full gates remain required.
+
+Verification at 0d146d7 (no app functionality or feature-case bodies changed):
+
+- Native iPad 27.0: all four affected cases passed, zero failed/skipped. Covers
+  multiple-tag filtering, tag navigation, offline cooking with passkey renewal,
+  and silent session renewal with restored checked progress. Full command exited
+  0 and disposed its own simulator before the following profile started.
+- Local verification rejected an XCTest TabBar-only selector: iPad's floating
+  navigation has a different accessibility role. The final selector resolves
+  the indexed accessible button directly and still requires hittability.
+- All 21 ordinary feature scenarios and their assertions are byte-identical to
+  d8ac7f7. Only shared query/process helpers changed; existing deadlines remain.
+- Navigation avoids window enumeration and bulk matching snapshots inside the
+  short wait. Recipe selection requires the exact hittable cached row, while
+  pull-to-refresh retains its completion assertion.
+- Lifecycle sends one system Home action, resolves a fresh background process,
+  terminates once if still running and verifies it stopped. The old automation
+  handle is not queried again after termination. Relaunch preserves device data.
+- 37 Swift core tests and 41 Python harness/export tests passed. Actionlint and
+  whitespace checks passed. No retries, skipped feature cases or deadline changes.
+- Focused iPhone Intelligence/expired-session/renewal checks run in background;
+  status is `.tmp/ci31-local-status.json`. Full fresh GitHub gates remain pending.
+  No TestFlight work, archive or release tag is part of this CI-only round.

@@ -103,9 +103,10 @@ view actually enters a window, rather than relying on a single queued callback.
 - `DEMO_HOUSEHOLD_ID=99999` in tests prevents accidental collision with test-created households.
 - SQLite in-memory uses `StaticPool` so all sessions share the same DB instance across threads.
 
-For persistence UI tests, activate SpringBoard and verify it reaches foreground
-before terminating Onionary; verify `.notRunning`, then create a fresh
-`XCUIApplication` for the new process. Copy arguments/environment without
+For persistence UI tests, press the system Home button and verify SpringBoard
+reaches foreground. Resolve a fresh `XCUIApplication` for the background process,
+terminate it once if still running and verify `.notRunning`. Create another
+fresh `XCUIApplication` for the relaunched process. Copy arguments/environment without
 `--reset`; reuse device data and keep every restoration assertion. Do not reuse
 an automation handle whose process was terminated.
 
@@ -113,11 +114,16 @@ All UI profiles inherit `OnionaryUITestCase` and share synchronous process
 cleanup in `tearDownWithError`. XCTest's synchronous UI lifecycle hooks run on
 the main thread; `MainActor.assumeIsolated` enforces that contract. An actor hop
 from async teardown stalled after an async case failed; the synchronous hook
-was verified to activate SpringBoard and terminate the failed app immediately. Keep
+was verified to return to SpringBoard and terminate the failed app. Keep
 feature scenarios independent: tag filtering, pantry matching and Intelligence
 options each have their own case, fixture and unchanged per-case deadline.
-Recipe selection waits for the named list's loaded state, then resolves an
-indexed identifier query inside that list. Avoid global lazy `firstMatch`
+Ordinary navigation resolves a single indexed accessible button, then checks
+existence/hittability. Do not enumerate windows and all matching controls inside
+a short predicate wait: those AX RPCs can consume the budget before evaluation.
+iPad's floating navigation is not exposed as an XCTest `TabBar` in this SDK.
+Recipe selection waits for the exact actionable row inside the named list;
+cached recipes must remain selectable without waiting for a refresh-state RPC.
+Pull-to-refresh still verifies refresh completion. Avoid global lazy `firstMatch`
 queries during split-view navigation.
 
 Inspect XCTest action timelines and retain logs/xcresults. Do not add retries,
@@ -134,6 +140,9 @@ Local release/test profiles run sequentially and reuse one build cache while
 retaining separate xcresults. Keep the 8 GiB test-entry and 6 GiB archive guards;
 report GB/GiB accurately. Finder may include purgeable capacity, and APFS/Time
 Machine can retain deleted blocks. Do not delete backups to force tests through.
+Wait for the previous test command to return, including disposable-device
+cleanup, before starting the next profile. A finalized xcresult alone does not
+mean its simulator has been deleted or its disk reserve has been released.
 
 Runtime installation is not selection. Pass SIMULATOR_RUNTIME from the matrix;
 require the exact compatible runtime (27.0 phone/tablet, 27.1 Duo), with no latest
