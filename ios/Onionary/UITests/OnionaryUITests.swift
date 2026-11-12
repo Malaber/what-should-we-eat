@@ -30,11 +30,11 @@ final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
     private func selectRecipe(_ id: Int = 1, in app: XCUIApplication) throws {
         let list = app.collectionViews["recipe-list"]
-        XCTAssertTrue(list.waitForExistence(timeout: 5))
-        let loaded = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "Recipes loaded"), object: list)
-        XCTAssertEqual(XCTWaiter.wait(for: [loaded], timeout: 5), .completed)
+        // Cached rows remain usable during an expired/offline session. The exact
+        // actionable row is the readiness condition, not a separate refresh RPC.
         let row = list.buttons.matching(identifier: "recipe-\(id)").element(boundBy: 0)
         XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(row.isHittable, "Recipe row is not reachable: \(id)")
         row.tap()
     }
 
