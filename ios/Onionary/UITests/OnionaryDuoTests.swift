@@ -16,7 +16,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         button.tap()
     }
 
-    @MainActor private func pose(_ angle: Int, in app: XCUIApplication) async throws {
+    @MainActor private func pose(_ angle: Int, in app: XCUIApplication) throws {
         XCTAssertEqual(OnionarySetHingeAngle(Double(angle)), 0, "Native hinge dispatch failed at \(angle)°")
         XCUIDevice.shared.orientation = angle == 0 ? .portrait : .landscapeLeft
         // Native dispatch confirms injection, not completion of the display handoff.
@@ -24,7 +24,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         let displayChanged = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             UIReadiness.duoViewport(app.frame, angle: angle)
         }, object: nil)
-        await fulfillment(of: [displayChanged], timeout: 15)
+        XCTAssertEqual(XCTWaiter.wait(for: [displayChanged], timeout: 15), .completed)
 
     }
 
@@ -59,7 +59,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertTrue(UIReadiness.validControlFrame(toolbar, in: landscapeWindow))
     }
 
-    @MainActor func testCookingPreviewAndDraftSurviveFolds() async throws {
+    @MainActor func testCookingPreviewAndDraftSurviveFolds() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -75,7 +75,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         try tap("portion-plus", in: app)
         try tap("ingredient-1", in: app)
         for angle in [0, 180, 90, 180, 0, 180] {
-            try await pose(angle, in: app)
+            try pose(angle, in: app)
             XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
             XCTAssertTrue(app.staticTexts["2× recipe"].exists)
             XCTAssertTrue(app.buttons["undo"].isEnabled)
@@ -92,7 +92,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         name.tap(); name.typeText(" Duo draft")
         let expected = name.value as? String
         for angle in [0, 90, 180] {
-            try await pose(angle, in: app)
+            try pose(angle, in: app)
             XCTAssertEqual(app.textFields["Name"].value as? String, expected)
         }
         try tap("Cancel", in: app)
@@ -106,20 +106,20 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertTrue(app.buttons["shopping-cheese"].waitForExistence(timeout: 5))
         try tap("shopping-cheese", in: app)
         for angle in [0, 180] {
-            try await pose(angle, in: app)
+            try pose(angle, in: app)
             XCTAssertEqual(app.buttons["shopping-cheese"].value as? String, "Checked")
         }
         try tap("Refresh shopping list", in: app)
         XCTAssertEqual(app.buttons["shopping-cheese"].value as? String, "Checked")
     }
 
-    @MainActor func testExpiredSessionKeepsAdaptiveNavigationReachable() async throws {
+    @MainActor func testExpiredSessionKeepsAdaptiveNavigationReachable() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--expired-session", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 10))
         for angle in [0, 180, 90] {
-            try await pose(angle, in: app)
+            try pose(angle, in: app)
             try tap("Settings", in: app)
             XCTAssertTrue(UIReadiness.button("Sign in with passkey", in: app).isHittable)
             try tap("Recipes", in: app)
