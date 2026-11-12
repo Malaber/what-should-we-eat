@@ -14,14 +14,18 @@ enum UIReadiness {
         guard app.state == .runningForeground else { return [] }
         // Duo's application frame stays in display coordinates while window
         // and control frames follow interface orientation (669×951 vs 951×669).
-        // Compare controls only with windows in the same coordinate space.
-        let viewports = app.windows.allElementsBoundByIndex.map(\.frame)
+        // The persistent primary window supplies those coordinates. Keyboard
+        // windows appear/disappear during folds; their indices are not stable.
+        let viewport = app.windows.element(boundBy: 0).frame
         let recipeID = title.hasPrefix("recipe-") && !title.dropFirst(7).isEmpty && title.dropFirst(7).allSatisfy(\.isNumber)
         let query = recipeID ? app.collectionViews["recipe-list"].buttons.matching(identifier: title) : app.buttons.matching(identifier: title)
-        return query.allElementsBoundByIndex.filter {
-            let frame = $0.frame
-            return viewports.contains { validControlFrame(frame, in: $0) } && $0.isHittable
+        // Bind candidates to AX identity, not to a changing result-array index.
+        for candidate in query.allElementsBoundByAccessibilityElement {
+            if validControlFrame(candidate.frame, in: viewport) && candidate.isHittable {
+                return [candidate]
+            }
         }
+        return []
     }
 
     static func duoViewport(_ frame: CGRect, angle: Int) -> Bool {

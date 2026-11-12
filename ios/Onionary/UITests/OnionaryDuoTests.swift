@@ -4,20 +4,21 @@ import XCTest
 final class OnionaryDuoTests: OnionaryUITestCase {
 
     @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
-        let visible = NSPredicate { _, _ in !UIReadiness.visibleButtons(title, in: app).isEmpty }
+        var resolved: XCUIElement?
+        let visible = NSPredicate { _, _ in
+            resolved = UIReadiness.visibleButtons(title, in: app).first
+            return resolved != nil
+        }
         let ready = XCTNSPredicateExpectation(predicate: visible, object: nil)
         let result = XCTWaiter.wait(for: [ready], timeout: 10)
         if result != .completed {
-            print("Unreachable control: \(title); app: \(app.frame)")
-            for window in app.windows.allElementsBoundByIndex { print("Window: \(window.frame)") }
-            for candidate in app.buttons.matching(identifier: title).allElementsBoundByIndex {
-                print("Candidate: \(candidate.frame); enabled: \(candidate.isEnabled)")
-            }
+            // One coherent hierarchy, rather than re-querying window indices
+            // while a keyboard is disappearing after a fold.
             let snapshot = XCTAttachment(string: app.debugDescription)
             snapshot.name = "Unreachable control hierarchy"; snapshot.lifetime = .keepAlways; add(snapshot)
         }
         XCTAssertEqual(result, .completed, "Navigation did not settle after folding: \(title)")
-        let button = try XCTUnwrap(UIReadiness.visibleButtons(title, in: app).first, "No visible control: \(title)")
+        let button = try XCTUnwrap(resolved, "No visible control: \(title)")
         button.tap()
     }
 
