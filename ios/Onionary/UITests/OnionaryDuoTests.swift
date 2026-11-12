@@ -89,8 +89,12 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         try tap("Edit recipe", in: app)
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
-        name.tap(); name.typeText(" Duo draft")
-        let expected = name.value as? String
+        let expected = try XCTUnwrap(name.value as? String) + " Duo draft"
+        name.tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
+        name.typeText(" Duo draft")
+        XCTAssertTrue(UIReadiness.waitForValue(expected, in: name), "Complete draft input must commit before folding")
+        XCTAssertEqual(name.value as? String, expected)
         for angle in [0, 90, 180] {
             try pose(angle, in: app)
             XCTAssertEqual(app.textFields["Name"].value as? String, expected)

@@ -66,6 +66,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         pantry.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         pantry.typeText("170 g Cheese")
+        XCTAssertTrue(UIReadiness.waitForValue("170 g Cheese", in: pantry))
         XCTAssertEqual(pantry.value as? String, "170 g Cheese")
         let match = app.buttons["pantry-match-1"]
         XCTAssertTrue(match.waitForExistence(timeout: 5))
@@ -362,6 +363,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         let oldName = name.value as? String ?? ""
         name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldName.count) + "Edited pasta")
+        XCTAssertTrue(UIReadiness.waitForValue("Edited pasta", in: name))
         XCTAssertEqual(name.value as? String, "Edited pasta")
         app.buttons["Save"].tap()
         // Resolve the actual presented alert, not an app-wide button during

@@ -11,14 +11,14 @@ enum UIReadiness {
     }
 
     @MainActor static func button(_ title: String, in app: XCUIApplication) -> XCUIElement {
-        let identifier: String
-        if #available(iOS 18.0, *) {
-            identifier = ["Cooking": "tab-cooking", "Recipes": "tab-recipes",
-                          "Kitchen": "tab-kitchen", "Settings": "tab-settings"][title] ?? title
-        } else { identifier = title }
         let recipeID = title.hasPrefix("recipe-") && !title.dropFirst(7).isEmpty && title.dropFirst(7).allSatisfy(\.isNumber)
-        let query = recipeID ? app.collectionViews["recipe-list"].buttons.matching(identifier: identifier) : app.buttons.matching(identifier: identifier)
+        let query = recipeID ? app.collectionViews["recipe-list"].buttons.matching(identifier: title) : app.buttons.matching(identifier: title)
         return query.element(boundBy: 0)
+    }
+
+    @MainActor static func waitForValue(_ expected: String, in element: XCUIElement) -> Bool {
+        let committed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", expected), object: element)
+        return XCTWaiter.wait(for: [committed], timeout: 5) == .completed
     }
 
     static func duoViewport(_ frame: CGRect, angle: Int) -> Bool {
