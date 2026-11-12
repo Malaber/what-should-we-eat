@@ -139,3 +139,17 @@ Verification at 0d146d7 (no app functionality or feature-case bodies changed):
 - Focused iPhone Intelligence/expired-session/renewal checks run in background;
   status is `.tmp/ci31-local-status.json`. Full fresh GitHub gates remain pending.
   No TestFlight work, archive or release tag is part of this CI-only round.
+
+## Remaining dynamic keyboard/window lookups
+
+- [ ] Replace pantry input's enumeration of every TextField/TextView with a direct identifier query; keep quantity/missing-ingredient assertions and the 180-second limit.
+- [ ] Remove dynamic window-index enumeration from Duo readiness. Read coordinates from one stable primary window and resolve controls directly; retain geometry/hittability gates and all fold/draft/shopping assertions.
+- [ ] Exercise pantry entry and the complete Duo fold/edit/cancel flow locally; update evidence, push and leave full CI running. No retries, skipped tests, larger deadlines, tags or uploads.
+
+At 30e995e all three branch native jobs and both screenshot render/bundle jobs
+passed. Both iPhone CI runs passed, and all three local focused iPhone cases
+passed. The PR iPad pantry case spent roughly 100 seconds resolving a previously
+enumerated multiline input before completing its feature assertions at 179
+seconds. Duo failed cancelling the editor after a keyboard/fold transition:
+window indices became stale while enumerating three windows. The saved
+hierarchy shows the enabled Cancel control inside the visible landscape window.
