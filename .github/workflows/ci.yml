@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DATABASE_URL: sqlite:///ci.db
       SECRET_KEY: ci-only-secret-not-for-production-32-bytes
@@ -26,14 +26,15 @@ jobs:
           python-version: '3.14'
           cache: pip
       - run: pip install -r requirements.txt -r marketing/requirements.txt
-      - run: sudo apt-get update && sudo apt-get install -y inkscape
+      - run: sudo --preserve-env=GITHUB_ACTIONS python3 execution/configure_ci_apt.py
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends inkscape
       - run: python -m execution.db.init_db
       - run: python -m pytest
       - run: docker build -t onionary:ci .
       - name: Test packaged Python 3.14 app against PostgreSQL
         run: python execution/test_container.py --image onionary:ci
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,6 +44,8 @@ jobs:
           python-version: '3.14'
           cache: pip
       - run: pip install -r requirements.txt -r marketing/requirements.txt
+      - run: sudo --preserve-env=GITHUB_ACTIONS python3 execution/configure_ci_apt.py
+      - run: sudo apt-get update
       - run: python -m playwright install --with-deps chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium --device='iPhone 13'
