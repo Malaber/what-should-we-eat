@@ -104,84 +104,60 @@ view actually enters a window, rather than relying on a single queued callback.
 - SQLite in-memory uses `StaticPool` so all sessions share the same DB instance across threads.
 
 For persistence UI tests, activate SpringBoard and verify it reaches foreground
-before terminating Onionary; verify `.notRunning` before relaunch. This detaches
-the foreground accessibility session without sleeping or retrying the test.
-Inspect XCTest's action timeline when a deadline expires: time spent waiting for
-animation completion is distinct from an application main-thread hang. Preserve
-spindumps and xcresults; do not increase deadlines to hide repeated idle waits.
+before terminating Onionary; verify `.notRunning`, then create a fresh
+`XCUIApplication` for the new process. Copy arguments/environment without
+`--reset`; reuse device data and keep every restoration assertion. Do not reuse
+an automation handle whose process was terminated.
 
-Local TestFlight runs profiles sequentially and deletes each successful profile's
-DerivedData. Its entry disk reserve therefore equals one test profile (8 GiB),
-with another check before every profile and 6 GiB before archive. Do not sum the
-space for all three device builds. Report decimal GB and binary GiB explicitly;
-Finder may include purgeable capacity. Time Machine snapshots can retain blocks
-from deleted caches; do not delete backups as part of build-cache cleanup.
+Inspect XCTest action timelines and retain logs/xcresults. Do not add retries,
+sleeps or skip feature failures. Run xcodebuild with `-collect-test-diagnostics
+never`: it disables verbose simulator-wide sysdiagnose, not XCTest results,
+failure attachments or command logs. That collector stalls after passed tests
+and consumes disk. Request a separate OS diagnostic explicitly when needed.
 
-Runtime installation is not runtime selection. CI must pass SIMULATOR_RUNTIME
-from its matrix; the selector requires that exact compatible runtime and never
-falls back to a newer installed release. Local defaults match the CI profiles
-(27.0 phone/tablet, 27.1 Duo). Compile against the shutdown disposable device,
-then boot and await bootstatus before XCTest, avoiding overlapping cold compiler
-work and simulator first-boot indexing. Keep all device tests mandatory and
-preserve bootstrap crashes separately from failures inside test methods.
+Do not edit a shell script while a local process is executing it. Bash may read
+later commands using stale file offsets. Freeze local script copies before
+launch or finish the run before editing. CI checkouts are immutable during tests.
 
-Duo fold commands reuse one simulator-only IOKit helper process, with bounded
-READY/angle acknowledgements. Timeout, exit or malformed acknowledgement kills
-the session; never retry the command. Capture fold evidence using XCTest's app
-screenshot connection, not a newly spawned simctl screenshot process per angle.
-Marketing capture also separates build-for-testing, boot readiness and one bounded
-test-without-building invocation. Keep UI assertions and artifact dimensions intact.
+Local release/test profiles run sequentially and reuse one build cache while
+retaining separate xcresults. Keep the 8 GiB test-entry and 6 GiB archive guards;
+report GB/GiB accurately. Finder may include purgeable capacity, and APFS/Time
+Machine can retain deleted blocks. Do not delete backups to force tests through.
 
-For a new shutdown simulator, call `simctl bootstatus <id> -b` once under the
-boot deadline. Do not issue `simctl boot` first and only then attach the monitor:
-that can take the "already booted" path before the first UI operation. Marketing
-light appearance belongs to the Debug fixture's existing appearance preference;
-avoid a global SpringBoard appearance RPC solely to render that fixture.
+Runtime installation is not selection. Pass SIMULATOR_RUNTIME from the matrix;
+require the exact compatible runtime (27.0 phone/tablet, 27.1 Duo), with no latest
+fallback. Compile against a shutdown disposable simulator, then call bounded
+`simctl bootstatus <id> -b` once before XCTest. Keep all profiles mandatory.
 
-Screenshot fixtures set app appearance through the app preference, with an explicit
-localized accessibility value on the picker. Do not assume SwiftUI menu pickers
-expose their selected text as an accessibility value automatically. Capture the
-real system status bar; do not make screenshots depend on cosmetic `simctl
-status_bar` overrides. Validate captures and app behavior as before.
+Duo injects its simulator-only HID event directly in the XCTest bundle using
+DuoHinge.m, following the in-process approach documented by Appium's
+XCUIDevice+FBHinge. It is never linked into the app/extensions. No host helper,
+HTTP server, port file or startup handshake. Initialization uses dispatch_once;
+a failure is terminal. Wait for active-display geometry after each dispatch and
+retain all fold/checklist/draft/navigation assertions. Source reference:
+https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 
-When an automatic activity assertion fails, inspect the recording and first
-assert the triggering recipe change. A missed portion tap cannot start an activity;
-do not diagnose ActivityKit from the final toggle value alone. Portion controls
-need full rectangular hit areas of at least 44 points, including in scaling forms.
+Marketing capture runs once per device inside the normal UI suite. After that
+suite passes, export its four attachments with marketing_screenshots.py
+--result-bundle. Reject missing/duplicate/unknown scenes, bad dimensions and
+undecodable PNGs. The CI caller then invokes screenshots.yml as a reusable
+workflow to render with Malaber/github-workflows, bundle and attach main-release
+assets. Never start another simulator/test run just to obtain the same images.
+Keep the app's fixture appearance preference and actual system status bar;
+avoid cosmetic SpringBoard RPCs. Screenshot controls expose localized values.
 
-Native xcodebuild output goes directly to retained build.log/tests.log files via
-run_bounded.py --log. Only a bounded tail reaches the console. Keep logs alongside
-xcresults in CI artifacts, including failures before XCTest starts. Preserve
-command exit status and the existing process/test deadlines; no test retries.
-Use explicit app teardown between UI cases, keyboard readiness before typing,
-and dismissal before navigating behind a sheet.
+Pull-to-refresh gestures target the named recipe list and await its accessible
+loaded state. Portion buttons have full 44-point hit areas. For automatic
+activity failures, first verify the triggering recipe change. Lifecycle policy
+is tested through CookingActivityBackend; retain requested handles independently
+of system discovery, serialize updates/stops and keep real ActivityKit UI tests.
 
-Local releases reuse one release-specific DerivedData directory across sequential
-device profiles while keeping separate xcresults. This avoids repeated cold
-compilation/deletion and APFS snapshot disk churn. Do not lower free-space guards
-or delete Time Machine snapshots to force a release through.
+Native output goes directly to retained build.log/tests.log via run_bounded.py
+--log, with a bounded console tail. Keep exit codes and process/test deadlines.
 
-Duo must resolve its test bundle from the exact `-derivedDataPath` supplied to
-xcodebuild, including a shared release cache. Validate this before spawning the
-helper. Run `run_duo_tests.py --prepare <results>` before boot, then start the
-prepared helper after boot. A dispatched fold is not a completed display handoff:
-wait for the expected active-display geometry before UI queries (Tracy PR 31).
-Pull-to-refresh tests gesture on the named recipe list, not a recipe Button, and
-wait for the list's accessible loaded state before selecting a row.
-
-Backend/browser CI use Ubuntu 24.04 and configure_ci_apt.py. The canonical Ubuntu
-archive serves noble-security as well as base/updates; keep signed keyring and
-security suites, strict update errors and zero retries. Reference:
+Backend/browser CI use Ubuntu 24.04 and configure_ci_apt.py, with signed keyring,
+security suites, strict updates and zero retries. Archive reference:
 https://archive.ubuntu.com/ubuntu/dists/noble-security/Release
 
-Duo control service starts the native helper on POST /ready only after XCTest
-has launched Onionary and observed its initial UI. Bootstatus alone does not
-establish that the simulator event system can start this helper. A failed READY
-remains terminal; do not restart it. Give the HTTP request enough time to return
-the existing 20-second native deadline's error, preserving XCTest deadlines.
-
-Live Activity lifecycle decisions are unit-tested through CookingActivityBackend;
-retain successful request handles independently of the platform discovery list,
-serialize updates/stops, and keep real ActivityKit UI coverage. When the user
-requests CI-only stabilization, run test.sh profiles without the archive/upload
-wrapper. Defer release tags and TestFlight until requested again.
+During CI-only stabilization, run test profiles without archive/upload. Defer
+release tags and TestFlight until the user requests them again.

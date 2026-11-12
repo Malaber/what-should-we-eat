@@ -11,7 +11,7 @@ assertions and current deadlines; no retries, sleeps or skipped failures.
 Build 27 completed its local device suites/archive but failed Apple account
 access during export. That is recorded only as context; upload work is deferred.
 
-Implementation and verification:
+Earlier implementation (superseded where noted by the structural follow-up below):
 
 - Duo uses an explicit /ready handshake after the first app screen exists. One
   helper session starts once; failed startup cannot retry. The HTTP deadline
@@ -30,9 +30,9 @@ Implementation and verification:
 
 ## Structural follow-up after recurring failures
 
-- [ ] Remove the Duo host process/HTTP sidecar. Inject folds inside the XCTest runner using the existing simulator-only HID event format; preserve all continuity checks and device geometry waits.
-- [ ] Use a fresh XCUIApplication object after each intentional termination/relaunch; retain the same on-device files, arguments and progress assertions.
-- [ ] Export marketing captures from the normal UI suite's xcresult. Remove the second screenshot simulator/test launch and its inconsistent outer deadline; preserve all four captures, dimension checks, shared renderer, bundles and release attachments.
+- [x] Remove the Duo host process/HTTP sidecar. Inject folds inside the XCTest runner using the existing simulator-only HID event format; preserve all continuity checks and device geometry waits.
+- [x] Use a fresh XCUIApplication object after each intentional termination/relaunch; retain the same on-device files, arguments and progress assertions.
+- [x] Export marketing captures from the normal UI suite's xcresult. Remove the second screenshot simulator/test launch and its inconsistent outer deadline; preserve all four captures, dimension checks, shared renderer, bundles and release attachments.
 - [ ] Validate actual native folds/relaunch, artifact export and workflow wiring before push. No TestFlight or new release tag.
 
 Evidence: both previous/current Duo failures are in the host helper startup/RPC,
@@ -43,4 +43,29 @@ outer deadline after long XCTest startup, while its own test has not reached its
 Local full iPhone suite passed; the local batch stopped on disk reserve before
 Duo, so it never established Duo/iPad runtime success.
 
-- [ ] Disable verbose simulator-wide sysdiagnose collection (not test results or attachments). A successful three-case Duo run still launched `simctl diagnose --timeout=600` and device `log collect`, consuming time/disk after XCTest passed. Retain normal xcresults, failure screenshots, command logs and all test deadlines/assertions.
+- [x] Disable verbose simulator-wide sysdiagnose collection (not test results or attachments). A successful three-case Duo run still launched `simctl diagnose --timeout=600` and device `log collect`, consuming time/disk after XCTest passed. Retain normal xcresults, failure screenshots, command logs and all test deadlines/assertions.
+
+Structural verification in progress:
+
+- Direct native Duo: three cases passed on a fresh simulator. A frozen-script
+  rerun with verbose diagnostics disabled also passed all three, exit 0; it did
+  not invoke the post-success sysdiagnose collector. No fold/state assertion was
+  removed. The obsolete sidecar and its transport-only unit tests were retired.
+- Actual xcresult export produced all four original iPhone captures and the
+  marketing composite without starting another simulator. Eight exporter tests
+  cover device dimensions, missing/duplicate scenes, PNG decoding and preserving
+  existing outputs. Workflow calls/dependencies validated with actionlint 1.7.7.
+- Current harness/export regression suite: 41 passed. Swift core: 37 passed.
+- Native symbol check: hinge injection is present only in the XCTest bundle,
+  absent from the app binary. Expanded Duo diagnostic screenshots can be blank
+  in this SDK; functional geometry/interaction assertions remain the CI gate.
+  This does not claim a physical-device visual review.
+- Local wrapper mutation was corrected by freezing the executing shell script.
+  Never edit a running script; the frozen run above is the clean harness result.
+- iPad targeted native restoration: all three cases passed, exit 0 (cooking
+  scaling/checks/history, offline draft recovery, silent session renewal).
+- Export also rejects failed, skipped and empty native suites before rendering.
+  The real successful-result export and workflow lint both passed. Main releases
+  upload this run's verified bundles directly; no capture redispatch.
+- Final GitHub checks remain pending until the pushed revision completes. No
+  TestFlight run or release tag was created. Full CI success is still required.

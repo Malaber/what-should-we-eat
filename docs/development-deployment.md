@@ -129,23 +129,32 @@ App Store URLs:
 - Privacy: https://app.onionary.malaber.de/privacy/
 - Contact: onionary@schaedler.rocks
 
-**App Store screenshots** captures four real app screens in English on iPhone
-and 13-inch iPad, with a fixed clock and synthetic recipe fixture. Download each
-workflow artifact's `en-US/` PNGs; dimensions are validated. Version tags whose
-commits are on `main` also publish `onionary-appstore-iphone-en-US.zip` and
-`onionary-appstore-ipad-en-US.zip` on the matching GitHub Release. The workflow
-creates the release if missing (prerelease for RC tags) and replaces these assets
-on a rerun. Publishing an existing release also triggers capture for that tag.
-Both devices must succeed before release upload; archives contain only PNGs.
-Main branch pushes capture artifacts when app/screenshot code changes; create a
-`v*` tag on the tested main commit to publish the corresponding release assets. No customer data or
-backend credentials are used. Screenshots are raw app captures, not fabricated UI.
-Local equivalent:
+**App Store screenshots** exports four real English app screens from each normal
+native CI suite (iPhone and 13-inch iPad), using fictional recipe data and the
+actual system status bar. Both device suites must pass. The reusable App Store
+workflow consumes those same captures, renders artwork through the pinned
+Malaber/github-workflows renderer, and creates the existing device bundles.
+It does not boot another simulator or run the capture test a second time.
+
+Download each workflow artifact's `en-US/` images. Release bundles contain PNGs
+and editable SVG artwork, with validated dimensions. Main-release tags also
+attach `onionary-appstore-iphone-en-US.zip` and
+`onionary-appstore-ipad-en-US.zip` to the matching GitHub Release. RC commits
+outside main remain workflow artifacts. A rerun may replace generated assets
+for the same immutable tag; it never moves the tag. No customer data or backend
+credentials are used.
+
+Local export from an already successful native suite:
 
 ```sh
-python3 execution/marketing_screenshots.py --device 'iPhone 17 Pro Max' --output .tmp/marketing-iphone
-python3 execution/marketing_screenshots.py --device 'iPad Pro 13-inch (M5)' --output .tmp/marketing-ipad
+python3 execution/marketing_screenshots.py --result-bundle /path/to/Onionary.xcresult --family iphone --output .tmp/marketing-iphone
+python3 execution/marketing_screenshots.py --result-bundle /path/to/iPad/Onionary.xcresult --family ipad --output .tmp/marketing-ipad
 ```
+
+Use `--defer-creative` when the pinned shared workflow will render the header and
+search assets. Without it, install `marketing/requirements.txt` and Inkscape
+locally. Export keeps original captures and validates four scenes, dimensions and
+complete PNG decoding before rendering.
 
 ## Verify the actual container locally
 
