@@ -1,4 +1,7 @@
-import ActivityKit
+// This SDK exposes nonisolated async methods on Activity without Sendable
+// annotations. App-side handles stay MainActor-owned; the session serializes
+// all OS operations. Keep legacy framework interoperability local to this file.
+@preconcurrency import ActivityKit
 import Foundation
 import OnionaryCore
 import Observation
