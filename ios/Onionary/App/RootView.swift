@@ -166,7 +166,9 @@ struct RecipesView: View {
                 ContentUnavailableView(LocalizedStringKey(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes"),
                     systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
             }
-        }.dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
+        }.accessibilityIdentifier("recipe-list")
+            .accessibilityValue(Text(store.refreshing ? "Refreshing recipes" : "Recipes loaded"))
+            .dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
             .sheet(item: $recoveryDraft) { saved in
                 RecipeEditor(store: store, draft: saved.draft, recipeID: saved.recipeID, draftID: saved.id)
             }

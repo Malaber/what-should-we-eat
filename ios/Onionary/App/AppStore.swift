@@ -11,6 +11,7 @@ final class AppStore {
     var kitchen = Kitchen()
     var error: String?
     var busy = false
+    var refreshing = false
     var needsReauthentication = false
     var reauthenticationError: String?
     var mealItems: [MealPlan.Item] = []
@@ -166,7 +167,9 @@ final class AppStore {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--marketing") { return }
         #endif
-        guard let credential else { return }
+        guard let credential, !refreshing else { return }
+        refreshing = true
+        defer { refreshing = false }
         do {
             let recipes = try OnionaryAPI.decoder.decode([Recipe].self, from: await request("recipes"))
             // A connection may have changed while the request was in flight.

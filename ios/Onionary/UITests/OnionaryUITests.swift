@@ -184,14 +184,13 @@ final class OnionaryUITests: XCTestCase {
 
     @MainActor
     private func pullToRefresh(_ app: XCUIApplication) {
-        let list = app.collectionViews.firstMatch
+        let list = app.collectionViews["recipe-list"]
         XCTAssertTrue(list.waitForExistence(timeout: 5))
-        // Collection bounds include the navigation bar; begin inside a recipe row.
-        let row = app.buttons["recipe-1"].firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 5))
-        let start = row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
-        start.press(forDuration: 0.1, thenDragTo: end)
+        // Gesture belongs to the list; pressing a row can select/drag the recipe
+        // and leave the split-view preview transitioning during the next query.
+        list.swipeDown(velocity: .slow)
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "Recipes loaded"), object: list)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 5), .completed)
     }
 
     @MainActor
