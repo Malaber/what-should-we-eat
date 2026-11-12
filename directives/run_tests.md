@@ -160,3 +160,16 @@ Local releases reuse one release-specific DerivedData directory across sequentia
 device profiles while keeping separate xcresults. This avoids repeated cold
 compilation/deletion and APFS snapshot disk churn. Do not lower free-space guards
 or delete Time Machine snapshots to force a release through.
+
+Duo must resolve its test bundle from the exact `-derivedDataPath` supplied to
+xcodebuild, including a shared release cache. Validate this before spawning the
+helper. Run `run_duo_tests.py --prepare <results>` before boot, then start the
+prepared helper after boot. A dispatched fold is not a completed display handoff:
+wait for the expected active-display geometry before UI queries (Tracy PR 31).
+Pull-to-refresh tests gesture on the named recipe list, not a recipe Button, and
+wait for the list's accessible loaded state before selecting a row.
+
+Backend/browser CI use Ubuntu 24.04 and configure_ci_apt.py. The canonical Ubuntu
+archive serves noble-security as well as base/updates; keep signed keyring and
+security suites, strict update errors and zero retries. Reference:
+https://archive.ubuntu.com/ubuntu/dists/noble-security/Release

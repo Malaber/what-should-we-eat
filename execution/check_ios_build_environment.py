@@ -6,8 +6,8 @@ import subprocess
 import tempfile
 
 EXPECTED_XCODE = "Xcode 27.1\nBuild version 27A9275"
-# Release profiles are sequential and remove DerivedData between devices. Entry
-# needs one test profile's reserve, not an additional cumulative-build reserve.
+# Release profiles are sequential and reuse one release-specific DerivedData.
+# Entry needs one test profile's reserve, not a cumulative-build reserve.
 # test.sh and archive.sh independently recheck space immediately before their work.
 STAGE_GIB = {"release": 8, "test": 8, "archive": 6}
 MIN_FREE_BYTES = STAGE_GIB["release"] * 1024 ** 3

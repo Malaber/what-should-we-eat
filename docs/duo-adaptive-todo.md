@@ -266,10 +266,10 @@ establish that all CI startup stalls are resolved. Build 26 uses a new tag.
 
 ## Five-check follow-up after build 26
 
-- [ ] Pass the actual derived-data path to the Duo runner, validate its test bundle before native setup, and test the release-cache integration.
-- [ ] Compile the Duo helper before simulator boot, keeping native preparation outside the live simulator session; preserve one helper and no retries.
-- [ ] Pin Linux test runners to Ubuntu 24.04 and configure a single canonical Ubuntu archive with strict update errors, removing the failing security.ubuntu.com dependency.
-- [ ] Diagnose the remaining iPad/Duo assertion failures from retained full logs and fix their causes with coverage.
+- [x] Pass the actual derived-data path to the Duo runner, validate its test bundle before native setup, and test the release-cache integration.
+- [x] Compile the Duo helper before simulator boot, keeping native preparation outside the live simulator session; preserve one helper and no retries.
+- [x] Pin Linux test runners to Ubuntu 24.04 and configure a single canonical Ubuntu archive with strict update errors, removing the failing security.ubuntu.com dependency.
+- [x] Diagnose the remaining iPad/Duo assertion failures from retained full logs and fix their causes with coverage.
 - [ ] Run integrated harness/native compilation checks, update PR, then start a fresh immutable background release.
 
 Backend/browser failed installing OS packages with DNS resolution errors, before
@@ -278,3 +278,14 @@ was introduced without updating run_duo_tests.py's hard-coded bundle lookup.
 The tag CI Duo also failed spawning after helper compilation: the simulator was
 no longer booted. Keep native compilation before boot, with a bounded preparation
 stage. Do not retry failed boots, folds, app tests or package commands.
+
+Validation: 43 harness tests passed. Native app/UI targets and the native helper
+compiled. The previously failing iPad refresh/tag case passed in 47 seconds on
+a fresh iPad/iOS 27.0 simulator. A disposable amd64 Ubuntu 24.04 container ran the
+committed source setup, successfully updated all HTTPS archive/security indexes
+and resolved Inkscape. Full Duo handoff and all-profile regression results remain
+pending in build 27. No retries were added and no assertions were removed.
+
+Optional completed build caches, older local test results and downloadable CI
+archives were removed, preserving current logs/results and signed archives.
+Free space increased to 9.6 GiB before the next release attempt.
