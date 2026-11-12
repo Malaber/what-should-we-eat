@@ -205,3 +205,11 @@ Current verification:
 - Additional iPhone edit/share cross-check runs in background; status is
   `.tmp/ci33-local-status.json`. Fresh full CI remains the merge gate.
   No TestFlight, local archive or version tag was created.
+
+Local cross-check follow-up: the extra iPhone process stopped at preflight,
+before compiling or running tests, because 7.76 GiB was below the 8 GiB guard.
+Removed redundant downloaded CI zip files and four old generated test-result
+directories; current logs/results, build cache and archives were retained.
+Available capacity remained below the guard. No native test was retried or
+counted as passed. The additional local phone result is unverified; full fresh
+GitHub native gates remain mandatory. The verified iPad pair is unaffected.
