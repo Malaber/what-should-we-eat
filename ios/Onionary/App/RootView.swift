@@ -13,15 +13,7 @@ struct RootView: View {
             if store.credential == nil {
                 NavigationStack { ConnectionView(store: store) }
             } else {
-                TabView(selection: $tab) {
-                    NavigationStack { CookingView(store: store, browse: { tab = 1 }) }
-                        .tabItem { Label("Cooking", systemImage: "flame") }.tag(0)
-                    RecipesView(store: store, selected: { tab = 0 })
-                        .tabItem { Label("Recipes", systemImage: "book.closed") }.tag(1)
-                    MealPlanningView(store: store, cook: { tab = 0 })
-                        .tabItem { Label("Kitchen", systemImage: "calendar") }.tag(3)
-                    NavigationStack { SettingsView(store: store) }.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
-                }.id(locale.identifier + (store.credential?.server.absoluteString ?? "") + (store.credential?.userID ?? ""))
+                mainTabs.id(locale.identifier + (store.credential?.server.absoluteString ?? "") + (store.credential?.userID ?? ""))
             }
         }.alert("Account deleted", isPresented: $store.accountDeleted) {
             Button("OK", role: .cancel) {}
@@ -39,6 +31,33 @@ struct RootView: View {
          .sheet(isPresented: Binding(get: { store.pendingImport != nil }, set: { if !$0 { store.pendingImport = nil } })) {
              ImportRecipeView(store: store, link: store.pendingImport ?? "")
          }
+    }
+
+    private var cookingPage: some View { NavigationStack { CookingView(store: store, browse: { tab = 1 }) } }
+    private var settingsPage: some View { NavigationStack { SettingsView(store: store) } }
+
+    @ViewBuilder private var mainTabs: some View {
+        if #available(iOS 18.0, *) {
+            TabView(selection: $tab) {
+                Tab("Cooking", systemImage: "flame", value: 0) { cookingPage }
+                    .accessibilityIdentifier("tab-cooking")
+                Tab("Recipes", systemImage: "book.closed", value: 1) { RecipesView(store: store, selected: { tab = 0 }) }
+                    .accessibilityIdentifier("tab-recipes")
+                Tab("Kitchen", systemImage: "calendar", value: 3) { MealPlanningView(store: store, cook: { tab = 0 }) }
+                    .accessibilityIdentifier("tab-kitchen")
+                Tab("Settings", systemImage: "gearshape", value: 2) { settingsPage }
+                    .accessibilityIdentifier("tab-settings")
+            }
+        } else {
+            TabView(selection: $tab) {
+                cookingPage.tabItem { Label("Cooking", systemImage: "flame") }.tag(0)
+                RecipesView(store: store, selected: { tab = 0 })
+                    .tabItem { Label("Recipes", systemImage: "book.closed") }.tag(1)
+                MealPlanningView(store: store, cook: { tab = 0 })
+                    .tabItem { Label("Kitchen", systemImage: "calendar") }.tag(3)
+                settingsPage.tabItem { Label("Settings", systemImage: "gearshape") }.tag(2)
+            }
+        }
     }
 }
 
