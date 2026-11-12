@@ -103,3 +103,16 @@ split iPhone features. Status: `.tmp/ci30-local-status.json`; results/logs stay 
 `.tmp/ci30-*-verified` and `.tmp/ci30-*-focused`. This batch has no retries,
 archive/upload steps or release tags. It stops if Duo fails or test sources
 change. Native results and fresh full GitHub gates remain pending at push.
+
+## Snapshot cost and process lifecycle follow-up
+
+- [ ] Replace the generic multi-snapshot visibility poll in ordinary tab navigation with a scoped native query; retain actual hittability and existing deadlines. The five-second predicate spent its budget obtaining window and button snapshots before checking candidates.
+- [ ] Resolve recipe-list readiness without a second full-list accessibility snapshot; inspect expired-session state and keep offline cooking/reauthentication assertions.
+- [ ] Diagnose the iPad termination error from the recorded app/process sequence, implement one deterministic lifecycle transition, and keep all persisted progress assertions.
+- [ ] Run focused native regressions, update evidence and push without tags/TestFlight. Leave longer suites running rather than polling GitHub.
+
+At d8ac7f7, Duo passed both full CI jobs and all four local cases. The local
+iPad follow-up never started: its disk guard observed 7.75 GiB while the Duo
+device was still being disposed. Current CI failures are ordinary navigation,
+expired-session list readiness and one iPad termination RPC. Both iPad edit/share
+scenarios now pass. Full gates remain required.
