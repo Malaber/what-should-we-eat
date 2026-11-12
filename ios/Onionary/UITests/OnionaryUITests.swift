@@ -26,6 +26,21 @@ final class OnionaryUITests: XCTestCase {
     }
 
     @MainActor
+    private static func relaunchPreservingData(_ app: XCUIApplication) -> XCUIApplication {
+        let arguments = app.launchArguments.filter { $0 != "--reset" }
+        let environment = app.launchEnvironment
+        terminateFromBackground(app)
+        // XCUIApplication owns an automation connection/PID. A new object must
+        // represent the new process; only the on-device data is reused.
+        let relaunched = XCUIApplication()
+        relaunched.launchArguments = arguments
+        relaunched.launchEnvironment = environment
+        relaunched.launch()
+        XCTAssertTrue(relaunched.wait(for: .runningForeground, timeout: 10))
+        return relaunched
+    }
+
+    @MainActor
     private func tapNavigation(_ title: String, in app: XCUIApplication) throws {
         let query = app.buttons.matching(identifier: title)
         XCTAssertTrue(query.firstMatch.waitForExistence(timeout: 5))
@@ -108,7 +123,7 @@ final class OnionaryUITests: XCTestCase {
 
     @MainActor
     func testManualRecipeKeepsDraftWhenServerUnavailable() throws {
-        let app = XCUIApplication()
+        var app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--offline-save", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -122,9 +137,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertEqual(name.value as? String, "My offline soup")
         XCTAssertTrue(app.buttons["Save"].isEnabled)
         app.buttons["Cancel"].tap()
-        Self.terminateFromBackground(app)
-        app.launchArguments.removeAll { $0 == "--reset" }
-        app.launch()
+        app = Self.relaunchPreservingData(app)
         try tapNavigation("Recipes", in: app)
         app.buttons["saved-draft-My offline soup"].firstMatch.tap()
         XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
@@ -133,7 +146,7 @@ final class OnionaryUITests: XCTestCase {
 
     @MainActor
     func testSilentRenewalPreservesCookingProgress() throws {
-        let app = XCUIApplication()
+        var app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--renew-session", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()
@@ -144,9 +157,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertTrue(app.buttons["preview-cook"].waitForExistence(timeout: 5))
         app.buttons["preview-cook"].tap()
         app.buttons["ingredient-1"].tap()
-        Self.terminateFromBackground(app)
-        app.launchArguments.removeAll { $0 == "--reset" }
-        app.launch()
+        app = Self.relaunchPreservingData(app)
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
         try tapNavigation("Settings", in: app)
@@ -479,7 +490,7 @@ final class OnionaryUITests: XCTestCase {
 
     @MainActor
     func testCookUndoScaleAndRestoreAfterTermination() throws {
-        let app = XCUIApplication()
+        var app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()
@@ -511,9 +522,7 @@ final class OnionaryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["2.58× recipe"].waitForExistence(timeout: 5))
         app.buttons["portion-minus"].tap()
         XCTAssertTrue(app.staticTexts["1.58× recipe"].waitForExistence(timeout: 5), app.debugDescription)
-        Self.terminateFromBackground(app)
-        app.launchArguments = ["--ui-testing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launch()
+        app = Self.relaunchPreservingData(app)
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
         XCTAssertTrue(app.staticTexts["1.58× recipe"].exists)
