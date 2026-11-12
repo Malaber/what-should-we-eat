@@ -263,3 +263,18 @@ Validation: 37 harness tests passed, shell syntax/whitespace passed, native
 build-for-testing passed for arm64 and x86_64 after a separate Swift isolation
 correction. Full native runtime checks remain pending. These results do not
 establish that all CI startup stalls are resolved. Build 26 uses a new tag.
+
+## Five-check follow-up after build 26
+
+- [ ] Pass the actual derived-data path to the Duo runner, validate its test bundle before native setup, and test the release-cache integration.
+- [ ] Compile the Duo helper before simulator boot, keeping native preparation outside the live simulator session; preserve one helper and no retries.
+- [ ] Pin Linux test runners to Ubuntu 24.04 and configure a single canonical Ubuntu archive with strict update errors, removing the failing security.ubuntu.com dependency.
+- [ ] Diagnose the remaining iPad/Duo assertion failures from retained full logs and fix their causes with coverage.
+- [ ] Run integrated harness/native compilation checks, update PR, then start a fresh immutable background release.
+
+Backend/browser failed installing OS packages with DNS resolution errors, before
+application tests. Local build 26 failed before Duo tests: shared DerivedData
+was introduced without updating run_duo_tests.py's hard-coded bundle lookup.
+The tag CI Duo also failed spawning after helper compilation: the simulator was
+no longer booted. Keep native compilation before boot, with a bounded preparation
+stage. Do not retry failed boots, folds, app tests or package commands.
