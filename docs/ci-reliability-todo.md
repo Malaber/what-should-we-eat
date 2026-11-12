@@ -217,9 +217,9 @@ GitHub native gates remain mandatory. The verified iPad pair is unaffected.
 ## Native Duo selection contract
 
 - [x] Evaluate explicit TabContent identifiers. Local Duo inspection proved this SDK drops those IDs after folding while retaining labels; reject the app-side experiment before push and retain existing native tab rendering.
-- [ ] Replace Duo's custom visibility predicate/bulk snapshots with direct identifier queries and native existence waits. Retain frame validity, real hittability, physical-display geometry and every feature assertion.
-- [ ] Run Duo test methods synchronously, matching ordinary UI tests, rather than mixing async MainActor methods with blocking XCTest waits. Keep existing case/step deadlines and all fold sequences.
-- [ ] Await the complete intended editor input before starting folds. The local synchronous run captured an expected suffix of "Du" while typing was still committing; after folding, the actual field correctly contained the complete "Duo draft" suffix. Derive the expected value before typing and verify it, rather than treating a partial snapshot as expected data.
+- [x] Replace Duo's custom visibility predicate/bulk snapshots with direct identifier queries and native existence waits. Retain frame validity, real hittability, physical-display geometry and every feature assertion.
+- [x] Run Duo test methods synchronously, matching ordinary UI tests, rather than mixing async MainActor methods with blocking XCTest waits. Keep existing case/step deadlines and all fold sequences.
+- [x] Await the complete intended editor input before starting folds. The local synchronous run captured an expected suffix of "Du" while typing was still committing; after folding, the actual field correctly contained the complete "Duo draft" suffix. Derive the expected value before typing and verify it, rather than treating a partial snapshot as expected data.
 - [ ] Validate actual Duo behavior and ordinary navigation locally; record results and push CI-only fixes. No retries, skipped behavior, timeout increases, local archives, tags or TestFlight.
 
 At 0d74733 both iPhone and iPad jobs passed in branch and PR runs. Both Duo
@@ -229,3 +229,22 @@ The PR cooking case also stalled at a synchronous preview query inside its async
 test method and was terminated. There is no failed recipe/checklist assertion
 in that trace. These observations motivate direct native selectors and one
 synchronous UI execution model, rather than another timing adjustment.
+
+Current verification:
+
+- The corrected app and native test target compile successfully with Xcode 27.1.
+  The final diff leaves app tab rendering unchanged. Direct native queries replace
+  the entire custom visibility scan; geometry and hittability remain required.
+- 37 Swift core and 41 Python harness/export tests passed; workflow lint and
+  whitespace checks passed. Existing feature assertions and case/step limits
+  remain. Exact committed-input waits also cover ordinary editing and pantry entry.
+- The first local experiment exposed both the dropped TabContent identifiers and
+  the partial expected-input snapshot. It failed and is not counted as a passed
+  run. The following attempt stopped at the disk guard before building or testing.
+  Removed only the regenerable task build cache; source, logs, results, user data,
+  backups and signed archives were retained.
+- Corrected full Duo verification is running once in the background on a fresh
+  disposable simulator. Logs/result: `.tmp/ci34-duo-final-labels/`. Its boot tool
+  returned zero but logged a data-migration warning; native results are still
+  required and are not yet claimed as passed. Fresh GitHub gates remain pending.
+- No retries, skipped feature cases, deadline increases, tags or TestFlight.

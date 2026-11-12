@@ -91,6 +91,11 @@ Resolve a multiline input by its identifier and supported text roles in one
 query. Do not enumerate all TextFields/TextViews and retain a global array index
 while a sheet is being presented. Verify keyboard focus and the actual entered
 value before checking derived results.
+Derive expected editor text before typing, then await that exact accessible
+value before folding, saving or checking persistence. `typeText` can return
+while the field is still committing characters; reading the field immediately
+afterwards must not define the expected value. Keep the exact-value assertions
+after each display transition as well.
 Outside-tap handlers must survive SwiftUI view replacement and attach when their
 view actually enters a window, rather than relying on a single queued callback.
 
@@ -134,6 +139,9 @@ Recipe selection waits for the exact actionable row inside the named list;
 cached recipes must remain selectable without waiting for a refresh-state RPC.
 Pull-to-refresh still verifies refresh completion. Avoid global lazy `firstMatch`
 queries during split-view navigation.
+Use synchronous MainActor test methods for native UI scenarios. Do not mix
+blocking XCTest control queries/waits with async test methods: a Duo preview
+query stalled in that execution model. Pure async core tests are unaffected.
 
 Inspect XCTest action timelines and retain logs/xcresults. Do not add retries,
 sleeps or skip feature failures. Run xcodebuild with `-collect-test-diagnostics
@@ -169,10 +177,17 @@ physical-display edge lengths separately from control visibility: compare button
 frames with the persistent primary window's frame, reject empty/nonfinite/
 offscreen controls, then require real hittability. Keyboard-window indices can
 change during folding: never enumerate and re-query them by array index inside
-the readiness wait. Bind matching candidates with
-`allElementsBoundByAccessibilityElement`, stop at the first usable candidate and
-tap that resolved element without repeating the window/control scan. A failed
-wait captures one coherent hierarchy and normal XCTest attachments. Source reference:
+the readiness wait. Resolve a control directly with
+`buttons.matching(identifier: title).element(boundBy: 0)` and use XCTest's native
+existence wait, then check its frame and hittability once before tapping. Scope
+recipe rows to the named recipe list. Do not put window/snapshot/frame RPCs or
+`allElementsBoundByAccessibilityElement` inside a short custom visibility
+predicate: the predicate's first evaluation alone can consume its deadline.
+The current Duo SDK dropped TabContent accessibility identifiers after folding
+in a local experiment, while retaining native tab labels. Keep the existing
+app tab rendering and query those labels; do not add ID/label fallback retries.
+A failed wait captures one coherent hierarchy and normal XCTest attachments.
+Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 
 Marketing capture runs once per device inside the normal UI suite. After that
