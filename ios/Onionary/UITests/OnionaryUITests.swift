@@ -18,12 +18,12 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     private func tapNavigation(_ title: String, in app: XCUIApplication) throws {
-        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            !UIReadiness.visibleButtons(title, in: app).isEmpty
-        }, object: nil)
-        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed)
-        let button = try XCTUnwrap(UIReadiness.visibleButtons(title, in: app).first,
-                                   "No visible navigation control: \(title)")
+        // iPad's floating navigation is not exposed as a TabBar in this SDK.
+        // Resolve the indexed accessible button directly, without enumerating
+        // windows or every matching parent/image inside a predicate callback.
+        let button = app.buttons.matching(identifier: title).element(boundBy: 0)
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "Missing tab: \(title)")
+        XCTAssertTrue(button.isHittable, "Tab is not reachable: \(title)")
         button.tap()
     }
 
