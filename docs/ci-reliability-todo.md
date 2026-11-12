@@ -42,3 +42,5 @@ outer deadline after long XCTest startup, while its own test has not reached its
 180-second deadline. The same marketing case already runs in the normal suite.
 Local full iPhone suite passed; the local batch stopped on disk reserve before
 Duo, so it never established Duo/iPad runtime success.
+
+- [ ] Disable verbose simulator-wide sysdiagnose collection (not test results or attachments). A successful three-case Duo run still launched `simctl diagnose --timeout=600` and device `log collect`, consuming time/disk after XCTest passed. Retain normal xcresults, failure screenshots, command logs and all test deadlines/assertions.
