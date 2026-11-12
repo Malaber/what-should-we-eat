@@ -87,6 +87,10 @@ test retries. The script uses isolated DerivedData and writes an xcresult bundle
 CI sets `TEST_RESULTS_DIR` and uploads that bundle even when tests fail.
 Keyboard tests must first assert that the keyboard is visible, then wait for
 the expected dismissal state; an immediate `exists` check can race the animation.
+Resolve a multiline input by its identifier and supported text roles in one
+query. Do not enumerate all TextFields/TextViews and retain a global array index
+while a sheet is being presented. Verify keyboard focus and the actual entered
+value before checking derived results.
 Outside-tap handlers must survive SwiftUI view replacement and attach when their
 view actually enters a window, rather than relying on a single queued callback.
 
@@ -157,9 +161,13 @@ a failure is terminal. Wait for active-display geometry after each dispatch and
 retain all fold/checklist/draft/navigation assertions. Duo's app-level frame
 can remain 669×951 while rotated window/control frames are 951×669. Check
 physical-display edge lengths separately from control visibility: compare button
-frames with actual window frames, reject empty/nonfinite/offscreen controls,
-then require real hittability. A failed navigation wait retains the hierarchy,
-window/control bounds and normal XCTest attachments. Source reference:
+frames with the persistent primary window's frame, reject empty/nonfinite/
+offscreen controls, then require real hittability. Keyboard-window indices can
+change during folding: never enumerate and re-query them by array index inside
+the readiness wait. Bind matching candidates with
+`allElementsBoundByAccessibilityElement`, stop at the first usable candidate and
+tap that resolved element without repeating the window/control scan. A failed
+wait captures one coherent hierarchy and normal XCTest attachments. Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 
 Marketing capture runs once per device inside the normal UI suite. After that

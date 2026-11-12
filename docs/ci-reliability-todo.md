@@ -142,8 +142,8 @@ Verification at 0d146d7 (no app functionality or feature-case bodies changed):
 
 ## Remaining dynamic keyboard/window lookups
 
-- [ ] Replace pantry input's enumeration of every TextField/TextView with a direct identifier query; keep quantity/missing-ingredient assertions and the 180-second limit.
-- [ ] Remove dynamic window-index enumeration from Duo readiness. Read coordinates from one stable primary window and resolve controls directly; retain geometry/hittability gates and all fold/draft/shopping assertions.
+- [x] Replace pantry input's enumeration of every TextField/TextView with a direct identifier query; keep quantity/missing-ingredient assertions and the 180-second limit.
+- [x] Remove dynamic window-index enumeration from Duo readiness. Read coordinates from one stable primary window and resolve controls directly; retain geometry/hittability gates and all fold/draft/shopping assertions.
 - [ ] Exercise pantry entry and the complete Duo fold/edit/cancel flow locally; update evidence, push and leave full CI running. No retries, skipped tests, larger deadlines, tags or uploads.
 
 At 30e995e all three branch native jobs and both screenshot render/bundle jobs
@@ -153,3 +153,26 @@ enumerated multiline input before completing its feature assertions at 179
 seconds. Duo failed cancelling the editor after a keyboard/fold transition:
 window indices became stale while enumerating three windows. The saved
 hierarchy shows the enabled Cancel control inside the visible landscape window.
+
+Verification at 42b300b:
+
+- Native iPad pantry: passed, zero failures/skips. Resolves the multiline input
+  by identifier plus text role, verifies keyboard focus and exact input, retains
+  both missing/insufficient quantity assertions and sheet dismissal.
+- Native Duo: all four cases passed, zero failures/skips. The complete cooking
+  case passed in 124.1 seconds, including preview, repeated folds, undo/redo,
+  editor keyboard/fold/cancel with preserved draft, and shopping checks.
+- Duo reads the persistent primary window rather than a changing window array.
+  Candidate controls bind to AX identity; the first usable candidate is retained
+  and tapped without repeating the scan. Failure diagnostics capture one full
+  hierarchy. No index-bound bulk enumeration remains in UI tests.
+- 37 Swift core tests and 41 harness/export tests passed; workflow lint and
+  whitespace checks passed. Existing feature assertions and deadlines remain;
+  pantry adds focus and exact-input assertions.
+- The previous branch/PR test trees were identical (9bab7fb8cee24781dbb2d4da3b1a34dd8397f5ef),
+  excluding merge-content differences as the source of those failures. Prior
+  iPhone focused verification completed successfully: all three cases passed.
+- An additional local settings→pantry pair runs in background to exercise the
+  exact preceding language/appearance scenario from CI. Status:
+  `.tmp/ci32-local-status.json`. Full fresh GitHub gates remain pending.
+- No retries, skips, increased deadlines, local archive, TestFlight or tag.
