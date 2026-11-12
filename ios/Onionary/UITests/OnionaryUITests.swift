@@ -349,6 +349,10 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.buttons["Choose a recipe"].tap()
         try selectRecipe(in: app)
         app.buttons["preview-cook"].tap()
+        let checkedIngredient = app.buttons["ingredient-1"]
+        XCTAssertTrue(checkedIngredient.waitForExistence(timeout: 5))
+        checkedIngredient.tap()
+        XCTAssertEqual(checkedIngredient.value as? String, "Checked")
         XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
         app.buttons["Cooking options"].tap()
         app.buttons["Edit recipe"].tap()
@@ -358,13 +362,20 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.staticTexts["Active minutes"].exists)
         XCTAssertTrue(app.staticTexts["Calories per serving"].exists)
         name.tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         let oldName = name.value as? String ?? ""
         name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldName.count) + "Edited pasta")
+        XCTAssertEqual(name.value as? String, "Edited pasta")
         app.buttons["Save"].tap()
-        let keepProgress = app.buttons["Keep cooking progress"]
+        // Resolve the actual presented alert, not an app-wide button during
+        // the editor/keyboard presentation transition.
+        let reloadAlert = app.alerts["Reload cooking recipe?"]
+        let keepProgress = reloadAlert.buttons["Keep cooking progress"]
         XCTAssertTrue(keepProgress.waitForExistence(timeout: 5))
         keepProgress.tap()
+        XCTAssertTrue(reloadAlert.waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].waitForExistence(timeout: 5))
+        XCTAssertEqual(checkedIngredient.value as? String, "Checked")
         try tapNavigation("Recipes", in: app)
         XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
     }
