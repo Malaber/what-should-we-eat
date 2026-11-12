@@ -10,22 +10,15 @@ enum UIReadiness {
         return viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
     }
 
-    @MainActor static func visibleButtons(_ title: String, in app: XCUIApplication) -> [XCUIElement] {
-        guard app.state == .runningForeground else { return [] }
-        // Duo's application frame stays in display coordinates while window
-        // and control frames follow interface orientation (669×951 vs 951×669).
-        // The persistent primary window supplies those coordinates. Keyboard
-        // windows appear/disappear during folds; their indices are not stable.
-        let viewport = app.windows.element(boundBy: 0).frame
+    @MainActor static func button(_ title: String, in app: XCUIApplication) -> XCUIElement {
+        let identifier: String
+        if #available(iOS 18.0, *) {
+            identifier = ["Cooking": "tab-cooking", "Recipes": "tab-recipes",
+                          "Kitchen": "tab-kitchen", "Settings": "tab-settings"][title] ?? title
+        } else { identifier = title }
         let recipeID = title.hasPrefix("recipe-") && !title.dropFirst(7).isEmpty && title.dropFirst(7).allSatisfy(\.isNumber)
-        let query = recipeID ? app.collectionViews["recipe-list"].buttons.matching(identifier: title) : app.buttons.matching(identifier: title)
-        // Bind candidates to AX identity, not to a changing result-array index.
-        for candidate in query.allElementsBoundByAccessibilityElement {
-            if validControlFrame(candidate.frame, in: viewport) && candidate.isHittable {
-                return [candidate]
-            }
-        }
-        return []
+        let query = recipeID ? app.collectionViews["recipe-list"].buttons.matching(identifier: identifier) : app.buttons.matching(identifier: identifier)
+        return query.element(boundBy: 0)
     }
 
     static func duoViewport(_ frame: CGRect, angle: Int) -> Bool {

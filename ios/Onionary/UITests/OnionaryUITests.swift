@@ -18,10 +18,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     private func tapNavigation(_ title: String, in app: XCUIApplication) throws {
-        // iPad's floating navigation is not exposed as a TabBar in this SDK.
-        // Resolve the indexed accessible button directly, without enumerating
-        // windows or every matching parent/image inside a predicate callback.
-        let button = app.buttons.matching(identifier: title).element(boundBy: 0)
+        let button = UIReadiness.button(title, in: app)
         XCTAssertTrue(button.waitForExistence(timeout: 5), "Missing tab: \(title)")
         XCTAssertTrue(button.isHittable, "Tab is not reachable: \(title)")
         button.tap()

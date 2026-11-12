@@ -4,21 +4,15 @@ import XCTest
 final class OnionaryDuoTests: OnionaryUITestCase {
 
     @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
-        var resolved: XCUIElement?
-        let visible = NSPredicate { _, _ in
-            resolved = UIReadiness.visibleButtons(title, in: app).first
-            return resolved != nil
-        }
-        let ready = XCTNSPredicateExpectation(predicate: visible, object: nil)
-        let result = XCTWaiter.wait(for: [ready], timeout: 10)
-        if result != .completed {
-            // One coherent hierarchy, rather than re-querying window indices
-            // while a keyboard is disappearing after a fold.
+        let button = UIReadiness.button(title, in: app)
+        let exists = button.waitForExistence(timeout: 10)
+        if !exists {
             let snapshot = XCTAttachment(string: app.debugDescription)
             snapshot.name = "Unreachable control hierarchy"; snapshot.lifetime = .keepAlways; add(snapshot)
         }
-        XCTAssertEqual(result, .completed, "Navigation did not settle after folding: \(title)")
-        let button = try XCTUnwrap(resolved, "No visible control: \(title)")
+        XCTAssertTrue(exists, "Missing control after folding: \(title)")
+        XCTAssertTrue(UIReadiness.validControlFrame(button.frame, in: app.windows.element(boundBy: 0).frame), "Invalid control geometry: \(title)")
+        XCTAssertTrue(button.isHittable, "Control not reachable: \(title)")
         button.tap()
     }
 
@@ -127,7 +121,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         for angle in [0, 180, 90] {
             try await pose(angle, in: app)
             try tap("Settings", in: app)
-            XCTAssertTrue(!UIReadiness.visibleButtons("Sign in with passkey", in: app).isEmpty)
+            XCTAssertTrue(UIReadiness.button("Sign in with passkey", in: app).isHittable)
             try tap("Recipes", in: app)
             XCTAssertTrue(app.buttons["add-recipe"].exists)
         }
