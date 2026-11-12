@@ -13,22 +13,10 @@ final class OnionaryDuoTests: XCTestCase {
         button.tap()
     }
 
-    @MainActor private func sendControl(_ path: String) async throws {
-        let config = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "duo-port", withExtension: "txt"))
-        let port = try String(contentsOf: config, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
-        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(port)/\(path)"))
-        // The native controller has a 20-second acknowledgement deadline.
-        // Allow that bounded operation to return its diagnostic HTTP response.
-        var request = URLRequest(url: url); request.httpMethod = "POST"; request.timeoutInterval = 25
-        let (data, response) = try await URLSession.shared.data(for: request)
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 204,
-                       "Duo \(path) failed: \(String(decoding: data, as: UTF8.self))")
-    }
-
     @MainActor private func pose(_ angle: Int, in app: XCUIApplication) async throws {
-        try await sendControl("pose/\(angle)")
+        XCTAssertEqual(OnionarySetHingeAngle(Double(angle)), 0, "Native hinge dispatch failed at \(angle)°")
         XCUIDevice.shared.orientation = angle == 0 ? .portrait : .landscapeLeft
-        // A helper ACK confirms dispatch, not completion of the display handoff.
+        // Native dispatch confirms injection, not completion of the display handoff.
         // Match Tracy's active-display readiness check before reading any UI.
         let expectedArea: CGFloat = angle == 0 ? 466 * 678 : 669 * 951
         let displayChanged = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
@@ -45,12 +33,17 @@ final class OnionaryDuoTests: XCTestCase {
         attachment.name = "Duo-workspace-\(angle)"; attachment.lifetime = .keepAlways; add(attachment)
     }
 
+    @MainActor func testInvalidHingeAnglesAreRejected() {
+        for angle in [-1.0, 181.0, Double.nan, Double.infinity] {
+            XCTAssertEqual(OnionarySetHingeAngle(angle), 1)
+        }
+    }
+
     @MainActor func testCookingPreviewAndDraftSurviveFolds() async throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["Choose a recipe"].waitForExistence(timeout: 10))
-        try await sendControl("ready")
         try tap("Recipes", in: app)
         try tap("recipe-1", in: app)
         XCTAssertTrue(app.buttons["preview-cook"].waitForExistence(timeout: 5))
@@ -105,7 +98,6 @@ final class OnionaryDuoTests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--reset", "--expired-session", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 10))
-        try await sendControl("ready")
         for angle in [0, 180, 90] {
             try await pose(angle, in: app)
             try tap("Settings", in: app)

@@ -84,6 +84,6 @@ if 'bootstatus' in sys.argv and os.environ['FAIL_STAGE'] == 'boot': sys.exit(43)
     else:
         ready = next(i for i, c in enumerate(commands) if 'bootstatus' in c)
         test = next(i for i, c in enumerate(commands) if 'test-without-building' in c)
-        prepare = next(i for i, c in enumerate(commands) if '--prepare' in c)
-        assert build < prepare < ready < test
+        assert build < ready < test
+        assert not any(any('run_duo_tests.py' in a or '--prepare' == a for a in c) for c in commands)
     assert commands[-1] == ['xcrun', 'simctl', 'delete', 'isolated-test-device']
