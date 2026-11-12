@@ -176,3 +176,15 @@ Verification at 42b300b:
   exact preceding language/appearance scenario from CI. Status:
   `.tmp/ci32-local-status.json`. Full fresh GitHub gates remain pending.
 - No retries, skips, increased deadlines, local archive, TestFlight or tag.
+
+## Edit/share scenario scope
+
+- [ ] Split editing and link creation/revocation into independent native cases, preserving existing assertions and the 180-second allowance. The combined branch-iPad case finished assertions at 177.48 seconds, then timed out during cleanup.
+- [ ] Scope the keep-progress action to the presented reload alert and verify an actual checked ingredient survives saving the edited recipe.
+- [ ] Verify both cases locally, update PR evidence and push CI-only changes; leave longer suites running. No retries, skipped behavior, release tags or TestFlight.
+
+At 0803b92 every PR check passed, including all native profiles, archives and
+screenshot render/bundle jobs. The only branch failure is the combined
+edit/share case. The previous background settings→pantry pair also passed both
+cases. The combined case spent over 40 seconds resolving the global
+keep-progress button before completing edit, sharing and revocation assertions.
