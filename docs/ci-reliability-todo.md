@@ -620,3 +620,40 @@ Window correction checkpoint:
 - This changes test synchronization and diagnostics only. It does not establish
   that the prior tap failure was a product undo bug, and no green native result
   is claimed until the actual full suites complete.
+
+## Isolate OS activity effects and focused keyboard dispatch
+
+- [ ] Use the existing CookingActivityBackend boundary for a Debug-only in-memory backend in ordinary UI fixtures. Keep the real CookingActivitySession and all automatic-start/toggle outcomes. Explicitly opt the existing Live Activity start/stop case into real ActivityKit; add a separate fixture-backed cycle so both paths are tested. Production builds must always use ActivityKit.
+- [ ] In the editing-progress case, capture the original field value before focusing, confirm the keyboard, then type through the application containing the focused field. Retain complete keyboard input, exact committed name, save/reload choice, preserved cooking checks and updated recipe-list assertions. Do not replace typing with value injection.
+- [ ] Run integrated checks and complete native verification in the background; push the candidate explicitly and leave hosted CI as the merge gate. Local resource preflight stops must not indefinitely hold an explicitly requested development push. No retries, skipped cases, longer limits, runner upgrades or TestFlight.
+
+At fd06c9c complete local iPhone and iPad suites each passed 25/25 with no
+failures/skips (594.382 and 595.643 seconds). The original iPad invocation was
+blocked before tests by delayed disk reclamation; its previously unstarted suite
+subsequently passed from the same frozen source. The requested push was verified.
+
+New hosted results: both iPhone runs, branch iPad, PR Duo and all backend,
+browser, formatting and archive checks passed. Branch Duo passed 5/6; PR iPad
+passed 24/25. Both failed cases exhausted existing execution allowances:
+
+- PR iPad editing: retained stack is in name.typeText → remote unique field
+  resolution. Its timeline includes keyboard/remote hierarchy errors, before
+  any new name is typed. Dispatch through the already focused application and
+  keep independent exact field assertions.
+- Branch Duo shopping: retained stack is in native tap → interruption checking
+  → SpringBoard waitForQuiescence. Earlier taps each waited 60 seconds for missing
+  animation notifications, exhausting six minutes at Add before shopping checks.
+  The previous folding/undo case passed. Do not change shopping assertions or
+  substitute coordinate taps.
+
+Ordinary UI fixtures currently use real ActivityKit for every portion/check
+interaction. An app-process reset does not reset that OS service. Isolate this
+external dependency through its existing backend protocol, as the API transport
+already is, and keep a mandatory real-OS integration case. The stack establishes
+where automation stalls, not proof that ActivityKit is its sole cause; require
+the fresh hosted results before claiming reliability is restored.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43501460788/job/132148022156
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43501453679/job/132147998169
+- https://developer.apple.com/documentation/xcuiautomation/xcuielement/typetext(_:)
