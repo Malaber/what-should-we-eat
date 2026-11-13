@@ -328,8 +328,8 @@ Current verification:
 
 ## Native committed-value queries
 
-- [ ] Replace the custom XCTNSPredicateExpectation around element.value with a native query matching the exact expected value, then use the existing five-second native existence wait. Keep separate exact-value assertions before saving/folding and all feature checks.
-- [ ] Apply the query contract to recipe-name entry, pantry text and Duo draft entry. Keep keyboard/fold coverage; do not dismiss the keyboard to bypass a failing value check.
+- [x] Replace the custom XCTNSPredicateExpectation around element.value with a native query matching the exact expected value, then use the existing five-second native existence wait. Keep separate exact-value assertions before saving/folding and all feature checks.
+- [x] Apply the query contract to recipe-name entry, pantry text and Duo draft entry. Keep keyboard/fold coverage; do not dismiss the keyboard to bypass a failing value check.
 - [ ] Verify iPhone editing with its preceding cold-restoration case and pantry entry, plus Duo draft folding. Update PR evidence; no retries, skipped assertions, longer deadlines, tags or uploads.
 
 At 50c7361 every PR check passed, including all native profiles and both creative
@@ -345,3 +345,17 @@ through a second client-side expectation. Retain the independent exact-value
 assertion, save/reload choice, checked progress and updated library-name checks.
 Previous focused iPad share→renewal verification passed both cases in 89.9 seconds
 (renewal 30.4 seconds), zero failures/skips. Both Duo profiles remain green.
+
+Current verification:
+
+- Changed native UI test bundle compiles successfully with Xcode 27.1. No app,
+  backend, fixture data, release configuration or test deadline changed.
+- iPhone cold-restoration→editing→pantry verification is running once on a fresh
+  disposable simulator. Duo keyboard/draft folding is queued after it succeeds.
+  Logs/results: `.tmp/ci37-iphone-native-values/` and
+  `.tmp/ci37-duo-native-values/`. Completion is not yet claimed.
+- Whitespace checks passed. All 22 ordinary cases and six Duo cases remain
+  mandatory. The previous full PR native, archive, backend/browser, formatting
+  and creative screenshot jobs passed; fresh full CI remains the merge gate.
+- No input retries, fallback selectors, skipped assertions, longer deadlines,
+  billable runner, archive/upload or release tag.

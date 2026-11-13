@@ -96,6 +96,15 @@ value before folding, saving or checking persistence. `typeText` can return
 while the field is still committing characters; reading the field immediately
 afterwards must not define the expected value. Keep the exact-value assertions
 after each display transition as well.
+For committed text, add `value == expected` to the already scoped native field
+query and use its normal five-second `waitForExistence`. Keep an independent
+exact `field.value` assertion afterward. Do not wrap `field.value` in an outer
+XCTNSPredicateExpectation: on a slow host, that timer can expire while the nested
+AX lookup is still in flight. At 50c7361 the failed iPhone edit's recording and
+app-side accessibility snapshots both showed the correct "Edited pasta" value.
+The native query avoids that additional client-side timer without increasing a
+deadline, removing a value assertion, bypassing keyboard/fold behavior or retrying
+input. Pantry text and Duo draft entry use the same contract.
 Outside-tap handlers must survive SwiftUI view replacement and attach when their
 view actually enters a window, rather than relying on a single queued callback.
 
