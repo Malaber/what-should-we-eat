@@ -71,6 +71,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
       - name: Verify matching Xcode build
         run: python3 execution/check_ios_build_environment.py --xcode-only
       - run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py '${{ matrix.runtime }}'
@@ -82,10 +85,6 @@ jobs:
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
           SIMULATOR_RUNTIME: ${{ matrix.runtime }}
         run: bash ios/Onionary/Scripts/test.sh
-      - uses: actions/setup-python@v5
-        if: matrix.profile != 'duo'
-        with:
-          python-version: '3.14'
       - run: pip install -r marketing/requirements.txt
         if: matrix.profile != 'duo'
       - name: Export captures from this test run
@@ -130,6 +129,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
       - name: Verify matching Xcode build
         run: python3 execution/check_ios_build_environment.py --xcode-only
       - run: brew install xcodegen

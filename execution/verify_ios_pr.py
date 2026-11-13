@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 PROFILES = (
     ("iphone", "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro"),
@@ -33,7 +34,7 @@ def verify(repo, commit, output, derived_data, push_branch=None):
     source = output / "source"
     status = {"pid": os.getpid(), "commit": commit, "status": "preparing", "profiles": {},
               "published": False, "source": str(source),
-              "started_at": datetime.now(timezone.utc).isoformat()}
+              "started_at": datetime.now(timezone.utc).isoformat(), "python": sys.version.split()[0]}
 
     def save():
         temporary = output / "status.new"
@@ -54,6 +55,7 @@ def verify(repo, commit, output, derived_data, push_branch=None):
             print(f"Running full {name} suite for {commit}", flush=True)
             environment = {**os.environ, "SIMULATOR_DEVICE_TYPE": device, "SIMULATOR_RUNTIME": "27.0",
                            "TEST_RESULTS_DIR": str(results), "TEST_DERIVED_DATA_DIR": str(derived_data)}
+            environment["PATH"] = str(Path(sys.executable).parent) + os.pathsep + environment.get("PATH", "")
             # Always own a fresh simulator. A caller's shell must not accidentally
             # turn both profiles into tests against its existing device.
             environment.pop("SIMULATOR_ID", None)

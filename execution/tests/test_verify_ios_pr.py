@@ -1,7 +1,9 @@
 """Publishing must be gated by both full profiles and the unchanged tested source."""
 import json
+import os
 from pathlib import Path
 import subprocess
+import sys
 
 import pytest
 
@@ -38,6 +40,7 @@ def test_only_two_complete_passes_can_publish_exact_tested_commit(monkeypatch, t
     assert len(environments) == (1 if failed_profile == "iphone" else 2)
     assert all("SIMULATOR_ID" not in e for e in environments)
     assert all(e["SIMULATOR_RUNTIME"] == "27.0" for e in environments)
+    assert all(e["PATH"].split(os.pathsep)[0] == str(Path(sys.executable).parent) for e in environments)
     assert len({e["TEST_RESULTS_DIR"] for e in environments}) == len(environments)
     assert all(e["TEST_DERIVED_DATA_DIR"] == str(tmp_path / "build") for e in environments)
     assert all(c[1] == str(output / "source/ios/Onionary/Scripts/test.sh") for c in calls if c[0] == "bash")
