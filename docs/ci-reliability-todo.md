@@ -679,7 +679,7 @@ Implementation checkpoint:
 ## Remove diagnostic recording dependency and stabilize presentations
 
 - [ ] Select Xcode's documented screenshots capture mode in the generated test scheme. Retain automatic failure screenshots, manual keepAlways captures, all tests and normal crash detection. Validate the generated scheme so a missing/ignored setting cannot silently restore default video recording.
-- [ ] Move Cooking options confirmation-dialog ownership from the toolbar button to the stable cooking view. Keep every action, the native dialog, real taps and the complete folded-draft regression. Do not hide a missing dialog with repeated taps or a direct edit shortcut.
+- [ ] Replace the toolbar-owned action confirmation dialog with a native Menu, leaving the destructive restart confirmation on the stable cooking view. Keep every recipe action, real taps and the complete folded-draft regression. Resolve menu actions through their actual containing window. Do not hide a missing menu with repeated taps or a direct edit shortcut.
 - [ ] Scope Intelligence assertions to intelligence-form and its Cancel action to the presented navigation bar. Verify dismissal back to Recipe book. Keep all original mode/language assertions and the same deadline.
 - [ ] Run integrated checks, compile and launch complete local native verification asynchronously, then explicitly push and update the draft PR. Full hosted checks remain required before merge; no TestFlight, retries, skipped tests, paid runner or increased deadlines.
 
@@ -690,8 +690,10 @@ iPad passed 25/26, branch Duo 5/6; PR iPad was still running at inspection.
 The new Duo failure is a missing Edit recipe option after tapping Cooking options.
 Retained hierarchy and active-window screenshot show the cooking view and its
 toolbar button, with no presented menu anywhere in the app. The confirmation
-dialog modifier is currently owned by the adaptive toolbar subview. Attach that
-presentation to the stable cooking view rather than bypassing the real route.
+dialog modifier is currently owned by the adaptive toolbar subview. A native
+Menu owns its action presentation without an external toolbar-local boolean;
+the existing destructive restart confirmation stays on the stable cooking view.
+Do not stack two confirmation-dialog presenters on that same view.
 
 iPad's Intelligence mode/language assertions and Cancel tap completed. Teardown
 then stalled in XCTest's _waitForPendingCrashlogsIfNeeded → crash-reporter sync;
