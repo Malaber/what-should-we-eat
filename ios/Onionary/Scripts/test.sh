@@ -6,17 +6,32 @@ python3 ../../execution/check_ios_build_environment.py --stage test
 swift test
 marketing_version=$(python3 ../../execution/version.py --ios)
 xcodegen generate
+result_dir=${TEST_RESULTS_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/onionary-tests.XXXXXX")}
+mkdir -p "$result_dir"
+result_dir=$(cd "$result_dir" && pwd)
 created_simulator=false
 if [[ -n "${SIMULATOR_ID:-}" ]]; then
   simulator_id=$SIMULATOR_ID
 else
   simulator_id=$(python3 Scripts/resolve_simulator.py --create --device-type "${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro}" --runtime "${SIMULATOR_RUNTIME:-}")
-  trap 'xcrun simctl delete "$simulator_id" >/dev/null 2>&1 || true' EXIT
   created_simulator=true
 fi
-result_dir=${TEST_RESULTS_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/onionary-tests.XXXXXX")}
-mkdir -p "$result_dir"
-result_dir=$(cd "$result_dir" && pwd)
+cleanup() {
+  local result=$?
+  trap - EXIT
+  if [[ "$result" != 0 ]]; then
+    # Preserve the original failure. Diagnostics are read-only and bounded;
+    # neither an unavailable log service nor cleanup can replace its exit code.
+    python3 ../../execution/run_bounded.py --log "$result_dir/host-diagnostics.log" 60 \
+      python3 ../../execution/collect_ios_test_diagnostics.py \
+      --simulator "$simulator_id" --output "$result_dir/host-diagnostics" || true
+  fi
+  if [[ "$created_simulator" == true ]]; then
+    xcrun simctl delete "$simulator_id" >/dev/null 2>&1 || true
+  fi
+  exit "$result"
+}
+trap cleanup EXIT
 # Give compilation its own budget: cold builds must not consume UI test time.
 build_args=(-project Onionary.xcodeproj -scheme Onionary
   -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "${TEST_DERIVED_DATA_DIR:-$result_dir/DerivedData}"

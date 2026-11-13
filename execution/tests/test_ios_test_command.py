@@ -47,9 +47,10 @@ elif 'xcodebuild' in sys.argv:
     assert '-resultBundlePath' in test
 
 
-@pytest.mark.parametrize('failure_stage', ['none', 'build', 'boot'])
+@pytest.mark.parametrize('failure_stage', ['none', 'build', 'boot', 'test'])
 @pytest.mark.parametrize('runtime_override', [None, '27.1'])
-def test_compile_precedes_boot_and_declared_runtime_reaches_selector(tmp_path, failure_stage, runtime_override):
+@pytest.mark.parametrize('diagnostics_fail', [False, True])
+def test_compile_precedes_boot_and_declared_runtime_reaches_selector(tmp_path, failure_stage, runtime_override, diagnostics_fail):
     bins = tmp_path / 'bin'; bins.mkdir()
     capture = tmp_path / 'commands.jsonl'
     shim = '''#!PYTHON
@@ -60,11 +61,13 @@ if any(arg.endswith('version.py') for arg in sys.argv): print('0.6.0')
 if any(arg.endswith('resolve_simulator.py') for arg in sys.argv): print('isolated-test-device')
 if 'build-for-testing' in sys.argv and os.environ['FAIL_STAGE'] == 'build': sys.exit(42)
 if 'bootstatus' in sys.argv and os.environ['FAIL_STAGE'] == 'boot': sys.exit(43)
+if 'test-without-building' in sys.argv and os.environ['FAIL_STAGE'] == 'test': sys.exit(44)
+if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in sys.argv) and os.environ['FAIL_DIAGNOSTICS'] == '1': sys.exit(99)
 '''.replace('PYTHON', __import__('sys').executable)
     for name in ('python3', 'swift', 'xcodegen', 'xcrun'):
         path = bins / name; path.write_text(shim); path.chmod(0o755)
     env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
-           'CAPTURE_ARGS': str(capture), 'FAIL_STAGE': failure_stage,
+           'CAPTURE_ARGS': str(capture), 'FAIL_STAGE': failure_stage, 'FAIL_DIAGNOSTICS': str(int(diagnostics_fail)),
            'SIMULATOR_DEVICE_TYPE': 'com.apple.CoreSimulator.SimDeviceType.iPhone-Duo',
            'TEST_RESULTS_DIR': str(tmp_path / 'results')}
     env.pop('SIMULATOR_RUNTIME', None)
@@ -76,7 +79,7 @@ if 'bootstatus' in sys.argv and os.environ['FAIL_STAGE'] == 'boot': sys.exit(43)
     resolve = next(c for c in commands if any(a.endswith('resolve_simulator.py') for a in c))
     assert resolve[resolve.index('--runtime') + 1] == (runtime_override or '')
     build = next(i for i, c in enumerate(commands) if 'build-for-testing' in c)
-    assert result.returncode == {'none': 0, 'build': 42, 'boot': 43}[failure_stage]
+    assert result.returncode == {'none': 0, 'build': 42, 'boot': 43, 'test': 44}[failure_stage]
     assert not any('boot' in c for c in commands)
     if failure_stage == 'build':
         assert not any('boot' in c or 'test-without-building' in c for c in commands)
@@ -89,3 +92,11 @@ if 'bootstatus' in sys.argv and os.environ['FAIL_STAGE'] == 'boot': sys.exit(43)
         assert build < ready < test
         assert not any(any('run_duo_tests.py' in a or '--prepare' == a for a in c) for c in commands)
     assert commands[-1] == ['xcrun', 'simctl', 'delete', 'isolated-test-device']
+    diagnostics = [i for i, command in enumerate(commands)
+                   if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in command)]
+    assert len(diagnostics) == (0 if failure_stage == 'none' else 1)
+    if diagnostics:
+        assert diagnostics[0] < len(commands) - 1
+        command = commands[diagnostics[0]]
+        assert command[command.index('--simulator') + 1] == 'isolated-test-device'
+        assert command[command.index('--output') + 1] == str(tmp_path / 'results/host-diagnostics')
