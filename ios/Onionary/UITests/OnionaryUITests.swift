@@ -401,10 +401,13 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.staticTexts["Total minutes"].exists)
         XCTAssertTrue(app.staticTexts["Active minutes"].exists)
         XCTAssertTrue(app.staticTexts["Calories per serving"].exists)
+        let oldName = try XCTUnwrap(name.value as? String)
         name.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
-        let oldName = name.value as? String ?? ""
-        name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldName.count) + "Edited pasta")
+        // Focus was established by the real field tap above. Dispatch keys to
+        // its containing app instead of resolving the field again while the
+        // keyboard's remote accessibility process is transitioning.
+        app.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldName.count) + "Edited pasta")
         XCTAssertTrue(UIReadiness.waitForValue("Edited pasta", matching: app.textFields.matching(identifier: "Name")))
         XCTAssertEqual(name.value as? String, "Edited pasta")
         app.buttons["Save"].tap()
