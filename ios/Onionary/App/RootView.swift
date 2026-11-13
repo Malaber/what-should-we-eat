@@ -240,7 +240,6 @@ struct CookingView: View {
     }
     @State private var sheet: Sheet?
     @State private var restart = false
-    @State private var showCookingActions = false
     @State private var focusedItem: String?
     @State private var recentAction: CheckChange?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -368,15 +367,19 @@ struct CookingView: View {
                         .accessibilityHint(store.cookingActivity.lastFailure ?? "")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showCookingActions = true } label: { Label("Cooking options", systemImage: "ellipsis.circle") }
-                        .confirmationDialog("Cooking options", isPresented: $showCookingActions, titleVisibility: .visible) {
-                            Button("Edit recipe") { store.editingRecipe = store.current?.recipe }
-                            Button("Share recipe copy") { store.sharingRecipe = store.current?.recipe }
-                            Button("Restart with latest recipe", role: .destructive) { restart = true }
-                            Button("Adjust portions") { sheet = .portions }
-                            Button("Tap history") { sheet = .history }
-                            Button("Cancel", role: .cancel) {}
-                        }
+                    // Let the native menu own its anchor across toolbar/fold
+                    // changes. Only destructive restart needs confirmation.
+                    Menu {
+                        Button("Edit recipe", systemImage: "pencil") { store.editingRecipe = store.current?.recipe }
+                        Button("Share recipe copy", systemImage: "square.and.arrow.up") { store.sharingRecipe = store.current?.recipe }
+                        Button("Adjust portions", systemImage: "slider.horizontal.3") { sheet = .portions }
+                        Button("Tap history", systemImage: "clock.arrow.circlepath") { sheet = .history }
+                        Divider()
+                        Button("Restart with latest recipe", systemImage: "arrow.counterclockwise", role: .destructive) { restart = true }
+                    } label: {
+                        Label("Cooking options", systemImage: "ellipsis.circle")
+                            .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                    }.accessibilityIdentifier("cooking-options")
                 }
             } }
             // One presentation owner, with destination data bound to its identity.
