@@ -476,7 +476,7 @@ Verification at implementation:
 ## Focus cooking persistence and Duo interaction readiness
 
 - [x] Separate checklist undo/redo, fractional input/outside-tap/steppers, and cold fractional-state restoration into focused native cases. Preserve every original assertion, including checked state, 1.58× after process restart and persisted `Undo · Checked` history. Retain real termination/relaunch and normal cleanup. Give the adjustment confirmation a stable accessibility identifier so keyboard and sheet Done buttons cannot be confused.
-- [ ] After Duo geometry validation, use XCTest's native isHittable property wait within the existing total ten-second control-readiness budget. Preserve existence/frame/hittability checks and single taps. Capture the active app screenshot and one hierarchy if readiness fails; the outer-screen fold recording turns black and cannot diagnose inner-display controls.
+- [x] After Duo geometry validation, use XCTest's native isHittable property wait within the existing total ten-second control-readiness budget. Preserve existence/frame/hittability checks and single taps. Capture the active app screenshot and one hierarchy if readiness fails; the outer-screen fold recording turns black and cannot diagnose inner-display controls.
 - [ ] Run focused iPad checklist/fractional/restoration cases and integrated harness checks. Compile the Duo target; stable local 27.1 is absent, so require real stable-runtime CI rather than silently substituting the RC. Update PR and leave fresh full checks running without idle polling.
 
 At 675d6ea the local cold-restoration → step insertion → help sequence passed all

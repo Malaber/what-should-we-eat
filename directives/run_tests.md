@@ -258,8 +258,14 @@ offscreen controls, then require real hittability. Keyboard-window indices can
 change during folding: never enumerate and re-query them by array index inside
 the readiness wait. Resolve a control directly with
 `buttons.matching(identifier: title).element(boundBy: 0)` and use XCTest's native
-existence wait, then check its frame and hittability once before tapping. Scope
-recipe rows to the named recipe list. Do not put window/snapshot/frame RPCs or
+existence wait, then check geometry once. Existence, geometry and native
+`wait(for: \.isHittable, toEqual: true, timeout: remaining)` share one monotonic
+ten-second control-readiness deadline. Existence/valid frames can precede touch
+readiness after a fold. Never substitute repeated taps, fallback queries or a
+longer case deadline. If still unreachable, retain one active-app screenshot
+and hierarchy before failing; an outer-display recording can be black while
+the inner display is active. Scope recipe rows to the named recipe list.
+Do not put window/snapshot/frame RPCs or
 `allElementsBoundByAccessibilityElement` inside a short custom visibility
 predicate: the predicate's first evaluation alone can consume its deadline.
 The current Duo SDK dropped TabContent accessibility identifiers after folding
