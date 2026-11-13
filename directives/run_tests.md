@@ -79,6 +79,19 @@ desktop/mobile Chromium tests, packaged PostgreSQL smoke tests, and native iOS
 simulator tests. Native tests include a Debug-only deterministic API transport;
 release builds exclude it. Test fixtures set required IMPRESSUM operator values.
 
+Ordinary UI fixtures also isolate ActivityKit through UITestCookingActivityBackend
+and the existing CookingActivityBackend protocol. They still execute the real
+CookingActivitySession, automatic starts, updates and toggle logic. Do not start
+OS Live Activities for every recipe checklist/portion test: their system state
+outlives an app-process reset and can animate SpringBoard during unrelated UI.
+The mandatory testLiveActivityStartAndStop explicitly launches with
+--system-live-activity and uses real ActivityKit, including automatic start and
+the final Off assertion. testCookingModeWithFixtureBackend runs the same full
+cycle against the fixture separately. Both cases must pass on ordinary profiles;
+neither is skipped or accepted as a replacement for the other. Release builds
+exclude the fixture and always construct the Apple backend. There are 26 ordinary
+UI cases and six Duo cases after adding this coverage.
+
 Do not poll GitHub jobs while idle; the user will return with results. Complete
 local checks and record their evidence in the PR first.
 
@@ -105,6 +118,12 @@ app-side accessibility snapshots both showed the correct "Edited pasta" value.
 The native query avoids that additional client-side timer without increasing a
 deadline, removing a value assertion, bypassing keyboard/fold behavior or retrying
 input. Pantry text and Duo draft entry use the same contract.
+For the editing-progress scenario, read the original name before focusing. Tap
+the actual field and verify the keyboard, then use app.typeText to dispatch real
+key events to that focused descendant. Re-resolving a field during typeText can
+stall while the keyboard's remote AX process transitions. Keep the exact committed
+field value, save/keep-progress choice, retained checks and updated list entry.
+Never inject the field value directly or accept typing without focus.
 Outside-tap handlers must survive SwiftUI view replacement and attach when their
 view actually enters a window, rather than relying on a single queued callback.
 

@@ -623,8 +623,8 @@ Window correction checkpoint:
 
 ## Isolate OS activity effects and focused keyboard dispatch
 
-- [ ] Use the existing CookingActivityBackend boundary for a Debug-only in-memory backend in ordinary UI fixtures. Keep the real CookingActivitySession and all automatic-start/toggle outcomes. Explicitly opt the existing Live Activity start/stop case into real ActivityKit; add a separate fixture-backed cycle so both paths are tested. Production builds must always use ActivityKit.
-- [ ] In the editing-progress case, capture the original field value before focusing, confirm the keyboard, then type through the application containing the focused field. Retain complete keyboard input, exact committed name, save/reload choice, preserved cooking checks and updated recipe-list assertions. Do not replace typing with value injection.
+- [x] Use the existing CookingActivityBackend boundary for a Debug-only in-memory backend in ordinary UI fixtures. Keep the real CookingActivitySession and all automatic-start/toggle outcomes. Explicitly opt the existing Live Activity start/stop case into real ActivityKit; add a separate fixture-backed cycle so both paths are tested. Production builds must always use ActivityKit.
+- [x] In the editing-progress case, capture the original field value before focusing, confirm the keyboard, then type through the application containing the focused field. Retain complete keyboard input, exact committed name, save/reload choice, preserved cooking checks and updated recipe-list assertions. Do not replace typing with value injection.
 - [ ] Run integrated checks and complete native verification in the background; push the candidate explicitly and leave hosted CI as the merge gate. Local resource preflight stops must not indefinitely hold an explicitly requested development push. No retries, skipped cases, longer limits, runner upgrades or TestFlight.
 
 At fd06c9c complete local iPhone and iPad suites each passed 25/25 with no
@@ -657,3 +657,21 @@ Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43501460788/job/132148022156
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43501453679/job/132147998169
 - https://developer.apple.com/documentation/xcuiautomation/xcuielement/typetext(_:)
+
+Implementation checkpoint:
+
+- All 98 Python 3.14.7 harness/export/release/preflight checks passed; shell
+  syntax, actionlint and whitespace checks passed.
+- The full ordinary suite now has 26 cases: all prior 25, plus the fixture-backed
+  cooking-mode cycle. The existing real ActivityKit case retains its complete
+  automatic start, stop, disabled auto-start, manual restart and final stop checks.
+  Duo retains all six cases and angles. All case/suite deadlines are unchanged.
+- Start the complete local iPad profile from a frozen candidate in
+  `.tmp/ci45-ipad-local`, using `.tmp/ci28-build`. This compiles the app, new
+  fixture and entire UI target and runs both cooking-mode backends, editor
+  preservation and the remaining ordinary scenarios. Results are pending until
+  that run finishes. Stable Duo remains a hosted gate; do not substitute the RC.
+- Push explicitly after compile/short checks, keeping complete hosted iPhone,
+  iPad, Duo and archive checks required before merge. Do not hold this requested
+  PR update behind automatic local publication, or describe a resource preflight
+  stop as a failed feature test. No archive/upload/tag or TestFlight in this turn.
