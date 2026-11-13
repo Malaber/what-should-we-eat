@@ -402,3 +402,18 @@ Verification:
 - Full corrected-runtime CI remains the merge gate. The passing branch run used
   the same RC as the failed PR run, so the selection correction is not proof of
   the cause or resolution of the external simulator shutdown.
+
+## Remove post-boot guest RPC regression
+
+- [ ] Remove the post-boot `simctl getenv SIMULATOR_ROOT` gate introduced at 2bb8b14. All six native jobs (PR and branch) stop at this new gate after compilation/boot succeed; no UI case starts. Do not extend its timeout or retry it.
+- [ ] Validate the selected exact runtime bundle's SystemVersion metadata on the host before device creation. Retain shared build pins, exact bundle selection and disposable-CI SDK mapping/readback. Record the running OS from inside the XCTest runner without another host-to-guest RPC.
+- [ ] Cover wrong/missing bundle metadata, pre-create failure, supplied/owned simulator lifecycle and absence of post-boot guest probes. Run the integrated harness and a focused real native run; retain every feature assertion and original XCTest deadline.
+- [ ] Push to the existing PR with accurate evidence. Leave full CI running; no idle polling, billable runner, release tag, local archive or TestFlight upload.
+
+At 2bb8b14 all backend, browser, HTML and unsigned archive jobs passed. All three
+native profiles failed on both events at the newly added runtime verification
+command. Four logs explicitly report `simctl getenv` timing out after 15 seconds;
+both Duo jobs hit the command's 45-second outer cap. Stable runtime installation,
+SDK mapping/readback and exact-bundle selection succeeded. This is a regression
+in the new harness, not six independently failing app features. A warm local
+guest probe did not establish that this extra cold-host RPC was safe in CI.
