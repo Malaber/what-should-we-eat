@@ -2,9 +2,12 @@
 
 import argparse
 import json
+from pathlib import Path
 import subprocess
+import sys
 
-RUNTIMES = {"27.0": "24A434", "27.1": "24A94232"}
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from execution.ios_runtime import RUNTIME_BUILDS as RUNTIMES, configure_sdk_runtime, runtime_identifier
 
 
 def available(version):
@@ -14,7 +17,7 @@ def available(version):
         capture_output=True,
         text=True,
     )
-    identifier = "com.apple.CoreSimulator.SimRuntime.iOS-" + version.replace(".", "-")
+    identifier = runtime_identifier(version)
     return any(
         runtime["identifier"] == identifier
         and runtime["buildversion"] == RUNTIMES[version]
@@ -45,6 +48,7 @@ def ensure(version):
                 f"(exit {result.returncode})"
             )
     print(f"Verified iOS {version} ({RUNTIMES[version]})", flush=True)
+    configure_sdk_runtime(version)
 
 
 if __name__ == "__main__":

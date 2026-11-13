@@ -330,7 +330,7 @@ Current verification:
 
 - [x] Replace the custom XCTNSPredicateExpectation around element.value with a native query matching the exact expected value, then use the existing five-second native existence wait. Keep separate exact-value assertions before saving/folding and all feature checks.
 - [x] Apply the query contract to recipe-name entry, pantry text and Duo draft entry. Keep keyboard/fold coverage; do not dismiss the keyboard to bypass a failing value check.
-- [ ] Verify iPhone editing with its preceding cold-restoration case and pantry entry, plus Duo draft folding. Update PR evidence; no retries, skipped assertions, longer deadlines, tags or uploads.
+- [x] Verify iPhone editing with its preceding cold-restoration case and pantry entry, plus Duo draft folding. Local runs passed: three iPhone cases in 122.3 seconds; Duo draft in 72.2 seconds. Update PR evidence; no retries, skipped assertions, longer deadlines, tags or uploads.
 
 At 50c7361 every PR check passed, including all native profiles and both creative
 screenshot render/bundle paths. The only branch failure was the iPhone edit
@@ -362,9 +362,10 @@ Current verification:
 
 ## Stable runtime build selection
 
-- [ ] Replace the Duo RC pin (24A94232) with Apple's stable iOS 27.1 simulator build (24A94425). Share exact pins between installation, selection and runtime verification; retain 27.0/24A434 for ordinary profiles.
-- [ ] Select the matching runtime bundle path, not the ambiguous OS identifier. Configure the matching SDK build only on disposable GitHub-hosted CI machines, and verify the actual booted runtime build before XCTest. Never silently use the RC, delete existing runtimes or alter local Xcode matching preferences.
-- [ ] Cover RC/stable coexistence and reversed inventory order, missing/wrong builds, SDK mapping and booted-build mismatches with regression fixtures. Verify supported boot metadata locally; leave the full stable-runtime native CI gates running. No retries, skips, increased test deadlines, billable runner, archive, tag or upload.
+- [x] Replace the Duo RC pin (24A94232) with Apple's stable iOS 27.1 simulator build (24A94425). Share exact pins between installation, selection and runtime verification; retain 27.0/24A434 for ordinary profiles.
+- [x] Select the matching runtime bundle path, not the ambiguous OS identifier. Configure the matching SDK build only on disposable GitHub-hosted CI machines, and verify the actual booted runtime build before XCTest. Never silently use the RC, delete existing runtimes or alter local Xcode matching preferences.
+- [x] Cover RC/stable coexistence and reversed inventory order, missing/wrong builds, SDK mapping and booted-build mismatches with regression fixtures. Verify supported boot metadata locally.
+- [ ] Full stable-runtime native CI gates must pass. No retries, skips, increased test deadlines, billable runner, archive, tag or upload.
 
 At f2d1dd1 the local iPhone restoration/edit/pantry cases passed (122.3 seconds)
 and Duo draft folding passed (72.2 seconds), all without failures/skips. Both CI
@@ -383,3 +384,21 @@ The shutdown cause is not proven solely by this configuration defect; full nativ
 checks on the corrected build remain mandatory.
 
 Catalog: https://devimages-cdn.apple.com/downloads/xcode/simulators/index2.dvtdownloadableindex
+
+Verification:
+
+- Python 3.14.7: all 84 harness/export/release/preflight checks passed, including
+  exact-build selection, RC/stable inventory order, guarded SDK mapping and
+  readback, guest metadata and fail-before-XCTest cleanup/exit propagation.
+- Shell syntax, actionlint and whitespace checks passed. No app, feature assertion
+  or XCTest case/suite deadline changed.
+- A real local disposable 27.0/24A434 device accepted the exact runtime bundle
+  path and exposed its version/build through SIMULATOR_ROOT. The completed CLI
+  integration probe is recorded in `.tmp/ci38-final-runtime-probe.log`.
+- Both retained CI 27.1 builds support Duo. Stable 24A94425 is already installed
+  on the hosted image, but is absent locally. With approximately 10 GiB free,
+  downloading/installing another 7.85 GB runtime would violate the test reserve;
+  no download, runtime deletion or local SDK preference mutation was attempted.
+- Full corrected-runtime CI remains the merge gate. The passing branch run used
+  the same RC as the failed PR run, so the selection correction is not proof of
+  the cause or resolution of the external simulator shutdown.

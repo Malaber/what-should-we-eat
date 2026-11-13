@@ -202,9 +202,26 @@ cleanup, before starting the next profile. A finalized xcresult alone does not
 mean its simulator has been deleted or its disk reserve has been released.
 
 Runtime installation is not selection. Pass SIMULATOR_RUNTIME from the matrix;
-require the exact compatible runtime (27.0 phone/tablet, 27.1 Duo), with no latest
-fallback. Compile against a shutdown disposable simulator, then call bounded
-`simctl bootstatus <id> -b` once before XCTest. Keep all profiles mandatory.
+require the exact compatible runtime/build from execution/ios_runtime.py:
+27.0/24A434 for phone/tablet and stable 27.1/24A94425 for Duo. Apple's catalog
+identifies 24A94232 as the 27.1 RC; do not silently substitute it. RC/stable can
+coexist under one OS identifier. Select the compatible build's absolute runtime
+bundle path when creating the disposable device, regardless of inventory order.
+For matching SDK versions, ensure_ios_runtimes.py checks CoreSimulator's SDK
+mapping too. It may set `simctl runtime match set iphoneos27.1 24A94425 --sdkBuild
+<sdk-build>` only on disposable GitHub-hosted runners, then verifies the result.
+Local/self-hosted preferences are never changed automatically: a mismatch fails
+with the explicit command for a developer to review. Never delete runtimes to
+force selection. Catalog reference:
+https://devimages-cdn.apple.com/downloads/xcode/simulators/index2.dvtdownloadableindex
+
+Compile against a shutdown disposable simulator, then call bounded
+`simctl bootstatus <id> -b` once. Before XCTest, ios_runtime.py reads the running
+guest's SIMULATOR_ROOT/System/Library/CoreServices/SystemVersion.plist and checks
+both ProductVersion and ProductBuildVersion. A mismatch stops the command;
+retain runtime.log and the original failure/owned-device cleanup. Check supplied
+simulator IDs as well, without deleting devices owned by the caller. Keep all
+profiles mandatory, with no latest/RC fallback or new test retries/deadlines.
 
 Duo injects its simulator-only HID event directly in the XCTest bundle using
 DuoHinge.m, following the in-process approach documented by Appium's
