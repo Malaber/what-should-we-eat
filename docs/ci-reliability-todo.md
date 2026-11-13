@@ -359,3 +359,27 @@ Current verification:
   and creative screenshot jobs passed; fresh full CI remains the merge gate.
 - No input retries, fallback selectors, skipped assertions, longer deadlines,
   billable runner, archive/upload or release tag.
+
+## Stable runtime build selection
+
+- [ ] Replace the Duo RC pin (24A94232) with Apple's stable iOS 27.1 simulator build (24A94425). Share exact pins between installation, selection and runtime verification; retain 27.0/24A434 for ordinary profiles.
+- [ ] Select the matching runtime bundle path, not the ambiguous OS identifier. Configure the matching SDK build only on disposable GitHub-hosted CI machines, and verify the actual booted runtime build before XCTest. Never silently use the RC, delete existing runtimes or alter local Xcode matching preferences.
+- [ ] Cover RC/stable coexistence and reversed inventory order, missing/wrong builds, SDK mapping and booted-build mismatches with regression fixtures. Verify supported boot metadata locally; leave the full stable-runtime native CI gates running. No retries, skips, increased test deadlines, billable runner, archive, tag or upload.
+
+At f2d1dd1 the local iPhone restoration/edit/pantry cases passed (122.3 seconds)
+and Duo draft folding passed (72.2 seconds), all without failures/skips. Both CI
+ordinary profiles and every branch check, including creative screenshot bundles,
+passed. The PR's first Duo case was terminated with the entire simulator while
+waiting for accessibility, before navigation or hinge dispatch; five later cases
+passed after Xcode restarted its runner. This remains an infrastructure failure.
+
+Apple's official simulator catalog identifies 24A94232 as "iOS 27.1 Release
+Candidate Simulator Runtime" and 24A94425 as "iOS 27.1 Simulator Runtime".
+The failed host's retained inventory has both builds with the same OS identifier.
+The installer required the RC and the selector checked version/compatibility but
+not build, returning the ambiguous identifier. Xcode's SDK mapping also preferred
+24A94232. Pinning an OS version therefore did not establish a stable runtime build.
+The shutdown cause is not proven solely by this configuration defect; full native
+checks on the corrected build remain mandatory.
+
+Catalog: https://devimages-cdn.apple.com/downloads/xcode/simulators/index2.dvtdownloadableindex
