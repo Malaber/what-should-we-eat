@@ -472,3 +472,31 @@ Verification at implementation:
   insertion/help/keyboard/cancel check remains, with explicit help-dismissal and
   editor-closure assertions added. Production app/backend code, shared cleanup,
   test fixtures and 180/360-second case / 1800-second suite limits are unchanged.
+
+## Focus cooking persistence and Duo interaction readiness
+
+- [ ] Separate checklist undo/redo, fractional input/outside-tap/steppers, and cold fractional-state restoration into focused native cases. Preserve every original assertion, including checked state, 1.58× after process restart and persisted `Undo · Checked` history. Retain real termination/relaunch and normal cleanup. Give the adjustment confirmation a stable accessibility identifier so keyboard and sheet Done buttons cannot be confused.
+- [ ] After Duo geometry validation, use XCTest's native isHittable property wait within the existing total ten-second control-readiness budget. Preserve existence/frame/hittability checks and single taps. Capture the active app screenshot and one hierarchy if readiness fails; the outer-screen fold recording turns black and cannot diagnose inner-display controls.
+- [ ] Run focused iPad checklist/fractional/restoration cases and integrated harness checks. Compile the Duo target; stable local 27.1 is absent, so require real stable-runtime CI rather than silently substituting the RC. Update PR and leave fresh full checks running without idle polling.
+
+At 675d6ea the local cold-restoration → step insertion → help sequence passed all
+three cases in 129.026 seconds, zero failures/skips, and owned-device cleanup
+completed. Every branch CI check passed, including all native profiles and both
+creative bundles. The PR iPhone, backend/browser/format/archive jobs passed.
+
+PR iPad passed 22/23 cases. Its combined cooking case completed undo/redo,
+fractional input, outside-tap keyboard dismissal and steppers, then exceeded
+three minutes while relaunching. This still combines several independent flows
+before the actual persistence checks. Split those checks without replacing the
+native cold restart or dropping fractional persistence coverage.
+
+PR Duo passed 5/6 cases. Expired-session navigation passed folded, then Settings
+existed and had valid geometry after opening, but one immediate isHittable read
+was false. Existence does not establish tappability; use the native property
+wait, not a custom visibility predicate, fallback query or repeated tap. If the
+control stays inaccessible it must still fail, with useful active-display data.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43430568881/job/131902723876
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43430568881/job/131902723809
+- https://developer.apple.com/documentation/xcuiautomation/xcuielement/exists
