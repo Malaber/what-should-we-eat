@@ -128,12 +128,13 @@ fresh `XCUIApplication` for the relaunched process. Copy arguments/environment w
 `--reset`; reuse device data and keep every restoration assertion. Do not reuse
 an automation handle whose process was terminated.
 
-All UI profiles inherit `OnionaryUITestCase` and share synchronous process
-cleanup in `tearDownWithError`. XCTest's synchronous UI lifecycle hooks run on
-the main thread; `MainActor.assumeIsolated` enforces that contract. An actor hop
-from async teardown stalled after an async case failed; the synchronous hook
-was verified to return to SpringBoard and terminate the failed app. Keep
-feature scenarios independent: tag filtering, pantry matching and Intelligence
+All UI profiles inherit `OnionaryUITestCase`. Each UI scenario calls launch()
+with its own reset fixture; XCTest terminates any existing app instance before
+that clean launch. Do not insert another global Home/terminate transaction in
+teardown. Explicit Home/termination/relaunch remains inside persistence cases,
+with every saved-state assertion. The outer script still deletes its owned
+simulator on success/failure. Keep feature scenarios independent: tag filtering,
+pantry matching and Intelligence
 options each have their own case, fixture and unchanged per-case deadline.
 Editing with preserved cooking progress and temporary share-link lifecycle also
 have independent cases. Keep their complete user outcomes and assertions;
@@ -144,7 +145,7 @@ separate native cases, each using the normal editor route and cleanup. At
 at 179.149 seconds of its 180-second allowance. Keep all assertions, including
 the exact placeholder value, toolbar disappearance, help presentation/dismissal
 and editor cancellation. Do not infer a product failure from that exhausted
-combined scenario, raise its timeout or remove shared lifecycle cleanup.
+combined scenario or raise its timeout. Use the shared XCTest launch contract.
 Checklist undo/redo, fractional input/outside-tap dismissal/steppers and cold
 restoration likewise have separate cases. The restoration case still enters
 1.583945 through the keyboard, creates a checked/undo history, terminates and
@@ -162,14 +163,21 @@ Do not grow one end-to-end scenario until host speed determines whether it fits
 its deadline. Keep the 360-second Duo case and 1800-second suite limits.
 Address the reload choice through the presented native alert, and verify an
 actual checked ingredient survives choosing to keep cooking progress.
-Ordinary navigation resolves a single indexed accessible button, then checks
-existence/hittability. Do not enumerate windows and all matching controls inside
+Ordinary navigation resolves a single indexed accessible button, waits for
+existence and taps that actual element once. Standard element.tap() synchronizes
+and computes its own hittable point. Do not add a second computed isHittable
+preflight before the action or use coordinate/forced-tap fallbacks. All resulting
+navigation/state assertions remain mandatory. Do not enumerate windows and all matching controls inside
 a short predicate wait: those AX RPCs can consume the budget before evaluation.
 iPad's floating navigation is not exposed as an XCTest `TabBar` in this SDK.
 Recipe selection waits for the exact actionable row inside the named list;
 cached recipes must remain selectable without waiting for a refresh-state RPC.
-Pull-to-refresh still verifies refresh completion. Avoid global lazy `firstMatch`
-queries during split-view navigation.
+Pull-to-refresh verifies its exact Recipes loaded value through the scoped
+native query. Live Activity On/Off checks use the same native-value query and
+retain independent exact-value assertions; do not wrap them in a client-side
+expectation. Use the named recipe-list for recovered draft rows, wait for the
+exact row, then tap. Avoid global lazy firstMatch queries across the whole suite.
+Text entry must commit its full expected value before a dependent action.
 Use synchronous MainActor test methods for native UI scenarios. Do not mix
 blocking XCTest control queries/waits with async test methods: a Duo preview
 query stalled in that execution model. Pure async core tests are unaffected.
@@ -254,17 +262,19 @@ retain all fold/checklist/draft/navigation assertions. Duo's app-level frame
 can remain 669×951 while rotated window/control frames are 951×669. Check
 physical-display edge lengths separately from control visibility: compare button
 frames with the persistent primary window's frame, reject empty/nonfinite/
-offscreen controls, then require real hittability. Keyboard-window indices can
+offscreen controls, then perform a standard native element tap. Keyboard-window indices can
 change during folding: never enumerate and re-query them by array index inside
 the readiness wait. Resolve a control directly with
 `buttons.matching(identifier: title).element(boundBy: 0)` and use XCTest's native
-existence wait, then check geometry once. Existence, geometry and native
-`wait(for: \.isHittable, toEqual: true, timeout: remaining)` share one monotonic
-ten-second control-readiness deadline. Existence/valid frames can precede touch
-readiness after a fold. Never substitute repeated taps, fallback queries or a
-longer case deadline. If still unreachable, retain one active-app screenshot
-and hierarchy before failing; an outer-display recording can be black while
-the inner display is active. Scope recipe rows to the named recipe list.
+existence wait, then check geometry once and tap the element once. At 1a1680b
+the additional isHittable property wait itself raised an activation-point error
+before any touch, despite normal bounds in the shopping-list. Native tap owns
+the synchronized hit test and scrolling; a failed native touch still fails the
+case. Do not substitute repeated taps, raw coordinates, fallback queries or a
+longer deadline. Keep all fold/checklist/navigation/shopping outcomes. Geometry
+failures retain an active-app screenshot/hierarchy; XCTest retains native action
+failure attachments. Outer-screen recordings can be black on the inner display.
+Scope recipe rows to recipe-list and shopping controls to shopping-list.
 Do not put window/snapshot/frame RPCs or
 `allElementsBoundByAccessibilityElement` inside a short custom visibility
 predicate: the predicate's first evaluation alone can consume its deadline.
@@ -299,3 +309,21 @@ https://archive.ubuntu.com/ubuntu/dists/noble-security/Release
 
 During CI-only stabilization, run test profiles without archive/upload. Defer
 release tags and TestFlight until the user requests them again.
+
+For shared native-harness changes, focused cases are diagnosis, not a publish
+gate. Use execution/verify_ios_pr.py on a clean, committed codex/ branch. It
+creates a detached checkout of the exact commit and runs complete iPhone/iPad
+profiles sequentially through test.sh, with separate results and one build cache.
+Its --push-branch option is explicit opt-in: only after both suites pass may it
+fast-forward the development branch to the tested SHA. A failed profile, changed
+HEAD/branch, dirty source or rejected push prevents a published-success status.
+It never pushes main/tags, retries tests, merges, archives or uploads TestFlight.
+Read --status with the same --output path. Do not edit the candidate branch while
+this gate runs; changes invalidate publishing. Full stable-runtime Duo CI is
+still required after publication; the local gate does not substitute an RC.
+CI sets Python 3.14 before native preflight/tests and archive validation; the
+local verifier puts its own interpreter directory first in child PATH.
+
+Primary XCTest contracts:
+https://developer.apple.com/documentation/xcuiautomation/xcuiapplication/launch()
+https://developer.apple.com/documentation/xcuiautomation/xcuielement/tap()

@@ -520,11 +520,11 @@ Current verification checkpoint:
 
 ## Validate shared harness changes against full local suites
 
-- [ ] Audit the whole native suite for remaining lazy firstMatch queries and client-side accessibility value expectations. Replace them with scoped indexed queries and native existence/value waits, retaining all exact-value and feature assertions. Await the recovered draft row within its named list after a cold restart.
-- [ ] Use XCTest's documented launch boundary for independent cases instead of a second global Home/terminate sequence in teardown. Keep real Home/termination/relaunch and every persistence assertion inside the cold-restoration scenarios. Every UI scenario must still launch its own reset fixture.
-- [ ] Remove the duplicate Duo hittability preflight that errors inside XCTest. Keep finite/visible frame checks, exactly one standard element.tap() and all post-action outcomes; native tap itself computes a hittable point after its normal synchronization. No coordinate taps, forced clicks, retries or hidden-control bypass.
-- [ ] Add a deterministic full-suite verification runner: frozen detached checkout, sequential complete iPhone/iPad profiles, retained results/status, and optional fast-forward push of only the exact tested commit after both pass. Refuse publishing failed tests, a changed HEAD/branch or dirty source. Test these publish gates before use.
-- [ ] Align native CI harness Python with local/backend Python 3.14. Current native jobs run the Homebrew default 3.15 before their late screenshot-only setup step. Pin the interpreter before preflight/tests and for archive validation; do not attribute XCTest failures to this drift without evidence.
+- [x] Audit the whole native suite for remaining lazy firstMatch queries and client-side accessibility value expectations. Replace them with scoped indexed queries and native existence/value waits, retaining all exact-value and feature assertions. Await the recovered draft row within its named list after a cold restart.
+- [x] Use XCTest's documented launch boundary for independent cases instead of a second global Home/terminate sequence in teardown. Keep real Home/termination/relaunch and every persistence assertion inside the cold-restoration scenarios. Every UI scenario must still launch its own reset fixture.
+- [x] Remove the duplicate Duo hittability preflight that errors inside XCTest. Keep finite/visible frame checks, exactly one standard element.tap() and all post-action outcomes; native tap itself computes a hittable point after its normal synchronization. No coordinate taps, forced clicks, retries or hidden-control bypass.
+- [x] Add a deterministic full-suite verification runner: frozen detached checkout, sequential complete iPhone/iPad profiles, retained results/status, and optional fast-forward push of only the exact tested commit after both pass. Refuse publishing failed tests, a changed HEAD/branch or dirty source. Test these publish gates before use.
+- [x] Align native CI harness Python with local/backend Python 3.14. Current native jobs run the Homebrew default 3.15 before their late screenshot-only setup step. Pin the interpreter before preflight/tests and for archive validation; do not attribute XCTest failures to this drift without evidence.
 - [ ] Run integrated harness checks, start full local verification and update the draft PR honestly. Do not push another candidate based only on focused cases. No archive/upload/tag, larger deadlines, skipped feature tests or paid runner changes. Stable Duo CI remains mandatory after local verification succeeds.
 
 At 1a1680b the focused local iPad cooking sequence passed all three cases in
@@ -550,3 +550,25 @@ upgrade or Xcode-version switch is justified by that sample alone.
 Apple contracts:
 - https://developer.apple.com/documentation/xcuiautomation/xcuiapplication/launch()
 - https://developer.apple.com/documentation/xcuiautomation/xcuielement/tap()
+
+Verification before the full local gate:
+
+- Python 3.14.7: all 98 harness/export/release/preflight checks passed. This
+  includes eleven tests for full-profile publication gates: either native
+  profile failing, stale HEAD/branch, dirty source, main publication, existing
+  output, verify-only mode and rejected pushes. No failed verification may
+  publish a candidate or report a successful publication.
+- Shell syntax, actionlint and whitespace checks passed. The only remaining
+  custom UI expectation reads Duo viewport geometry; accessibility values,
+  disappearance and row readiness use native queries/waits throughout.
+- Start the frozen full gate with execution/verify_ios_pr.py, output
+  `.tmp/ci42-full`, shared cache `.tmp/ci28-build` and explicit --push-branch
+  codex/recipe-tools-marketing. Native suite results remain pending until it
+  completes; compilation/focused earlier passes are not substitutes.
+- The runner publishes only its captured commit after both entire ordinary
+  profiles pass and source validation succeeds. No further candidate commit
+  should be made while this gate runs; changes deliberately block publication.
+  Status: `python3 execution/verify_ios_pr.py --output .tmp/ci42-full --status`.
+- All 25 ordinary and six Duo cases remain required, with unchanged case/suite
+  deadlines. Actual stable-runtime Duo CI is still a merge gate after the
+  candidate is published. No new local runtime is installed or substituted.
