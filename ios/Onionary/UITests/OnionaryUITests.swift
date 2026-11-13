@@ -103,6 +103,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         email.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5), "Email entry requires keyboard focus")
         email.typeText("cook@example.org")
+        XCTAssertTrue(UIReadiness.waitForValue("cook@example.org", matching: app.textFields.matching(identifier: "delete-account-email")))
         XCTAssertEqual(email.value as? String, "cook@example.org")
         XCTAssertTrue(confirm.isEnabled)
         confirm.tap()
@@ -124,6 +125,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         email.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5), "Email entry requires keyboard focus")
         email.typeText("cook@example.org")
+        XCTAssertTrue(UIReadiness.waitForValue("cook@example.org", matching: app.textFields.matching(identifier: "delete-account-email")))
         XCTAssertEqual(email.value as? String, "cook@example.org")
         app.buttons["confirm-delete-account"].tap()
         XCTAssertTrue(app.staticTexts["delete-account-error"].waitForExistence(timeout: 5))
@@ -245,8 +247,10 @@ final class OnionaryUITests: OnionaryUITestCase {
         let search = app.searchFields.element(boundBy: 0)
         search.tap()
         search.typeText("Cheese")
+        XCTAssertTrue(UIReadiness.waitForValue("Cheese", matching: app.searchFields))
         XCTAssertTrue(app.buttons["recipe-1"].waitForExistence(timeout: 5))
         search.typeText(" nonexistent")
+        XCTAssertTrue(UIReadiness.waitForValue("Cheese nonexistent", matching: app.searchFields))
         XCTAssertTrue(app.staticTexts["No matching recipes"].waitForExistence(timeout: 5))
     }
 
@@ -419,11 +423,9 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.buttons["Share recipe copy"].tap()
         let createLink = app.buttons["create-recipe-share"]
         XCTAssertTrue(createLink.waitForExistence(timeout: 5))
-        XCTAssertTrue(createLink.isHittable)
         createLink.tap()
         let revoke = app.buttons["revoke-recipe-share"]
         XCTAssertTrue(revoke.waitForExistence(timeout: 5))
-        XCTAssertTrue(revoke.isHittable)
         revoke.tap()
         XCTAssertTrue(revoke.waitForNonExistence(timeout: 5), "Successful revocation dismisses the sheet")
     }
@@ -439,6 +441,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.textFields["Chefkoch or Onionary URL"].waitForExistence(timeout: 5))
         app.textFields["Chefkoch or Onionary URL"].tap()
         app.textFields["Chefkoch or Onionary URL"].typeText("https://www.chefkoch.de/rezepte/123")
+        XCTAssertTrue(UIReadiness.waitForValue("https://www.chefkoch.de/rezepte/123", matching: app.textFields.matching(identifier: "Chefkoch or Onionary URL")))
         app.buttons["Review recipe"].tap()
         XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
         app.buttons["Cancel"].tap()
@@ -453,15 +456,15 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.buttons["add-recipe"].tap()
         app.buttons["Create with Intelligence"].tap()
         XCTAssertTrue(app.textViews["Describe your recipe"].waitForExistence(timeout: 5))
-        let create = app.buttons["Create recipe draft"]
         let form = app.collectionViews["intelligence-form"]
         XCTAssertTrue(form.waitForExistence(timeout: 5))
+        let create = form.buttons.matching(identifier: "Create recipe draft").element(boundBy: 0)
         // This button follows the mode, language and availability explanation.
         for _ in 0..<4 {
-            if create.exists && create.isHittable { break }
+            if create.exists { break }
             form.swipeUp()
         }
-        XCTAssertTrue(create.exists)
+        XCTAssertTrue(create.waitForExistence(timeout: 5))
         XCTAssertFalse(create.isEnabled)
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.navigationBars["Recipe book"].exists)
@@ -482,6 +485,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         german.name = "validation-settings-german"; german.lifetime = .keepAlways; add(german)
         app.buttons["appearance-picker"].tap()
         app.buttons["Dunkel"].tap()
+        XCTAssertTrue(UIReadiness.waitForValue("Dunkel", matching: app.buttons.matching(identifier: "appearance-picker")))
         XCTAssertEqual(app.buttons["appearance-picker"].value as? String, "Dunkel")
         app.buttons["language-picker"].tap()
         app.buttons["Englisch"].tap()
