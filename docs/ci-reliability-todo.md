@@ -675,3 +675,41 @@ Implementation checkpoint:
   iPad, Duo and archive checks required before merge. Do not hold this requested
   PR update behind automatic local publication, or describe a resource preflight
   stop as a failed feature test. No archive/upload/tag or TestFlight in this turn.
+
+## Remove diagnostic recording dependency and stabilize presentations
+
+- [ ] Select Xcode's documented screenshots capture mode in the generated test scheme. Retain automatic failure screenshots, manual keepAlways captures, all tests and normal crash detection. Validate the generated scheme so a missing/ignored setting cannot silently restore default video recording.
+- [ ] Move Cooking options confirmation-dialog ownership from the toolbar button to the stable cooking view. Keep every action, the native dialog, real taps and the complete folded-draft regression. Do not hide a missing dialog with repeated taps or a direct edit shortcut.
+- [ ] Scope Intelligence assertions to intelligence-form and its Cancel action to the presented navigation bar. Verify dismissal back to Recipe book. Keep all original mode/language assertions and the same deadline.
+- [ ] Run integrated checks, compile and launch complete local native verification asynchronously, then explicitly push and update the draft PR. Full hosted checks remain required before merge; no TestFlight, retries, skipped tests, paid runner or increased deadlines.
+
+At 0c5b89d the complete local iPad suite passed all 26 cases in 645.598 seconds.
+Hosted iPhones, PR Duo and all backend/browser/HTML/archive checks passed. Branch
+iPad passed 25/26, branch Duo 5/6; PR iPad was still running at inspection.
+
+The new Duo failure is a missing Edit recipe option after tapping Cooking options.
+Retained hierarchy and active-window screenshot show the cooking view and its
+toolbar button, with no presented menu anywhere in the app. The confirmation
+dialog modifier is currently owned by the adaptive toolbar subview. Attach that
+presentation to the stable cooking view rather than bypassing the real route.
+
+iPad's Intelligence mode/language assertions and Cancel tap completed. Teardown
+then stalled in XCTest's _waitForPendingCrashlogsIfNeeded → crash-reporter sync;
+the existing three-minute allowance expired. Native session logs also show
+diagnostic screen recording startup/stop despite collect-test-diagnostics=never.
+That option controls verbose diagnostics, not the default recording lifecycle.
+The iPad recording took 8.5 seconds to stop before the pending crash-reporter
+wait. This is not evidence of a failed mode/language assertion or app crash.
+
+Use the supported scheme screenshots setting instead of the default recording
+stream. It removes unnecessary recorder/GPU state and display-bound recording
+from these tests; retain full failure/screenshot/crash evidence and verify the
+actual native result. It is not yet proof that recordings alone caused every
+earlier SpringBoard idle stall. Do not add a new batching/retry infrastructure or
+disable crash detection to make this failure disappear.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43511607549/job/132182986888
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43511607549/job/132182986776
+- https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes (automatic recordings and supported scheme/test-plan capture selection)
+- https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md#test-action (preferredScreenCaptureFormat: screenshots)
