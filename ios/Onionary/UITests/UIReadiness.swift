@@ -16,9 +16,12 @@ enum UIReadiness {
         return query.element(boundBy: 0)
     }
 
-    @MainActor static func waitForValue(_ expected: String, in element: XCUIElement) -> Bool {
-        let committed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", expected), object: element)
-        return XCTWaiter.wait(for: [committed], timeout: 5) == .completed
+    @MainActor static func waitForValue(_ expected: String, matching query: XCUIElementQuery) -> Bool {
+        // Match the committed value in the native AX query. An outer predicate
+        // expectation can expire while a nested element.value RPC is in flight,
+        // even when the field already contains the exact expected text.
+        query.matching(NSPredicate(format: "value == %@", expected))
+            .element(boundBy: 0).waitForExistence(timeout: 5)
     }
 
     static func duoViewport(_ frame: CGRect, angle: Int) -> Bool {

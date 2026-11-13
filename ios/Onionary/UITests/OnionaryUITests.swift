@@ -60,13 +60,14 @@ final class OnionaryUITests: OnionaryUITestCase {
         // identifier directly instead of retaining an index from the sheet's
         // transient field list while it is still being presented.
         let textRoles = NSPredicate(format: "elementType IN %@", [XCUIElement.ElementType.textField.rawValue, XCUIElement.ElementType.textView.rawValue])
-        let pantry = app.descendants(matching: .any).matching(textRoles)
-            .matching(identifier: "pantry-input").element(boundBy: 0)
+        let pantryFields = app.descendants(matching: .any).matching(textRoles)
+            .matching(identifier: "pantry-input")
+        let pantry = pantryFields.element(boundBy: 0)
         XCTAssertTrue(pantry.waitForExistence(timeout: 5))
         pantry.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         pantry.typeText("170 g Cheese")
-        XCTAssertTrue(UIReadiness.waitForValue("170 g Cheese", in: pantry))
+        XCTAssertTrue(UIReadiness.waitForValue("170 g Cheese", matching: pantryFields))
         XCTAssertEqual(pantry.value as? String, "170 g Cheese")
         let match = app.buttons["pantry-match-1"]
         XCTAssertTrue(match.waitForExistence(timeout: 5))
@@ -370,7 +371,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         let oldName = name.value as? String ?? ""
         name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldName.count) + "Edited pasta")
-        XCTAssertTrue(UIReadiness.waitForValue("Edited pasta", in: name))
+        XCTAssertTrue(UIReadiness.waitForValue("Edited pasta", matching: app.textFields.matching(identifier: "Name")))
         XCTAssertEqual(name.value as? String, "Edited pasta")
         app.buttons["Save"].tap()
         // Resolve the actual presented alert, not an app-wide button during

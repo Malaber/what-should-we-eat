@@ -117,7 +117,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         name.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         name.typeText(" Duo draft")
-        XCTAssertTrue(UIReadiness.waitForValue(expected, in: name), "Complete draft input must commit before folding")
+        XCTAssertTrue(UIReadiness.waitForValue(expected, matching: app.textFields.matching(identifier: "Name")), "Complete draft input must commit before folding")
         XCTAssertEqual(name.value as? String, expected)
         for angle in [0, 90, 180] {
             try pose(angle, in: app)
