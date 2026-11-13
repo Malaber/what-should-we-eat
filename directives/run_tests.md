@@ -129,6 +129,13 @@ options each have their own case, fixture and unchanged per-case deadline.
 Editing with preserved cooking progress and temporary share-link lifecycle also
 have independent cases. Keep their complete user outcomes and assertions;
 do not combine unrelated flows until cleanup consumes the case's deadline.
+Duo preview/checklist folding, editor draft folding and kitchen shopping folding
+also have independent cases. Establish the starting hinge pose for each fixture:
+resetting app data does not reset physical device posture. Keep the full
+checklist 0/180/90/180/0/180 sequence, draft 0/90/180 sequence and shopping
+0/180 sequence, plus exact values and real undo/redo/cancel/refresh interactions.
+Do not grow one end-to-end scenario until host speed determines whether it fits
+its deadline. Keep the 360-second Duo case and 1800-second suite limits.
 Address the reload choice through the presented native alert, and verify an
 actual checked ingredient survives choosing to keep cooking progress.
 Ordinary navigation resolves a single indexed accessible button, then checks
@@ -148,6 +155,18 @@ sleeps or skip feature failures. Run xcodebuild with `-collect-test-diagnostics
 never`: it disables verbose simulator-wide sysdiagnose, not XCTest results,
 failure attachments or command logs. That collector stalls after passed tests
 and consumes disk. Request a separate OS diagnostic explicitly when needed.
+On failure, test.sh invokes collect_ios_test_diagnostics.py before disposing its
+owned device. The collector records CPU/RAM, VM/swap state, device/runtime
+inventory and recent CoreSimulator events. Every read command runs once with a
+five-second deadline and a 64 KiB retained tail; the collector has a separate
+60-second wall-clock cap. Its failure cannot replace the test's original exit
+code. It never restarts a simulator/test or mutates unrelated devices.
+Keep host evidence distinct from feature failures: at 282aa5a one CI simulator
+entered Shutdown and terminated runner/app together before any hinge injection;
+the other CI case finished its feature assertions but exceeded six minutes.
+The host sample had 3 CPUs and 7 GB RAM. That establishes capacity, not the cause
+of the shutdown. Do not claim memory pressure without evidence, or enable a
+billable larger runner without user approval.
 
 Do not edit a shell script while a local process is executing it. Bash may read
 later commands using stale file offsets. Freeze local script copies before

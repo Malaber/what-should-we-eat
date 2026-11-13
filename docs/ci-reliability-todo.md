@@ -243,16 +243,17 @@ Current verification:
   run. The following attempt stopped at the disk guard before building or testing.
   Removed only the regenerable task build cache; source, logs, results, user data,
   backups and signed archives were retained.
-- Corrected full Duo verification is running once in the background on a fresh
-  disposable simulator. Logs/result: `.tmp/ci34-duo-final-labels/`. Its boot tool
-  returned zero but logged a data-migration warning; native results are still
-  required and are not yet claimed as passed. Fresh GitHub gates remain pending.
+- Corrected full Duo verification completed successfully on a fresh disposable
+  simulator: all four cases passed, zero failures/skips, in 182.0 seconds.
+  Logs/result: `.tmp/ci34-duo-final-labels/`. The boot tool returned zero but
+  logged a data-migration warning. Both ordinary native profiles subsequently
+  passed in branch and PR CI; the remaining Duo host/scope failures are below.
 - No retries, skipped feature cases, deadline increases, tags or TestFlight.
 
 ## Duo scenario isolation and host evidence
 
-- [ ] Separate preview/checklist folding, editor draft folding and kitchen shopping folding into independent native cases. Keep every current feature assertion, the full angle sequences, native interactions and the 360-second per-case / 1800-second batch limits.
-- [ ] Capture bounded host/simulator evidence on native failure before disposing the owned simulator. Include CPU/RAM, VM statistics, exact device inventory and CoreSimulator shutdown messages; never restart tests, modify unrelated devices or replace the original failing exit code.
+- [x] Separate preview/checklist folding, editor draft folding and kitchen shopping folding into independent native cases. Keep every current feature assertion, the full angle sequences, native interactions and the 360-second per-case / 1800-second batch limits.
+- [x] Capture bounded host/simulator evidence on native failure before disposing the owned simulator. Include CPU/RAM, VM statistics, exact device inventory and CoreSimulator shutdown messages; never restart tests, modify unrelated devices or replace the original failing exit code.
 - [ ] Verify the diagnostics tool with deterministic subprocess fixtures, compile/run the changed native cases and update PR evidence. Leave long verification running with an estimate; no idle GitHub polling, archive, tag or TestFlight.
 
 At 282aa5a all four local Duo cases passed (182.0 seconds total, zero failures),
@@ -274,3 +275,17 @@ The combined scenario's scope is too broad for a useful, bounded failure. Split
 its independent outcomes rather than extending deadlines. Host failures must
 remain failures and retain evidence. A larger runner is billable and is not
 enabled by this change.
+
+Current verification:
+
+- 55 harness/export tests passed, including real timeout/nonzero-output capture
+  and shell-entry-point failures at compilation, boot and native execution.
+  Unavailable/failing diagnostics retain the original exit code and still delete
+  only the script's owned device. No failed native case is retried.
+- The actual CI entry point (`ios/Onionary/Scripts/test.sh`) passed Swift core
+  checks and compiled the changed native suite. Its six Duo cases are running
+  once in the background: `.tmp/ci35-duo-isolated.log` and
+  `.tmp/ci35-duo-isolated/Onionary.xcresult`. Completion remains unverified.
+- Shell syntax, workflow lint and whitespace checks passed. Full fresh GitHub
+  gates remain required; no idle polling, archive/upload, release tag or billable
+  runner change is included.
