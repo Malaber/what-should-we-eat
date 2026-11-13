@@ -103,7 +103,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         let email = app.textFields["delete-account-email"]
         XCTAssertTrue(email.waitForExistence(timeout: 5))
         email.tap()
-        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "Email entry requires keyboard focus")
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5), "Email entry requires keyboard focus")
         email.typeText("cook@example.org")
         XCTAssertEqual(email.value as? String, "cook@example.org")
         XCTAssertTrue(confirm.isEnabled)
@@ -124,7 +124,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         let email = app.textFields["delete-account-email"]
         XCTAssertTrue(email.waitForExistence(timeout: 5))
         email.tap()
-        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "Email entry requires keyboard focus")
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5), "Email entry requires keyboard focus")
         email.typeText("cook@example.org")
         XCTAssertEqual(email.value as? String, "cook@example.org")
         app.buttons["confirm-delete-account"].tap()
@@ -145,6 +145,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap(); name.typeText("My offline soup")
+        XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")))
         app.buttons["Save"].tap()
         XCTAssertTrue(app.otherElements["recipe-save-error"].waitForExistence(timeout: 5) || app.staticTexts["recipe-save-error"].exists)
         XCTAssertEqual(name.value as? String, "My offline soup")
@@ -152,7 +153,9 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.buttons["Cancel"].tap()
         app = Self.relaunchPreservingData(app)
         try tapNavigation("Recipes", in: app)
-        app.buttons["saved-draft-My offline soup"].firstMatch.tap()
+        let saved = app.collectionViews["recipe-list"].buttons.matching(identifier: "saved-draft-My offline soup").element(boundBy: 0)
+        XCTAssertTrue(saved.waitForExistence(timeout: 5))
+        saved.tap()
         XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.textFields["Name"].value as? String, "My offline soup")
     }
@@ -191,7 +194,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.launch()
         XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["c***@example.org"].exists)
-        XCTAssertFalse(app.alerts.firstMatch.exists)
+        XCTAssertFalse(app.alerts.element(boundBy: 0).exists)
         app.buttons["Choose a recipe"].tap()
         try selectRecipe(in: app)
         app.buttons["preview-cook"].tap()
@@ -221,8 +224,8 @@ final class OnionaryUITests: OnionaryUITestCase {
         // Gesture belongs to the list; pressing a row can select/drag the recipe
         // and leave the split-view preview transitioning during the next query.
         list.swipeDown(velocity: .slow)
-        let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "Recipes loaded"), object: list)
-        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 5), .completed)
+        XCTAssertTrue(UIReadiness.waitForValue("Recipes loaded", matching: app.collectionViews.matching(identifier: "recipe-list")))
+        XCTAssertEqual(list.value as? String, "Recipes loaded")
     }
 
     @MainActor
@@ -241,7 +244,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.buttons["All recipes"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["recipe-1"].exists)
         app.buttons["All recipes"].tap()
-        let search = app.searchFields.firstMatch
+        let search = app.searchFields.element(boundBy: 0)
         search.tap()
         search.typeText("Cheese")
         XCTAssertTrue(app.buttons["recipe-1"].waitForExistence(timeout: 5))
@@ -257,25 +260,24 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.buttons["Choose a recipe"].tap()
         try selectRecipe(in: app)
         app.buttons["preview-cook"].tap()
-        let mode = app.buttons["cooking-mode"]
+        let modes = app.buttons.matching(identifier: "cooking-mode")
+        let mode = modes.element(boundBy: 0)
         XCTAssertTrue(mode.waitForExistence(timeout: 5))
         app.buttons["portion-plus"].tap()
         XCTAssertTrue(app.staticTexts["2× recipe"].waitForExistence(timeout: 5), "The first portion tap must update the recipe before starting its activity")
-        let on = NSPredicate(format: "value == %@", "On")
-        let off = NSPredicate(format: "value == %@", "Off")
-        expectation(for: on, evaluatedWith: mode)
-        waitForExpectations(timeout: 5)
+        XCTAssertTrue(UIReadiness.waitForValue("On", matching: modes))
+        XCTAssertEqual(mode.value as? String, "On")
         mode.tap()
-        expectation(for: off, evaluatedWith: mode)
-        waitForExpectations(timeout: 5)
+        XCTAssertTrue(UIReadiness.waitForValue("Off", matching: modes))
+        XCTAssertEqual(mode.value as? String, "Off")
         app.buttons["portion-plus"].tap()
         XCTAssertEqual(mode.value as? String, "Off")
         mode.tap()
-        expectation(for: on, evaluatedWith: mode)
-        waitForExpectations(timeout: 5)
+        XCTAssertTrue(UIReadiness.waitForValue("On", matching: modes))
+        XCTAssertEqual(mode.value as? String, "On")
         mode.tap()
-        expectation(for: off, evaluatedWith: mode)
-        waitForExpectations(timeout: 5)
+        XCTAssertTrue(UIReadiness.waitForValue("Off", matching: modes))
+        XCTAssertEqual(mode.value as? String, "Off")
     }
 
     @MainActor
@@ -321,7 +323,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
     func testStepAmountTools() throws {
         let app = try openStepEditor()
-        let instruction = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-")).firstMatch
+        let instruction = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-")).element(boundBy: 0)
         XCTAssertTrue(instruction.waitForExistence(timeout: 5))
         instruction.tap()
         let insert = app.buttons["insert-ingredient-amount"]
@@ -454,7 +456,8 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.buttons["Create with Intelligence"].tap()
         XCTAssertTrue(app.textViews["Describe your recipe"].waitForExistence(timeout: 5))
         let create = app.buttons["Create recipe draft"]
-        let form = app.collectionViews.firstMatch
+        let form = app.collectionViews["intelligence-form"]
+        XCTAssertTrue(form.waitForExistence(timeout: 5))
         // This button follows the mode, language and availability explanation.
         for _ in 0..<4 {
             if create.exists && create.isHittable { break }
@@ -508,8 +511,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.buttons["ingredient-1"].tap()
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
         // Capture stable content after the transient action banner has dismissed.
-        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["recent-action"])
-        waitForExpectations(timeout: 8)
+        XCTAssertTrue(app.staticTexts["recent-action"].waitForNonExistence(timeout: 8))
         capture("02-cooking-companion")
         app.buttons["Adjust portions"].tap()
         XCTAssertTrue(app.textFields["portions"].waitForExistence(timeout: 5))
@@ -537,7 +539,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         try selectRecipe(in: app)
         app.buttons["preview-cook"].tap()
         XCTAssertTrue(app.buttons["portion-plus"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.keyboards.firstMatch.exists)
+        XCTAssertFalse(app.keyboards.element(boundBy: 0).exists)
         app.buttons["portion-plus"].tap()
         XCTAssertTrue(app.staticTexts["2× recipe"].waitForExistence(timeout: 5))
         app.buttons["portion-minus"].tap()

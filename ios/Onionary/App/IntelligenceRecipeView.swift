@@ -48,7 +48,7 @@ struct IntelligenceRecipeView: View {
                             .disabled(busy || prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || unavailable != nil)
                         if busy { ProgressView() }
                     }
-                }.dismissibleKeyboard().navigationTitle("Create with Intelligence")
+                }.accessibilityIdentifier("intelligence-form").dismissibleKeyboard().navigationTitle("Create with Intelligence")
                     .toolbar { Button("Cancel") { dismiss() } }
                     .interactiveDismissDisabled(busy)
             }
