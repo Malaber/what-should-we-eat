@@ -546,15 +546,21 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    func testCookUndoScaleAndRestoreAfterTermination() throws {
-        var app = XCUIApplication()
+    private func openCookingRecipe() throws -> XCUIApplication {
+        let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()
         try selectRecipe(in: app)
         app.buttons["preview-cook"].tap()
+        XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
+        return app
+    }
+
+    @MainActor
+    func testCookingChecklistUndoRedo() throws {
+        let app = try openCookingRecipe()
         let cheese = app.buttons["ingredient-1"]
-        XCTAssertTrue(cheese.waitForExistence(timeout: 5))
         cheese.tap()
         XCTAssertEqual(cheese.value as? String, "Checked")
         cheese.tap()
@@ -565,20 +571,47 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertEqual(cheese.value as? String, "Unchecked")
         app.buttons["undo"].tap()
         XCTAssertEqual(cheese.value as? String, "Checked")
+    }
+
+    @MainActor
+    private func enterFractionalPortions(in app: XCUIApplication) {
         app.buttons["Adjust portions"].tap()
         XCTAssertTrue(app.staticTexts["Your ingredients right now"].exists)
         let multiplier = app.textFields["portions"]
         multiplier.tap()
-        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "Portion field must open the keyboard before testing dismissal")
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5), "Portion field must open the keyboard before testing dismissal")
         multiplier.typeText(XCUIKeyboardKey.delete.rawValue + "1.583945")
+        XCTAssertTrue(UIReadiness.waitForValue("1.583945", matching: app.textFields.matching(identifier: "portions")))
+        XCTAssertEqual(multiplier.value as? String, "1.583945")
+    }
+
+    @MainActor
+    func testFractionalPortionsKeyboardAndSteppers() throws {
+        let app = try openCookingRecipe()
+        enterFractionalPortions(in: app)
         app.staticTexts["By portions"].tap()
-        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5), "Outside tap must dismiss the keyboard")
-        app.buttons["Done"].firstMatch.tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForNonExistence(timeout: 5), "Outside tap must dismiss the keyboard")
+        app.buttons["apply-portions"].tap()
         XCTAssertTrue(app.staticTexts["1.58× recipe"].waitForExistence(timeout: 5), app.debugDescription)
         app.buttons["portion-plus"].tap()
         XCTAssertTrue(app.staticTexts["2.58× recipe"].waitForExistence(timeout: 5))
         app.buttons["portion-minus"].tap()
         XCTAssertTrue(app.staticTexts["1.58× recipe"].waitForExistence(timeout: 5), app.debugDescription)
+    }
+
+    @MainActor
+    func testCookUndoScaleAndRestoreAfterTermination() throws {
+        var app = try openCookingRecipe()
+        let cheese = app.buttons["ingredient-1"]
+        cheese.tap()
+        cheese.tap()
+        app.buttons["undo"].tap()
+        XCTAssertEqual(cheese.value as? String, "Checked")
+        enterFractionalPortions(in: app)
+        // Confirm the sheet while the field is focused. Its stable identifier
+        // distinguishes this commit action from the keyboard's Done button.
+        app.buttons["apply-portions"].tap()
+        XCTAssertTrue(app.staticTexts["1.58× recipe"].waitForExistence(timeout: 5))
         app = Self.relaunchPreservingData(app)
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")

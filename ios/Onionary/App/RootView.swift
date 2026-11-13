@@ -476,7 +476,7 @@ struct ScalingView: View {
                 }
                 if let error { Text(error).foregroundStyle(.red) }
             }.dismissibleKeyboard().navigationTitle("Make it your size").navigationBarTitleDisplayMode(.inline)
-                .toolbar { Button("Done") { commitPortions(); dismiss() } }
+                .toolbar { Button("Done") { commitPortions(); dismiss() }.accessibilityIdentifier("apply-portions") }
                 .onChange(of: editingField) { old, _ in
                     if old == "Cooking for" || old == "Original recipe serves" { commitPortions() }
                     if old == "Amount you have", !available.isEmpty { commitIngredient() }

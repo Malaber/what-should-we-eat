@@ -145,6 +145,14 @@ at 179.149 seconds of its 180-second allowance. Keep all assertions, including
 the exact placeholder value, toolbar disappearance, help presentation/dismissal
 and editor cancellation. Do not infer a product failure from that exhausted
 combined scenario, raise its timeout or remove shared lifecycle cleanup.
+Checklist undo/redo, fractional input/outside-tap dismissal/steppers and cold
+restoration likewise have separate cases. The restoration case still enters
+1.583945 through the keyboard, creates a checked/undo history, terminates and
+relaunches the real process, then verifies checked state, 1.58× display and
+persisted `Undo · Checked`. The dedicated fractional case retains outside-tap
+keyboard dismissal and plus/minus checks. Use the `apply-portions` identifier
+for sheet confirmation; a keyboard Done button is a different action. Await the
+exact field value before confirming and use a directly indexed keyboard query.
 Duo preview/checklist folding, editor draft folding and kitchen shopping folding
 also have independent cases. Establish the starting hinge pose for each fixture:
 resetting app data does not reset physical device posture. Keep the full
