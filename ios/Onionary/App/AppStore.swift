@@ -443,6 +443,7 @@ final class AppStore {
         if ProcessInfo.processInfo.arguments.contains("--renew-session") {
             credential?.refreshToken = "test-refresh"
             credential?.sessionExpiresAt = Date().addingTimeInterval(42 * 86400).timeIntervalSince1970
+            UITestBackend.expireSessionAfterBackgrounding()
         }
     }
     #endif

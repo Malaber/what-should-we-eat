@@ -158,7 +158,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testSilentRenewalPreservesCookingProgress() throws {
-        var app = XCUIApplication()
+        let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--renew-session", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()
@@ -166,7 +166,12 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.buttons["preview-cook"].waitForExistence(timeout: 5))
         app.buttons["preview-cook"].tap()
         app.buttons["ingredient-1"].tap()
-        app = Self.relaunchPreservingData(app)
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        // Expire access while the real app is backgrounded, then let its normal
+        // foreground refresh renew it. Full cold restoration has its own case.
+        UIAppLifecycle.background()
+        app.activate()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
         try tapNavigation("Settings", in: app)
@@ -174,6 +179,8 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.staticTexts["Account, Test Cook"].exists)
         XCTAssertTrue(app.staticTexts["Email, cook@example.org"].exists)
         XCTAssertFalse(app.buttons["Sign in with passkey"].exists)
+        try tapNavigation("Cooking", in: app)
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
     }
 
     @MainActor

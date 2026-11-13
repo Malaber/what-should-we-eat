@@ -1,13 +1,17 @@
 import XCTest
 
 @MainActor enum UIAppLifecycle {
-    static func terminate() {
+    static func background() {
         // Use the system Home action without activating a second app's
         // automation session. Resolve the background process after that handoff;
         // do not send further state queries through the old foreground proxy.
         XCUIDevice.shared.press(.home)
         let home = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         XCTAssertTrue(home.wait(for: .runningForeground, timeout: 10))
+    }
+
+    static func terminate() {
+        background()
         let background = XCUIApplication()
         if background.state != .notRunning { background.terminate() }
         XCTAssertTrue(background.wait(for: .notRunning, timeout: 10))
