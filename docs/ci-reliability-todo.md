@@ -525,7 +525,7 @@ Current verification checkpoint:
 - [x] Remove the duplicate Duo hittability preflight that errors inside XCTest. Keep finite/visible frame checks, exactly one standard element.tap() and all post-action outcomes; native tap itself computes a hittable point after its normal synchronization. No coordinate taps, forced clicks, retries or hidden-control bypass.
 - [x] Add a deterministic full-suite verification runner: frozen detached checkout, sequential complete iPhone/iPad profiles, retained results/status, and optional fast-forward push of only the exact tested commit after both pass. Refuse publishing failed tests, a changed HEAD/branch or dirty source. Test these publish gates before use.
 - [x] Align native CI harness Python with local/backend Python 3.14. Current native jobs run the Homebrew default 3.15 before their late screenshot-only setup step. Pin the interpreter before preflight/tests and for archive validation; do not attribute XCTest failures to this drift without evidence.
-- [ ] Run integrated harness checks, start full local verification and update the draft PR honestly. Do not push another candidate based only on focused cases. No archive/upload/tag, larger deadlines, skipped feature tests or paid runner changes. Stable Duo CI remains mandatory after local verification succeeds.
+- [x] Run integrated harness checks, start full local verification and update the draft PR honestly. Do not push another candidate based only on focused cases. No archive/upload/tag, larger deadlines, skipped feature tests or paid runner changes. Stable Duo CI remains mandatory after local verification succeeds.
 
 At 1a1680b the focused local iPad cooking sequence passed all three cases in
 146.341 seconds, zero failures/skips; owned-device cleanup completed. Both CI
@@ -575,8 +575,8 @@ Verification before the full local gate:
 
 ## Bind Duo interaction readiness to its window
 
-- [ ] Require the actual primary window's display dimensions and requested orientation after each hinge transition, alongside the existing app viewport check. Scope Duo button queries to that window, with unique matches and one native element tap. Keep all angles and exact undo/redo/draft/shopping outcomes.
-- [ ] Capture that window rather than the application-root screenshot, which produces black inner-display attachments. Preserve a useful hierarchy when an interaction fails. Do not infer an app bug or a wrong event display from black application-root captures alone.
+- [x] Require the actual primary window's display dimensions and requested orientation after each hinge transition, alongside the existing app viewport check. Scope Duo button queries to that window, with unique matches and one native element tap. Keep all angles and exact undo/redo/draft/shopping outcomes.
+- [x] Capture that window rather than the application-root screenshot, which produces black inner-display attachments. Preserve a useful hierarchy when an interaction fails. Do not infer an app bug or a wrong event display from black application-root captures alone.
 - [ ] Add regression coverage for a correct display with stale window orientation. Run integrated harness checks and the full frozen local iPhone/iPad gate before publishing the shared query-helper change. Keep the standard runner, existing time limits and all mandatory tests; require stable-runtime Duo CI afterward.
 
 Candidate 72aaee0 completed both full local ordinary suites: 25/25 iPhone and
@@ -605,3 +605,18 @@ Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43477906303/job/132066491041
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43477901484
 - https://github.com/appium/WebDriverAgent/blob/master/WebDriverAgentLib/Commands/FBElementCommands.m (window anchors retain display affinity/rotation; ordinary element clicks still use native tap)
+
+Window correction checkpoint:
+
+- All 98 Python 3.14.7 harness/export/release/preflight checks passed. Actionlint,
+  shell syntax and git diff --check passed. Native geometry regression assertions
+  now reject the correct display in a stale orientation, invalid angles and zero
+  frames. Their native execution and corrected Duo behavior remain pending.
+- Run the complete frozen local gate in `.tmp/ci43-full`, reusing
+  `.tmp/ci28-build`. Only publish its exact clean candidate after all 25 iPhone
+  and all 25 iPad cases pass. No new candidate may be committed during that run.
+  Stable Duo 27.1/24A94425 remains a CI-only gate on this machine; the local RC
+  is not substituted. Existing case/suite deadlines and standard runner remain.
+- This changes test synchronization and diagnostics only. It does not establish
+  that the prior tap failure was a product undo bug, and no green native result
+  is claimed until the actual full suites complete.
