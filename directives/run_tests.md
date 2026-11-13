@@ -138,6 +138,13 @@ options each have their own case, fixture and unchanged per-case deadline.
 Editing with preserved cooking progress and temporary share-link lifecycle also
 have independent cases. Keep their complete user outcomes and assertions;
 do not combine unrelated flows until cleanup consumes the case's deadline.
+Step placeholder insertion/keyboard-toolbar dismissal and contextual help are
+separate native cases, each using the normal editor route and cleanup. At
+64e39f4 the combined test completed every feature assertion but reached teardown
+at 179.149 seconds of its 180-second allowance. Keep all assertions, including
+the exact placeholder value, toolbar disappearance, help presentation/dismissal
+and editor cancellation. Do not infer a product failure from that exhausted
+combined scenario, raise its timeout or remove shared lifecycle cleanup.
 Duo preview/checklist folding, editor draft folding and kitchen shopping folding
 also have independent cases. Establish the starting hinge pose for each fixture:
 resetting app data does not reset physical device posture. Keep the full

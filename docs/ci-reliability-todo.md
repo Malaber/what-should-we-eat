@@ -441,7 +441,7 @@ Current verification:
 
 ## Step editor scenario budget
 
-- [ ] Split the combined step-amount insertion and help-dialog flow into independent native cases. Keep placeholder content, contextual toolbar visibility, keyboard dismissal, help presentation/dismissal and editor cancellation checks; keep the 180-second limit.
+- [x] Split the combined step-amount insertion and help-dialog flow into independent native cases. Keep placeholder content, contextual toolbar visibility, keyboard dismissal, help presentation/dismissal and editor cancellation checks; keep the 180-second limit.
 - [ ] Run both cases consecutively on a fresh iPhone simulator, with normal per-case cleanup. Include a following scenario to verify the next launch still works. Run integrated harness checks and update the directive/PR.
 - [ ] Push the correction, leaving full branch/PR CI as the merge gate. No retries, skipped assertions, longer deadlines, tags, uploads or paid runner change.
 
@@ -458,3 +458,17 @@ or the removed runtime gate. Retain cleanup, and give each independently useful
 editor feature its own scenario rather than raising timeouts or omitting checks.
 
 Evidence: https://github.com/Malaber/what-should-we-eat/actions/runs/43417351715/job/131858677774
+
+Verification at implementation:
+
+- Python 3.14.7: all 87 harness/export/release/preflight checks passed. Shell
+  syntax, actionlint and whitespace checks passed.
+- Updated native UI target compiled with Xcode 27.1; exact 27.0/24A434 runtime
+  selection and bounded boot passed. One focused sequence (cold restoration,
+  ingredient insertion, contextual help) is running without retries on a fresh
+  disposable iPhone simulator. Logs/results: `.tmp/ci40-native-step-tools/`.
+  Its final result and full corrected CI remain pending at this checkpoint.
+- Ordinary suite now has 23 mandatory cases; Duo retains six. Every original
+  insertion/help/keyboard/cancel check remains, with explicit help-dismissal and
+  editor-closure assertions added. Production app/backend code, shared cleanup,
+  test fixtures and 180/360-second case / 1800-second suite limits are unchanged.

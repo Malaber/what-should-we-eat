@@ -301,7 +301,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    func testStepAmountTools() throws {
+    private func openStepEditor() throws -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -315,6 +315,12 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertFalse(app.buttons["insert-ingredient-amount"].exists)
         app.swipeUp()
         app.swipeUp()
+        return app
+    }
+
+    @MainActor
+    func testStepAmountTools() throws {
+        let app = try openStepEditor()
         let instruction = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-")).firstMatch
         XCTAssertTrue(instruction.waitForExistence(timeout: 5))
         instruction.tap()
@@ -325,10 +331,23 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue((instruction.value as? String ?? "").contains("{{Cheese|100%}}"))
         app.buttons["Done"].tap()
         XCTAssertFalse(insert.exists)
-        app.buttons["step-help"].tap()
-        XCTAssertTrue(app.alerts["Ingredient amount help"].waitForExistence(timeout: 5))
-        app.alerts.buttons["Done"].tap()
         app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.textFields["Name"].waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testStepHelpWithoutKeyboard() throws {
+        let app = try openStepEditor()
+        let help = app.buttons["step-help"]
+        XCTAssertTrue(help.waitForExistence(timeout: 5))
+        help.tap()
+        let alert = app.alerts["Ingredient amount help"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        alert.buttons["Done"].tap()
+        XCTAssertTrue(alert.waitForNonExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["insert-ingredient-amount"].exists)
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.textFields["Name"].waitForNonExistence(timeout: 5))
     }
 
     @MainActor
