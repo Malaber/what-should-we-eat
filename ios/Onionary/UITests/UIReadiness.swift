@@ -11,13 +11,15 @@ enum UIReadiness {
     }
 
     @MainActor static func button(_ title: String, in app: XCUIApplication) -> XCUIElement {
+        buttons(title, in: app).element(boundBy: 0)
+    }
+
+    @MainActor static func buttons(_ title: String, in root: XCUIElement) -> XCUIElementQuery {
         let recipeID = title.hasPrefix("recipe-") && !title.dropFirst(7).isEmpty && title.dropFirst(7).allSatisfy(\.isNumber)
         let shopping = title == "Generate shopping list" || title == "Refresh shopping list" || title.hasPrefix("shopping-")
-        let query: XCUIElementQuery
-        if recipeID { query = app.collectionViews["recipe-list"].buttons.matching(identifier: title) }
-        else if shopping { query = app.collectionViews["shopping-list"].buttons.matching(identifier: title) }
-        else { query = app.buttons.matching(identifier: title) }
-        return query.element(boundBy: 0)
+        if recipeID { return root.collectionViews["recipe-list"].buttons.matching(identifier: title) }
+        if shopping { return root.collectionViews["shopping-list"].buttons.matching(identifier: title) }
+        return root.buttons.matching(identifier: title)
     }
 
     @MainActor static func waitForValue(_ expected: String, matching query: XCUIElementQuery) -> Bool {
@@ -35,5 +37,12 @@ enum UIReadiness {
         // orientation. Check both edge lengths, rather than area or axis order.
         return abs(min(frame.width, frame.height) - expected.width) < 1
             && abs(max(frame.width, frame.height) - expected.height) < 1
+    }
+
+    static func duoWindow(_ frame: CGRect, angle: Int) -> Bool {
+        guard duoViewport(frame, angle: angle) else { return false }
+        // The app root uses natural display coordinates. Its shape alone does
+        // not establish the orientation of the window that receives touches.
+        return angle == 0 ? frame.height > frame.width : frame.width > frame.height
     }
 }

@@ -4,14 +4,14 @@ import XCTest
 final class OnionaryDuoTests: OnionaryUITestCase {
 
     @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
-        let button = UIReadiness.button(title, in: app)
+        let window = app.windows.element(boundBy: 0)
+        // Resolve through the receiving window after every display handoff.
+        // A unique query also fails if duplicate controls become actionable.
+        let button = UIReadiness.buttons(title, in: window).element
         let exists = button.waitForExistence(timeout: 10)
-        let validFrame = exists && UIReadiness.validControlFrame(button.frame, in: app.windows.element(boundBy: 0).frame)
+        let validFrame = exists && UIReadiness.validControlFrame(button.frame, in: window.frame)
         if !validFrame {
-            let screen = XCTAttachment(screenshot: app.screenshot())
-            screen.name = "Unreachable control active display"; screen.lifetime = .keepAlways; add(screen)
-            let snapshot = XCTAttachment(string: app.debugDescription)
-            snapshot.name = "Unreachable control hierarchy"; snapshot.lifetime = .keepAlways; add(snapshot)
+            captureFailure("Unreachable control: \(title)", in: app)
         }
         XCTAssertTrue(exists, "Missing control after folding: \(title)")
         XCTAssertTrue(validFrame, "Invalid control geometry: \(title)")
@@ -29,16 +29,33 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         // Require the selected display bounds before reading any UI.
         let displayChanged = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             UIReadiness.duoViewport(app.frame, angle: angle)
+                && UIReadiness.duoWindow(app.windows.element(boundBy: 0).frame, angle: angle)
         }, object: nil)
-        XCTAssertEqual(XCTWaiter.wait(for: [displayChanged], timeout: 15), .completed)
-
+        let result = XCTWaiter.wait(for: [displayChanged], timeout: 15)
+        if result != .completed { captureFailure("Unsettled window at \(angle)°", in: app) }
+        XCTAssertEqual(result, .completed, "Receiving window must finish the requested display rotation")
     }
 
     @MainActor private func capture(_ angle: Int, in app: XCUIApplication) {
-        // Capture the active app through the existing automation connection;
-        // spawning simctl screenshot for every fold can stall the display service.
-        let attachment = XCTAttachment(screenshot: app.screenshot())
+        // The app-root capture can select the inactive cover display. A window
+        // retains display affinity; use it through the existing XCTest session.
+        let attachment = XCTAttachment(screenshot: app.windows.element(boundBy: 0).screenshot())
         attachment.name = "Duo-workspace-\(angle)"; attachment.lifetime = .keepAlways; add(attachment)
+    }
+
+    @MainActor private func captureFailure(_ title: String, in app: XCUIApplication) {
+        let screen = XCTAttachment(screenshot: app.windows.element(boundBy: 0).screenshot())
+        screen.name = title; screen.lifetime = .keepAlways; add(screen)
+        let hierarchy = XCTAttachment(string: app.debugDescription)
+        hierarchy.name = title + " hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
+    }
+
+    @MainActor private func assertIngredient(_ expected: String, in app: XCUIApplication) {
+        let query = UIReadiness.buttons("ingredient-1", in: app.windows.element(boundBy: 0))
+        let committed = UIReadiness.waitForValue(expected, matching: query)
+        if !committed { captureFailure("Ingredient did not become \(expected)", in: app) }
+        XCTAssertTrue(committed)
+        XCTAssertEqual(query.element.value as? String, expected)
     }
 
     @MainActor func testInvalidHingeAnglesAreRejected() {
@@ -54,6 +71,14 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 669, height: 951), angle: 180))
         // Same area as the outer display, but not a valid display shape.
         XCTAssertFalse(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 233, height: 1356), angle: 0))
+        XCTAssertTrue(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 466, height: 678), angle: 0))
+        XCTAssertTrue(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 951, height: 669), angle: 90))
+        XCTAssertTrue(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 951, height: 669), angle: 180))
+        // Correct physical display, stale orientation: not ready for input.
+        XCTAssertFalse(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 678, height: 466), angle: 0))
+        XCTAssertFalse(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 669, height: 951), angle: 180))
+        XCTAssertFalse(UIReadiness.duoWindow(.zero, angle: 90))
+        XCTAssertFalse(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 951, height: 669), angle: 45))
         let viewport = CGRect(x: 0, y: 0, width: 466, height: 678)
         XCTAssertTrue(UIReadiness.validControlFrame(CGRect(x: 12, y: 600, width: 44, height: 44), in: viewport))
         XCTAssertFalse(UIReadiness.validControlFrame(.zero, in: viewport))
@@ -106,9 +131,9 @@ final class OnionaryDuoTests: OnionaryUITestCase {
             capture(angle, in: app)
         }
         try tap("undo", in: app)
-        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Unchecked")
+        assertIngredient("Unchecked", in: app)
         try tap("redo", in: app)
-        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        assertIngredient("Checked", in: app)
     }
 
     @MainActor func testRecipeDraftSurvivesFolds() throws {

@@ -167,7 +167,19 @@ Ordinary navigation resolves a single indexed accessible button, waits for
 existence and taps that actual element once. Standard element.tap() synchronizes
 and computes its own hittable point. Do not add a second computed isHittable
 preflight before the action or use coordinate/forced-tap fallbacks. All resulting
-navigation/state assertions remain mandatory. Do not enumerate windows and all matching controls inside
+navigation/state assertions remain mandatory. Duo resolves a unique button
+through the primary window (retaining named recipe/shopping-list scopes), not
+through application-root bounds. After hinge injection/orientation, require both
+the expected natural app viewport and the primary window's actual orientation
+within the existing 15-second geometry allowance. Correct edge lengths alone do
+not prove the receiving window finished rotating. Capture the window through
+XCTest for fold diagnostics: application-root captures can be entirely black on
+the inner display. A black capture does not itself prove touches targeted the
+wrong display; inspect the retained synthesized event's displayID and coordinates.
+Keep native value readiness and an independent exact state assertion after
+Undo/Redo. On mismatch retain the window capture and full hierarchy; do not retry
+the action or substitute a coordinate tap.
+Do not enumerate windows and all matching controls inside
 a short predicate wait: those AX RPCs can consume the budget before evaluation.
 iPad's floating navigation is not exposed as an XCTest `TabBar` in this SDK.
 Recipe selection waits for the exact actionable row inside the named list;
