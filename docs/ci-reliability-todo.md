@@ -283,17 +283,17 @@ Current verification:
   Unavailable/failing diagnostics retain the original exit code and still delete
   only the script's owned device. No failed native case is retried.
 - The actual CI entry point (`ios/Onionary/Scripts/test.sh`) passed Swift core
-  checks and compiled the changed native suite. Its six Duo cases are running
-  once in the background: `.tmp/ci35-duo-isolated.log` and
-  `.tmp/ci35-duo-isolated/Onionary.xcresult`. Completion remains unverified.
+  checks, compilation and all six Duo cases: zero failures/skips in 269.6 seconds.
+  Logs/results: `.tmp/ci35-duo-isolated.log` and
+  `.tmp/ci35-duo-isolated/Onionary.xcresult`. Both following Duo CI jobs also passed.
 - Shell syntax, workflow lint and whitespace checks passed. Full fresh GitHub
   gates remain required; no idle polling, archive/upload, release tag or billable
   runner change is included.
 
 ## Foreground session renewal contract
 
-- [ ] Exercise silent renewal after real background/foreground activation, with the test backend expiring its access token only after backgrounding. Verify checked cooking progress before and after renewal, renewed access expiry, identity and absence of a passkey prompt.
-- [ ] Keep the separate full process-termination restoration test and offline-draft restart test unchanged. These cover cold disk restoration; do not combine a second process launch with the foreground-renewal scenario.
+- [x] Exercise silent renewal after real background/foreground activation, with the test backend expiring its access token only after backgrounding. Verify checked cooking progress before and after renewal, renewed access expiry, identity and absence of a passkey prompt.
+- [x] Keep the separate full process-termination restoration test and offline-draft restart test unchanged. These cover cold disk restoration; do not combine a second process launch with the foreground-renewal scenario.
 - [ ] Run the native renewal regression with its preceding share-link scenario on iPad; retain existing deadlines/assertions and update evidence. No retries, skipped cases, billable runners, release tags or TestFlight.
 
 At 382e99f both Duo CI jobs passed, as did the full six-case local Duo suite
@@ -310,3 +310,18 @@ fresh fixture token. Replace that indirect sequence with a deterministic server
 expiry after backgrounding, then assert real foreground renewal preserves the
 existing adventure. Full termination/disk restoration remains independently
 tested by testCookUndoScaleAndRestoreAfterTermination and offline draft recovery.
+
+Current verification:
+
+- Updated Debug app and native test bundle compile with Xcode 27.1. The fixture
+  observer is compiled out of Release builds. Production renewal logic is unchanged.
+- Focused native iPad share-link→renewal verification is running once on a fresh
+  disposable simulator; completion is not yet claimed. Logs/results:
+  `.tmp/ci36-ipad-renewal/`. All original renewal assertions remain, with checked
+  progress additionally verified before backgrounding and after renewed expiry.
+- Separate cold-termination restoration and offline-draft restart scenarios are
+  unchanged. The ordinary suite remains 22 mandatory cases; no retries, skipped
+  behavior, larger test deadlines, billable runners, tags or uploads.
+- Shell syntax, workflow lint and whitespace checks passed. Existing 55 harness
+  checks and the six-case local/both-CI Duo results remain valid; full fresh
+  GitHub checks are still the merge gate.

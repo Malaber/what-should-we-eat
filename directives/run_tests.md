@@ -150,6 +150,18 @@ Use synchronous MainActor test methods for native UI scenarios. Do not mix
 blocking XCTest control queries/waits with async test methods: a Duo preview
 query stalled in that execution model. Pure async core tests are unaffected.
 
+Session renewal has its own foreground lifecycle contract. The Debug backend
+accepts the initial access token, records a real didEnterBackground notification,
+then rejects that token after willEnterForeground. The production foreground
+refresh must renew it while retaining cooking progress. This fixture is driven
+by lifecycle events, never elapsed time or request counts. Use Home followed by
+activate on the same running application; verify checked progress before/after,
+renewed expiry, account/email and no passkey prompt, then return to Cooking and
+verify the check again after renewal completed. Full termination/disk restoration
+and offline-draft relaunch remain separate native scenarios. Do not add a second
+cold launch to foreground renewal: the old fixture renewed before progress was
+entered, then a slow CI terminate/relaunch consumed its three-minute deadline.
+
 Inspect XCTest action timelines and retain logs/xcresults. Do not add retries,
 sleeps or skip feature failures. Run xcodebuild with `-collect-test-diagnostics
 never`: it disables verbose simulator-wide sysdiagnose, not XCTest results,
