@@ -289,3 +289,24 @@ Current verification:
 - Shell syntax, workflow lint and whitespace checks passed. Full fresh GitHub
   gates remain required; no idle polling, archive/upload, release tag or billable
   runner change is included.
+
+## Foreground session renewal contract
+
+- [ ] Exercise silent renewal after real background/foreground activation, with the test backend expiring its access token only after backgrounding. Verify checked cooking progress before and after renewal, renewed access expiry, identity and absence of a passkey prompt.
+- [ ] Keep the separate full process-termination restoration test and offline-draft restart test unchanged. These cover cold disk restoration; do not combine a second process launch with the foreground-renewal scenario.
+- [ ] Run the native renewal regression with its preceding share-link scenario on iPad; retain existing deadlines/assertions and update evidence. No retries, skipped cases, billable runners, release tags or TestFlight.
+
+At 382e99f both Duo CI jobs passed, as did the full six-case local Duo suite
+(269.6 seconds, zero failures). iPhone and all non-iOS checks passed. The PR iPad
+run passed 21 of 22 cases; only silent renewal exceeded its three-minute limit.
+Its mid-case termination took 44 seconds and relaunch took over 60 seconds.
+Progress, renewed expiry, account/email and no-prompt assertions subsequently
+completed, but the test had already exceeded its deadline. The branch iPad job
+was cancelled, not a feature-test failure.
+
+The old fixture rejected the first token immediately at startup, so renewal
+occurred before cooking progress was entered. Restarting the app renewed another
+fresh fixture token. Replace that indirect sequence with a deterministic server
+expiry after backgrounding, then assert real foreground renewal preserves the
+existing adventure. Full termination/disk restoration remains independently
+tested by testCookUndoScaleAndRestoreAfterTermination and offline draft recovery.
