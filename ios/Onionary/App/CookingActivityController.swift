@@ -47,7 +47,20 @@ import Observation
 }
 
 @MainActor @Observable final class CookingActivityController {
-    private let session = CookingActivitySession(backend: AppleCookingActivityBackend())
+    private let session: CookingActivitySession
+    init() {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--ui-testing"), !arguments.contains("--system-live-activity") {
+            session = CookingActivitySession(backend: UITestCookingActivityBackend())
+            return
+        }
+        #endif
+        // Real ActivityKit is mandatory for production and its dedicated UI
+        // integration case. Other fixtures must not leak OS activities across
+        // app launches or animate SpringBoard during unrelated recipe tests.
+        session = CookingActivitySession(backend: AppleCookingActivityBackend())
+    }
     var active: Bool { session.active }
     var lastFailure: String? { session.lastFailure }
     func synchronize(_ snapshot: CookingSnapshot?, scope: String, start: Bool = false) async throws {

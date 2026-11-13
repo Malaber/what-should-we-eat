@@ -256,8 +256,19 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testLiveActivityStartAndStop() throws {
+        try assertCookingModeCycle(systemActivityKit: true)
+    }
+
+    @MainActor
+    func testCookingModeWithFixtureBackend() throws {
+        try assertCookingModeCycle(systemActivityKit: false)
+    }
+
+    @MainActor
+    private func assertCookingModeCycle(systemActivityKit: Bool) throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        if systemActivityKit { app.launchArguments.append("--system-live-activity") }
         app.launch()
         app.buttons["Choose a recipe"].tap()
         try selectRecipe(in: app)
