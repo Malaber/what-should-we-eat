@@ -49,7 +49,11 @@ struct IntelligenceRecipeView: View {
                         if busy { ProgressView() }
                     }
                 }.accessibilityIdentifier("intelligence-form").dismissibleKeyboard().navigationTitle("Create with Intelligence")
-                    .toolbar { Button("Cancel") { dismiss() } }
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }.accessibilityIdentifier("cancel-intelligence")
+                        }
+                    }
                     .interactiveDismissDisabled(busy)
             }
         }

@@ -34,6 +34,16 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
+    private func dismissIntelligence(in app: XCUIApplication) {
+        let cancel = app.navigationBars["Create with Intelligence"].buttons
+            .matching(identifier: "cancel-intelligence").element(boundBy: 0)
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+        cancel.tap()
+        XCTAssertTrue(app.collectionViews["intelligence-form"].waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Recipe book"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testMultipleTagFilters() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
@@ -83,9 +93,11 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Recipes", in: app)
         app.buttons["add-recipe"].tap()
         app.buttons["Create with Intelligence"].tap()
-        XCTAssertTrue(app.staticTexts["Recipe mode"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Recipe language"].exists)
-        app.buttons["Cancel"].tap()
+        let form = app.collectionViews["intelligence-form"]
+        XCTAssertTrue(form.waitForExistence(timeout: 5))
+        XCTAssertTrue(form.staticTexts["Recipe mode"].waitForExistence(timeout: 5))
+        XCTAssertTrue(form.staticTexts["Recipe language"].exists)
+        dismissIntelligence(in: app)
     }
 
     @MainActor
@@ -480,8 +492,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         }
         XCTAssertTrue(create.waitForExistence(timeout: 5))
         XCTAssertFalse(create.isEnabled)
-        app.buttons["Cancel"].tap()
-        XCTAssertTrue(app.navigationBars["Recipe book"].exists)
+        dismissIntelligence(in: app)
     }
 
     @MainActor
