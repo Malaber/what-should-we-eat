@@ -59,11 +59,29 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertTrue(UIReadiness.validControlFrame(toolbar, in: landscapeWindow))
     }
 
-    @MainActor func testCookingPreviewAndDraftSurviveFolds() throws {
+    @MainActor private func launchCookingFixture() throws -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
+        // Hinge state belongs to the device, not the app's reset fixture.
+        // Every independent case establishes its own initial physical display.
+        try pose(0, in: app)
         XCTAssertTrue(app.buttons["Choose a recipe"].waitForExistence(timeout: 10))
+        return app
+    }
+
+    @MainActor private func startCooking(in app: XCUIApplication) throws {
+        try tap("Recipes", in: app)
+        try tap("recipe-1", in: app)
+        try tap("preview-cook", in: app)
+        try tap("portion-plus", in: app)
+        try tap("ingredient-1", in: app)
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        XCTAssertTrue(app.staticTexts["2× recipe"].exists)
+    }
+
+    @MainActor func testRecipePreviewAndChecklistSurviveFolds() throws {
+        let app = try launchCookingFixture()
         try tap("Recipes", in: app)
         try tap("recipe-1", in: app)
         XCTAssertTrue(app.buttons["preview-cook"].waitForExistence(timeout: 5))
@@ -85,6 +103,12 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Unchecked")
         try tap("redo", in: app)
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+    }
+
+    @MainActor func testRecipeDraftSurvivesFolds() throws {
+        let app = try launchCookingFixture()
+        try startCooking(in: app)
+        try pose(180, in: app)
         try tap("Cooking options", in: app)
         try tap("Edit recipe", in: app)
         let name = app.textFields["Name"]
@@ -101,6 +125,13 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         }
         try tap("Cancel", in: app)
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        XCTAssertTrue(app.staticTexts["2× recipe"].exists)
+    }
+
+    @MainActor func testKitchenShoppingChecksSurviveFolds() throws {
+        let app = try launchCookingFixture()
+        try startCooking(in: app)
+        try pose(180, in: app)
         try tap("Kitchen", in: app)
         try tap("Add meals", in: app)
         try tap("Lemon & cheese pasta", in: app)
