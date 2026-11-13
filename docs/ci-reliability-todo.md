@@ -572,3 +572,36 @@ Verification before the full local gate:
 - All 25 ordinary and six Duo cases remain required, with unchanged case/suite
   deadlines. Actual stable-runtime Duo CI is still a merge gate after the
   candidate is published. No new local runtime is installed or substituted.
+
+## Bind Duo interaction readiness to its window
+
+- [ ] Require the actual primary window's display dimensions and requested orientation after each hinge transition, alongside the existing app viewport check. Scope Duo button queries to that window, with unique matches and one native element tap. Keep all angles and exact undo/redo/draft/shopping outcomes.
+- [ ] Capture that window rather than the application-root screenshot, which produces black inner-display attachments. Preserve a useful hierarchy when an interaction fails. Do not infer an app bug or a wrong event display from black application-root captures alone.
+- [ ] Add regression coverage for a correct display with stale window orientation. Run integrated harness checks and the full frozen local iPhone/iPad gate before publishing the shared query-helper change. Keep the standard runner, existing time limits and all mandatory tests; require stable-runtime Duo CI afterward.
+
+Candidate 72aaee0 completed both full local ordinary suites: 25/25 iPhone and
+25/25 iPad, zero failures/skips. The exact tested commit was then pushed. Its
+push workflow 43477901484 passed every job, including all six Duo scenarios,
+both ordinary profiles, archive/backend/browser/HTML and both creative bundles.
+
+PR workflow 43477906303 passed iPhone and the non-simulator checks. Duo passed
+5/6: after the full 0/180/90/180/0/180 sequence, Undo's native tap waited 60 seconds
+for a SpringBoard animation notification and computed hit point {-1, -1}; the
+mandatory checked-state assertion correctly failed. The retained synthesized
+event targets display 3, so this is not evidence of an outer-display event.
+The old readiness check accepts either axis order of application-root bounds;
+it does not establish that the primary window has finished the requested
+rotation. Bind queries/readiness/captures to the window, preserving real native
+hit testing rather than using a coordinate fallback or suppressing assertions.
+This correction still requires actual stable-runtime CI validation.
+
+The PR iPad job was cancelled approximately fourteen minutes after starting,
+before producing test output or an xcresult. GitHub reports only "The operation
+was canceled"; no assertion failure or timeout cause is available. Do not modify
+iPad feature assertions or increase deadlines based on that cancellation.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43477906303/job/132066490172
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43477906303/job/132066491041
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43477901484
+- https://github.com/appium/WebDriverAgent/blob/master/WebDriverAgentLib/Commands/FBElementCommands.m (window anchors retain display affinity/rotation; ordinary element clicks still use native tap)
