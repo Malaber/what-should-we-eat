@@ -442,7 +442,7 @@ Current verification:
 ## Step editor scenario budget
 
 - [x] Split the combined step-amount insertion and help-dialog flow into independent native cases. Keep placeholder content, contextual toolbar visibility, keyboard dismissal, help presentation/dismissal and editor cancellation checks; keep the 180-second limit.
-- [ ] Run both cases consecutively on a fresh iPhone simulator, with normal per-case cleanup. Include a following scenario to verify the next launch still works. Run integrated harness checks and update the directive/PR.
+- [x] Run both cases consecutively on a fresh iPhone simulator, with normal per-case cleanup. Cold restoration → insertion → help passed all three cases in 129.026 seconds, zero failures/skips; cleanup completed. Integrated harness checks passed and directive/PR were updated.
 - [ ] Push the correction, leaving full branch/PR CI as the merge gate. No retries, skipped assertions, longer deadlines, tags, uploads or paid runner change.
 
 At 64e39f4 all PR checks passed, including three native profiles and both creative
@@ -500,3 +500,20 @@ Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43430568881/job/131902723876
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43430568881/job/131902723809
 - https://developer.apple.com/documentation/xcuiautomation/xcuielement/exists
+
+Current verification checkpoint:
+
+- Python 3.14.7: all 87 harness/export/release/preflight checks passed. Shell
+  syntax, actionlint and whitespace checks passed.
+- Xcode 27.1 compiled the app and complete UI target, including the native
+  property-wait API used by Duo. The disposable iPad's exact 27.0/24A434 runtime
+  metadata and bounded boot passed. Three focused cooking cases are running once
+  in `.tmp/ci41-ipad-cooking/`; their final result remains pending here.
+- Ordinary suite now has 25 mandatory cases; Duo retains six. No existing
+  outcomes, angle sequences, cleanup or 180/360-second case / 1800-second suite
+  limits were removed. The native property wait uses the remaining time from
+  the existing ten-second control-readiness deadline, not a second full budget.
+- Stable local 27.1/24A94425 is absent and only the RC is installed. No fallback,
+  runtime deletion, local SDK mutation or unsafe installation was attempted.
+  Actual stable-runtime Duo behavior must pass in fresh full CI; compilation
+  alone does not establish that its Settings transition now passes.
