@@ -5,15 +5,9 @@ final class OnionaryDuoTests: OnionaryUITestCase {
 
     @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
         let button = UIReadiness.button(title, in: app)
-        let deadline = ProcessInfo.processInfo.systemUptime + 10
         let exists = button.waitForExistence(timeout: 10)
         let validFrame = exists && UIReadiness.validControlFrame(button.frame, in: app.windows.element(boundBy: 0).frame)
-        // A fold can expose the new hierarchy/frame before its controls can
-        // receive touches. Wait on the same element with XCTest's native API;
-        // existence, geometry and hittability share the original ten seconds.
-        let remaining = max(0, deadline - ProcessInfo.processInfo.systemUptime)
-        let hittable = validFrame && button.wait(for: \.isHittable, toEqual: true, timeout: remaining)
-        if !hittable {
+        if !validFrame {
             let screen = XCTAttachment(screenshot: app.screenshot())
             screen.name = "Unreachable control active display"; screen.lifetime = .keepAlways; add(screen)
             let snapshot = XCTAttachment(string: app.debugDescription)
@@ -21,7 +15,10 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         }
         XCTAssertTrue(exists, "Missing control after folding: \(title)")
         XCTAssertTrue(validFrame, "Invalid control geometry: \(title)")
-        XCTAssertTrue(hittable, "Control not reachable: \(title)")
+        // Native tap synchronizes and computes a hittable point itself. An
+        // additional isHittable preflight can error on a stale fold snapshot
+        // before this action gets a chance to synchronize or scroll the row.
+        // This is one real element tap, never a forced/coordinate fallback.
         button.tap()
     }
 

@@ -1,7 +1,7 @@
 import XCTest
 
-/// Inspect geometry before hittability: XCTest can record a failure merely
-/// asking for the activation point of a hidden/stale element after a fold.
+/// Validate geometry, then let the native tap compute its synchronized hit point.
+/// A separate hit-test read can error on a stale snapshot after a fold.
 enum UIReadiness {
     static func validControlFrame(_ frame: CGRect, in viewport: CGRect) -> Bool {
         let values = [frame.minX, frame.minY, frame.width, frame.height,
@@ -12,7 +12,11 @@ enum UIReadiness {
 
     @MainActor static func button(_ title: String, in app: XCUIApplication) -> XCUIElement {
         let recipeID = title.hasPrefix("recipe-") && !title.dropFirst(7).isEmpty && title.dropFirst(7).allSatisfy(\.isNumber)
-        let query = recipeID ? app.collectionViews["recipe-list"].buttons.matching(identifier: title) : app.buttons.matching(identifier: title)
+        let shopping = title == "Generate shopping list" || title == "Refresh shopping list" || title.hasPrefix("shopping-")
+        let query: XCUIElementQuery
+        if recipeID { query = app.collectionViews["recipe-list"].buttons.matching(identifier: title) }
+        else if shopping { query = app.collectionViews["shopping-list"].buttons.matching(identifier: title) }
+        else { query = app.buttons.matching(identifier: title) }
         return query.element(boundBy: 0)
     }
 

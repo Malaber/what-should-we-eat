@@ -20,7 +20,6 @@ final class OnionaryUITests: OnionaryUITestCase {
     private func tapNavigation(_ title: String, in app: XCUIApplication) throws {
         let button = UIReadiness.button(title, in: app)
         XCTAssertTrue(button.waitForExistence(timeout: 5), "Missing tab: \(title)")
-        XCTAssertTrue(button.isHittable, "Tab is not reachable: \(title)")
         button.tap()
     }
 
@@ -31,7 +30,6 @@ final class OnionaryUITests: OnionaryUITestCase {
         // actionable row is the readiness condition, not a separate refresh RPC.
         let row = list.buttons.matching(identifier: "recipe-\(id)").element(boundBy: 0)
         XCTAssertTrue(row.waitForExistence(timeout: 5))
-        XCTAssertTrue(row.isHittable, "Recipe row is not reachable: \(id)")
         row.tap()
     }
 
