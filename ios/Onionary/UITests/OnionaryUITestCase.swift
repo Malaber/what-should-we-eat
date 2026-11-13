@@ -18,8 +18,9 @@ import XCTest
     }
 }
 
-/// Every device profile releases the old foreground scene/automation session
-/// before the next case launches. Duo must follow the same lifecycle as iPad/iPhone.
+/// Each UI scenario calls launch(), which terminates an existing instance and
+/// starts its own reset fixture. Cold-persistence tests explicitly terminate
+/// inside their scenario; do not add a second global Home/terminate boundary.
 class OnionaryUITestCase: XCTestCase {
     override class func setUp() {
         super.setUp()
@@ -30,14 +31,5 @@ class OnionaryUITestCase: XCTestCase {
     override func setUp() {
         super.setUp()
         continueAfterFailure = false
-    }
-    override func tearDownWithError() throws {
-        // XCTest invokes synchronous UI lifecycle hooks on the main thread.
-        // Keep cleanup synchronous, including after an async test aborts.
-        MainActor.assumeIsolated {
-            let app = XCUIApplication()
-            if app.state != .notRunning { UIAppLifecycle.terminate() }
-        }
-        try super.tearDownWithError()
     }
 }
