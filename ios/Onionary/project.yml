@@ -138,4 +138,9 @@ schemes:
     test:
       # Automated UI assertions need XCTest, not an LLDB attachment at each launch.
       debugEnabled: false
+      # Avoid a display-bound recorder across Duo folds and recorder teardown.
+      # Keep normal failure screenshots and every explicit keepAlways capture.
+      preferredScreenCaptureFormat: screenshots
+      captureScreenshotsAutomatically: true
+      deleteScreenshotsWhenEachTestSucceeds: true
       targets: [OnionaryUITests]

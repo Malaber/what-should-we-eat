@@ -6,6 +6,7 @@ python3 ../../execution/check_ios_build_environment.py --stage test
 swift test
 marketing_version=$(python3 ../../execution/version.py --ios)
 xcodegen generate
+python3 ../../execution/check_ios_build_environment.py --test-scheme Onionary.xcodeproj/xcshareddata/xcschemes/Onionary.xcscheme
 result_dir=${TEST_RESULTS_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/onionary-tests.XXXXXX")}
 mkdir -p "$result_dir"
 result_dir=$(cd "$result_dir" && pwd)
