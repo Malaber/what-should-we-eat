@@ -248,3 +248,29 @@ Current verification:
   returned zero but logged a data-migration warning; native results are still
   required and are not yet claimed as passed. Fresh GitHub gates remain pending.
 - No retries, skipped feature cases, deadline increases, tags or TestFlight.
+
+## Duo scenario isolation and host evidence
+
+- [ ] Separate preview/checklist folding, editor draft folding and kitchen shopping folding into independent native cases. Keep every current feature assertion, the full angle sequences, native interactions and the 360-second per-case / 1800-second batch limits.
+- [ ] Capture bounded host/simulator evidence on native failure before disposing the owned simulator. Include CPU/RAM, VM statistics, exact device inventory and CoreSimulator shutdown messages; never restart tests, modify unrelated devices or replace the original failing exit code.
+- [ ] Verify the diagnostics tool with deterministic subprocess fixtures, compile/run the changed native cases and update PR evidence. Leave long verification running with an estimate; no idle GitHub polling, archive, tag or TestFlight.
+
+At 282aa5a all four local Duo cases passed (182.0 seconds total, zero failures),
+and both CI runs passed every ordinary iPhone/iPad, backend/browser and archive
+job. The two remaining failures are distinct:
+
+- Branch: runner and app received SIGTERM together during the first Recipes tap.
+  Xcode's session log confirms the simulator entered Shutdown, then failed to
+  read TESTMANAGERD_SIM_SOCK. No feature assertion or hinge dispatch had failed.
+  The available artifacts do not identify who initiated the shutdown.
+- PR: the combined case completed preview, checklist folds, editor/draft folds
+  and shopping assertions at 399.9 seconds, then failed during cleanup. The
+  result reports the unchanged six-minute limit. UI reads took up to 17 seconds.
+  The retained sample shows a 3-core, 7 GB VM; the app's main thread was servicing
+  its run loop, not stuck in application code. Resource pressure is a hypothesis,
+  not a proven cause of the separate simulator shutdown.
+
+The combined scenario's scope is too broad for a useful, bounded failure. Split
+its independent outcomes rather than extending deadlines. Host failures must
+remain failures and retain evidence. A larger runner is billable and is not
+enabled by this change.
