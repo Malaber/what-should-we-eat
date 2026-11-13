@@ -408,8 +408,9 @@ Verification:
 - [x] Remove the post-boot `simctl getenv SIMULATOR_ROOT` gate introduced at 2bb8b14. All six native jobs (PR and branch) stop at this new gate after compilation/boot succeed; no UI case starts. Do not extend its timeout or retry it.
 - [x] Validate the selected exact runtime bundle's SystemVersion metadata on the host before device creation. Retain shared build pins, exact bundle selection and disposable-CI SDK mapping/readback. Record the running OS from inside the XCTest runner without another host-to-guest RPC.
 - [x] Cover wrong/missing bundle metadata, pre-create failure, supplied/owned simulator lifecycle and absence of post-boot guest probes. Run the integrated harness; retain every feature assertion and original XCTest deadline.
-- [ ] Focused real native smoke run must finish; full corrected CI remains required.
-- [ ] Push to the existing PR with accurate evidence. Leave full CI running; no idle polling, billable runner, release tag, local archive or TestFlight upload.
+- [x] Focused real native smoke run passed: portion controls in 27.299 seconds, zero failures/skips; owned-device cleanup completed.
+- [ ] Full corrected CI remains required.
+- [x] Push to the existing PR with accurate evidence. Leave full CI running; no idle polling, billable runner, release tag, local archive or TestFlight upload.
 
 At 2bb8b14 all backend, browser, HTML and unsigned archive jobs passed. All three
 native profiles failed on both events at the newly added runtime verification
@@ -429,9 +430,10 @@ Current verification:
   and six Duo cases and their existing deadlines remain unchanged.
 - Updated native UI bundle compiled successfully with Xcode 27.1. The corrected
   selector validated the local 27.0/24A434 bundle and created a disposable device;
-  its bounded boot completed. One unchanged portion-button native case is running
-  in `.tmp/ci39-native-smoke/`, with final result and owned-device cleanup pending.
-  Do not claim a passed native case from a successful build or boot alone.
+  its bounded boot completed. The unchanged portion-button native case passed in
+  27.299 seconds, zero failures/skips. XCTest directly reported `Version 27.0
+  (Build 24A434)` in-process. Test command and owned-device cleanup both exited
+  successfully. Logs/results: `.tmp/ci39-native-smoke/`.
 - Installed-bundle validation replaces the previous host-side booted-guest gate.
   Runtime output from XCTest is diagnostic evidence, not an added startup gate.
   The older warm-guest verification above remains historical, not proof of cold
