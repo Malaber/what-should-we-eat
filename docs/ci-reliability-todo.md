@@ -517,3 +517,35 @@ Current verification checkpoint:
   runtime deletion, local SDK mutation or unsafe installation was attempted.
   Actual stable-runtime Duo behavior must pass in fresh full CI; compilation
   alone does not establish that its Settings transition now passes.
+
+## Validate shared harness changes against full local suites
+
+- [ ] Audit the whole native suite for remaining lazy firstMatch queries and client-side accessibility value expectations. Replace them with scoped indexed queries and native existence/value waits, retaining all exact-value and feature assertions. Await the recovered draft row within its named list after a cold restart.
+- [ ] Use XCTest's documented launch boundary for independent cases instead of a second global Home/terminate sequence in teardown. Keep real Home/termination/relaunch and every persistence assertion inside the cold-restoration scenarios. Every UI scenario must still launch its own reset fixture.
+- [ ] Remove the duplicate Duo hittability preflight that errors inside XCTest. Keep finite/visible frame checks, exactly one standard element.tap() and all post-action outcomes; native tap itself computes a hittable point after its normal synchronization. No coordinate taps, forced clicks, retries or hidden-control bypass.
+- [ ] Add a deterministic full-suite verification runner: frozen detached checkout, sequential complete iPhone/iPad profiles, retained results/status, and optional fast-forward push of only the exact tested commit after both pass. Refuse publishing failed tests, a changed HEAD/branch or dirty source. Test these publish gates before use.
+- [ ] Run integrated harness checks, start full local verification and update the draft PR honestly. Do not push another candidate based only on focused cases. No archive/upload/tag, larger deadlines, skipped feature tests or paid runner changes. Stable Duo CI remains mandatory after local verification succeeds.
+
+At 1a1680b the focused local iPad cooking sequence passed all three cases in
+146.341 seconds, zero failures/skips; owned-device cleanup completed. Both CI
+ordinary profiles passed 24/25 cases; PR Duo passed 5/6, branch Duo passed all six.
+All backend/browser/format/archive jobs passed. Four failures remained:
+
+- PR iPhone: Settings case hangs inside its initial app.launch(), before any
+  Settings interaction. Changing Settings assertions cannot address this.
+- PR iPad: offline draft survives the restart phase, then its lazy global
+  firstMatch row lookup stalls. Await and address that row through recipe-list.
+- Branch iPhone: Live Activity still uses the older outer value expectation.
+  The awaited AX lookup runs beyond its five-second expectation deadline.
+- PR Duo: Generate shopping list has normal bounds in the active shopping-list,
+  but the separate hittability computation raises an activation-point error
+  before a touch. Standard tap performs the real framework hit test; retain it
+  and the generated-shopping-row checks rather than adding another preflight.
+
+The host samples show 3 CPUs/7 GiB RAM, with swap between zero and 820 MiB.
+They do not prove memory pressure caused these failures. No speculative runner
+upgrade or Xcode-version switch is justified by that sample alone.
+
+Apple contracts:
+- https://developer.apple.com/documentation/xcuiautomation/xcuiapplication/launch()
+- https://developer.apple.com/documentation/xcuiautomation/xcuielement/tap()
