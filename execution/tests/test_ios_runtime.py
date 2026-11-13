@@ -1,4 +1,4 @@
-"""No Xcode changes/downloads: exercise exact runtime selection and guest checks."""
+"""No Xcode changes/downloads: exercise exact runtime selection and bundle checks."""
 import importlib.util
 import json
 from pathlib import Path
@@ -108,26 +108,36 @@ def test_only_disposable_github_runner_can_map_sdk_and_must_verify_result(monkey
 
 
 @pytest.mark.parametrize('version,build', [('27.1', '24A94425'), ('27.1', '24A94232'), ('27.0', '24A434')])
-def test_running_guest_build_must_match_pin(monkeypatch, tmp_path, capsys, version, build):
-    source = tmp_path / 'System/Library/CoreServices/SystemVersion.plist'
+def test_installed_bundle_metadata_must_match_pin_without_guest_rpc(monkeypatch, tmp_path, version, build):
+    source = tmp_path / 'Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist'
     source.parent.mkdir(parents=True)
     source.write_bytes(plistlib.dumps({'ProductVersion': version, 'ProductBuildVersion': build}))
-    calls = []
-    monkeypatch.setattr(ios_runtime, 'read_command', lambda *args: calls.append(args) or str(tmp_path))
+    def forbidden(*args, **kwargs):
+        pytest.fail('Bundle verification must not start a host/guest command')
+
+    monkeypatch.setattr(ios_runtime.subprocess, 'check_output', forbidden)
+    monkeypatch.setattr(ios_runtime.subprocess, 'run', forbidden)
     if build == '24A94425':
-        ios_runtime.verify_booted('owned-device', '27.1')
-        assert 'Verified booted iOS 27.1 (24A94425)' in capsys.readouterr().out
+        ios_runtime.verify_runtime_bundle(tmp_path, '27.1')
     else:
-        with pytest.raises(RuntimeError, match='XCTest was not started'):
-            ios_runtime.verify_booted('owned-device', '27.1')
-    assert calls == [('xcrun', 'simctl', 'getenv', 'owned-device', 'SIMULATOR_ROOT')]
+        with pytest.raises(RuntimeError, match='Simulator was not created'):
+            ios_runtime.verify_runtime_bundle(tmp_path, '27.1')
 
 
 @pytest.mark.parametrize('root', ['', 'relative/path'])
-def test_invalid_guest_metadata_cannot_be_accepted(monkeypatch, root):
-    monkeypatch.setattr(ios_runtime, 'read_command', lambda *args: root)
-    with pytest.raises(RuntimeError, match='no absolute runtime root'):
-        ios_runtime.verify_booted('owned-device', '27.1')
+def test_relative_bundle_path_cannot_be_accepted(root):
+    with pytest.raises(ValueError, match='absolute path'):
+        ios_runtime.verify_runtime_bundle(root, '27.1')
+
+
+@pytest.mark.parametrize('metadata', [None, b'invalid plist', plistlib.dumps({})])
+def test_missing_or_invalid_system_metadata_cannot_be_accepted(tmp_path, metadata):
+    if metadata is not None:
+        source = tmp_path / 'Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist'
+        source.parent.mkdir(parents=True)
+        source.write_bytes(metadata)
+    with pytest.raises((FileNotFoundError, plistlib.InvalidFileException, RuntimeError)):
+        ios_runtime.verify_runtime_bundle(tmp_path, '27.1')
 
 
 def test_runtime_reads_have_deadline(monkeypatch):

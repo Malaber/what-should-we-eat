@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-from execution.ios_runtime import DEFAULT_DEVICE, default_runtime, runtime_build, runtime_identifier
+from execution.ios_runtime import DEFAULT_DEVICE, default_runtime, runtime_build, runtime_identifier, verify_runtime_bundle
 
 
 def select_runtime(runtimes, device_type=DEFAULT_DEVICE, version=None):
@@ -36,7 +36,8 @@ def main():
     runtimes = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'runtimes', '--json']))['runtimes']
     runtime = select_runtime(runtimes, args.device_type, args.runtime)
     version = args.runtime or default_runtime(args.device_type)
-    print(f"Selected iOS {version} ({runtime_build(version)}) at {runtime} for {args.device_type}", file=sys.stderr)
+    verify_runtime_bundle(runtime, version)
+    print(f"Verified installed iOS {version} ({runtime_build(version)}) at {runtime} for {args.device_type}", file=sys.stderr)
     if args.create:
         print(subprocess.check_output(['xcrun', 'simctl', 'create', 'Onionary Isolated Tests',
                                        args.device_type, runtime], text=True).strip())

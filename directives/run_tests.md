@@ -215,13 +215,20 @@ with the explicit command for a developer to review. Never delete runtimes to
 force selection. Catalog reference:
 https://devimages-cdn.apple.com/downloads/xcode/simulators/index2.dvtdownloadableindex
 
-Compile against a shutdown disposable simulator, then call bounded
-`simctl bootstatus <id> -b` once. Before XCTest, ios_runtime.py reads the running
-guest's SIMULATOR_ROOT/System/Library/CoreServices/SystemVersion.plist and checks
-both ProductVersion and ProductBuildVersion. A mismatch stops the command;
-retain runtime.log and the original failure/owned-device cleanup. Check supplied
-simulator IDs as well, without deleting devices owned by the caller. Keep all
-profiles mandatory, with no latest/RC fallback or new test retries/deadlines.
+Before creating a device, resolve_simulator.py validates ProductVersion and
+ProductBuildVersion in the selected bundle's
+Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist.
+Missing or mismatched metadata is terminal before any device is created.
+Compile against the shutdown disposable simulator, then call bounded
+`simctl bootstatus <id> -b` once, followed directly by XCTest. Do not insert
+`simctl getenv` or `simctl spawn` readiness/metadata probes after boot: the added
+getenv gate at 2bb8b14 stalled on all six cold CI guests before any UI test ran,
+despite passing on a warm local simulator. Native runner class setup records
+ProcessInfo.operatingSystemVersionString in the retained test log, in-process
+after XCTest initializes. This log is evidence, not a host-side boot gate.
+Preserve original command failures and owned-device cleanup. Caller-supplied
+devices are neither booted nor deleted by test.sh. Keep all profiles mandatory,
+with no latest/RC fallback or new test retries/deadlines.
 
 Duo injects its simulator-only HID event directly in the XCTest bundle using
 DuoHinge.m, following the in-process approach documented by Appium's

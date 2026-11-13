@@ -1,6 +1,5 @@
-"""Exact simulator build pins, disposable-CI SDK mapping and boot verification."""
+"""Exact simulator build pins, disposable-CI SDK mapping and bundle validation."""
 
-import argparse
 import json
 import os
 from pathlib import Path
@@ -60,31 +59,17 @@ def configure_sdk_runtime(version, environ=None):
     print(f"Mapped SDK {sdk_version} ({sdk_build}) to runtime {expected}", flush=True)
 
 
-def verify_booted(simulator, version):
-    """Read the running guest's system version, not its ambiguous OS identifier."""
+def verify_runtime_bundle(bundle, version):
+    """Validate installed system metadata before creating/booting a guest."""
     expected = runtime_build(version)
-    root = read_command("xcrun", "simctl", "getenv", simulator, "SIMULATOR_ROOT")
-    if not root or not Path(root).is_absolute():
-        raise RuntimeError(f"Simulator {simulator} returned no absolute runtime root")
+    if not Path(bundle).is_absolute():
+        raise ValueError("Runtime bundle must be an absolute path")
+    root = Path(bundle) / "Contents/Resources/RuntimeRoot"
     with (Path(root) / "System/Library/CoreServices/SystemVersion.plist").open("rb") as source:
         metadata = plistlib.load(source)
     actual = (metadata.get("ProductVersion"), metadata.get("ProductBuildVersion"))
     if actual != (version, expected):
         raise RuntimeError(
-            f"Simulator {simulator} booted iOS {actual[0]} ({actual[1]}); "
-            f"required iOS {version} ({expected}). XCTest was not started."
+            f"Runtime bundle {bundle} contains iOS {actual[0]} ({actual[1]}); "
+            f"required iOS {version} ({expected}). Simulator was not created."
         )
-    print(f"Verified booted iOS {version} ({expected}) on {simulator}", flush=True)
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--verify-booted", required=True, metavar="SIMULATOR_ID")
-    parser.add_argument("--device-type", default=DEFAULT_DEVICE)
-    parser.add_argument("--runtime", default="")
-    args = parser.parse_args()
-    verify_booted(args.verify_booted, args.runtime or default_runtime(args.device_type))
-
-
-if __name__ == "__main__":
-    main()

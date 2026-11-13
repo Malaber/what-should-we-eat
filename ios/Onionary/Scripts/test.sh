@@ -43,10 +43,9 @@ if [[ "$created_simulator" == true ]]; then
   # Start monitoring before boot, rather than attaching after boot returned.
   python3 ../../execution/run_bounded.py 600 xcrun simctl bootstatus "$simulator_id" -b
 fi
-python3 ../../execution/run_bounded.py --log "$result_dir/runtime.log" 45 \
-  python3 ../../execution/ios_runtime.py --verify-booted "$simulator_id" \
-  --device-type "${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro}" \
-  --runtime "${SIMULATOR_RUNTIME:-}"
+# Runtime bundle metadata was checked before creation. Do not add a post-boot
+# simctl getenv/spawn probe: cold hosted guests can stall that extra RPC before
+# XCTest starts. The runner records its OS version directly when it initializes.
 test_allowance=180
 if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then test_allowance=360; fi
 # Keep XCTest failures/attachments, but avoid Xcode's simulator-wide sysdiagnose

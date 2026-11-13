@@ -2,6 +2,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import plistlib
 import sys
 import pytest
 
@@ -58,8 +59,12 @@ def test_standard_phone_uses_270_even_when_newer_compatible_runtime_exists():
 
 
 @pytest.mark.parametrize('create', [False, True])
-def test_cli_creates_with_exact_bundle_path_but_lists_by_os_identifier(monkeypatch, capsys, create):
+def test_cli_creates_with_exact_bundle_path_but_lists_by_os_identifier(monkeypatch, tmp_path, capsys, create):
     pinned = runtime('27.1')
+    pinned['bundlePath'] = str(tmp_path / 'iOS 27.1.simruntime')
+    source = Path(pinned['bundlePath']) / 'Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist'
+    source.parent.mkdir(parents=True)
+    source.write_bytes(plistlib.dumps({'ProductVersion': '27.1', 'ProductBuildVersion': '24A94425'}))
     calls = []
 
     def output(command, **kwargs):
@@ -81,3 +86,18 @@ def test_cli_creates_with_exact_bundle_path_but_lists_by_os_identifier(monkeypat
         assert calls[-1] == ['xcrun', 'simctl', 'create', 'Onionary Isolated Tests', DUO, pinned['bundlePath']]
     else:
         assert calls[-1] == ['xcrun', 'simctl', 'list', 'devices', 'available', '--json']
+
+
+def test_wrong_bundle_metadata_stops_before_device_creation(monkeypatch, tmp_path):
+    pinned = runtime('27.1')
+    pinned['bundlePath'] = str(tmp_path)
+    source = tmp_path / 'Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist'
+    source.parent.mkdir(parents=True)
+    source.write_bytes(plistlib.dumps({'ProductVersion': '27.1', 'ProductBuildVersion': '24A94232'}))
+    calls = []
+    monkeypatch.setattr(simulator.subprocess, 'check_output', lambda command, **kwargs:
+                        calls.append(command) or json.dumps({'runtimes': [pinned]}))
+    monkeypatch.setattr(sys, 'argv', ['resolve_simulator.py', '--create', '--device-type', DUO])
+    with pytest.raises(RuntimeError, match='Simulator was not created'):
+        simulator.main()
+    assert calls == [['xcrun', 'simctl', 'list', 'runtimes', '--json']]

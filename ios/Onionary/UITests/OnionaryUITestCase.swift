@@ -21,6 +21,12 @@ import XCTest
 /// Every device profile releases the old foreground scene/automation session
 /// before the next case launches. Duo must follow the same lifecycle as iPad/iPhone.
 class OnionaryUITestCase: XCTestCase {
+    override class func setUp() {
+        super.setUp()
+        // Read in-process after XCTest has initialized; no extra host/guest RPC.
+        print("Onionary test runtime: \(ProcessInfo.processInfo.operatingSystemVersionString)")
+    }
+
     override func setUp() {
         super.setUp()
         continueAfterFailure = false
