@@ -438,3 +438,23 @@ Current verification:
   Runtime output from XCTest is diagnostic evidence, not an added startup gate.
   The older warm-guest verification above remains historical, not proof of cold
   hosted reliability. Stable runtime pins and CI-only SDK mapping are retained.
+
+## Step editor scenario budget
+
+- [ ] Split the combined step-amount insertion and help-dialog flow into independent native cases. Keep placeholder content, contextual toolbar visibility, keyboard dismissal, help presentation/dismissal and editor cancellation checks; keep the 180-second limit.
+- [ ] Run both cases consecutively on a fresh iPhone simulator, with normal per-case cleanup. Include a following scenario to verify the next launch still works. Run integrated harness checks and update the directive/PR.
+- [ ] Push the correction, leaving full branch/PR CI as the merge gate. No retries, skipped assertions, longer deadlines, tags, uploads or paid runner change.
+
+At 64e39f4 all PR checks passed, including three native profiles and both creative
+render/bundle paths. The sole branch failure was testStepAmountTools; the other
+21 ordinary cases passed, and iPad/Duo/archive/backend/browser/formatting passed.
+Its retained XCTest timeline reaches editor cancellation and teardown after
+every feature assertion. Test starts at 11:47:24.718, teardown starts at
+11:50:23.867 (179.149 seconds), Home completes and termination begins at
+11:50:24.384. The combined body used almost the entire three-minute allowance,
+then cleanup was reported over budget. This is the same broad test-budget/
+lifecycle reliability class encountered earlier, not a new product regression
+or the removed runtime gate. Retain cleanup, and give each independently useful
+editor feature its own scenario rather than raising timeouts or omitting checks.
+
+Evidence: https://github.com/Malaber/what-should-we-eat/actions/runs/43417351715/job/131858677774
