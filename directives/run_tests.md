@@ -98,6 +98,16 @@ local checks and record their evidence in the PR first.
 Run native tests once with `bash ios/Onionary/Scripts/test.sh`; do not enable
 test retries. The script uses isolated DerivedData and writes an xcresult bundle.
 CI sets `TEST_RESULTS_DIR` and uploads that bundle even when tests fail.
+The generated Xcode scheme explicitly selects preferredScreenCaptureFormat:
+screenshots. Apple's default is video, and collect-test-diagnostics=never does
+not disable its per-test recording lifecycle. Keep normal crash detection and
+automatic failure screenshots, plus all explicit keepAlways screenshots used by
+marketing and fold diagnostics. Do not disable crash detection, remove feature
+assertions or replace them with a recorder workaround. After xcodegen, validate
+the actual generated scheme with check_ios_build_environment.py --test-scheme;
+missing capture mode, disabled screenshots or filtered/skipped UI targets must
+fail before simulator work. XcodeGen omits the default automatic-capture flag;
+that absence means captures remain enabled, not disabled.
 Keyboard tests must first assert that the keyboard is visible, then wait for
 the expected dismissal state; an immediate `exists` check can race the animation.
 Resolve a multiline input by its identifier and supported text roles in one
@@ -124,6 +134,8 @@ key events to that focused descendant. Re-resolving a field during typeText can
 stall while the keyboard's remote AX process transitions. Keep the exact committed
 field value, save/keep-progress choice, retained checks and updated list entry.
 Never inject the field value directly or accept typing without focus.
+The folded draft uses the same app.typeText contract after tapping Name and
+awaiting the keyboard; its full expected text remains asserted after every fold.
 Outside-tap handlers must survive SwiftUI view replacement and attach when their
 view actually enters a window, rather than relying on a single queued callback.
 
@@ -198,6 +210,14 @@ wrong display; inspect the retained synthesized event's displayID and coordinate
 Keep native value readiness and an independent exact state assertion after
 Undo/Redo. On mismatch retain the window capture and full hierarchy; do not retry
 the action or substitute a coordinate tap.
+Duo actions resolve through their actual containing window. Native menus and
+sheets may have another window; do not assume every action belongs to index zero.
+Cooking options uses a native Menu in the toolbar. Its non-destructive actions
+do not need a toolbar-owned confirmationDialog; only restart asks for destructive
+confirmation on the stable cooking view. Keep the real folded options → Edit
+route, with no direct-editor fixture shortcut. Intelligence queries stay within
+intelligence-form and its navigation bar; Cancel uses cancel-intelligence and
+must remove the form and return to Recipe book.
 Do not enumerate windows and all matching controls inside
 a short predicate wait: those AX RPCs can consume the budget before evaluation.
 iPad's floating navigation is not exposed as an XCTest `TabBar` in this SDK.

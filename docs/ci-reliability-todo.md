@@ -678,9 +678,9 @@ Implementation checkpoint:
 
 ## Remove diagnostic recording dependency and stabilize presentations
 
-- [ ] Select Xcode's documented screenshots capture mode in the generated test scheme. Retain automatic failure screenshots, manual keepAlways captures, all tests and normal crash detection. Validate the generated scheme so a missing/ignored setting cannot silently restore default video recording.
-- [ ] Replace the toolbar-owned action confirmation dialog with a native Menu, leaving the destructive restart confirmation on the stable cooking view. Keep every recipe action, real taps and the complete folded-draft regression. Resolve menu actions through their actual containing window. Do not hide a missing menu with repeated taps or a direct edit shortcut.
-- [ ] Scope Intelligence assertions to intelligence-form and its Cancel action to the presented navigation bar. Verify dismissal back to Recipe book. Keep all original mode/language assertions and the same deadline.
+- [x] Select Xcode's documented screenshots capture mode in the generated test scheme. Retain automatic failure screenshots, manual keepAlways captures, all tests and normal crash detection. Validate the generated scheme so a missing/ignored setting cannot silently restore default video recording.
+- [x] Replace the toolbar-owned action confirmation dialog with a native Menu, leaving the destructive restart confirmation on the stable cooking view. Keep every recipe action, real taps and the complete folded-draft regression. Resolve menu actions through their actual containing window. Do not hide a missing menu with repeated taps or a direct edit shortcut.
+- [x] Scope Intelligence assertions to intelligence-form and its Cancel action to the presented navigation bar. Verify dismissal back to Recipe book. Keep all original mode/language assertions and the same deadline.
 - [ ] Run integrated checks, compile and launch complete local native verification asynchronously, then explicitly push and update the draft PR. Full hosted checks remain required before merge; no TestFlight, retries, skipped tests, paid runner or increased deadlines.
 
 At 0c5b89d the complete local iPad suite passed all 26 cases in 645.598 seconds.
@@ -715,3 +715,18 @@ Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43511607549/job/132182986776
 - https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes (automatic recordings and supported scheme/test-plan capture selection)
 - https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md#test-action (preferredScreenCaptureFormat: screenshots)
+
+Implementation checkpoint:
+
+- All 108 Python 3.14.7 harness/export/release/preflight checks pass, including
+  ten new generated-scheme cases. Actual XcodeGen output passes the same guard:
+  screenshot mode, captures enabled, complete UI target, no scheme test filtering.
+  Shell syntax, actionlint and git diff --check passed.
+- The folded draft now also uses app.typeText after explicit field focus and
+  keyboard visibility, retaining its exact full expected text after all angles.
+- Freeze the candidate and run the entire local 26-case iPad profile once in
+  `.tmp/ci46-ipad-local`, retaining separate results and `.tmp/ci28-build` cache.
+  Compilation and native results are pending until observed. Push explicitly
+  after compilation; require complete hosted iPhone/iPad/Duo and archive results.
+  All 26 ordinary and six Duo cases remain mandatory with unchanged deadlines.
+  Keep stable runtime pins and the standard runner. No TestFlight or release tag.
