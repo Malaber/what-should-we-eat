@@ -862,3 +862,20 @@ dispose its observer. Release builds must exclude the fixture control path.
 
 Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43574294500/job/132385040619
+
+## Resolve Duo controls without a recursive window predicate
+
+- [ ] Resolve the unique button directly in the app/scoped list. Use its containing window only for the existing geometry validation after the button's native existence wait. Preserve uniqueness, receiving-window validation and one native tap, with no fallback or retry.
+- [ ] Compile/verify and push, then watch every expected CI check for the new SHA.
+
+At d40fc76, pinned cache preparation completed successfully and all Duo app
+launches completed. Duo passed 5/6. The remaining shopping case failed before
+its ingredient tap: the native query repeatedly resolves Window → contains
+ingredient-1 → descendants Button → ingredient-1 and eventually times out.
+The tap helper unnecessarily roots every button query in another query for a
+window containing that same button. Resolve the button once at the app/list
+level, then validate its frame against the correct receiving window. Do not
+replace the latter with primary-window geometry for native menus/sheets.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43577642779/job/132395289426
