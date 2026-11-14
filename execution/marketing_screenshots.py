@@ -11,9 +11,9 @@ import shutil
 import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from execution.package_marketing_screenshots import validate_dimensions
+from execution.package_marketing_screenshots import CAPTURES, validate_dimensions
 
-NAMES = {'01-recipe-book', '02-cooking-companion', '03-flexible-portions', '04-every-tap-remembered'}
+NAMES = {Path(name).stem for name in CAPTURES}
 
 
 def render_capture(screenshots, family, defer_creative):

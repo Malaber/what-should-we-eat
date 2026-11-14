@@ -6,6 +6,7 @@ import pytest
 
 from execution.package_marketing_screenshots import package, validate_dimensions
 from execution.render_marketing_assets import render, CREATIVE_SIZES
+from marketing.creative.render import SAFE_AREA, validate_safe_area
 
 
 def fixture(root, family):
@@ -23,7 +24,7 @@ def test_render_and_package_current_captures(tmp_path):
         before = hashlib.sha256(source.read_bytes()).hexdigest()
         outputs = render(root, family)
         assert hashlib.sha256(source.read_bytes()).hexdigest() == before
-        assert len(outputs) == 3
+        assert len(outputs) == 5
         for output in outputs:
             with Image.open(output) as image:
                 assert image.mode == 'RGB'
@@ -32,21 +33,27 @@ def test_render_and_package_current_captures(tmp_path):
                     assert image.size == CREATIVE_SIZES[output.name]
                 else:
                     validate_dimensions(output, family)
+        for placement in ('header', 'search-results'):
+            with Image.open(root / f'creative/{placement}-safe-area-preview.png') as preview:
+                assert preview.size == (SAFE_AREA[2] - SAFE_AREA[0], SAFE_AREA[3] - SAFE_AREA[1])
         (root.parent / 'private-test-log.txt').write_text('exclude')
     archives = package(tmp_path, tmp_path / 'output')
     assert len(archives) == 2
     for archive in archives:
         with ZipFile(archive) as zipped:
             names = zipped.namelist()
-            assert len(names) == 9
+            assert len(names) == 13
             assert 'en-US/creative/header.png' in names
             assert 'en-US/creative/search-results.png' in names
-            assert 'en-US/05-cooking-with-onionary.png' in names
+            assert 'en-US/portraits/05-cooking-with-onionary.png' in names
+            assert 'en-US/portraits/06-your-recipe-book.png' in names
+            assert 'en-US/portraits/07-make-it-your-size.png' in names
+            assert 'en-US/creative/search-results-safe-area-preview.png' in names
             assert all(name.endswith(('.png', '.svg')) for name in names)
             assert 'en-US/creative/header.svg' in names
             assert 'en-US/creative/search-results.svg' in names
     # A later capture must not accidentally ship with earlier artwork.
-    source = tmp_path / 'onionary-appstore-iphone-en-US/en-US/02-cooking-companion.png'
+    source = tmp_path / 'onionary-appstore-iphone-en-US/en-US/01-recipe-book.png'
     Image.new('RGB', (1206, 2622), 'blue').save(source)
     with pytest.raises(ValueError, match='current capture'):
         package(tmp_path, tmp_path / 'stale')
@@ -60,7 +67,7 @@ def test_render_and_package_current_captures(tmp_path):
 
 
 def test_partial_capture_cannot_be_published(tmp_path):
-    with pytest.raises(ValueError, match='five nonempty'):
+    with pytest.raises(ValueError, match='four raw and three marketing'):
         package(tmp_path, tmp_path / 'output')
     assert not (tmp_path / 'output').exists()
 
@@ -68,10 +75,23 @@ def test_partial_capture_cannot_be_published(tmp_path):
 def test_renderer_rejects_missing_or_ambiguous_source(tmp_path):
     with pytest.raises(ValueError, match='exactly one'):
         render(tmp_path, 'iphone')
+    fixture(tmp_path / 'canonical', 'iphone')
     for suffix in ('a', 'b'):
-        Image.new('RGB', (1206, 2622)).save(tmp_path / f'02-cooking-companion-{suffix}.png')
+        Image.new('RGB', (1206, 2622)).save(tmp_path / 'canonical' / f'02-cooking-companion-{suffix}.png')
     with pytest.raises(ValueError, match='exactly one'):
-        render(tmp_path, 'iphone')
+        render(tmp_path / 'canonical', 'iphone')
+
+
+def test_critical_artwork_outside_safe_area_is_rejected(tmp_path):
+    import shutil
+
+    inkscape = shutil.which('inkscape') or '/Applications/Inkscape.app/Contents/MacOS/inkscape'
+    svg = tmp_path / 'bad.svg'
+    svg.write_text('''<svg xmlns="http://www.w3.org/2000/svg" width="5244" height="2950">
+      <g id="safe-content"><rect x="1900" y="700" width="500" height="400"/></g>
+    </svg>''')
+    with pytest.raises(ValueError, match='outside Apple'):
+        validate_safe_area(inkscape, svg)
 
 
 def test_pro_max_is_rejected_for_medium_iphone_slot(tmp_path):

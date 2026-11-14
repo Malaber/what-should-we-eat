@@ -11,7 +11,7 @@ jobs:
     uses: Malaber/github-workflows/.github/workflows/reusable-appstore-creative.yml@0fa17543c28e0d43ff74d14ffbbe9c86ddde3bf2
     with:
       screenshot_artifact: onionary-capture-${{ matrix.family }}-en-US
-      screenshot_glob: en-US/02-cooking-companion*.png
+      screenshot_glob: en-US/02-cooking-companion.png
       output_artifact: onionary-creative-${{ matrix.family }}-en-US
 
   bundle:
@@ -21,6 +21,7 @@ jobs:
       matrix:
         family: [iphone, ipad]
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: onionary-capture-${{ matrix.family }}-en-US
@@ -28,7 +29,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: onionary-creative-${{ matrix.family }}-en-US
-          path: bundle/creative
+          path: bundle/en-US/creative
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install -r marketing/requirements.txt
+      - name: Verify the completed screenshot bundle
+        run: python execution/package_marketing_screenshots.py --validate-family ${{ matrix.family }} bundle/en-US
       - uses: actions/upload-artifact@v4
         with:
           name: onionary-appstore-${{ matrix.family }}-en-US
