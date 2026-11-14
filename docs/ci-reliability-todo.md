@@ -771,3 +771,27 @@ Implementation checkpoint:
   expiry/menu regression; Duo retains six. Native compilation/results remain
   pending until observed. Publish explicitly after compile/short checks and
   require the new complete PR workflow before merging. No TestFlight or tags.
+
+## Bound loader overhead in the headless UI build
+
+- [ ] Build automation binaries in the normal executable layout, without Xcode's Preview debug-dylib stub. Use the same setting for build-for-testing and test-without-building; preserve ordinary developer previews and Release archives.
+- [ ] Validate the built test app's layout before starting the simulator; retain all 27 ordinary and six Duo cases, native cold launches, crash detection, screenshots, runtime pins and existing deadlines.
+- [ ] Update the repository workflow guidance for the user's new permanent blocking CI monitor. The shell waits; the primary model diagnoses failures. Keep the global AGENTS.md outside version control.
+- [ ] Run relevant harness checks and complete native verification, push, then monitor the exact new SHA through all expected PR jobs. No retries, skipped assertions, paid runner, release, TestFlight or merge.
+
+At b2f7503, all 27 local iPhone cases and the hosted iPhone job passed. Duo
+passed five of six cases. The shopping case failed in app.launch(), before its
+first app assertion, with "Timed out while requesting launch progress".
+The launch-session reply reached the runner after its internal 60-second deadline.
+The captured app stack is still inside dyld's recursive dependency loading,
+before application initialization; the new app's normal log starts later. There
+is no reported application crash. The built app uses the Preview stub plus
+Onionary.debug.dylib and __preview.dylib. Remove that unnecessary execution layout
+from headless automation and verify its actual output. This is a targeted loader
+overhead correction, not proof that the Preview stub alone caused the timeout;
+the complete hosted run must establish the outcome. Do not increase deadlines
+or weaken cold-launch coverage to hide this platform failure.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43570341570/job/132373135423
+- https://developer.apple.com/documentation/xcode/build-settings-reference (ENABLE_DEBUG_DYLIB controls the Preview stub/dylib layout)
