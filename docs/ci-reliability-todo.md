@@ -882,9 +882,9 @@ Evidence:
 
 ## Separate compiled test execution from runner initialization
 
-- [ ] Run the exact .xctestrun artifact from build-for-testing, without reopening the project/scheme/package graph. Validate one complete Onionary UI target, screenshot diagnostics and existing compiled app/runner/test-bundle paths before boot. Reject missing/ambiguous plans or test filtering.
-- [ ] Bound XCTest host initialization separately at 600 seconds, then apply the existing 1800-second UI-suite budget from its first real suite-start line. Keep 180/360-second per-case limits and workflow limits unchanged. One invocation only; no retries. Missing suite registration cannot succeed.
-- [ ] Test actual child-process startup, complete/partial readiness lines, missing readiness, preserved command failures and UI timeout termination. Verify the generated local manifest and all profiles' command contracts.
+- [x] Run the exact .xctestrun artifact from build-for-testing, without reopening the project/scheme/package graph. Validate one complete Onionary UI target, screenshot diagnostics and existing compiled app/runner/test-bundle paths before boot. Reject missing/ambiguous plans or test filtering.
+- [x] Bound XCTest host initialization separately at 600 seconds, then apply the existing 1800-second UI-suite budget from its first real suite-start line. Keep 180/360-second per-case limits and workflow limits unchanged. One invocation only; no retries. Missing suite registration cannot succeed.
+- [x] Test actual child-process startup, complete/partial readiness lines, missing readiness, preserved command failures and UI timeout termination. Verify the generated local manifest and all profiles' command contracts.
 - [ ] Push and monitor the exact SHA through every expected job; retain all 27 ordinary and six Duo cases.
 
 The completed d40fc76 iPad run had no failed assertions: 24 cases passed in

@@ -43,6 +43,7 @@ build_args=(-project Onionary.xcodeproj -scheme Onionary
   MARKETING_VERSION="$marketing_version" CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO ENABLE_DEBUG_DYLIB=NO)
 python3 ../../execution/run_bounded.py --log "$result_dir/build.log" 1200 xcodebuild "${build_args[@]}" build-for-testing
 python3 ../../execution/check_ios_build_environment.py --test-app "$derived_data/Build/Products/Debug-iphonesimulator/Onionary.app"
+test_plan=$(python3 ../../execution/check_ios_build_environment.py --test-products "$derived_data/Build/Products")
 if [[ "$created_simulator" == true ]]; then
   # Compile against a shutdown device. Fresh runtime indexing and cold Swift
   # compilation must not compete for memory/disk before XCTest loads accessibility.
@@ -56,14 +57,19 @@ test_allowance=180
 if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then test_allowance=360; fi
 # Keep XCTest failures/attachments, but avoid Xcode's simulator-wide sysdiagnose
 # collector (which stalls for 600 seconds even after a fully passed suite).
-test_args=("${build_args[@]}" -parallel-testing-enabled NO -collect-test-diagnostics never -test-timeouts-enabled YES
+# Run the already-compiled manifest. Reopening the project/scheme here repeats
+# package/project resolution and charges that setup to the UI execution budget.
+test_args=(-xctestrun "$test_plan" -destination "platform=iOS Simulator,id=$simulator_id"
+  -parallel-testing-enabled NO -collect-test-diagnostics never -test-timeouts-enabled YES
   -default-test-execution-time-allowance "$test_allowance" -maximum-test-execution-time-allowance "$test_allowance"
   -resultBundlePath "$result_dir/Onionary.xcresult" test-without-building)
 if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then
-  python3 ../../execution/run_bounded.py --log "$result_dir/tests.log" 1800 xcodebuild "${test_args[@]}" \
+  python3 ../../execution/run_bounded.py --startup-seconds 600 --ready-prefix "Test Suite 'Selected tests' started at " \
+    --log "$result_dir/tests.log" 1800 xcodebuild "${test_args[@]}" \
     -only-testing:OnionaryUITests/OnionaryDuoTests
 else
-  python3 ../../execution/run_bounded.py --log "$result_dir/tests.log" 1800 xcodebuild "${test_args[@]}" \
+  python3 ../../execution/run_bounded.py --startup-seconds 600 --ready-prefix "Test Suite 'Selected tests' started at " \
+    --log "$result_dir/tests.log" 1800 xcodebuild "${test_args[@]}" \
     -only-testing:OnionaryUITests/OnionaryUITests
 fi
 echo "Test results: $result_dir/Onionary.xcresult"

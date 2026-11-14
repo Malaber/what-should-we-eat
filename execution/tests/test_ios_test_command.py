@@ -24,6 +24,8 @@ def test_supplied_device_is_never_booted_or_deleted(tmp_path, device, allowance,
 import json, os, sys
 if sys.argv[1].endswith('version.py'):
     print('0.6.0')
+elif '--test-products' in sys.argv:
+    print(sys.argv[-1] + '/Onionary_iphonesimulator27.1-arm64.xctestrun')
 elif 'xcodebuild' in sys.argv:
     with open(os.environ['CAPTURE_ARGS'], 'a') as f:
         f.write(json.dumps(sys.argv[sys.argv.index('xcodebuild')+1:]) + '\\n')
@@ -46,11 +48,12 @@ elif any(arg.endswith('ios_runtime.py') for arg in sys.argv):
     assert not forbidden.exists()
     build, test = [json.loads(line) for line in capture.read_text().splitlines()]
     assert build[build.index('-derivedDataPath') + 1] == str(tmp_path / 'shared-build')
-    assert test[test.index('-derivedDataPath') + 1] == str(tmp_path / 'shared-build')
+    assert test[test.index('-xctestrun') + 1] == str(tmp_path / 'shared-build/Build/Products/Onionary_iphonesimulator27.1-arm64.xctestrun')
+    assert not any(option in test for option in ('-derivedDataPath', '-project', '-scheme'))
     assert 'build-for-testing' in build
     assert 'test-without-building' in test
     assert build.count('ENABLE_DEBUG_DYLIB=NO') == 1
-    assert test.count('ENABLE_DEBUG_DYLIB=NO') == 1
+    assert not any(option.startswith('ENABLE_DEBUG_DYLIB=') for option in test)
     for option in ('-default-test-execution-time-allowance', '-maximum-test-execution-time-allowance'):
         assert test.count(option) == 1
         assert test[test.index(option) + 1] == allowance
@@ -60,7 +63,7 @@ elif any(arg.endswith('ios_runtime.py') for arg in sys.argv):
     assert '-resultBundlePath' in test
 
 
-@pytest.mark.parametrize('failure_stage', ['none', 'build', 'app', 'boot', 'test'])
+@pytest.mark.parametrize('failure_stage', ['none', 'build', 'app', 'plan', 'boot', 'test'])
 @pytest.mark.parametrize('runtime_override', [None, '27.1'])
 @pytest.mark.parametrize('diagnostics_fail', [False, True])
 def test_compile_precedes_boot_and_declared_runtime_reaches_selector(tmp_path, failure_stage, runtime_override, diagnostics_fail):
@@ -71,6 +74,8 @@ import json, os, sys
 with open(os.environ['CAPTURE_ARGS'], 'a') as output:
     output.write(json.dumps([os.path.basename(sys.argv[0]), *sys.argv[1:]]) + '\\n')
 if any(arg.endswith('version.py') for arg in sys.argv): print('0.6.0')
+if '--test-products' in sys.argv: print(sys.argv[-1] + '/Onionary_iphonesimulator27.1-arm64.xctestrun')
+if '--test-products' in sys.argv and os.environ['FAIL_STAGE'] == 'plan': sys.exit(45)
 if any(arg.endswith('resolve_simulator.py') for arg in sys.argv): print('isolated-test-device')
 if 'build-for-testing' in sys.argv and os.environ['FAIL_STAGE'] == 'build': sys.exit(42)
 if '--test-app' in sys.argv and os.environ['FAIL_STAGE'] == 'app': sys.exit(41)
@@ -94,10 +99,10 @@ if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in sys.argv) and 
     resolve = next(c for c in commands if any(a.endswith('resolve_simulator.py') for a in c))
     assert resolve[resolve.index('--runtime') + 1] == (runtime_override or '')
     build = next(i for i, c in enumerate(commands) if 'build-for-testing' in c)
-    assert result.returncode == {'none': 0, 'build': 42, 'app': 41, 'boot': 43, 'test': 44}[failure_stage]
+    assert result.returncode == {'none': 0, 'build': 42, 'app': 41, 'plan': 45, 'boot': 43, 'test': 44}[failure_stage]
     assert not any('boot' in c for c in commands)
     assert not any('getenv' in c or 'spawn' in c or any(a.endswith('ios_runtime.py') for a in c) for c in commands)
-    if failure_stage in {'build', 'app'}:
+    if failure_stage in {'build', 'app', 'plan'}:
         assert not any('boot' in c or 'test-without-building' in c for c in commands)
     elif failure_stage == 'boot':
         assert any('bootstatus' in c for c in commands)
@@ -111,8 +116,13 @@ if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in sys.argv) and 
         layout = next(i for i, c in enumerate(commands) if '--test-app' in c)
         assert build < layout
         assert commands[layout][-1] == str(tmp_path / 'results/DerivedData/Build/Products/Debug-iphonesimulator/Onionary.app')
-        if failure_stage != 'app':
+        if failure_stage not in {'app', 'plan'}:
             assert layout < next(i for i, c in enumerate(commands) if 'bootstatus' in c)
+    if failure_stage in {'none', 'test'}:
+        execution = next(c for c in commands if 'test-without-building' in c)
+        assert execution[execution.index('--startup-seconds') + 1] == '600'
+        assert execution[execution.index('--ready-prefix') + 1] == "Test Suite 'Selected tests' started at "
+        assert execution[execution.index('xcodebuild') - 1] == '1800'
     assert commands[-1] == ['xcrun', 'simctl', 'delete', 'isolated-test-device']
     diagnostics = [i for i, command in enumerate(commands)
                    if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in command)]

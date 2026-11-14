@@ -105,8 +105,8 @@ second identical push pipeline. main, codex/onionary-ios-companion and v* tags
 retain push validation/publication; workflow_dispatch remains available. All
 three native profiles, backend/browser/HTML/archive and screenshot gates remain.
 
-The headless test command uses ENABLE_DEBUG_DYLIB=NO for both build-for-testing
-and test-without-building. Developer previews and Release archive settings stay
+The headless build-for-testing command uses ENABLE_DEBUG_DYLIB=NO; test execution
+uses its validated compiled manifest directly. Developer previews and Release archive settings stay
 independent. Validate the actual built app before boot: executable Mach-O,
 bundle-local entry point, no Preview/debug-dylib artifacts. This avoids the extra
 Preview stub loader in repeated native cold launches; it is not a launch retry,
@@ -126,6 +126,19 @@ remove keyboard visibility checks or replace input with direct value injection.
 
 Run native tests once with `bash ios/Onionary/Scripts/test.sh`; do not enable
 test retries. The script uses isolated DerivedData and writes an xcresult bundle.
+Build-for-testing emits one validated arm64 .xctestrun file. Run that artifact
+with -xctestrun and the existing full-profile selector, not -project/-scheme:
+the latter reopens project/package resolution even with test-without-building.
+Validate the UI target, screenshot policy and compiled app/runner/bundle paths;
+missing, ambiguous or filtered plans fail before boot.
+Runner initialization has a separate 600-second limit. The unchanged
+1800-second UI-suite budget begins at the first literal "Test Suite 'Selected
+tests' started at " log line. Missing suite registration never counts as success;
+failed command statuses are preserved and either phase terminates its process
+group on timeout. Total command time is bounded by 2400 seconds plus termination.
+Per-case 180/360-second limits and workflow timeouts remain unchanged. This keeps
+platform startup out of the UI budget without retrying or skipping a test.
+Reference: https://developer.apple.com/library/archive/technotes/tn2339/_index.html
 CI sets `TEST_RESULTS_DIR` and uploads that bundle even when tests fail.
 The generated Xcode scheme explicitly selects preferredScreenCaptureFormat:
 screenshots. Apple's default is video, and collect-test-diagnostics=never does

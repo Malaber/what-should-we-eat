@@ -64,12 +64,47 @@ def validate_test_app(path):
     print(f'Validated headless UI executable layout: {path}')
 
 
+def select_test_plan(products):
+    """Use the compiled plan directly, without reopening project/package state."""
+    plans = sorted(products.glob('Onionary_iphonesimulator*-arm64.xctestrun'))
+    if len(plans) != 1:
+        raise ValueError('Expected exactly one compiled Onionary arm64 simulator test plan.')
+    with plans[0].open('rb') as source:
+        plan = plistlib.load(source)
+    if plan.get('__xctestrun_metadata__', {}).get('FormatVersion') != 1:
+        raise ValueError('Unsupported compiled test-plan format for the pinned Xcode.')
+    targets = {name: target for name, target in plan.items() if not name.startswith('__')}
+    if set(targets) != {'OnionaryUITests'}:
+        raise ValueError('Compiled plan must contain the complete Onionary UI target exactly once.')
+    target = targets['OnionaryUITests']
+    if target.get('BlueprintName') != 'OnionaryUITests' or target.get('IsUITestBundle') is not True:
+        raise ValueError('Compiled plan does not identify the Onionary UI bundle.')
+    if target.get('PreferredScreenCaptureFormat') != 'screenshots':
+        raise ValueError('Compiled plan must retain screenshot diagnostics.')
+    if any(target.get(key) for key in ('SkipTestIdentifiers', 'OnlyTestIdentifiers')):
+        raise ValueError('Compiled plan must not filter UI cases; select the full profile in test.sh.')
+    paths = {
+        'TestHostPath': '__TESTROOT__/Debug-iphonesimulator/OnionaryUITests-Runner.app',
+        'TestBundlePath': '__TESTHOST__/PlugIns/OnionaryUITests.xctest',
+        'UITargetAppPath': '__TESTROOT__/Debug-iphonesimulator/Onionary.app',
+    }
+    host = products / 'Debug-iphonesimulator/OnionaryUITests-Runner.app'
+    for key, expected in paths.items():
+        if target.get(key) != expected:
+            raise ValueError(f'Compiled plan has an unexpected {key}.')
+        path = expected.replace('__TESTROOT__', str(products)).replace('__TESTHOST__', str(host))
+        if not Path(path).is_dir():
+            raise ValueError(f'Compiled test product is missing: {path}')
+    return plans[0].resolve()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--xcode-only', action='store_true')
     parser.add_argument('--stage', choices=STAGE_GIB, default='release')
     parser.add_argument('--test-scheme', type=Path, help='Validate the generated UI scheme without starting Xcode')
     parser.add_argument('--test-app', type=Path, help='Validate the built headless UI app without booting a simulator')
+    parser.add_argument('--test-products', type=Path, help='Print the validated compiled UI test-plan path')
     args = parser.parse_args()
     try:
         if args.test_scheme:
@@ -77,6 +112,9 @@ def main():
             return
         if args.test_app:
             validate_test_app(args.test_app)
+            return
+        if args.test_products:
+            print(select_test_plan(args.test_products))
             return
         validate_xcode(subprocess.check_output(['xcodebuild', '-version'], text=True))
         if not args.xcode_only:

@@ -1,5 +1,5 @@
 import pytest
-from execution.check_ios_build_environment import MIN_FREE_BYTES, validate_disk, validate_xcode, validate_test_scheme, validate_test_app
+from execution.check_ios_build_environment import MIN_FREE_BYTES, validate_disk, validate_xcode, validate_test_scheme, validate_test_app, select_test_plan
 import xml.etree.ElementTree as ET
 import plistlib
 import struct
@@ -100,3 +100,41 @@ def test_headless_app_rejects_preview_or_invalid_output(tmp_path, change):
     elif change == 'invalid-plist': (app / 'Info.plist').write_bytes(b'invalid')
     with pytest.raises((ValueError, plistlib.InvalidFileException)):
         validate_test_app(app)
+
+
+def make_test_plan(products):
+    host = products / 'Debug-iphonesimulator/OnionaryUITests-Runner.app'
+    (host / 'PlugIns/OnionaryUITests.xctest').mkdir(parents=True)
+    (products / 'Debug-iphonesimulator/Onionary.app').mkdir()
+    target = dict(BlueprintName='OnionaryUITests', IsUITestBundle=True,
+                  PreferredScreenCaptureFormat='screenshots',
+                  TestHostPath='__TESTROOT__/Debug-iphonesimulator/OnionaryUITests-Runner.app',
+                  TestBundlePath='__TESTHOST__/PlugIns/OnionaryUITests.xctest',
+                  UITargetAppPath='__TESTROOT__/Debug-iphonesimulator/Onionary.app')
+    path = products / 'Onionary_iphonesimulator27.1-arm64.xctestrun'
+    path.write_bytes(plistlib.dumps({'OnionaryUITests': target, '__xctestrun_metadata__': {'FormatVersion': 1}}))
+    return path
+
+
+def test_selects_complete_compiled_plan_with_existing_products(tmp_path):
+    path = make_test_plan(tmp_path)
+    assert select_test_plan(tmp_path) == path.resolve()
+
+
+@pytest.mark.parametrize('change', ['absent', 'ambiguous', 'format', 'wrong-target', 'not-ui',
+                                  'video', 'skip', 'only', 'wrong-host', 'missing-bundle'])
+def test_compiled_plan_rejects_ambiguity_missing_products_or_lost_coverage(tmp_path, change):
+    path = make_test_plan(tmp_path)
+    plan = plistlib.loads(path.read_bytes()); target = plan['OnionaryUITests']
+    if change == 'absent': path.unlink()
+    elif change == 'ambiguous': (tmp_path / 'Onionary_iphonesimulator27.0-arm64.xctestrun').write_bytes(path.read_bytes())
+    elif change == 'format': plan['__xctestrun_metadata__']['FormatVersion'] = 2
+    elif change == 'wrong-target': plan['OtherUITests'] = plan.pop('OnionaryUITests')
+    elif change == 'not-ui': target['IsUITestBundle'] = False
+    elif change == 'video': target['PreferredScreenCaptureFormat'] = 'screenRecording'
+    elif change == 'skip': target['SkipTestIdentifiers'] = ['OnionaryUITests/testExample']
+    elif change == 'only': target['OnlyTestIdentifiers'] = ['OnionaryUITests/testExample']
+    elif change == 'wrong-host': target['TestHostPath'] = '__TESTROOT__/Other.app'
+    elif change == 'missing-bundle': (tmp_path / 'Debug-iphonesimulator/OnionaryUITests-Runner.app/PlugIns/OnionaryUITests.xctest').rmdir()
+    if change not in {'absent', 'ambiguous'}: path.write_bytes(plistlib.dumps(plan))
+    with pytest.raises(ValueError): select_test_plan(tmp_path)
