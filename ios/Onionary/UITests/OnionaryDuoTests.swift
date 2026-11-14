@@ -39,6 +39,10 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         if handoffResult != .completed { captureFailure("Unsettled display at \(angle)°", in: app) }
         XCTAssertEqual(handoffResult, .completed, "Receiving window must move to the requested display")
 
+        // The hinge can rotate the interface itself before XCTest's physical
+        // orientation reading catches up. Avoid a second rotation in that case.
+        if UIReadiness.duoWindow(window.frame, angle: angle) { return }
+
         let orientation: UIDeviceOrientation = angle == 0 ? .portrait : .landscapeLeft
         if XCUIDevice.shared.orientation != orientation {
             XCUIDevice.shared.orientation = orientation
