@@ -117,6 +117,13 @@ diagnostics rather than calling it a shopping-list assertion failure. All cases,
 runtime pins and crash checks remain mandatory.
 https://developer.apple.com/documentation/xcode/build-settings-reference
 
+Use native app.typeText after explicitly focusing a text field and verifying the
+keyboard. Keep exact value assertions. This applies to portion inputs as well as
+recipe names: b2f7503 iPad's retained stack identified multiplier.typeText in
+enterFractionalPortions as the remaining field re-resolution stall. Keep both
+fractional-keyboard/stepper and cold cooking-restoration scenarios intact; do not
+remove keyboard visibility checks or replace input with direct value injection.
+
 Run native tests once with `bash ios/Onionary/Scripts/test.sh`; do not enable
 test retries. The script uses isolated DerivedData and writes an xcresult bundle.
 CI sets `TEST_RESULTS_DIR` and uploads that bundle even when tests fail.

@@ -798,7 +798,7 @@ Evidence:
 
 ## Type portion values through the already-focused keyboard
 
-- [ ] Change the shared fractional-portion helper to app.typeText after its existing field tap and keyboard-visible assertion, matching the recipe editor's corrected input path. Retain complete text/value, dismissal, stepper and cold-restoration assertions.
+- [x] Change the shared fractional-portion helper to app.typeText after its existing field tap and keyboard-visible assertion, matching the recipe editor's corrected input path. Retain complete text/value, dismissal, stepper and cold-restoration assertions.
 - [ ] Validate the complete native profiles and publish the fixes; monitor the exact new PR SHA through all expected jobs with the attached shell watcher.
 
 The completed hosted iPad job at b2f7503 passed 26/27 cases. Its retained stack

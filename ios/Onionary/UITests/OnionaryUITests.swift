@@ -633,7 +633,9 @@ final class OnionaryUITests: OnionaryUITestCase {
         let multiplier = app.textFields["portions"]
         multiplier.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5), "Portion field must open the keyboard before testing dismissal")
-        multiplier.typeText(XCUIKeyboardKey.delete.rawValue + "1.583945")
+        // The field is already focused. Send native keyboard input through the
+        // app instead of resolving that field again during keyboard relayout.
+        app.typeText(XCUIKeyboardKey.delete.rawValue + "1.583945")
         XCTAssertTrue(UIReadiness.waitForValue("1.583945", matching: app.textFields.matching(identifier: "portions")))
         XCTAssertEqual(multiplier.value as? String, "1.583945")
     }
