@@ -879,3 +879,24 @@ replace the latter with primary-window geometry for native menus/sheets.
 
 Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43577642779/job/132395289426
+
+## Separate compiled test execution from runner initialization
+
+- [ ] Run the exact .xctestrun artifact from build-for-testing, without reopening the project/scheme/package graph. Validate one complete Onionary UI target, screenshot diagnostics and existing compiled app/runner/test-bundle paths before boot. Reject missing/ambiguous plans or test filtering.
+- [ ] Bound XCTest host initialization separately at 600 seconds, then apply the existing 1800-second UI-suite budget from its first real suite-start line. Keep 180/360-second per-case limits and workflow limits unchanged. One invocation only; no retries. Missing suite registration cannot succeed.
+- [ ] Test actual child-process startup, complete/partial readiness lines, missing readiness, preserved command failures and UI timeout termination. Verify the generated local manifest and all profiles' command contracts.
+- [ ] Push and monitor the exact SHA through every expected job; retain all 27 ordinary and six Duo cases.
+
+The completed d40fc76 iPad run had no failed assertions: 24 cases passed in
+1285.767 seconds, including the controlled-clock menu regression. The outer
+1800-second command limit then interrupted the 25th case. The test command
+started at 08:54:56; its first suite started at 09:02:56, consuming eight minutes
+of the intended UI budget before a case began. Do not lengthen individual tests
+or omit scenarios. Use Apple's compiled-manifest execution path and a separately
+bounded initialization phase, so platform startup cannot consume the UI budget.
+The overall command remains bounded by startup plus suite budgets; stalled
+startup fails earlier than the previous undifferentiated 30-minute deadline.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43577642779/job/132395289395
+- https://developer.apple.com/library/archive/technotes/tn2339/_index.html (test-without-building using .xctestrun)
