@@ -224,7 +224,13 @@ final class OnionaryUITests: OnionaryUITestCase {
         let handle = list.buttons["Reorder Cheese"]
         XCTAssertTrue(handle.waitForExistence(timeout: 5), list.debugDescription)
         XCTAssertLessThan(cheese.frame.minY, pasta.frame.minY)
-        handle.press(forDuration: 0.4, thenDragTo: pasta)
+        let destination = list.buttons["Reorder Pasta"]
+        XCTAssertTrue(destination.waitForExistence(timeout: 5))
+        // Stay in the grab-handle column and cross the destination row's center
+        // before releasing. A diagonal drop on its label can stop at the boundary.
+        let start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = destination.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
+        start.press(forDuration: 0.4, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.25)
         XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
         sheet.buttons["Done"].tap()
         XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
