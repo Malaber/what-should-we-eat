@@ -452,8 +452,10 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(feedback.waitForNonExistence(timeout: 8))
         XCTAssertTrue(edit.exists)
         edit.tap()
-        XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
+        let name = app.textFields["Name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
         app.buttons["Cancel"].tap()
+        XCTAssertTrue(name.waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["cooking-options"].waitForExistence(timeout: 5))
         XCTAssertEqual(ingredient.value as? String, "Checked")
     }
