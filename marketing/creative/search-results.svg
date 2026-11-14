@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="5244" height="2950" viewBox="0 0 5244 2950">
+  <defs>
+    <linearGradient id="plum" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#261722"/><stop offset=".58" stop-color="#432439"/><stop offset="1" stop-color="#6a354d"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop stop-color="#ba7391" stop-opacity=".35"/><stop offset="1" stop-color="#ba7391" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="petal" x1="0" y1="1" x2=".9" y2="0">
+      <stop stop-color="#331b31"/><stop offset=".54" stop-color="#8c4c72"/><stop offset="1" stop-color="#dba4af"/>
+    </linearGradient>
+    <linearGradient id="herb" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#4e6d5e"/><stop offset="1" stop-color="#a6ad83"/>
+    </linearGradient>
+    <clipPath id="screen"><rect x="2770" y="706" width="430" height="860" rx="42"/></clipPath>
+  </defs>
+  <rect width="5244" height="2950" fill="url(#plum)"/>
+  <ellipse cx="3180" cy="1160" rx="1550" ry="1160" fill="url(#glow)"/>
+  <path d="M-300 3050 C550 2620 935 2040 563 1360 C1135 1470 1480 1880 1830 2120 C2260 2410 2490 2520 2975 2515 C2510 2860 1910 3060 1215 3240 Z" fill="url(#petal)"/>
+  <path d="M-280 2740 C645 2530 1230 2130 563 1360 C1170 1410 1550 1930 2020 2150 C2350 2305 2590 2420 2975 2515 C2420 2525 1960 2390 1550 2390 C970 2380 600 2625 -280 2910 Z" fill="#d390a1" opacity=".37"/>
+  <path d="M-160 3120 C390 2900 830 2800 1240 2730 C1890 2610 2430 2675 2975 2515 C2540 2770 2040 2880 1600 2945 C1130 3010 620 3110 -160 3390 Z" fill="url(#herb)"/>
+  <path d="M5480 -160 C4850 -210 4370 45 4000 460 C3720 775 3480 912 3290 964 C3995 1080 4785 870 5460 490 Z" fill="url(#petal)"/>
+  <path d="M5460 -5 C4900 0 4520 230 4230 550 C3950 850 3640 935 3290 964 C4170 1040 4810 750 5470 250 Z" fill="#e9b9ba" opacity=".34"/>
+  <path d="M5540 2470 C5070 2470 4580 2320 4220 1980 C3970 1740 3670 1710 3370 1660 C3850 1515 4410 1680 4745 1910 C5005 2090 5280 2060 5540 1950 Z" fill="url(#herb)"/>
+  <g fill="none" stroke="#f7cbd5" stroke-width="6" opacity=".54">
+    <path d="M-120 2800 C595 2560 1330 2250 583 1390"/>
+    <path d="M-120 3010 C825 2680 1125 2540 1640 2545 C2130 2550 2430 2470 2975 2515"/>
+    <path d="M5390 90 C4810 160 4610 460 4300 673 C3940 915 3650 935 3290 964"/>
+    <path d="M5460 2240 C4960 2290 4560 1980 4250 1805 C3980 1660 3740 1620 3370 1660"/>
+    <path d="M1840 1540 C2000 1600 2120 1640 2330 1655 M1770 1585 C1970 1680 2100 1710 2320 1715" opacity=".5"/>
+  </g>
+  <path d="M1750 1480 C1960 1550 2070 1575 2350 1618 C2140 1670 1930 1635 1770 1570 Z" fill="url(#petal)" opacity=".66"/>
+  <path d="M1720 1540 C1930 1625 2150 1650 2350 1618 C2130 1725 1860 1675 1690 1615 Z" fill="url(#herb)" opacity=".56"/>
+  <g id="safe-content">
+    <text x="1985" y="910" font-family="Manrope" font-size="53" letter-spacing="9" fill="#f0afcc">ONIONARY</text>
+    <text x="1978" y="1080" font-family="Lora" font-size="128" fill="#fff6ed">Cook at</text>
+    <text x="1978" y="1230" font-family="Lora" font-size="128" fill="#fff6ed">your pace.</text>
+    <path d="M1987 1290 H2170" stroke="#d5d6a8" stroke-width="6"/>
+    <text x="1985" y="1405" font-family="Manrope" font-size="50" fill="#f4dce5">Scale portions.</text>
+    <text x="1985" y="1478" font-family="Manrope" font-size="50" fill="#f4dce5">Keep your place.</text>
+    <rect id="device-frame" x="2754" y="690" width="462" height="892" rx="55" fill="#1d171d" stroke="#c790a9" stroke-width="4"/>
+    <image data-source="screenshot" x="2770" y="706" width="430" height="860" preserveAspectRatio="xMidYMid meet" clip-path="url(#screen)"/>
+  </g>
+</svg>

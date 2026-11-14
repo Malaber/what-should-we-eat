@@ -1,0 +1,232 @@
+import XCTest
+
+/// Runs on the dedicated Duo CI profile. Other profiles run the full compact suite.
+final class OnionaryDuoTests: OnionaryUITestCase {
+
+    @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
+        // Query the control directly. Rooting it in a window that itself must
+        // contain this control recursively expands the same AX lookup.
+        let button = UIReadiness.buttons(title, in: app).element
+        let exists = button.waitForExistence(timeout: 10)
+        // Native menus/sheets may live in another window. Resolve the one
+        // containing this action only for its receiving-window geometry.
+        let window = app.windows.containing(.button, identifier: title).element
+        // The direct .element query still rejects duplicate actionable controls.
+        let validFrame = exists && UIReadiness.validControlFrame(button.frame, in: window.frame)
+        if !validFrame {
+            captureFailure("Unreachable control: \(title)", in: app)
+        }
+        XCTAssertTrue(exists, "Missing control after folding: \(title)")
+        XCTAssertTrue(validFrame, "Invalid control geometry: \(title)")
+        // Native tap synchronizes and computes a hittable point itself. An
+        // additional isHittable preflight can error on a stale fold snapshot
+        // before this action gets a chance to synchronize or scroll the row.
+        // This is one real element tap, never a forced/coordinate fallback.
+        button.tap()
+    }
+
+    @MainActor private func pose(_ angle: Int, in app: XCUIApplication) throws {
+        let deadline = ProcessInfo.processInfo.systemUptime + 15
+        let window = app.windows.element(boundBy: 0)
+        XCTAssertEqual(OnionarySetHingeAngle(Double(angle)), 0, "Native hinge dispatch failed at \(angle)°")
+        // Let the receiving display change before starting a separate rotation.
+        // Use the actual receiving window for both checks. The app's frame
+        // requires another remote snapshot and can reflect the old display.
+        var frame = window.frame
+        if !UIReadiness.duoViewport(frame, angle: angle) {
+            waitForWindow(in: app, window, deadline: deadline, "Receiving display at \(angle)°") {
+                UIReadiness.duoViewport($0, angle: angle)
+            }
+            frame = window.frame
+        }
+
+        // The hinge can rotate the interface itself before XCTest's physical
+        // orientation reading catches up. Avoid a second rotation in that case.
+        if UIReadiness.duoWindow(frame, angle: angle) { return }
+
+        let orientation: UIDeviceOrientation = angle == 0 ? .portrait : .landscapeLeft
+        if XCUIDevice.shared.orientation != orientation {
+            XCUIDevice.shared.orientation = orientation
+        }
+        waitForWindow(in: app, window, deadline: deadline, "Receiving window orientation at \(angle)°") {
+            UIReadiness.duoWindow($0, angle: angle)
+        }
+    }
+
+    @MainActor private func waitForWindow(in app: XCUIApplication, _ window: XCUIElement, deadline: TimeInterval, _ message: String,
+                                          matches: @escaping (CGRect) -> Bool) {
+        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            matches(window.frame)
+        }, object: nil)
+        let result = XCTWaiter.wait(for: [expectation], timeout: max(0, deadline - ProcessInfo.processInfo.systemUptime))
+        if result != .completed { captureFailure(message, in: app) }
+        XCTAssertEqual(result, .completed, message)
+    }
+
+    @MainActor private func capture(_ angle: Int, in app: XCUIApplication) {
+        // The app-root capture can select the inactive cover display. A window
+        // retains display affinity; use it through the existing XCTest session.
+        let attachment = XCTAttachment(screenshot: app.windows.element(boundBy: 0).screenshot())
+        attachment.name = "Duo-workspace-\(angle)"; attachment.lifetime = .keepAlways; add(attachment)
+    }
+
+    @MainActor private func captureFailure(_ title: String, in app: XCUIApplication) {
+        let screen = XCTAttachment(screenshot: app.windows.element(boundBy: 0).screenshot())
+        screen.name = title; screen.lifetime = .keepAlways; add(screen)
+        let hierarchy = XCTAttachment(string: app.debugDescription)
+        hierarchy.name = title + " hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
+    }
+
+    @MainActor private func assertIngredient(_ expected: String, in app: XCUIApplication) {
+        let query = UIReadiness.buttons("ingredient-1", in: app.windows.element(boundBy: 0))
+        let committed = UIReadiness.waitForValue(expected, matching: query)
+        if !committed { captureFailure("Ingredient did not become \(expected)", in: app) }
+        XCTAssertTrue(committed)
+        XCTAssertEqual(query.element.value as? String, expected)
+    }
+
+    @MainActor func testInvalidHingeAnglesAreRejected() {
+        for angle in [-1.0, 181.0, Double.nan, Double.infinity] {
+            XCTAssertEqual(OnionarySetHingeAngle(angle), 1)
+        }
+    }
+
+    func testReadinessRejectsWrongDisplayAndHiddenFrames() {
+        XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 466, height: 678), angle: 0))
+        XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 678, height: 466), angle: 0))
+        XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 951, height: 669), angle: 180))
+        XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 669, height: 951), angle: 180))
+        // Same area as the outer display, but not a valid display shape.
+        XCTAssertFalse(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 233, height: 1356), angle: 0))
+        XCTAssertTrue(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 466, height: 678), angle: 0))
+        XCTAssertTrue(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 951, height: 669), angle: 90))
+        XCTAssertTrue(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 951, height: 669), angle: 180))
+        // Correct physical display, stale orientation: not ready for input.
+        XCTAssertFalse(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 678, height: 466), angle: 0))
+        XCTAssertFalse(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 669, height: 951), angle: 180))
+        XCTAssertFalse(UIReadiness.duoWindow(.zero, angle: 90))
+        XCTAssertFalse(UIReadiness.duoWindow(CGRect(x: 0, y: 0, width: 951, height: 669), angle: 45))
+        let viewport = CGRect(x: 0, y: 0, width: 466, height: 678)
+        XCTAssertTrue(UIReadiness.validControlFrame(CGRect(x: 12, y: 600, width: 44, height: 44), in: viewport))
+        XCTAssertFalse(UIReadiness.validControlFrame(.zero, in: viewport))
+        XCTAssertFalse(UIReadiness.validControlFrame(.null, in: viewport))
+        XCTAssertFalse(UIReadiness.validControlFrame(CGRect(x: 12, y: 900, width: 44, height: 44), in: viewport))
+        let landscapeWindow = CGRect(x: 0, y: 0, width: 951, height: 669)
+        let toolbar = CGRect(x: 884, y: 185, width: 38, height: 38)
+        XCTAssertFalse(UIReadiness.validControlFrame(toolbar, in: CGRect(x: 0, y: 0, width: 669, height: 951)))
+        XCTAssertTrue(UIReadiness.validControlFrame(toolbar, in: landscapeWindow))
+    }
+
+    @MainActor private func launchFixture(extraArguments: [String] = []) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"] + extraArguments
+        // A foreground app on Duo can exit while XCTest still tracks the old
+        // display as active. Let SpringBoard take focus before the cold launch.
+        if app.state == .runningForeground {
+            UIAppLifecycle.background()
+        }
+        app.launch()
+        return app
+    }
+
+    @MainActor private func launchCookingFixture() throws -> XCUIApplication {
+        let app = launchFixture()
+        // Hinge state belongs to the device, not the app's reset fixture.
+        // Every independent case establishes its own initial physical display.
+        try pose(0, in: app)
+        XCTAssertTrue(app.buttons["Choose a recipe"].waitForExistence(timeout: 10))
+        return app
+    }
+
+    @MainActor private func startCooking(in app: XCUIApplication) throws {
+        try tap("Recipes", in: app)
+        try tap("recipe-1", in: app)
+        try tap("preview-cook", in: app)
+        try tap("portion-plus", in: app)
+        try tap("ingredient-1", in: app)
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        XCTAssertTrue(app.staticTexts["2× recipe"].exists)
+    }
+
+    @MainActor func testRecipePreviewAndChecklistSurviveFolds() throws {
+        let app = try launchCookingFixture()
+        try tap("Recipes", in: app)
+        try tap("recipe-1", in: app)
+        XCTAssertTrue(app.buttons["preview-cook"].waitForExistence(timeout: 5))
+        // Previewing must not start a cooking adventure.
+        try tap("Cooking", in: app)
+        XCTAssertTrue(app.buttons["Choose a recipe"].exists)
+        try tap("Recipes", in: app)
+        try tap("preview-cook", in: app)
+        try tap("portion-plus", in: app)
+        try tap("ingredient-1", in: app)
+        for angle in [0, 180, 90, 180, 0, 180] {
+            try pose(angle, in: app)
+            XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+            XCTAssertTrue(app.staticTexts["2× recipe"].exists)
+            XCTAssertTrue(app.buttons["undo"].isEnabled)
+            capture(angle, in: app)
+        }
+        try tap("undo", in: app)
+        assertIngredient("Unchecked", in: app)
+        try tap("redo", in: app)
+        assertIngredient("Checked", in: app)
+    }
+
+    @MainActor func testRecipeDraftSurvivesFolds() throws {
+        let app = try launchCookingFixture()
+        try startCooking(in: app)
+        try pose(180, in: app)
+        try tap("Cooking options", in: app)
+        try tap("Edit recipe", in: app)
+        let name = app.textFields["Name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        let expected = try XCTUnwrap(name.value as? String) + " Duo draft"
+        name.tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
+        app.typeText(" Duo draft")
+        XCTAssertTrue(UIReadiness.waitForValue(expected, matching: app.textFields.matching(identifier: "Name")), "Complete draft input must commit before folding")
+        XCTAssertEqual(name.value as? String, expected)
+        for angle in [0, 90, 180] {
+            try pose(angle, in: app)
+            XCTAssertEqual(app.textFields["Name"].value as? String, expected)
+        }
+        try tap("Cancel", in: app)
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        XCTAssertTrue(app.staticTexts["2× recipe"].exists)
+    }
+
+    @MainActor func testKitchenShoppingChecksSurviveFolds() throws {
+        let app = try launchCookingFixture()
+        try startCooking(in: app)
+        try pose(180, in: app)
+        try tap("Kitchen", in: app)
+        try tap("Add meals", in: app)
+        try tap("Lemon & cheese pasta", in: app)
+        try tap("Add", in: app)
+        XCTAssertTrue(app.buttons["Mark cooked"].waitForExistence(timeout: 5))
+        try tap("Generate shopping list", in: app)
+        XCTAssertTrue(app.buttons["shopping-cheese"].waitForExistence(timeout: 5))
+        try tap("shopping-cheese", in: app)
+        // Check the shopping pane during the partial fold before moving it to
+        // the cover display. Avoid a single fully-open to closed scene update.
+        for angle in [90, 0, 180] {
+            try pose(angle, in: app)
+            XCTAssertEqual(app.buttons["shopping-cheese"].value as? String, "Checked")
+        }
+        try tap("Refresh shopping list", in: app)
+        XCTAssertEqual(app.buttons["shopping-cheese"].value as? String, "Checked")
+    }
+
+    @MainActor func testExpiredSessionKeepsAdaptiveNavigationReachable() throws {
+        let app = launchFixture(extraArguments: ["--expired-session"])
+        XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 10))
+        for angle in [0, 180, 90] {
+            try pose(angle, in: app)
+            try tap("Settings", in: app)
+            XCTAssertTrue(UIReadiness.button("Sign in with passkey", in: app).isHittable)
+            try tap("Recipes", in: app)
+            XCTAssertTrue(app.buttons["add-recipe"].exists)
+        }
+    }
+}

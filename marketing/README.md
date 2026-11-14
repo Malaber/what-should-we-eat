@@ -1,49 +1,33 @@
-# Onionary App Store marketing
+# Onionary App Store artwork
 
-The screenshot workflow renders current simulator captures into three extra PNGs
-inside each existing device ZIP:
+The CI workflow uses the iPhone and iPad captures from the passing native test
+suite. Each device artifact contains four unmodified screenshots and three
+framed portraits in `en-US/portraits/`. The three portraits feature the cooking
+checklist, recipe book, and portion controls. Each portrait retains the
+corresponding device's App Store upload dimensions.
 
-- `en-US/creative/header.png`: Kopfzeile, 3840×1646, opaque RGB.
-- `en-US/creative/search-results.png`: Suchergebnisse, 3000×2000, opaque RGB.
-- `en-US/05-cooking-with-onionary.png`: framed device with marketing copy, same
-  accepted screenshot dimensions as that device's raw captures.
+The `en-US/creative/` directory contains editable SVGs and opaque
+5244 × 2950 PNGs for the product-page header and search results. The versions
+ending in `-safe-area-preview.png` are review crops. Upload the full-size
+`header.png` and `search-results.png` through App Store Connect.
 
-The four original screenshots remain unchanged. Upload creative files through
-App Store Connect's Header and Search Results tab; upload the portrait alongside
-screenshots. Preview Apple's responsive cropping before submission. Outputs are
-English, matching the existing en-US capture bundle. No production account data
-or generated UI is used. The frame is a neutral device silhouette, not an Apple
-hardware artwork asset. CI does not call an image-generation service.
+The renderer measures the actual SVG artwork against Apple's universal safe
+rectangle at x=1921, y=660, width=1402, height=962. The crops let you inspect
+the part that stays visible. Confirm the final artwork in App Store Connect's
+placement previews before publishing.
 
-Sources checked 2026-10-11:
-- https://developer.apple.com/app-store/asset-best-practices/
-- https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications
+- [Apple creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications)
+- [Editable artwork and shared CI renderer](creative/README.md)
 
-`assets/onionary-kitchen.png` was created with the built-in imagegen tool using
-the existing Onionary icon as a style reference. Prompt:
-
-> Create a premium Onionary cooking-companion marketing background, landscape
-> 3:2, high resolution. Reference image is the existing Onionary icon, style
-> reference only. Warm ivory paper background, tactile softly sculpted 3D
-> illustration in plum-purple, pale onion pink and sage green. A small open plum
-> recipe book whose pages form onion layers, with a tiny smiling onion mascot,
-> placed in the lower LEFT quarter, occupying no more than 30% of canvas width
-> and 35% height. A few tasteful basil leaves and a lemon wedge near bottom left
-> perimeter. Vast quiet cream negative space across upper half and entire right
-> half for later deterministic typography and real phone screenshot insertion.
-> Elegant editorial food-app campaign, soft studio shadows, restrained
-> composition. No text, no lettering, no phone, no interface, no badge, no
-> watermark. Full bleed background, no rounded icon tile or borders.
-
-Fonts are Lora and Manrope from google/fonts (`ofl/lora`, `ofl/manrope`), bundled
-with their SIL Open Font Licenses. Pillow is pinned in `requirements.txt` here.
-
-Local render (after installing this directory's requirements):
+Generate both kinds of artwork locally from the four original XCTest PNGs:
 
 ```sh
+python -m pip install -r marketing/requirements.txt
 python execution/render_marketing_assets.py .tmp/marketing/iphone/en-US --family iphone
 ```
 
-The renderer requires exactly one fresh `02-cooking-companion*.png` and validates
-its device dimensions. It records the screenshot SHA-256 in a manifest. Missing
-or ambiguous input fails rather than falling back to a stale checked-in screen.
+Use Inkscape for SVG output. The renderer uses bundled Lora and Manrope fonts
+with their SIL Open Font Licenses. CI checks every output's dimensions and
+decodes it, verifies the source capture hashes, and makes the screenshot
+bundles available as artifacts. Main releases attach the same validated
+bundles as ZIPs.

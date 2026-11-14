@@ -5,6 +5,8 @@ import OnionaryCore
 struct IntelligenceRecipeView: View {
     @Bindable var store: AppStore
     @State private var prompt = ""
+    @State private var recipeLanguage = RecipeLanguage.automatic
+    @State private var mode = RecipeAIMode.format
     @State private var draft: RecipeDraft?
     @State private var busy = false
     @State private var error: String?
@@ -23,10 +25,20 @@ struct IntelligenceRecipeView: View {
         else {
             NavigationStack {
                 Form {
+                    Picker("Recipe mode", selection: $mode) {
+                        ForEach(RecipeAIMode.allCases) { mode in Text(LocalizedStringKey(mode.title)).tag(mode) }
+                    }
+                    Text(mode == .format ? "Keep the supplied recipe. Only organize it into editable fields." : "Create a new recipe from your ideas and ingredients.")
+                        .font(.footnote).foregroundStyle(.secondary)
                     Section("Describe your recipe") {
                         TextEditor(text: $prompt).frame(minHeight: 160)
                             .accessibilityLabel("Describe your recipe")
                         Text("Paste a recipe or describe ingredients, portions and cooking steps.").foregroundStyle(.secondary)
+                    }
+                    Picker("Recipe language", selection: $recipeLanguage) {
+                        ForEach(RecipeLanguage.allCases) { language in
+                            Text(LocalizedStringKey(language.title)).tag(language)
+                        }
                     }
                     Section("Apple Intelligence") {
                         Text("Generation stays on this device. Review ingredients, quantities and cooking instructions before saving to your backend.")
@@ -36,8 +48,12 @@ struct IntelligenceRecipeView: View {
                             .disabled(busy || prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || unavailable != nil)
                         if busy { ProgressView() }
                     }
-                }.dismissibleKeyboard().navigationTitle("Create with Intelligence")
-                    .toolbar { Button("Cancel") { dismiss() } }
+                }.accessibilityIdentifier("intelligence-form").dismissibleKeyboard().navigationTitle("Create with Intelligence")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }.accessibilityIdentifier("cancel-intelligence")
+                        }
+                    }
                     .interactiveDismissDisabled(busy)
             }
         }
@@ -46,11 +62,11 @@ struct IntelligenceRecipeView: View {
         guard #available(iOS 26, *), unavailable == nil else { return }
         busy = true; error = nil; defer { busy = false }
         do {
-            let session = LanguageModelSession(instructions: "Create a recipe draft from the user's text, in their language. Preserve provided quantities and portions. Use explicit units. Never claim allergy safety. Return practical complete cooking instructions.")
+            let session = LanguageModelSession(instructions: recipeLanguage.instruction + " " + mode.instruction)
             let result = try await session.respond(to: String(prompt.prefix(12000)), generating: GeneratedRecipe.self).content
-            var recipe = RecipeDraft(); recipe.name = result.name; recipe.servings = Decimal(result.servings)
+            var recipe = RecipeDraft(); recipe.name = result.name; recipe.servings = result.servings.map { Decimal($0) }
             recipe.ingredients = result.ingredients.map { source in
-                var item = RecipeDraft.Item(); item.name = source.name; item.quantity = Decimal(source.quantity); item.unit = source.unit; return item
+                var item = RecipeDraft.Item(); item.name = source.name; item.quantity = source.quantity.map { Decimal($0) }; item.unit = source.unit; return item
             }
             recipe.instructionSteps = result.steps.enumerated().map { index, description in
                 var step = RecipeDraft.Step(); step.stepNumber = index + 1; step.description = description; return step
@@ -63,12 +79,12 @@ struct IntelligenceRecipeView: View {
 
 @available(iOS 26, *) @Generable private struct GeneratedRecipe {
     var name: String
-    @Guide(.minimum(0.01), .maximum(1000)) var servings: Double
+    @Guide(.minimum(0.01), .maximum(1000)) var servings: Double?
     @Guide(.minimumCount(1), .maximumCount(60)) var ingredients: [GeneratedIngredient]
     @Guide(.minimumCount(1), .maximumCount(40)) var steps: [String]
 }
 @available(iOS 26, *) @Generable private struct GeneratedIngredient {
     var name: String
-    @Guide(.minimum(0.001), .maximum(1_000_000)) var quantity: Double
+    @Guide(.minimum(0.001), .maximum(1_000_000)) var quantity: Double?
     var unit: String
 }

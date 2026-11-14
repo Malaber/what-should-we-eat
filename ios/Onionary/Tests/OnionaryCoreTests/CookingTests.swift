@@ -121,3 +121,18 @@ private func recipe(_ id: Int = 1) throws -> Recipe {
     #expect(!decoded.canRedo)
     #expect(decoded.checked == adventure.checked)
 }
+
+@Test func recipeReloadRequiresExplicitReset() throws {
+    let original = try recipe()
+    var kitchen = Kitchen(); kitchen.visit(original)
+    try kitchen.adventures[0].scale(multiplier: 2)
+    let progress = kitchen.adventures[0]
+    kitchen.recipes = [original]
+    kitchen.visit(original)
+    #expect(kitchen.adventures[0].multiplier == progress.multiplier)
+    kitchen.reloadCurrentRecipe(try recipe(2))
+    #expect(kitchen.adventures[0].multiplier == 2)
+    kitchen.reloadCurrentRecipe(original)
+    #expect(kitchen.adventures[0].multiplier == 1)
+    #expect(kitchen.adventures[0].checked.isEmpty)
+}

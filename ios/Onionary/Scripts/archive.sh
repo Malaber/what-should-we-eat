@@ -6,12 +6,13 @@ cd "$package_dir"
 archive_path=$1
 marketing_version=$2
 build_number=$3
+python3 ../../execution/check_ios_build_environment.py --stage archive
 xcodegen generate
 signing=(CODE_SIGNING_ALLOWED=NO)
 if [[ "${ARCHIVE_SIGNED:-0}" == 1 ]]; then
   signing=(DEVELOPMENT_TEAM=VWKG94374J CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates)
 fi
-env PATH=/usr/bin:/bin:/usr/sbin:/sbin /usr/bin/xcodebuild   -project Onionary.xcodeproj -scheme Onionary -configuration Release   -destination 'generic/platform=iOS' -archivePath "$archive_path"   MARKETING_VERSION="$marketing_version" CURRENT_PROJECT_VERSION="$build_number"   "${signing[@]}" archive
+env PATH=/usr/bin:/bin:/usr/sbin:/sbin /usr/bin/xcodebuild   -project Onionary.xcodeproj -scheme Onionary -configuration Release   -destination 'generic/platform=iOS' -archivePath "$archive_path"   MARKETING_VERSION="$marketing_version" CURRENT_PROJECT_VERSION="$build_number" COMPILER_INDEX_STORE_ENABLE=NO   "${signing[@]}" archive
 python3 - "$archive_path" "$marketing_version" "$build_number" <<'PY'
 import plistlib
 from pathlib import Path
