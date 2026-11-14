@@ -3,18 +3,12 @@ import notify
 
 final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
-    private static func relaunchPreservingData(_ app: XCUIApplication) -> XCUIApplication {
-        let arguments = app.launchArguments.filter { $0 != "--reset" }
-        let environment = app.launchEnvironment
-        UIAppLifecycle.terminate()
-        // XCUIApplication owns an automation connection/PID. A new object must
-        // represent the new process; only the on-device data is reused.
-        let relaunched = XCUIApplication()
-        relaunched.launchArguments = arguments
-        relaunched.launchEnvironment = environment
-        relaunched.launch()
-        XCTAssertTrue(relaunched.wait(for: .runningForeground, timeout: 10))
-        return relaunched
+    private static func relaunchPreservingData(_ app: XCUIApplication) {
+        app.launchArguments.removeAll { $0 == "--reset" }
+        // XCTest's launch terminates the running instance and starts a clean
+        // process. Let it own both sides of this transition instead of issuing
+        // separate Home, terminate and launch requests to the simulator.
+        app.launch()
     }
 
     @MainActor
@@ -149,7 +143,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testManualRecipeKeepsDraftWhenServerUnavailable() throws {
-        var app = XCUIApplication()
+        let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--offline-save", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -162,14 +156,14 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.typeText("My offline soup")
         XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")))
         app.buttons["Save"].tap()
-        XCTAssertTrue(app.otherElements["recipe-save-error"].waitForExistence(timeout: 5) || app.staticTexts["recipe-save-error"].exists)
+        XCTAssertTrue(app.staticTexts["recipe-save-error"].waitForExistence(timeout: 5))
         XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")), "Failed save must retain the complete draft name")
         XCTAssertTrue(app.buttons["Save"].isEnabled)
         app.buttons["Cancel"].tap()
-        // Finish dismissal/persistence before Home and the real cold restart.
+        // Finish dismissal/persistence before the real cold restart.
         XCTAssertTrue(name.waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.collectionViews["recipe-list"].buttons.matching(identifier: "saved-draft-My offline soup").element(boundBy: 0).waitForExistence(timeout: 5))
-        app = Self.relaunchPreservingData(app)
+        Self.relaunchPreservingData(app)
         try tapNavigation("Recipes", in: app)
         let saved = app.collectionViews["recipe-list"].buttons.matching(identifier: "saved-draft-My offline soup").element(boundBy: 0)
         XCTAssertTrue(saved.waitForExistence(timeout: 5))
@@ -673,7 +667,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testCookUndoScaleAndRestoreAfterTermination() throws {
-        var app = try openCookingRecipe()
+        let app = try openCookingRecipe()
         let cheese = app.buttons["ingredient-1"]
         cheese.tap()
         cheese.tap()
@@ -684,7 +678,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         // distinguishes this commit action from the keyboard's Done button.
         app.buttons["apply-portions"].tap()
         XCTAssertTrue(app.staticTexts["1.58× recipe"].waitForExistence(timeout: 5))
-        app = Self.relaunchPreservingData(app)
+        Self.relaunchPreservingData(app)
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
         XCTAssertTrue(app.staticTexts["1.58× recipe"].exists)

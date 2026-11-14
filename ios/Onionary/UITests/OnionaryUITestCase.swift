@@ -3,24 +3,16 @@ import XCTest
 @MainActor enum UIAppLifecycle {
     static func background() {
         // Use the system Home action without activating a second app's
-        // automation session. Resolve the background process after that handoff;
-        // do not send further state queries through the old foreground proxy.
+        // automation session. Wait for SpringBoard to finish the handoff.
         XCUIDevice.shared.press(.home)
         let home = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         XCTAssertTrue(home.wait(for: .runningForeground, timeout: 10))
     }
-
-    static func terminate() {
-        background()
-        let background = XCUIApplication()
-        if background.state != .notRunning { background.terminate() }
-        XCTAssertTrue(background.wait(for: .notRunning, timeout: 10))
-    }
 }
 
 /// Each UI scenario calls launch(), which terminates an existing instance and
-/// starts its own reset fixture. Cold-persistence tests explicitly terminate
-/// inside their scenario; do not add a second global Home/terminate boundary.
+/// starts its own reset fixture. Cold-persistence tests launch again without
+/// clearing the fixture files; do not add a global Home/terminate boundary.
 class OnionaryUITestCase: XCTestCase {
     override class func setUp() {
         super.setUp()

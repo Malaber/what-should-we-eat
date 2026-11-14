@@ -126,8 +126,14 @@ remove keyboard visibility checks or replace input with direct value injection.
 The same focused app-level input applies to pantry, account email, manual draft,
 search and import fields; retain their real taps and exact value checks. Before
 cold-restoring an offline draft, wait for Cancel to remove its editor and for the
-saved row to appear. Keep the full Home/termination/relaunch flow. Verify the
-restored name with waitForValue's native `value == expected` predicate: that
+saved row to appear. Check the inline error using its StaticText identifier;
+waiting on an Other element first stalls on a role that does not exist.
+For both cold restoration cases, remove `--reset` and call `XCUIApplication.launch()`
+on the running app. XCTest terminates the existing instance and starts a clean
+process while preserving the fixture files. Keep the actual Home action for the
+separate background session renewal test. The rc.28 iPad run stalled before app
+initialization when the test drove Home, terminate and launch separately.
+Verify the restored name with waitForValue's native `value == expected` predicate: that
 single query requires both field existence and complete string equality, rather
 than an existence query followed by a redundant broad value RPC during sheet
 presentation. Keep the offline error, enabled Save and 180-second case bound.
