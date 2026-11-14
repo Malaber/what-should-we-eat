@@ -112,6 +112,7 @@ jobs:
           path: |
             ${{ runner.temp }}/onionary-tests/Onionary.xcresult
             ${{ runner.temp }}/onionary-tests/*.log
+            ${{ runner.temp }}/onionary-tests/duo/
             ${{ runner.temp }}/onionary-tests/host-diagnostics/
           if-no-files-found: ignore
           retention-days: 7

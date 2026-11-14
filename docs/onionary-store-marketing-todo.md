@@ -10,6 +10,7 @@
 
 - [x] Verify accessible recipe move controls and saved row order on iPhone and iPad. Keep the native drag handles.
 - [x] Exercise the Duo shopping pane at 90° before closing to the cover display. All six Duo cases passed locally on iOS 27.1 build 24A94425.
+- [x] Run each Duo case once in a fresh simulator on the pinned runtime. Verify all six native cases and 30 shell harness tests.
 - [x] Add richer onion-inspired abstract shapes to creative assets and framed captures. Verify the full artwork and Apple's safe-area crops.
 - [ ] Run focused simulator tests and the full GitHub iOS, browser, backend, and artwork checks.
 

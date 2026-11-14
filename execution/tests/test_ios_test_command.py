@@ -76,7 +76,10 @@ with open(os.environ['CAPTURE_ARGS'], 'a') as output:
 if any(arg.endswith('version.py') for arg in sys.argv): print('0.6.0')
 if '--test-products' in sys.argv: print(sys.argv[-1] + '/Onionary_iphonesimulator27.1-arm64.xctestrun')
 if '--test-products' in sys.argv and os.environ['FAIL_STAGE'] == 'plan': sys.exit(45)
-if any(arg.endswith('resolve_simulator.py') for arg in sys.argv): print('isolated-test-device')
+if any(arg.endswith('resolve_simulator.py') for arg in sys.argv):
+    with open(os.environ['CAPTURE_ARGS']) as source:
+        device = sum('resolve_simulator.py' in line for line in source)
+    print(f'isolated-test-device-{device}')
 if 'build-for-testing' in sys.argv and os.environ['FAIL_STAGE'] == 'build': sys.exit(42)
 if '--test-app' in sys.argv and os.environ['FAIL_STAGE'] == 'app': sys.exit(41)
 if 'bootstatus' in sys.argv and os.environ['FAIL_STAGE'] == 'boot': sys.exit(43)
@@ -123,12 +126,20 @@ if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in sys.argv) and 
         assert execution[execution.index('--startup-seconds') + 1] == '600'
         assert execution[execution.index('--ready-prefix') + 1] == "Test Suite 'Selected tests' started at "
         assert execution[execution.index('xcodebuild') - 1] == '1800'
-    assert commands[-1] == ['xcrun', 'simctl', 'delete', 'isolated-test-device']
+    instances = [c[-1] for c in commands if c[:3] == ['xcrun', 'simctl', 'delete']]
+    assert instances == [f'isolated-test-device-{index}' for index in range(1, len(instances) + 1)]
+    assert len(instances) == (6 if failure_stage == 'none' else 1)
+    if failure_stage == 'none':
+        runs = [c for c in commands if 'test-without-building' in c]
+        assert len({c[-1] for c in runs}) == len(runs) == 6
+        assert all(c[-1].startswith('-only-testing:OnionaryUITests/OnionaryDuoTests/test') for c in runs)
+        assert [c[c.index('-destination') + 1].split('id=')[-1] for c in runs] == instances
+        assert sum('build-for-testing' in c for c in commands) == 1
     diagnostics = [i for i, command in enumerate(commands)
                    if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in command)]
     assert len(diagnostics) == (0 if failure_stage == 'none' else 1)
     if diagnostics:
         assert diagnostics[0] < len(commands) - 1
         command = commands[diagnostics[0]]
-        assert command[command.index('--simulator') + 1] == 'isolated-test-device'
+        assert command[command.index('--simulator') + 1] == 'isolated-test-device-1'
         assert command[command.index('--output') + 1] == str(tmp_path / 'results/host-diagnostics')

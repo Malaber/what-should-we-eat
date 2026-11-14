@@ -10,29 +10,32 @@ python3 ../../execution/check_ios_build_environment.py --test-scheme Onionary.xc
 result_dir=${TEST_RESULTS_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/onionary-tests.XXXXXX")}
 mkdir -p "$result_dir"
 result_dir=$(cd "$result_dir" && pwd)
-created_simulator=false
-if [[ -n "${SIMULATOR_ID:-}" ]]; then
-  simulator_id=$SIMULATOR_ID
-else
-  simulator_id=$(python3 Scripts/resolve_simulator.py --create --device-type "${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro}" --runtime "${SIMULATOR_RUNTIME:-}")
-  created_simulator=true
-fi
+device_type=${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro}
+simulator_id=${SIMULATOR_ID:-}
+create_simulator() {
+  simulator_id=$(python3 Scripts/resolve_simulator.py --create --device-type "$device_type" --runtime "${SIMULATOR_RUNTIME:-}")
+}
+delete_owned_simulator() {
+  if [[ -z "${SIMULATOR_ID:-}" && -n "$simulator_id" ]]; then
+    xcrun simctl delete "$simulator_id" >/dev/null 2>&1 || true
+    simulator_id=
+  fi
+}
 cleanup() {
   local result=$?
   trap - EXIT
-  if [[ "$result" != 0 ]]; then
+  if [[ "$result" != 0 && -n "$simulator_id" ]]; then
     # Preserve the original failure. Diagnostics are read-only and bounded;
     # neither an unavailable log service nor cleanup can replace its exit code.
     python3 ../../execution/run_bounded.py --log "$result_dir/host-diagnostics.log" 60 \
       python3 ../../execution/collect_ios_test_diagnostics.py \
       --simulator "$simulator_id" --output "$result_dir/host-diagnostics" || true
   fi
-  if [[ "$created_simulator" == true ]]; then
-    xcrun simctl delete "$simulator_id" >/dev/null 2>&1 || true
-  fi
+  delete_owned_simulator
   exit "$result"
 }
 trap cleanup EXIT
+if [[ -z "$simulator_id" ]]; then create_simulator; fi
 # Give compilation its own budget: cold builds must not consume UI test time.
 derived_data=${TEST_DERIVED_DATA_DIR:-$result_dir/DerivedData}
 # Headless automation does not use SwiftUI Previews. Link the app normally,
@@ -44,32 +47,36 @@ build_args=(-project Onionary.xcodeproj -scheme Onionary
 python3 ../../execution/run_bounded.py --log "$result_dir/build.log" 1200 xcodebuild "${build_args[@]}" build-for-testing
 python3 ../../execution/check_ios_build_environment.py --test-app "$derived_data/Build/Products/Debug-iphonesimulator/Onionary.app"
 test_plan=$(python3 ../../execution/check_ios_build_environment.py --test-products "$derived_data/Build/Products")
-if [[ "$created_simulator" == true ]]; then
-  # Compile against a shutdown device. Fresh runtime indexing and cold Swift
-  # compilation must not compete for memory/disk before XCTest loads accessibility.
-  # Start monitoring before boot, rather than attaching after boot returned.
-  python3 ../../execution/run_bounded.py 600 xcrun simctl bootstatus "$simulator_id" -b
-fi
-# Runtime bundle metadata was checked before creation. Do not add a post-boot
-# simctl getenv/spawn probe: cold hosted guests can stall that extra RPC before
-# XCTest starts. The runner records its OS version directly when it initializes.
-test_allowance=180
-if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then test_allowance=360; fi
-# Keep XCTest failures/attachments, but avoid Xcode's simulator-wide sysdiagnose
-# collector (which stalls for 600 seconds even after a fully passed suite).
-# Run the already-compiled manifest. Reopening the project/scheme here repeats
-# package/project resolution and charges that setup to the UI execution budget.
-test_args=(-xctestrun "$test_plan" -destination "platform=iOS Simulator,id=$simulator_id"
-  -parallel-testing-enabled NO -collect-test-diagnostics never -test-timeouts-enabled YES
-  -default-test-execution-time-allowance "$test_allowance" -maximum-test-execution-time-allowance "$test_allowance"
-  -resultBundlePath "$result_dir/Onionary.xcresult" test-without-building)
-if [[ "${SIMULATOR_DEVICE_TYPE:-}" == *iPhone-Duo ]]; then
+run_tests() {
+  local output=$1 allowance=$2
+  shift 2
+  mkdir -p "$output"
+  if [[ -z "${SIMULATOR_ID:-}" ]]; then
+    # Cold compilation is complete before the first guest boots. Avoid extra
+    # post-boot guest RPCs before XCTest starts.
+    python3 ../../execution/run_bounded.py 600 xcrun simctl bootstatus "$simulator_id" -b
+  fi
   python3 ../../execution/run_bounded.py --startup-seconds 600 --ready-prefix "Test Suite 'Selected tests' started at " \
-    --log "$result_dir/tests.log" 1800 xcodebuild "${test_args[@]}" \
-    -only-testing:OnionaryUITests/OnionaryDuoTests
+    --log "$output/tests.log" 1800 xcodebuild -xctestrun "$test_plan" \
+    -destination "platform=iOS Simulator,id=$simulator_id" \
+    -parallel-testing-enabled NO -collect-test-diagnostics never -test-timeouts-enabled YES \
+    -default-test-execution-time-allowance "$allowance" -maximum-test-execution-time-allowance "$allowance" \
+    -resultBundlePath "$output/Onionary.xcresult" test-without-building "$@"
+}
+
+if [[ "$device_type" != *iPhone-Duo ]]; then
+  run_tests "$result_dir" 180 -only-testing:OnionaryUITests/OnionaryUITests
+elif [[ -n "${SIMULATOR_ID:-}" ]]; then
+  run_tests "$result_dir" 360 -only-testing:OnionaryUITests/OnionaryDuoTests
 else
-  python3 ../../execution/run_bounded.py --startup-seconds 600 --ready-prefix "Test Suite 'Selected tests' started at " \
-    --log "$result_dir/tests.log" 1800 xcodebuild "${test_args[@]}" \
-    -only-testing:OnionaryUITests/OnionaryUITests
+  # Each fold scenario starts with a clean SpringBoard/AX session. Reusing the
+  # guest forces XCTest to terminate a process tracked by the previous display.
+  duo_cases=$(sed -nE 's/^[[:space:]]*(@MainActor[[:space:]]+)?func (test[A-Za-z0-9_]+)\(\).*/\2/p' UITests/OnionaryDuoTests.swift)
+  [[ -n "$duo_cases" ]] || { echo 'No Duo test cases found' >&2; exit 1; }
+  while IFS= read -r scenario; do
+    if [[ -z "$simulator_id" ]]; then create_simulator; fi
+    run_tests "$result_dir/duo/$scenario" 360 "-only-testing:OnionaryUITests/OnionaryDuoTests/$scenario"
+    delete_owned_simulator
+  done <<< "$duo_cases"
 fi
-echo "Test results: $result_dir/Onionary.xcresult"
+echo "Test results: $result_dir"
