@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import sys
 
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from execution.package_marketing_screenshots import CAPTURES, PORTRAIT_SOURCES, validate_dimensions
@@ -51,19 +51,44 @@ def device(canvas, screen, box):
     canvas.paste(fitted, (x, y), mask)
 
 
+def portrait_background(size, start, end, ink, muted):
+    w, h = size
+    gradient = Image.linear_gradient("L").resize(size)
+    paper = ImageOps.colorize(gradient, start, end)
+    # Overlapping translucent ellipses make the curved layers. Keep the upper
+    # copy area quiet and let the layers fan out behind the device.
+    layers = (
+        ((.11, .38, 1.64, 1.20), ink, muted, 152),
+        ((.24, .40, 1.44, 1.22), end, start, 190),
+        ((.40, .48, 1.68, 1.04), muted, ink, 128),
+        ((-.92, .42, .45, 1.09), muted, end, 145),
+        ((-.87, .59, .46, 1.23), ink, end, 115),
+        ((-.55, .73, .50, 1.22), end, start, 178),
+    )
+    for bounds, light, shade, opacity in layers:
+        mask = Image.new("L", size)
+        ImageDraw.Draw(mask).ellipse((bounds[0]*w, bounds[1]*h, bounds[2]*w, bounds[3]*h), fill=opacity)
+        paper.paste(ImageOps.colorize(gradient, light, shade), mask=mask)
+
+    outline = Image.new("L", size)
+    draw = ImageDraw.Draw(outline)
+    for inset in (0, .04, .09):
+        draw.ellipse(((.22+inset)*w, (.41+inset)*h, (1.43+inset)*w, 1.19*h),
+                     outline=95, width=max(2, round(w*.002)))
+        draw.ellipse(((-.76-inset)*w, (.60+inset)*h, (.50+inset)*w, (1.21+inset)*h),
+                     outline=78, width=max(2, round(w*.002)))
+    fade = Image.linear_gradient("L").resize((w, round(h*.32)))
+    opacity = Image.new("L", size, 255)
+    opacity.paste(fade, (0, 0))
+    paper.paste(start, mask=ImageChops.multiply(outline, opacity))
+    return paper
+
+
 def draw_portrait(screen, design):
     kicker, headline, detail, start, end, ink, muted = design
     w, h = screen.size
-    gradient = Image.linear_gradient("L").resize((w, h))
-    canvas = ImageOps.colorize(gradient, start, end)
-    draw = ImageDraw.Draw(canvas, "RGBA")
-    # Decorative onion rings live outside the copy. The screenshot stays intact.
-    for inset in (0, .07, .14, .21):
-        draw.ellipse(((.65-inset)*w, .36*h, (1.46+inset)*w, .94*h),
-                     outline=(*bytes.fromhex(ink[1:]), 34), width=max(2, round(w*.003)))
-    for inset in (0, .08, .16):
-        draw.ellipse(((-.59-inset)*w, .68*h, (.38+inset)*w, 1.18*h),
-                     outline=(*bytes.fromhex(ink[1:]), 28), width=max(2, round(w*.003)))
+    canvas = portrait_background(screen.size, start, end, ink, muted)
+    draw = ImageDraw.Draw(canvas)
     draw.text((w*.09, h*.055), kicker, font=font(w*.029, weight=700), fill=muted, anchor="lt")
     headline_size = min(w*.097, h*.059)
     headline_font = font(headline_size, serif=True, weight=600)
