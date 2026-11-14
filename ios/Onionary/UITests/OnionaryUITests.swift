@@ -226,11 +226,11 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertLessThan(cheese.frame.minY, pasta.frame.minY)
         let destination = list.buttons["Reorder Pasta"]
         XCTAssertTrue(destination.waitForExistence(timeout: 5))
-        // Stay in the grab-handle column and cross the destination row's center
-        // before releasing. A diagonal drop on its label can stop at the boundary.
+        // Give the native long-press recognizer time to lift the row before
+        // moving. Stay in the handle column and settle past the target center.
         let start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         let end = destination.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
-        start.press(forDuration: 0.4, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.25)
+        start.press(forDuration: 0.85, thenDragTo: end, withVelocity: XCUIGestureVelocity(rawValue: 125), thenHoldForDuration: 0.6)
         XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
         sheet.buttons["Done"].tap()
         XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
