@@ -113,10 +113,20 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertTrue(UIReadiness.validControlFrame(toolbar, in: landscapeWindow))
     }
 
-    @MainActor private func launchCookingFixture() throws -> XCUIApplication {
+    @MainActor private func launchFixture(extraArguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"] + extraArguments
+        // A foreground app on Duo can exit while XCTest still tracks the old
+        // display as active. Let SpringBoard take focus before the cold launch.
+        if app.state == .runningForeground {
+            UIAppLifecycle.background()
+        }
         app.launch()
+        return app
+    }
+
+    @MainActor private func launchCookingFixture() throws -> XCUIApplication {
+        let app = launchFixture()
         // Hinge state belongs to the device, not the app's reset fixture.
         // Every independent case establishes its own initial physical display.
         try pose(0, in: app)
@@ -203,9 +213,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
     }
 
     @MainActor func testExpiredSessionKeepsAdaptiveNavigationReachable() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "--expired-session", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launch()
+        let app = launchFixture(extraArguments: ["--expired-session"])
         XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 10))
         for angle in [0, 180, 90] {
             try pose(angle, in: app)
