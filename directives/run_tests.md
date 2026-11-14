@@ -254,6 +254,14 @@ and Undo/Redo/History unchanged. Native coverage includes both immediate edit
 selection and an open menu surviving feedback expiry, followed by one Edit tap,
 editor cancellation and the original checked ingredient. Await actual feedback
 disappearance; never retry a lost menu tap or bypass the menu to open the editor.
+That one regression opts into ActionFeedbackClock's Debug-only manual signal
+with a unique ONIONARY_TEST_FEEDBACK_CLOCK notification name. The real banner
+stays visible until the test opens the native menu, then one notification expires
+it through the normal state/animation path. Keep every assertion and the same
+eight-second disappearance wait. Slow AX queries must not race the production
+four-second wall clock. Other fixtures and Release use the real cancellable
+four-second delay. Unit tests cover notification completion, observer disposal,
+replacement cancellation and default cancellation. No server or file polling.
 The ordinary profile now contains 27 required cases; Duo retains six.
 Do not enumerate windows and all matching controls inside
 a short predicate wait: those AX RPCs can consume the budget before evaluation.

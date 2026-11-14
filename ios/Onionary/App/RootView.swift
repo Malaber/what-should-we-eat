@@ -422,7 +422,7 @@ private struct CookingHistoryBar: View {
             }
             .task(id: recentAction?.id) {
                 guard recentAction != nil else { return }
-                do { try await Task.sleep(for: .seconds(4)) } catch { return }
+                do { try await ActionFeedbackClock.waitForExpiry() } catch { return }
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { recentAction = nil }
             }
         }

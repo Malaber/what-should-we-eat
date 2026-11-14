@@ -1,4 +1,5 @@
 import XCTest
+import notify
 
 final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
@@ -438,7 +439,8 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testCookingOptionsSurviveActionFeedbackExpiry() throws {
-        let app = try openCookingRecipe()
+        let clock = "de.malaber.onionary.uitest.feedback." + UUID().uuidString
+        let app = try openCookingRecipe(environment: ["ONIONARY_TEST_FEEDBACK_CLOCK": clock])
         let ingredient = app.buttons["ingredient-1"]
         ingredient.tap()
         XCTAssertEqual(ingredient.value as? String, "Checked")
@@ -447,8 +449,9 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.buttons["cooking-options"].tap()
         let edit = app.buttons["Edit recipe"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
-        // Observe a real transient UI change while the native menu is open.
-        // No fixed delay or second tap may rescue a lost menu action.
+        // Expire the real feedback while the native menu is open. Accessibility
+        // round trips must not race a four-second clock on a loaded CI host.
+        XCTAssertEqual(notify_post(clock), UInt32(NOTIFY_STATUS_OK))
         XCTAssertTrue(feedback.waitForNonExistence(timeout: 8))
         XCTAssertTrue(edit.exists)
         edit.tap()
@@ -599,9 +602,10 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    private func openCookingRecipe() throws -> XCUIApplication {
+    private func openCookingRecipe(environment: [String: String] = [:]) throws -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchEnvironment = environment
         app.launch()
         app.buttons["Choose a recipe"].tap()
         try selectRecipe(in: app)

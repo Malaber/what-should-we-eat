@@ -846,8 +846,8 @@ Evidence:
 
 ## Control feedback expiry in its native menu regression
 
-- [ ] Add a Debug-only, opt-in manual feedback clock for native UI automation. Production feedback still expires after four seconds through the same cancellation/animation path.
-- [ ] Keep every banner/menu/edit/cancel/progress assertion. The native test explicitly expires feedback only after opening the menu, instead of racing a four-second wall clock against slow accessibility calls. Retain its eight-second expiry wait and three-minute case budget.
+- [x] Add a Debug-only, opt-in manual feedback clock for native UI automation. Production feedback still expires after four seconds through the same cancellation/animation path.
+- [x] Keep every banner/menu/edit/cancel/progress assertion. The native test explicitly expires feedback only after opening the menu, instead of racing a four-second wall clock against slow accessibility calls. Retain its eight-second expiry wait and three-minute case budget.
 - [ ] Compile and test the notification/clock lifecycle, then push and monitor the complete new SHA with all profiles required.
 
 The completed 2dd04d2 run passed iPhone and every non-native prerequisite.
