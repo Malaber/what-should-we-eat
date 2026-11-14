@@ -27,19 +27,16 @@ final class OnionaryDuoTests: OnionaryUITestCase {
 
     @MainActor private func pose(_ angle: Int, in app: XCUIApplication) throws {
         let deadline = ProcessInfo.processInfo.systemUptime + 15
-        XCTAssertEqual(OnionarySetHingeAngle(Double(angle)), 0, "Native hinge dispatch failed at \(angle)°")
         let window = app.windows.element(boundBy: 0)
+        XCTAssertEqual(OnionarySetHingeAngle(Double(angle)), 0, "Native hinge dispatch failed at \(angle)°")
         // Let the receiving display change before starting a separate rotation.
         // Use the actual receiving window for both checks. The app's frame
         // requires another remote snapshot and can reflect the old display.
         var frame = window.frame
         if !UIReadiness.duoViewport(frame, angle: angle) {
-            let handoff = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-                UIReadiness.duoViewport(window.frame, angle: angle)
-            }, object: nil)
-            let result = XCTWaiter.wait(for: [handoff], timeout: max(0, deadline - ProcessInfo.processInfo.systemUptime))
-            if result != .completed { captureFailure("Unsettled display at \(angle)°", in: app) }
-            XCTAssertEqual(result, .completed, "Receiving window must move to the requested display")
+            waitForWindow(in: app, window, deadline: deadline, "Receiving display at \(angle)°") {
+                UIReadiness.duoViewport($0, angle: angle)
+            }
             frame = window.frame
         }
 
@@ -51,12 +48,19 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         if XCUIDevice.shared.orientation != orientation {
             XCUIDevice.shared.orientation = orientation
         }
-        let rotation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            UIReadiness.duoWindow(window.frame, angle: angle)
+        waitForWindow(in: app, window, deadline: deadline, "Receiving window orientation at \(angle)°") {
+            UIReadiness.duoWindow($0, angle: angle)
+        }
+    }
+
+    @MainActor private func waitForWindow(in app: XCUIApplication, _ window: XCUIElement, deadline: TimeInterval, _ message: String,
+                                          matches: @escaping (CGRect) -> Bool) {
+        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            matches(window.frame)
         }, object: nil)
-        let result = XCTWaiter.wait(for: [rotation], timeout: max(0, deadline - ProcessInfo.processInfo.systemUptime))
-        if result != .completed { captureFailure("Unsettled window at \(angle)°", in: app) }
-        XCTAssertEqual(result, .completed, "Receiving window must finish the requested display rotation")
+        let result = XCTWaiter.wait(for: [expectation], timeout: max(0, deadline - ProcessInfo.processInfo.systemUptime))
+        if result != .completed { captureFailure(message, in: app) }
+        XCTAssertEqual(result, .completed, message)
     }
 
     @MainActor private func capture(_ angle: Int, in app: XCUIApplication) {
@@ -204,7 +208,9 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         try tap("Generate shopping list", in: app)
         XCTAssertTrue(app.buttons["shopping-cheese"].waitForExistence(timeout: 5))
         try tap("shopping-cheese", in: app)
-        for angle in [0, 180] {
+        // Check the shopping pane during the partial fold before moving it to
+        // the cover display. Avoid a single fully-open to closed scene update.
+        for angle in [90, 0, 180] {
             try pose(angle, in: app)
             XCTAssertEqual(app.buttons["shopping-cheese"].value as? String, "Checked")
         }
