@@ -818,3 +818,28 @@ app data or installed runtimes to overcome that preflight.
 
 Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43570341570/job/132373135277
+
+## Prepare the selected runtime cache before cold CI boot
+
+- [ ] On disposable GitHub-hosted macOS runners only, prepare the exact pinned runtime's dyld shared cache once before compilation/boot. Use simctl's supported non-forced update; never delete a cache, modify a developer runtime or run an app/test as warm-up.
+- [ ] Test environment isolation, exact build/bundle selection, ordering, timeout and failure propagation. Cache preparation must be terminal on failure, without retries or fallback to an RC.
+- [ ] Push and monitor the new SHA through all expected jobs. Retain standard runners, all native cases/assertions/cold launches, existing test deadlines and diagnostics.
+
+At 2dd04d2, Duo still passed 5/6 and failed before the expired-session case's
+first app assertion. Its Xcode launch-status request took longer than the
+runner's internal 60-second limit; the app was launched only after that limit.
+The normal executable layout is therefore not sufficient to resolve cold-runtime
+startup. The retained system sample includes runtime disk-image decompression;
+the app did not yet exist in that sample. Do not call this an account UI failure
+or keep randomly changing UI assertions.
+
+The selected Xcode's `xcrun simctl help runtime` documents
+`runtime dyld_shared_cache update <runtime>`: existing caches return success
+immediately; missing caches are generated through the system. Prepare that
+prerequisite once, before any guest is created, using the pinned bundle path.
+This is runtime setup, not a test retry or a longer native execution allowance.
+Fresh complete CI must establish whether this addresses startup reliably.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43574294500/job/132385040696
+- Xcode 27.1 simctl runtime help (dyld_shared_cache update)
