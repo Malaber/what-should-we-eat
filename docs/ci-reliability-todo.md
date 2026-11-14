@@ -730,3 +730,32 @@ Implementation checkpoint:
   after compilation; require complete hosted iPhone/iPad/Duo and archive results.
   All 26 ordinary and six Duo cases remain mandatory with unchanged deadlines.
   Keep stable runtime pins and the standard runner. No TestFlight or release tag.
+
+## Keep transient action feedback out of menu ownership
+
+- [ ] Move the timed recent-action state and its animation into an independent history-bar view. Preserve the four-second feedback, reduced-motion behavior, Undo/Redo/History actions and all cooking state. A banner timer must not invalidate the view owning an open native menu.
+- [ ] Add a native regression that opens Cooking options with the action banner visible, observes its expiry, then opens Edit once and cancels while retaining the checked ingredient. Keep the original immediate edit/save/progress case unchanged.
+- [ ] Run feature branches through the full pull_request workflow once, rather than both push and PR workflows. Preserve push CI for main, the named development deployment branch and immutable version tags, plus manual dispatch. Keep all native profiles and release/publish gates.
+- [ ] Validate, launch full local iPhone verification asynchronously, explicitly push and update the PR. No retries, skipped assertions, longer deadlines, paid runner, merge or TestFlight.
+
+At 79f4d6d the PR workflow 43519633824 passed every job: all three native
+profiles, archive/backend/browser/HTML, creative renders and screenshot bundles.
+Full local iPad passed all 26 cases in 686.265 seconds. Branch workflow
+43519629172 passed 25/26 iPhone cases, while its iPad was cancelled. This does
+not negate the complete green PR run, but the remaining branch failure needs
+diagnosis rather than being hidden by the trigger change.
+
+The failing edit case has a real assertion failure: Name never appears. Native
+event data targets Edit recipe at the correct point (262.67, 93), and the retained
+screenshot/hierarchy still show the menu open. No presentation warning is logged.
+The check happened at 22:44:35 and menu selection at 22:44:39, overlapping the
+four-second feedback expiry. Before/after screenshots show that banner disappearing
+under the open menu. Its @State currently belongs to CookingView, whose body also
+owns the toolbar Menu. Isolate that transient state; keep the user-visible layout
+animation and test both immediate selection and selection through banner expiry.
+This correlation identifies a presentation-state coupling; fresh native results
+must establish whether the correction resolves the intermittent missed selection.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43519629172/job/132210352449
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43519633824
