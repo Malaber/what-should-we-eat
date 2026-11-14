@@ -441,6 +441,7 @@ private struct RecipeOrderSheet<Item: Identifiable, Row: View>: View {
                     }
             }
             .environment(\.editMode, .constant(.active))
+            .accessibilityIdentifier("recipe-order-list")
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }

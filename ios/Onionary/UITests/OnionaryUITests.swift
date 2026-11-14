@@ -175,6 +175,37 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
+    func testRecipeOrderingUsesNativeHandles() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        try selectRecipe(in: app)
+        app.buttons["Edit recipe"].tap()
+        let ingredients = app.buttons["Reorder ingredients"]
+        XCTAssertTrue(ingredients.waitForExistence(timeout: 5))
+        ingredients.tap()
+        let sheet = app.navigationBars["Reorder ingredients"]
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5))
+        let list = app.collectionViews["recipe-order-list"]
+        XCTAssertTrue(list.waitForExistence(timeout: 5))
+        XCTAssertEqual(list.textFields.count, 0)
+        let cheese = list.staticTexts["Cheese"]
+        let pasta = list.staticTexts["Pasta"]
+        let handle = list.buttons["Reorder Cheese"]
+        XCTAssertTrue(handle.waitForExistence(timeout: 5), list.debugDescription)
+        XCTAssertLessThan(cheese.frame.minY, pasta.frame.minY)
+        handle.press(forDuration: 0.4, thenDragTo: pasta)
+        XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
+        sheet.buttons["Done"].tap()
+        XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
+        ingredients.tap()
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5))
+        XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
+        sheet.buttons["Done"].tap()
+    }
+
+    @MainActor
     func testRecipeTagSuggestionsAndMultiwordChips() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

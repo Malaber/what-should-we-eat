@@ -89,7 +89,7 @@ The mandatory testLiveActivityStartAndStop explicitly launches with
 the final Off assertion. testCookingModeWithFixtureBackend runs the same full
 cycle against the fixture separately. Both cases must pass on ordinary profiles;
 neither is skipped or accepted as a replacement for the other. Release builds
-exclude the fixture and always construct the Apple backend. There are 27 ordinary
+exclude the fixture and always construct the Apple backend. There are 29 ordinary
 UI cases and six Duo cases after adding this coverage.
 
 Follow the global GitHub CI Monitoring and Automatic Fixes workflow. Complete

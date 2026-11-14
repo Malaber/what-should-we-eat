@@ -19,9 +19,9 @@ struct RecipePreview: View {
                     Label(store.kitchen.adventures.contains(where: { $0.id == recipe.id }) ? "Resume cooking" : "Cook this recipe", systemImage: "flame.fill")
                         .labelStyle(.titleAndIcon)
                         .font(.headline)
+                        .foregroundStyle(Color(uiColor: .systemBackground))
                         .frame(maxWidth: .infinity, minHeight: 36)
                 }
-                .foregroundStyle(Color(uiColor: .systemBackground))
                 .buttonStyle(.borderedProminent)
                 .tint(OnionaryTheme.accent)
                 .accessibilityIdentifier("preview-cook")
