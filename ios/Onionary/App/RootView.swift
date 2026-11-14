@@ -241,8 +241,6 @@ struct CookingView: View {
     @State private var sheet: Sheet?
     @State private var restart = false
     @State private var focusedItem: String?
-    @State private var recentAction: CheckChange?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         Group {
             if let adventure = store.current {
@@ -321,31 +319,7 @@ struct CookingView: View {
                 }.sensoryFeedback(.selection, trigger: adventure.portions)
                  .sensoryFeedback(.selection, trigger: adventure.checked)
                  .safeAreaInset(edge: .bottom) {
-                    VStack(spacing: 10) {
-                        if let action = recentAction {
-                            Text(L10n.text(action.undoes != nil ? "Undid · " : action.redoes != nil ? "Redid · " : action.isChecked ? "Checked · " : "Unchecked · ") + action.label)
-                                .font(.subheadline).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
-                                .accessibilityIdentifier("recent-action")
-                                .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
-                        HStack {
-                            Button("Undo", systemImage: "arrow.uturn.backward") { store.update { $0.undo() } }
-                                .disabled(!adventure.canUndo).accessibilityIdentifier("undo")
-                            Spacer()
-                            Button("Redo", systemImage: "arrow.uturn.forward") { store.update { $0.redo() } }
-                                .disabled(!adventure.canRedo).accessibilityIdentifier("redo")
-                            Spacer()
-                            Button("History", systemImage: "clock.arrow.circlepath") { sheet = .history }
-                        }
-                    }.padding(.horizontal).padding(.vertical, 8).background(.regularMaterial)
-                    .onChange(of: adventure.history.last?.id) { _, _ in
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { recentAction = adventure.history.last }
-                    }
-                    .task(id: recentAction?.id) {
-                        guard recentAction != nil else { return }
-                        do { try await Task.sleep(for: .seconds(4)) } catch { return }
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { recentAction = nil }
-                    }
+                    CookingHistoryBar(store: store) { sheet = .history }
                 }
             } else {
                 ContentUnavailableView {
@@ -413,6 +387,45 @@ struct CookingView: View {
         }.buttonStyle(.plain).accessibilityLabel(label + (subtitle.isEmpty ? "" : ", " + subtitle))
             .accessibilityValue(checked ? "Checked" : "Unchecked").accessibilityHint("Double tap to toggle. Undo reverses the last change.")
             .accessibilityIdentifier(key).id(key)
+    }
+}
+
+/// Transient feedback owns its timer locally. Expiring a banner must not
+/// invalidate CookingView's toolbar and an in-flight native menu selection.
+private struct CookingHistoryBar: View {
+    @Bindable var store: AppStore
+    var showHistory: () -> Void
+    @State private var recentAction: CheckChange?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if let adventure = store.current {
+            VStack(spacing: 10) {
+                if let action = recentAction {
+                    Text(L10n.text(action.undoes != nil ? "Undid · " : action.redoes != nil ? "Redid · " : action.isChecked ? "Checked · " : "Unchecked · ") + action.label)
+                        .font(.subheadline).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("recent-action")
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                HStack {
+                    Button("Undo", systemImage: "arrow.uturn.backward") { store.update { $0.undo() } }
+                        .disabled(!adventure.canUndo).accessibilityIdentifier("undo")
+                    Spacer()
+                    Button("Redo", systemImage: "arrow.uturn.forward") { store.update { $0.redo() } }
+                        .disabled(!adventure.canRedo).accessibilityIdentifier("redo")
+                    Spacer()
+                    Button("History", systemImage: "clock.arrow.circlepath", action: showHistory)
+                }
+            }.padding(.horizontal).padding(.vertical, 8).background(.regularMaterial)
+            .onChange(of: adventure.history.last?.id) { _, _ in
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { recentAction = adventure.history.last }
+            }
+            .task(id: recentAction?.id) {
+                guard recentAction != nil else { return }
+                do { try await Task.sleep(for: .seconds(4)) } catch { return }
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { recentAction = nil }
+            }
+        }
     }
 }
 

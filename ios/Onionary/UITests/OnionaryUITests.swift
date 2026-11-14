@@ -437,6 +437,28 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
+    func testCookingOptionsSurviveActionFeedbackExpiry() throws {
+        let app = try openCookingRecipe()
+        let ingredient = app.buttons["ingredient-1"]
+        ingredient.tap()
+        XCTAssertEqual(ingredient.value as? String, "Checked")
+        let feedback = app.staticTexts["recent-action"]
+        XCTAssertTrue(feedback.waitForExistence(timeout: 5))
+        app.buttons["cooking-options"].tap()
+        let edit = app.buttons["Edit recipe"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        // Observe a real transient UI change while the native menu is open.
+        // No fixed delay or second tap may rescue a lost menu action.
+        XCTAssertTrue(feedback.waitForNonExistence(timeout: 8))
+        XCTAssertTrue(edit.exists)
+        edit.tap()
+        XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["cooking-options"].waitForExistence(timeout: 5))
+        XCTAssertEqual(ingredient.value as? String, "Checked")
+    }
+
+    @MainActor
     func testShareRecipeCopyAndRevokeLink() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
