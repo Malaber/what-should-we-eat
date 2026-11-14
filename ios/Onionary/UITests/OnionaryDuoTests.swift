@@ -30,18 +30,22 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertEqual(OnionarySetHingeAngle(Double(angle)), 0, "Native hinge dispatch failed at \(angle)°")
         let window = app.windows.element(boundBy: 0)
         // Let the receiving display change before starting a separate rotation.
-        // SpringBoard can lose its idle notification when these overlap.
-        let handoff = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            UIReadiness.duoViewport(app.frame, angle: angle)
-                && UIReadiness.duoViewport(window.frame, angle: angle)
-        }, object: nil)
-        let handoffResult = XCTWaiter.wait(for: [handoff], timeout: max(0, deadline - ProcessInfo.processInfo.systemUptime))
-        if handoffResult != .completed { captureFailure("Unsettled display at \(angle)°", in: app) }
-        XCTAssertEqual(handoffResult, .completed, "Receiving window must move to the requested display")
+        // Use the actual receiving window for both checks. The app's frame
+        // requires another remote snapshot and can reflect the old display.
+        var frame = window.frame
+        if !UIReadiness.duoViewport(frame, angle: angle) {
+            let handoff = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                UIReadiness.duoViewport(window.frame, angle: angle)
+            }, object: nil)
+            let result = XCTWaiter.wait(for: [handoff], timeout: max(0, deadline - ProcessInfo.processInfo.systemUptime))
+            if result != .completed { captureFailure("Unsettled display at \(angle)°", in: app) }
+            XCTAssertEqual(result, .completed, "Receiving window must move to the requested display")
+            frame = window.frame
+        }
 
         // The hinge can rotate the interface itself before XCTest's physical
         // orientation reading catches up. Avoid a second rotation in that case.
-        if UIReadiness.duoWindow(window.frame, angle: angle) { return }
+        if UIReadiness.duoWindow(frame, angle: angle) { return }
 
         let orientation: UIDeviceOrientation = angle == 0 ? .portrait : .landscapeLeft
         if XCUIDevice.shared.orientation != orientation {
