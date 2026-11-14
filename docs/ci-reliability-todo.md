@@ -921,3 +921,19 @@ tracking based solely on the post-timeout stack.
 
 Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43582030261/job/132408600153
+
+## Resolve tag controls after each sheet presentation
+
+- [ ] Give the tag-results list and its Done action stable accessibility identifiers. Keep the native sheet, labels and selection behavior.
+- [ ] Wait for the first sheet to disappear, then resolve fresh tag and matching-recipe controls when reopening. Keep the complete browse/close/reopen/select scenario, one tap per action and unchanged waits/case budget.
+- [ ] Type-check, push and monitor all expected checks for the new SHA.
+
+At e354fae, iPhone and Duo passed. iPad passed 26/27; its tag-browsing case
+timed out querying the original recipe-tag button after Done. The retained
+hierarchy contains that tag with a valid button frame, while the old existence
+query stalls. The case reuses both its tag and result-row references across
+sheet dismissal/recreation, and does not wait for dismissal. Use explicit sheet
+boundaries and fresh queries instead of retrying a tap or increasing a timeout.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43585480793/job/132418951798
