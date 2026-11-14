@@ -795,3 +795,26 @@ or weaken cold-launch coverage to hide this platform failure.
 Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43570341570/job/132373135423
 - https://developer.apple.com/documentation/xcode/build-settings-reference (ENABLE_DEBUG_DYLIB controls the Preview stub/dylib layout)
+
+## Type portion values through the already-focused keyboard
+
+- [ ] Change the shared fractional-portion helper to app.typeText after its existing field tap and keyboard-visible assertion, matching the recipe editor's corrected input path. Retain complete text/value, dismissal, stepper and cold-restoration assertions.
+- [ ] Validate the complete native profiles and publish the fixes; monitor the exact new PR SHA through all expected jobs with the attached shell watcher.
+
+The completed hosted iPad job at b2f7503 passed 26/27 cases. Its retained stack
+places testCookUndoScaleAndRestoreAfterTermination in
+enterFractionalPortions → XCUIElement.typeText → event dispatch/accessibility
+synchronization. The keyboard-existence wait completed before that input call;
+the buffered activity tree alone initially obscured that distinction. The helper
+still uses multiplier.typeText, although recipe-name inputs already use
+app.typeText after focus. Preserve all assertions and correct this remaining
+field-level keyboard-input path.
+
+At 72dae90, the 121 integrated harness checks and full local iPhone suite passed.
+The built normal executable passed its actual layout guard. Local iPad did not
+start: the disk guard correctly rejected 5.00 GiB against the unchanged 8 GiB
+reserve. No test was skipped or accepted as passed. Do not delete user simulator
+app data or installed runtimes to overcome that preflight.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43570341570/job/132373135277
