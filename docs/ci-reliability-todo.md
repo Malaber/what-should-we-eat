@@ -843,3 +843,22 @@ Fresh complete CI must establish whether this addresses startup reliably.
 Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43574294500/job/132385040696
 - Xcode 27.1 simctl runtime help (dyld_shared_cache update)
+
+## Control feedback expiry in its native menu regression
+
+- [ ] Add a Debug-only, opt-in manual feedback clock for native UI automation. Production feedback still expires after four seconds through the same cancellation/animation path.
+- [ ] Keep every banner/menu/edit/cancel/progress assertion. The native test explicitly expires feedback only after opening the menu, instead of racing a four-second wall clock against slow accessibility calls. Retain its eight-second expiry wait and three-minute case budget.
+- [ ] Compile and test the notification/clock lifecycle, then push and monitor the complete new SHA with all profiles required.
+
+The completed 2dd04d2 run passed iPhone and every non-native prerequisite.
+iPad passed 26/27; the banner/menu regression failed before opening its menu.
+Its ingredient tap finished at 08:25:39, the checked-value query consumed nearly
+six seconds, and the first banner query started at 08:25:46, after its legitimate
+four-second expiry. Waiting longer cannot fix an already-expired banner. Keep
+the full scenario, but inject a controlled expiry clock into that one UI fixture.
+Use a unique process-notification name, no server, port, file polling, direct UI
+state injection, fixed sleep or repeated action. Cancelled/replaced feedback must
+dispose its observer. Release builds must exclude the fixture control path.
+
+Evidence:
+- https://github.com/Malaber/what-should-we-eat/actions/runs/43574294500/job/132385040619
