@@ -903,9 +903,9 @@ Evidence:
 
 ## Synchronize offline-draft restoration and focused keyboard input
 
-- [ ] Finish editor dismissal and observe the saved-draft row before the existing real Home/terminate/relaunch sequence. Keep the same offline-save failure, complete text, enabled Save and disk-restoration checks.
-- [ ] Verify the restored Name with the native exact-value predicate rather than a second broad field/value RPC. This retains exact string equality and existence, without a redundant query while the restored sheet settles.
-- [ ] Complete the focused-keyboard input conversion for remaining pantry/email/manual/search/import fields. Preserve real taps, keyboard visibility and all current value/behavior assertions; no direct value injection.
+- [x] Finish editor dismissal and observe the saved-draft row before the existing real Home/terminate/relaunch sequence. Keep the same offline-save failure, complete text, enabled Save and disk-restoration checks.
+- [x] Verify the restored Name with the native exact-value predicate rather than a second broad field/value RPC. This retains exact string equality and existence, without a redundant query while the restored sheet settles.
+- [x] Complete the focused-keyboard input conversion for remaining pantry/email/manual/search/import fields. Preserve real taps, keyboard visibility and all current value/behavior assertions; no direct value injection.
 - [ ] Type-check the complete ordinary test class, push and monitor all expected checks for the new SHA.
 
 At 9944c98, iPad and Duo passed. iPhone passed 26/27; the offline-draft case

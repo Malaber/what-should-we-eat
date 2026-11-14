@@ -123,6 +123,14 @@ recipe names: b2f7503 iPad's retained stack identified multiplier.typeText in
 enterFractionalPortions as the remaining field re-resolution stall. Keep both
 fractional-keyboard/stepper and cold cooking-restoration scenarios intact; do not
 remove keyboard visibility checks or replace input with direct value injection.
+The same focused app-level input applies to pantry, account email, manual draft,
+search and import fields; retain their real taps and exact value checks. Before
+cold-restoring an offline draft, wait for Cancel to remove its editor and for the
+saved row to appear. Keep the full Home/termination/relaunch flow. Verify the
+restored name with waitForValue's native `value == expected` predicate: that
+single query requires both field existence and complete string equality, rather
+than an existence query followed by a redundant broad value RPC during sheet
+presentation. Keep the offline error, enabled Save and 180-second case bound.
 
 Run native tests once with `bash ios/Onionary/Scripts/test.sh`; do not enable
 test retries. The script uses isolated DerivedData and writes an xcresult bundle.
