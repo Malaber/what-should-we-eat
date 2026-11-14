@@ -202,7 +202,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    func testRecipeOrderingUsesNativeHandles() throws {
+    func testIngredientOrderCanBeMovedAndSaved() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -219,19 +219,22 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertEqual(list.textFields.count, 0)
         let cheese = list.staticTexts["Cheese"]
         let pasta = list.staticTexts["Pasta"]
-        let handle = list.buttons["Reorder Cheese"]
-        XCTAssertTrue(handle.waitForExistence(timeout: 5), list.debugDescription)
+        XCTAssertTrue(list.buttons["Reorder Cheese"].exists)
         XCTAssertLessThan(cheese.frame.minY, pasta.frame.minY)
-        let destination = list.buttons["Reorder Pasta"]
-        XCTAssertTrue(destination.waitForExistence(timeout: 5))
-        // Give the native long-press recognizer time to lift the row before
-        // moving. Stay in the handle column and settle past the target center.
-        let start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        let end = destination.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
-        start.press(forDuration: 0.85, thenDragTo: end, withVelocity: XCUIGestureVelocity(rawValue: 125), thenHoldForDuration: 0.6)
+        XCTAssertFalse(list.buttons["Move Cheese up"].isEnabled)
+        XCTAssertFalse(list.buttons["Move Pasta down"].isEnabled)
+        list.buttons["Move Pasta up"].tap()
+        XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
+        list.buttons["Move Pasta down"].tap()
+        XCTAssertLessThan(cheese.frame.minY, pasta.frame.minY)
+        list.buttons["Move Cheese down"].tap()
         XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
         sheet.buttons["Done"].tap()
         XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
+        app.buttons["Save"].tap()
+        XCTAssertTrue(ingredients.waitForNonExistence(timeout: 5))
+        app.buttons["Edit recipe"].tap()
+        XCTAssertTrue(ingredients.waitForExistence(timeout: 5))
         ingredients.tap()
         XCTAssertTrue(sheet.waitForExistence(timeout: 5))
         XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)

@@ -38,11 +38,11 @@ struct RecipeEditor: View {
                     switch order {
                     case .ingredients:
                         RecipeOrderSheet(title: "Reorder ingredients", items: $draft.ingredients) { item in
-                            Text(item.name.isEmpty ? L10n.text("Ingredient") : item.name).lineLimit(2)
+                            item.name.isEmpty ? L10n.text("Ingredient") : item.name
                         }
                     case .steps:
                         RecipeOrderSheet(title: "Reorder steps", items: $draft.instructionSteps, didMove: numberSteps) { step in
-                            Text(step.description.isEmpty ? L10n.format("Step %lld", step.stepNumber) : step.description).lineLimit(2)
+                            step.description.isEmpty ? L10n.format("Step %lld", step.stepNumber) : step.description
                         }
                     }
                 }
@@ -377,21 +377,33 @@ private struct IngredientDraftRow: View {
     }
 }
 
-private struct RecipeOrderSheet<Item: Identifiable, Row: View>: View {
+private struct RecipeOrderSheet<Item: Identifiable>: View {
     let title: LocalizedStringKey
     @Binding var items: [Item]
     var didMove: () -> Void = {}
-    @ViewBuilder var row: (Item) -> Row
+    var rowTitle: (Item) -> String
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(items, content: row)
-                    .onMove { offsets, destination in
-                        items.move(fromOffsets: offsets, toOffset: destination)
-                        didMove()
+                ForEach(items) { item in
+                    let index = items.firstIndex { $0.id == item.id }
+                    let name = rowTitle(item)
+                    HStack {
+                        Text(name).lineLimit(2)
+                        Spacer()
+                        Button { moveOne(item.id, by: -1) } label: {
+                            Label("Move \(name) up", systemImage: "chevron.up").labelStyle(.iconOnly)
+                                .frame(minWidth: 44, minHeight: 44)
+                        }.disabled(index == items.startIndex)
+                        Button { moveOne(item.id, by: 1) } label: {
+                            Label("Move \(name) down", systemImage: "chevron.down").labelStyle(.iconOnly)
+                                .frame(minWidth: 44, minHeight: 44)
+                        }.disabled(index == items.index(before: items.endIndex))
                     }
+                    .buttonStyle(.borderless)
+                }.onMove(perform: move)
             }
             .environment(\.editMode, .constant(.active))
             .accessibilityIdentifier("recipe-order-list")
@@ -399,5 +411,16 @@ private struct RecipeOrderSheet<Item: Identifiable, Row: View>: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
+    }
+
+    private func move(_ offsets: IndexSet, to destination: Int) {
+        items.move(fromOffsets: offsets, toOffset: destination)
+        didMove()
+    }
+
+    private func moveOne(_ id: Item.ID, by offset: Int) {
+        guard let index = items.firstIndex(where: { $0.id == id }),
+              items.indices.contains(index + offset) else { return }
+        move(IndexSet(integer: index), to: offset > 0 ? index + 2 : index - 1)
     }
 }

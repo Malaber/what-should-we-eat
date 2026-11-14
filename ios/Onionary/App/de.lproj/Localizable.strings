@@ -91,6 +91,8 @@
 "Set how many portions the original recipe serves. Use + and − for whole-portion changes, or type any amount, such as 1.53 or 4.32." = "Lege die ursprüngliche Portionszahl fest. Nutze + und − für ganze Portionen oder gib eine Menge wie 1,53 oder 4,32 ein.";
 "Settings" = "Einstellungen";
 "Shopping list" = "Einkaufsliste";
+"Move %@ up" = "%@ nach oben bewegen";
+"Move %@ down" = "%@ nach unten bewegen";
 "Sign in with a passkey" = "Mit Passkey anmelden";
 "Sign out" = "Abmelden";
 "Steps" = "Schritte";

@@ -91,6 +91,8 @@
 "Set how many portions the original recipe serves. Use + and − for whole-portion changes, or type any amount, such as 1.53 or 4.32." = "Set how many portions the original recipe serves. Use + and − for whole-portion changes, or type any amount, such as 1.53 or 4.32.";
 "Settings" = "Settings";
 "Shopping list" = "Shopping list";
+"Move %@ up" = "Move %@ up";
+"Move %@ down" = "Move %@ down";
 "Sign in with a passkey" = "Sign in with a passkey";
 "Sign out" = "Sign out";
 "Steps" = "Steps";
