@@ -1,6 +1,8 @@
 import pytest
-from execution.check_ios_build_environment import MIN_FREE_BYTES, validate_disk, validate_xcode, validate_test_scheme
+from execution.check_ios_build_environment import MIN_FREE_BYTES, validate_disk, validate_xcode, validate_test_scheme, validate_test_app
 import xml.etree.ElementTree as ET
+import plistlib
+import struct
 
 
 def test_xcode_matches_version_and_build():
@@ -68,3 +70,33 @@ def test_generated_scheme_rejects_recording_drift_or_lost_coverage(tmp_path, cha
         ET.SubElement(selection, 'Test', Identifier='OnionaryUITests/testExample')
     path = tmp_path / 'Onionary.xcscheme'; ET.ElementTree(root).write(path)
     with pytest.raises(ValueError): validate_test_scheme(path)
+
+
+def make_test_app(tmp_path):
+    app = tmp_path / 'Onionary.app'; app.mkdir()
+    (app / 'Info.plist').write_bytes(plistlib.dumps({'CFBundleExecutable': 'Onionary'}))
+    binary = app / 'Onionary'
+    binary.write_bytes(struct.pack('<IIII', 0xFEEDFACF, 0x100000C, 0, 2))
+    binary.chmod(0o755)
+    return app
+
+
+def test_headless_app_accepts_normal_executable_layout(tmp_path):
+    validate_test_app(make_test_app(tmp_path))
+
+
+@pytest.mark.parametrize('change', ['debug-dylib', 'preview', 'missing-binary',
+                                  'not-executable', 'not-macho', 'not-executable-macho',
+                                  'outside-bundle', 'invalid-plist'])
+def test_headless_app_rejects_preview_or_invalid_output(tmp_path, change):
+    app = make_test_app(tmp_path)
+    if change == 'debug-dylib': (app / 'Onionary.debug.dylib').write_bytes(b'debug')
+    elif change == 'preview': (app / '__preview.dylib').write_bytes(b'preview')
+    elif change == 'missing-binary': (app / 'Onionary').unlink()
+    elif change == 'not-executable': (app / 'Onionary').chmod(0o644)
+    elif change == 'not-macho': (app / 'Onionary').write_bytes(b'not a valid executable')
+    elif change == 'not-executable-macho': (app / 'Onionary').write_bytes(struct.pack('<IIII', 0xFEEDFACF, 0x100000C, 0, 6))
+    elif change == 'outside-bundle': (app / 'Info.plist').write_bytes(plistlib.dumps({'CFBundleExecutable': '../Onionary'}))
+    elif change == 'invalid-plist': (app / 'Info.plist').write_bytes(b'invalid')
+    with pytest.raises((ValueError, plistlib.InvalidFileException)):
+        validate_test_app(app)

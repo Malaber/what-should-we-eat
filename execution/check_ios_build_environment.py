@@ -1,7 +1,10 @@
 """Fail before expensive iOS work when Xcode or disk cannot support the build."""
 import argparse
+import os
 from pathlib import Path
+import plistlib
 import shutil
+import struct
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
@@ -41,21 +44,45 @@ def validate_test_scheme(path):
     print(f'Validated screenshot capture and complete UI target: {path}')
 
 
+def validate_test_app(path):
+    """Check the built output, not just the requested Xcode build setting."""
+    with (path / 'Info.plist').open('rb') as source:
+        executable = plistlib.load(source).get('CFBundleExecutable')
+    if (not isinstance(executable, str) or not executable
+            or executable in {'.', '..'} or Path(executable).name != executable):
+        raise ValueError('UI app must name a valid bundle-local executable.')
+    binary = path / executable
+    if not binary.is_file() or not os.access(binary, os.X_OK):
+        raise ValueError('UI app executable is missing or not executable.')
+    with binary.open('rb') as source:
+        header = source.read(16)
+    # All supported test runners use thin, native arm64 simulator executables.
+    if len(header) != 16 or struct.unpack('<IIII', header)[::3] != (0xFEEDFACF, 2):
+        raise ValueError('UI app must contain a 64-bit Mach-O executable.')
+    if list(path.glob('*.debug.dylib')) or (path / '__preview.dylib').exists():
+        raise ValueError('Headless UI app must use the normal executable layout, without Preview dylibs.')
+    print(f'Validated headless UI executable layout: {path}')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--xcode-only', action='store_true')
     parser.add_argument('--stage', choices=STAGE_GIB, default='release')
     parser.add_argument('--test-scheme', type=Path, help='Validate the generated UI scheme without starting Xcode')
+    parser.add_argument('--test-app', type=Path, help='Validate the built headless UI app without booting a simulator')
     args = parser.parse_args()
     try:
         if args.test_scheme:
             validate_test_scheme(args.test_scheme)
             return
+        if args.test_app:
+            validate_test_app(args.test_app)
+            return
         validate_xcode(subprocess.check_output(['xcodebuild', '-version'], text=True))
         if not args.xcode_only:
             for path in (Path(__file__).resolve().parents[1], Path(tempfile.gettempdir())):
                 validate_disk(path, shutil.disk_usage(path).free, STAGE_GIB[args.stage] * 1024 ** 3)
-    except (ValueError, OSError, ET.ParseError) as error:
+    except (ValueError, OSError, ET.ParseError, plistlib.InvalidFileException) as error:
         raise SystemExit(str(error)) from error
 
 

@@ -34,10 +34,15 @@ cleanup() {
 }
 trap cleanup EXIT
 # Give compilation its own budget: cold builds must not consume UI test time.
+derived_data=${TEST_DERIVED_DATA_DIR:-$result_dir/DerivedData}
+# Headless automation does not use SwiftUI Previews. Link the app normally,
+# without the extra Preview stub/debug-dylib loader at every cold launch.
+# A command-line setting leaves developer previews and Release archives alone.
 build_args=(-project Onionary.xcodeproj -scheme Onionary
-  -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "${TEST_DERIVED_DATA_DIR:-$result_dir/DerivedData}"
-  MARKETING_VERSION="$marketing_version" CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO)
+  -destination "platform=iOS Simulator,id=$simulator_id" -derivedDataPath "$derived_data"
+  MARKETING_VERSION="$marketing_version" CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO ENABLE_DEBUG_DYLIB=NO)
 python3 ../../execution/run_bounded.py --log "$result_dir/build.log" 1200 xcodebuild "${build_args[@]}" build-for-testing
+python3 ../../execution/check_ios_build_environment.py --test-app "$derived_data/Build/Products/Debug-iphonesimulator/Onionary.app"
 if [[ "$created_simulator" == true ]]; then
   # Compile against a shutdown device. Fresh runtime indexing and cold Swift
   # compilation must not compete for memory/disk before XCTest loads accessibility.
