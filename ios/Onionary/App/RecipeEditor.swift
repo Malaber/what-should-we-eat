@@ -15,6 +15,7 @@ struct RecipeEditor: View {
     @State private var error: String?
     @FocusState private var focusedStep: UUID?
     @State private var showingStepHelp = false
+    @State private var tagInput = ""
     private enum RecipeOrder: String, Identifiable {
         case ingredients, steps
         var id: Self { self }
@@ -78,7 +79,7 @@ struct RecipeEditor: View {
                         }
                     }
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
-                    ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving) }
+                    ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving || hasOverlongTag) }
     }
     private var editorForm: some View {
         WorkspacePanes(focus: focusedStep?.uuidString) {
@@ -113,20 +114,80 @@ struct RecipeEditor: View {
                         Text("Calories per serving").font(.caption).foregroundStyle(.secondary)
                         TextField("Calories per serving", value: $draft.kcalPerServing, format: .number).keyboardType(.decimalPad)
                     }
-                    TextField("Tags, separated by commas", text: Binding(get: { draft.tags.joined(separator: ", ") }, set: { draft.tags = $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }))
                 }
     }
     private var tagsSection: some View {
-                Section("Suggested tags") {
-                    ForEach(Array(Set(RecipeBrowsing.categories(store.kitchen.recipes) + draft.tags)).sorted(), id: \.self) { tag in
-                        Toggle(tag, isOn: Binding(
-                            get: { draft.tags.contains { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame } },
-                            set: { selected in
-                                draft.tags.removeAll { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame }
-                                if selected { draft.tags.append(tag) }
-                            }))
+        Section("Tags") {
+            if !draft.tags.isEmpty {
+                RecipeTagFlow(spacing: 8) {
+                    ForEach(committedTags, id: \.self) { tag in
+                        Button { draft.tags.removeAll { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame } } label: {
+                            HStack(spacing: 6) {
+                                Text(tag)
+                                Image(systemName: "xmark").font(.caption.weight(.semibold)).accessibilityHidden(true)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(OnionaryTheme.accent.opacity(0.15), in: Capsule())
+                            .overlay { Capsule().strokeBorder(OnionaryTheme.accent.opacity(0.45)) }
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
+                        }.buttonStyle(.plain)
+                            .accessibilityLabel(Text(String(format: L10n.text("Remove tag %@"), tag)))
+                            .accessibilityIdentifier("remove-tag-" + tag)
                     }
                 }
+            }
+            HStack {
+                TextField("Add tag", text: $tagInput)
+                    .submitLabel(.done)
+                    .onSubmit { addTag(pendingTag) }
+                    .onChange(of: tagInput) { _, _ in retain() }
+                    .accessibilityIdentifier("recipe-tag-input")
+                Button { addTag(pendingTag) } label: {
+                    Image(systemName: "plus.circle.fill").font(.title3).frame(minWidth: 44, minHeight: 44)
+                }.buttonStyle(.borderless)
+                    .accessibilityLabel("Add tag")
+                    .accessibilityIdentifier("add-recipe-tag")
+                    .disabled(!canAddTag(pendingTag))
+            }
+            if hasOverlongTag {
+                Text("Use up to 100 characters per tag.").font(.footnote).foregroundStyle(.secondary)
+            }
+            if !pendingTag.isEmpty {
+                ForEach(RecipeBrowsing.categories(store.kitchen.recipes, query: pendingTag)
+                    .filter { canAddTag($0) }.prefix(6), id: \.self) { tag in
+                    Button { addTag(tag) } label: { Label(tag, systemImage: "plus.circle") }
+                        .accessibilityIdentifier("suggest-recipe-tag-" + tag)
+                }
+            }
+        }
+    }
+    private var committedTags: [String] {
+        var seen = Set<String>()
+        return draft.tags.filter { seen.insert($0.lowercased()).inserted }
+    }
+    private var pendingTag: String { tagInput.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var hasOverlongTag: Bool {
+        pendingTag.unicodeScalars.count > 100 || draft.tags.contains { $0.unicodeScalars.count > 100 }
+    }
+
+    private func canAddTag(_ tag: String) -> Bool {
+        !tag.isEmpty && tag.unicodeScalars.count <= 100
+            && !draft.tags.contains { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame }
+    }
+
+    private func addTag(_ tag: String) {
+        if canAddTag(tag) { draft.tags.append(tag) }
+        if tag.unicodeScalars.count <= 100 { tagInput = "" }
+    }
+
+    private var recoveryCopy: RecipeDraft {
+        var copy = draft
+        if !pendingTag.isEmpty && !draft.tags.contains(where: { $0.localizedCaseInsensitiveCompare(pendingTag) == .orderedSame }) {
+            copy.tags.append(pendingTag)
+        }
+        return copy
     }
     private var ingredientsSection: some View {
         Section {
@@ -203,11 +264,11 @@ struct RecipeEditor: View {
     }
     private var exportText: String {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return (try? encoder.encode(draft)).flatMap { String(data: $0, encoding: .utf8) } ?? draft.name
+        return (try? encoder.encode(recoveryCopy)).flatMap { String(data: $0, encoding: .utf8) } ?? draft.name
     }
     private func retain() {
         guard !completed, let draftScope else { return }
-        do { try store.retainDraft(.init(id: draftID, recipeID: recipeID, draft: draft), scope: draftScope) }
+        do { try store.retainDraft(.init(id: draftID, recipeID: recipeID, draft: recoveryCopy), scope: draftScope) }
         catch { self.error = L10n.text("Could not save recovery copy. Export your draft before closing.") }
     }
     private func finish() {
@@ -218,6 +279,8 @@ struct RecipeEditor: View {
     }
     private func save() async {
         saving = true; error = nil; defer { saving = false }
+        guard !hasOverlongTag else { return }
+        addTag(pendingTag)
         retain()
         guard draftScope == store.scope else { error = L10n.text("Reconnect to the original account before saving this draft."); return }
         do {
@@ -229,6 +292,42 @@ struct RecipeEditor: View {
         } catch {
             self.error = L10n.text("Save not confirmed. Your draft stays here. Check the server before retrying to avoid duplicates.") + "\n" + L10n.text(error.localizedDescription)
         }
+    }
+}
+
+private struct RecipeTagFlow: Layout {
+    let spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        arrange(width: proposal.width ?? .infinity, subviews: subviews) { _, _, _ in }
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        _ = arrange(width: bounds.width, subviews: subviews) { view, origin, size in
+            view.place(at: CGPoint(x: bounds.minX + origin.x, y: bounds.minY + origin.y),
+                       anchor: .topLeading, proposal: ProposedViewSize(size))
+        }
+    }
+
+    private func arrange(width: CGFloat, subviews: Subviews, place: (LayoutSubview, CGPoint, CGSize) -> Void) -> CGSize {
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var usedWidth: CGFloat = 0
+        for view in subviews {
+            let proposedWidth = min(view.sizeThatFits(.unspecified).width, width)
+            let size = view.sizeThatFits(ProposedViewSize(width: proposedWidth, height: nil))
+            if x > 0, x + size.width > width {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            place(view, CGPoint(x: x, y: y), size)
+            usedWidth = max(usedWidth, x + size.width)
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: usedWidth, height: y + rowHeight)
     }
 }
 
