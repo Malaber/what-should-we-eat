@@ -298,3 +298,9 @@
 
 "Refreshing recipes" = "Rezepte werden aktualisiert";
 "Recipes loaded" = "Rezepte geladen";
+
+"Reorder" = "Umsortieren";
+"Reorder ingredients" = "Zutaten umsortieren";
+"Reorder steps" = "Schritte umsortieren";
+"Ingredient options" = "Zutatenoptionen";
+"Step options" = "Schrittoptionen";

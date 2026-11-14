@@ -15,6 +15,11 @@ struct RecipeEditor: View {
     @State private var error: String?
     @FocusState private var focusedStep: UUID?
     @State private var showingStepHelp = false
+    private enum RecipeOrder: String, Identifiable {
+        case ingredients, steps
+        var id: Self { self }
+    }
+    @State private var recipeOrder: RecipeOrder?
     var body: some View {
         NavigationStack {
             editorForm.safeAreaInset(edge: .bottom) {
@@ -28,6 +33,18 @@ struct RecipeEditor: View {
                 }
             }.connectionRecovery(store).dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "New recipe" : "Edit recipe"))
                 .toolbar { editorToolbar }
+                .sheet(item: $recipeOrder) { order in
+                    switch order {
+                    case .ingredients:
+                        RecipeOrderSheet(title: "Reorder ingredients", items: $draft.ingredients) { item in
+                            Text(item.name.isEmpty ? L10n.text("Ingredient") : item.name).lineLimit(2)
+                        }
+                    case .steps:
+                        RecipeOrderSheet(title: "Reorder steps", items: $draft.instructionSteps, didMove: numberSteps) { step in
+                            Text(step.description.isEmpty ? L10n.format("Step %lld", step.stepNumber) : step.description).lineLimit(2)
+                        }
+                    }
+                }
                 .alert("Ingredient amount help", isPresented: $showingStepHelp) {
                     Button("Done", role: .cancel) {}
                 } message: {
@@ -112,15 +129,21 @@ struct RecipeEditor: View {
                 }
     }
     private var ingredientsSection: some View {
-                Section("Ingredients") {
-                    ForEach($draft.ingredients) { $item in
-                        IngredientDraftRow(item: $item,
-                            move: { moveIngredient(item.id, offset: $0) },
-                            remove: { draft.ingredients.removeAll { $0.id == item.id } },
-                            drop: { moveIngredient($0, before: item.id) })
-                    }
-                    Button("Add ingredient") { draft.ingredients.append(.init()) }
+        Section {
+            ForEach($draft.ingredients) { $item in
+                IngredientDraftRow(item: $item, remove: { draft.ingredients.removeAll { $0.id == item.id } })
+            }
+            Button("Add ingredient") { draft.ingredients.append(.init()) }
+        } header: {
+            HStack {
+                Text("Ingredients")
+                Spacer()
+                if draft.ingredients.count > 1 {
+                    Button("Reorder", systemImage: "arrow.up.arrow.down") { recipeOrder = .ingredients }
+                        .accessibilityLabel("Reorder ingredients")
                 }
+            }
+        }
     }
     private var stepsSection: some View {
                 Section {
@@ -132,6 +155,10 @@ struct RecipeEditor: View {
                     HStack {
                         Text("Steps")
                         Spacer()
+                        if draft.instructionSteps.count > 1 {
+                            Button("Reorder", systemImage: "arrow.up.arrow.down") { recipeOrder = .steps }
+                                .accessibilityLabel("Reorder steps")
+                        }
                         Button { showingStepHelp = true } label: { Image(systemName: "info.circle") }
                             .accessibilityLabel("Ingredient amount help")
                             .accessibilityIdentifier("step-help")
@@ -147,11 +174,9 @@ struct RecipeEditor: View {
                 Text("Step \(binding.wrappedValue.stepNumber)").font(.caption)
                 Spacer()
                 Menu {
-                    Button("Move up") { moveStep(id, offset: -1) }
-                    Button("Move down") { moveStep(id, offset: 1) }
                     Button("Delete step", role: .destructive) { draft.instructionSteps.removeAll { $0.id == id }; numberSteps() }
-                } label: { Image(systemName: "line.3.horizontal").frame(width: 44, height: 44) }
-                .accessibilityLabel("Reorder step")
+                } label: { Image(systemName: "ellipsis.circle").frame(width: 44, height: 44) }
+                .accessibilityLabel("Step options")
             }
             TextField("Instruction group (optional)", text: Binding(
                 get: { binding.wrappedValue.groupName ?? "" },
@@ -165,25 +190,6 @@ struct RecipeEditor: View {
     }
     private func numberSteps() {
         for index in draft.instructionSteps.indices { draft.instructionSteps[index].stepNumber = index + 1 }
-    }
-    private func moveStep(_ id: UUID, offset: Int) {
-        guard let from = draft.instructionSteps.firstIndex(where: { $0.id == id }),
-              draft.instructionSteps.indices.contains(from + offset) else { return }
-        draft.instructionSteps.swapAt(from, from + offset)
-        numberSteps()
-    }
-    private func moveIngredient(_ text: String?, before target: UUID) -> Bool {
-        guard let text, let id = UUID(uuidString: text),
-              let from = draft.ingredients.firstIndex(where: { $0.id == id }),
-              let to = draft.ingredients.firstIndex(where: { $0.id == target }) else { return false }
-        draft.ingredients.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
-        return true
-    }
-    private func moveIngredient(_ id: UUID, offset: Int) {
-        guard let from = draft.ingredients.firstIndex(where: { $0.id == id }) else { return }
-        let to = from + offset
-        guard draft.ingredients.indices.contains(to) else { return }
-        draft.ingredients.swapAt(from, to)
     }
     private var insertableIngredients: [RecipeDraft.Item] {
         draft.ingredients.filter { item in
@@ -282,21 +288,17 @@ struct EditRecipeView: View {
 
 private struct IngredientDraftRow: View {
     @Binding var item: RecipeDraft.Item
-    var move: (Int) -> Void
     var remove: () -> Void
-    var drop: (String?) -> Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             TextField("Ingredient group (optional)", text: Binding(get: { item.groupName ?? "" }, set: { item.groupName = $0.isEmpty ? nil : $0 }))
             HStack {
                 TextField("Ingredient", text: $item.name)
                 Menu {
-                    Button("Move up") { move(-1) }
-                    Button("Move down") { move(1) }
                     Button("Delete ingredient", role: .destructive, action: remove)
-                } label: { Image(systemName: "line.3.horizontal").frame(minWidth: 44, minHeight: 44) }
-                    .accessibilityLabel("Reorder ingredient").draggable(item.id.uuidString)
-            }.dropDestination(for: String.self) { ids, _ in drop(ids.first) }
+                } label: { Image(systemName: "ellipsis.circle").frame(minWidth: 44, minHeight: 44) }
+                    .accessibilityLabel("Ingredient options")
+            }
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Quantity").font(.caption).foregroundStyle(.secondary)
@@ -305,5 +307,29 @@ private struct IngredientDraftRow: View {
                 TextField("Unit", text: Binding(get: { item.unit ?? "" }, set: { item.unit = $0 }))
             }
         }.padding(12).background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct RecipeOrderSheet<Item: Identifiable, Row: View>: View {
+    let title: LocalizedStringKey
+    @Binding var items: [Item]
+    var didMove: () -> Void = {}
+    @ViewBuilder var row: (Item) -> Row
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(items, content: row)
+                    .onMove { offsets, destination in
+                        items.move(fromOffsets: offsets, toOffset: destination)
+                        didMove()
+                    }
+            }
+            .environment(\.editMode, .constant(.active))
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
     }
 }
