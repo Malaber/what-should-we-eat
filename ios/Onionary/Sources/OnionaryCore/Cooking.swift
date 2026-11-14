@@ -138,6 +138,7 @@ public struct Kitchen: Codable, Equatable, Sendable {
     public var recipes: [Recipe] = []
     public var adventures: [Adventure] = []
     public var currentID: Int?
+    public var pantrySupplies: [PantryMatching.Supply]?
     public init() {}
     public mutating func visit(_ recipe: Recipe, now: Date = Date()) {
         if let index = adventures.firstIndex(where: { $0.id == recipe.id }) {

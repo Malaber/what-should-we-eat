@@ -17,4 +17,17 @@ final class PantryMatchingTests: XCTestCase {
         XCTAssertEqual(unknown.unchecked, ["Milch"])
         XCTAssertTrue(unknown.short.isEmpty)
     }
+
+    func testPantrySurvivesKitchenFileRoundTrip() throws {
+        let oldData = Data(#"{"recipes":[],"adventures":[]}"#.utf8)
+        var kitchen = try JSONDecoder().decode(Kitchen.self, from: oldData)
+        XCTAssertNil(kitchen.pantrySupplies)
+
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let supplies = PantryMatching.parse("170.125 g Cheese and 2 eggs\nBasil leaves")
+        kitchen.pantrySupplies = supplies
+        try KitchenFile.write(kitchen, to: file)
+        XCTAssertEqual(try KitchenFile.read(file).pantrySupplies, supplies)
+    }
 }

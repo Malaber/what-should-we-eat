@@ -203,6 +203,14 @@ final class AppStore {
         synchronizeCookingActivity()
     }
 
+    func savePantry(_ supplies: [PantryMatching.Supply]) throws {
+        guard credential != nil else { throw APIError.unauthorized }
+        guard supplies != (kitchen.pantrySupplies ?? []) else { return }
+        var next = kitchen
+        next.pantrySupplies = supplies.isEmpty ? nil : supplies
+        try persist(next)
+    }
+
     private func clearWidget() {
         do { try WidgetSnapshotStore.write(nil); WidgetCenter.shared.reloadTimelines(ofKind: "OnionaryKitchen") }
         catch { self.error = error.localizedDescription }

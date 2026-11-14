@@ -78,8 +78,37 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(match.waitForExistence(timeout: 5))
         XCTAssertTrue((match.value as? String ?? "").contains("Not enough: Cheese"))
         XCTAssertTrue((match.value as? String ?? "").contains("Missing: Pasta"))
+        app.buttons["pantry-add"].tap()
+        let cheese = app.buttons["pantry-remove-170 g Cheese-0"]
+        XCTAssertTrue(cheese.waitForExistence(timeout: 5))
+        XCTAssertEqual(cheese.label, "Remove ingredient 170 g Cheese")
+
+        pantry.tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
+        app.typeText("250 g Pasta")
+        XCTAssertTrue(UIReadiness.waitForValue("250 g Pasta", matching: pantryFields))
         app.buttons["close-pantry"].tap()
         XCTAssertTrue(app.buttons["close-pantry"].waitForNonExistence(timeout: 5))
+
+        app.buttons["Cook with what you have"].tap()
+        let pasta = app.buttons["pantry-remove-250 g Pasta-0"]
+        XCTAssertTrue(pasta.waitForExistence(timeout: 5))
+        XCTAssertEqual(pasta.label, "Remove ingredient 250 g Pasta")
+        XCTAssertTrue(cheese.exists)
+        XCTAssertTrue((match.value as? String ?? "").contains("Available: Cheese, Pasta"))
+        cheese.tap()
+        XCTAssertTrue(cheese.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(pasta.exists)
+        XCTAssertTrue((match.value as? String ?? "").contains("Missing: Cheese"))
+
+        app.buttons["pantry-reset"].tap()
+        XCTAssertTrue(match.waitForNonExistence(timeout: 5))
+        app.buttons["close-pantry"].tap()
+        XCTAssertTrue(app.buttons["close-pantry"].waitForNonExistence(timeout: 5))
+        app.buttons["Cook with what you have"].tap()
+        XCTAssertTrue(app.buttons["close-pantry"].waitForExistence(timeout: 5))
+        XCTAssertFalse(pasta.exists)
+        XCTAssertFalse(app.buttons["pantry-reset"].exists)
     }
 
     @MainActor

@@ -259,6 +259,10 @@
 "Instruction group (optional)" = "Schrittgruppe (optional)";
 
 "Cook with what you have" = "Kochen mit deinen Vorräten";
+"Your pantry" = "Deine Vorräte";
+"Reset" = "Zurücksetzen";
+"Remove ingredient %@" = "%@ entfernen";
+"Enter an ingredient name." = "Gib eine Zutat ein.";
 "What do you have?" = "Was hast du da?";
 "3 bananas and 2 eggs" = "3 Bananen und 2 Eier";
 "One ingredient per line, or separate with ‘and’. Include quantities and units when known." = "Eine Zutat pro Zeile oder mit ‚und‘ trennen. Mengen und Einheiten angeben, wenn bekannt.";

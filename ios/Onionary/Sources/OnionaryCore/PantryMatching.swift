@@ -1,7 +1,7 @@
 import Foundation
 
 public enum PantryMatching {
-    public struct Supply: Equatable, Sendable {
+    public struct Supply: Codable, Hashable, Sendable {
         public let name: String
         public let quantity: Decimal?
         public let unit: String
