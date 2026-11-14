@@ -79,7 +79,7 @@ struct RecipeEditor: View {
                         }
                     }
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
-                    ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving || hasOverlongTag) }
+                    ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving || hasOverlongTag || hasInvalidIcon) }
     }
     private var editorForm: some View {
         WorkspacePanes(focus: focusedStep?.uuidString) {
@@ -94,8 +94,16 @@ struct RecipeEditor: View {
     private var metadataSection: some View {
                 Section("Recipe") {
                     TextField("Name", text: $draft.name)
-                    Picker("Food icon", selection: Binding(get: { FoodIcons.display(draft.icon) }, set: { draft.icon = $0 })) {
-                        ForEach(FoodIcons.all, id: \.self) { Text($0).tag($0) }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Food icon").font(.caption).foregroundStyle(.secondary)
+                        TextField("One emoji (optional)", text: Binding(
+                            get: { draft.icon ?? "" }, set: { draft.icon = $0.isEmpty ? nil : $0 }))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .accessibilityIdentifier("recipe-emoji")
+                        if hasInvalidIcon {
+                            Text("Enter a single emoji.").font(.footnote).foregroundStyle(.red)
+                        }
                     }
                     VStack(alignment: .leading) {
                         Text("Original recipe serves").font(.caption).foregroundStyle(.secondary)
@@ -168,6 +176,10 @@ struct RecipeEditor: View {
         return draft.tags.filter { seen.insert($0.lowercased()).inserted }
     }
     private var pendingTag: String { tagInput.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var hasInvalidIcon: Bool {
+        guard let icon = draft.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        return FoodIcons.emoji(icon) == nil
+    }
     private var hasOverlongTag: Bool {
         pendingTag.unicodeScalars.count > 100 || draft.tags.contains { $0.unicodeScalars.count > 100 }
     }
@@ -184,6 +196,7 @@ struct RecipeEditor: View {
 
     private var recoveryCopy: RecipeDraft {
         var copy = draft
+        copy.tags = committedTags
         if !pendingTag.isEmpty && !draft.tags.contains(where: { $0.localizedCaseInsensitiveCompare(pendingTag) == .orderedSame }) {
             copy.tags.append(pendingTag)
         }
@@ -279,7 +292,9 @@ struct RecipeEditor: View {
     }
     private func save() async {
         saving = true; error = nil; defer { saving = false }
-        guard !hasOverlongTag else { return }
+        guard !hasOverlongTag, !hasInvalidIcon else { return }
+        draft.icon = draft.icon.flatMap(FoodIcons.emoji)
+        draft.tags = committedTags
         addTag(pendingTag)
         retain()
         guard draftScope == store.scope else { error = L10n.text("Reconnect to the original account before saving this draft."); return }

@@ -12,6 +12,15 @@ final class RecipeStructureTests: XCTestCase {
         XCTAssertEqual(ingredients[0]["name"] as? String, "Milk")
         XCTAssertEqual(ingredients[0]["group_name"] as? String, "Filling")
         XCTAssertEqual(FoodIcons.display("unsupported"), "🍽️")
-        XCTAssertGreaterThan(FoodIcons.all.count, 40)
+    }
+
+    func testFoodIconAcceptsOneEmojiOutsideTheFormerPicker() {
+        for emoji in ["⚡", "🧑🏽‍🍳", "🇩🇪", "1️⃣", "♥️", "🥥"] {
+            XCTAssertEqual(FoodIcons.emoji(" \(emoji) "), emoji)
+            XCTAssertEqual(FoodIcons.display(emoji), emoji)
+        }
+        for invalid in ["", "1", "#", "👩🍳", "a🥥", "🇩", "♥\u{FE0E}"] {
+            XCTAssertNil(FoodIcons.emoji(invalid))
+        }
     }
 }

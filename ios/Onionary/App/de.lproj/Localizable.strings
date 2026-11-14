@@ -307,3 +307,5 @@
 "Add tag" = "Tag hinzufügen";
 "Remove tag %@" = "Tag %@ entfernen";
 "Use up to 100 characters per tag." = "Ein Tag darf bis zu 100 Zeichen enthalten.";
+"One emoji (optional)" = "Ein Emoji (optional)";
+"Enter a single emoji." = "Gib ein einzelnes Emoji ein.";
