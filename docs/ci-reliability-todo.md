@@ -733,9 +733,9 @@ Implementation checkpoint:
 
 ## Keep transient action feedback out of menu ownership
 
-- [ ] Move the timed recent-action state and its animation into an independent history-bar view. Preserve the four-second feedback, reduced-motion behavior, Undo/Redo/History actions and all cooking state. A banner timer must not invalidate the view owning an open native menu.
-- [ ] Add a native regression that opens Cooking options with the action banner visible, observes its expiry, then opens Edit once and cancels while retaining the checked ingredient. Keep the original immediate edit/save/progress case unchanged.
-- [ ] Run feature branches through the full pull_request workflow once, rather than both push and PR workflows. Preserve push CI for main, the named development deployment branch and immutable version tags, plus manual dispatch. Keep all native profiles and release/publish gates.
+- [x] Move the timed recent-action state and its animation into an independent history-bar view. Preserve the four-second feedback, reduced-motion behavior, Undo/Redo/History actions and all cooking state. A banner timer must not invalidate the view owning an open native menu.
+- [x] Add a native regression that opens Cooking options with the action banner visible, observes its expiry, then opens Edit once and cancels while retaining the checked ingredient. Keep the original immediate edit/save/progress case unchanged.
+- [x] Run feature branches through the full pull_request workflow once, rather than both push and PR workflows. Preserve push CI for main, the named development deployment branch and immutable version tags, plus manual dispatch. Keep all native profiles and release/publish gates.
 - [ ] Validate, launch full local iPhone verification asynchronously, explicitly push and update the PR. No retries, skipped assertions, longer deadlines, paid runner, merge or TestFlight.
 
 At 79f4d6d the PR workflow 43519633824 passed every job: all three native
@@ -759,3 +759,15 @@ must establish whether the correction resolves the intermittent missed selection
 Evidence:
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43519629172/job/132210352449
 - https://github.com/Malaber/what-should-we-eat/actions/runs/43519633824
+
+Implementation checkpoint:
+
+- All 108 Python 3.14.7 harness/export/release/preflight checks pass. Actionlint,
+  shell syntax and git diff --check pass. Feature push duplication is removed
+  without changing native jobs, their selectors/deadlines, image or release gates.
+- Freeze the candidate and run the entire local iPhone profile once in
+  `.tmp/ci47-iphone-local`, reusing `.tmp/ci28-build`. There are now 27 ordinary
+  cases, including the original immediate edit case and the additional banner
+  expiry/menu regression; Duo retains six. Native compilation/results remain
+  pending until observed. Publish explicitly after compile/short checks and
+  require the new complete PR workflow before merging. No TestFlight or tags.
