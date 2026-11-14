@@ -26,15 +26,27 @@ final class OnionaryDuoTests: OnionaryUITestCase {
     }
 
     @MainActor private func pose(_ angle: Int, in app: XCUIApplication) throws {
+        let deadline = ProcessInfo.processInfo.systemUptime + 15
         XCTAssertEqual(OnionarySetHingeAngle(Double(angle)), 0, "Native hinge dispatch failed at \(angle)°")
-        XCUIDevice.shared.orientation = angle == 0 ? .portrait : .landscapeLeft
-        // Native dispatch confirms injection, not completion of the display handoff.
-        // Require the selected display bounds before reading any UI.
-        let displayChanged = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        let window = app.windows.element(boundBy: 0)
+        // Let the receiving display change before starting a separate rotation.
+        // SpringBoard can lose its idle notification when these overlap.
+        let handoff = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             UIReadiness.duoViewport(app.frame, angle: angle)
-                && UIReadiness.duoWindow(app.windows.element(boundBy: 0).frame, angle: angle)
+                && UIReadiness.duoViewport(window.frame, angle: angle)
         }, object: nil)
-        let result = XCTWaiter.wait(for: [displayChanged], timeout: 15)
+        let handoffResult = XCTWaiter.wait(for: [handoff], timeout: max(0, deadline - ProcessInfo.processInfo.systemUptime))
+        if handoffResult != .completed { captureFailure("Unsettled display at \(angle)°", in: app) }
+        XCTAssertEqual(handoffResult, .completed, "Receiving window must move to the requested display")
+
+        let orientation: UIDeviceOrientation = angle == 0 ? .portrait : .landscapeLeft
+        if XCUIDevice.shared.orientation != orientation {
+            XCUIDevice.shared.orientation = orientation
+        }
+        let rotation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            UIReadiness.duoWindow(window.frame, angle: angle)
+        }, object: nil)
+        let result = XCTWaiter.wait(for: [rotation], timeout: max(0, deadline - ProcessInfo.processInfo.systemUptime))
         if result != .completed { captureFailure("Unsettled window at \(angle)°", in: app) }
         XCTAssertEqual(result, .completed, "Receiving window must finish the requested display rotation")
     }
