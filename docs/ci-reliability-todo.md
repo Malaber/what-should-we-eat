@@ -865,7 +865,7 @@ Evidence:
 
 ## Resolve Duo controls without a recursive window predicate
 
-- [ ] Resolve the unique button directly in the app/scoped list. Use its containing window only for the existing geometry validation after the button's native existence wait. Preserve uniqueness, receiving-window validation and one native tap, with no fallback or retry.
+- [x] Resolve the unique button directly in the app/scoped list. Use its containing window only for the existing geometry validation after the button's native existence wait. Preserve uniqueness, receiving-window validation and one native tap, with no fallback or retry.
 - [ ] Compile/verify and push, then watch every expected CI check for the new SHA.
 
 At d40fc76, pinned cache preparation completed successfully and all Duo app

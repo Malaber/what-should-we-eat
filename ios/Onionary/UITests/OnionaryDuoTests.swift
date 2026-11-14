@@ -4,13 +4,14 @@ import XCTest
 final class OnionaryDuoTests: OnionaryUITestCase {
 
     @MainActor private func tap(_ title: String, in app: XCUIApplication) throws {
-        // Native menus/sheets may live in another window. Resolve the one
-        // containing this action; index zero is only the base cooking window.
-        let window = app.windows.containing(.button, identifier: title).element
-        // Resolve through the receiving window after every display handoff.
-        // A unique query also fails if duplicate controls become actionable.
-        let button = UIReadiness.buttons(title, in: window).element
+        // Query the control directly. Rooting it in a window that itself must
+        // contain this control recursively expands the same AX lookup.
+        let button = UIReadiness.buttons(title, in: app).element
         let exists = button.waitForExistence(timeout: 10)
+        // Native menus/sheets may live in another window. Resolve the one
+        // containing this action only for its receiving-window geometry.
+        let window = app.windows.containing(.button, identifier: title).element
+        // The direct .element query still rejects duplicate actionable controls.
         let validFrame = exists && UIReadiness.validControlFrame(button.frame, in: window.frame)
         if !validFrame {
             captureFailure("Unreachable control: \(title)", in: app)

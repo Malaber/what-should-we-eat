@@ -383,6 +383,12 @@ longer deadline. Keep all fold/checklist/navigation/shopping outcomes. Geometry
 failures retain an active-app screenshot/hierarchy; XCTest retains native action
 failure attachments. Outer-screen recordings can be black on the inner display.
 Scope recipe rows to recipe-list and shopping controls to shopping-list.
+Resolve a Duo button directly through the app/scoped list, then resolve its
+receiving window only for geometry validation. Do not nest the button query
+under app.windows.containing(that same button): d40fc76's shopping case timed
+out recursively expanding Window → contains ingredient-1 → Button. Preserve
+the unique .element query, frame validation and one native tap; menus/sheets
+still use their actual receiving window rather than primary-window geometry.
 Do not put window/snapshot/frame RPCs or
 `allElementsBoundByAccessibilityElement` inside a short custom visibility
 predicate: the predicate's first evaluation alone can consume its deadline.
