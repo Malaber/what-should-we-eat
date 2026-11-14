@@ -48,8 +48,10 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.buttons["category-Quick & easy"].tap()
         XCTAssertEqual(app.buttons["category-Vegetarian"].value as? String, "Selected")
         XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Selected")
-        app.buttons["All recipes"].tap()
-        XCTAssertTrue(app.buttons["All recipes"].waitForNonExistence(timeout: 5))
+        app.buttons["clear-tag-filter"].tap()
+        XCTAssertTrue(app.buttons["clear-tag-filter"].waitForNonExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["category-Vegetarian"].value as? String, "Not selected")
+        XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Not selected")
     }
 
     @MainActor
@@ -253,9 +255,9 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertFalse(app.buttons["Refresh"].exists)
         XCTAssertTrue(app.buttons["sort-recipes"].exists)
         category.tap()
-        XCTAssertTrue(app.buttons["All recipes"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["clear-tag-filter"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["recipe-1"].exists)
-        app.buttons["All recipes"].tap()
+        app.buttons["clear-tag-filter"].tap()
         let search = app.searchFields.element(boundBy: 0)
         search.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))

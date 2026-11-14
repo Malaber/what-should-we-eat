@@ -111,25 +111,27 @@ struct RecipesView: View {
                 }
             }
             Button("Cook with what you have", systemImage: "carrot") { pantry = true }
-            if !selectedTags.isEmpty {
-                Button("All recipes") { selectedTags.removeAll() }
-            }
             Group {
                 let categories = RecipeBrowsing.categories(store.kitchen.recipes, query: search)
-                if !categories.isEmpty {
-                    Section("Browse by tag") {
+                if !categories.isEmpty || !selectedTags.isEmpty {
+                    Section {
                         ScrollView(.horizontal) {
                             HStack(spacing: 10) {
                                 ForEach(categories, id: \.self) { tag in
+                                    let isSelected = selectedTags.contains(tag)
                                     Button { if !selectedTags.insert(tag).inserted { selectedTags.remove(tag) } } label: {
                                         VStack(alignment: .leading, spacing: 4) {
-                                            Label(tag, systemImage: selectedTags.contains(tag) ? "checkmark.circle.fill" : "tag.fill").font(.headline).lineLimit(1)
+                                            Label(tag, systemImage: isSelected ? "checkmark.circle.fill" : "tag.fill").font(.headline).lineLimit(1)
                                             Text("\(RecipeBrowsing.recipes(store.kitchen.recipes, category: tag).count) recipes")
                                                 .font(.caption).foregroundStyle(.secondary)
                                         }.padding(.horizontal, 12).padding(.vertical, 8)
                                             .frame(minWidth: 140, alignment: .leading)
-                                            .background(OnionaryTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
-                                    }.buttonStyle(.plain).accessibilityValue(selectedTags.contains(tag) ? "Selected" : "Not selected").accessibilityIdentifier("category-" + tag)
+                                            .background(OnionaryTheme.accent.opacity(isSelected ? 0.24 : 0.12), in: RoundedRectangle(cornerRadius: 16))
+                                            .opacity(!selectedTags.isEmpty && !isSelected ? 0.58 : 1)
+                                    }.buttonStyle(.plain)
+                                        .accessibilityAddTraits(isSelected ? .isSelected : [])
+                                        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+                                        .accessibilityIdentifier("category-" + tag)
                                 }
                             }
                         }.scrollIndicators(.hidden)
@@ -137,6 +139,17 @@ struct RecipesView: View {
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
+                    } header: {
+                        HStack {
+                            Text("Browse by tag")
+                            Spacer()
+                            if !selectedTags.isEmpty {
+                                Button("Clear filter") { selectedTags.removeAll() }
+                                    .buttonStyle(.borderless)
+                                    .foregroundStyle(OnionaryTheme.accent)
+                                    .accessibilityIdentifier("clear-tag-filter")
+                            }
+                        }.padding(.horizontal, 16)
                     }.compactTagSection()
                 }
             }
