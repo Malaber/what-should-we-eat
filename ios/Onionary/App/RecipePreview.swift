@@ -21,7 +21,7 @@ struct RecipePreview: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 36)
                 }
-                .foregroundStyle(.background)
+                .foregroundStyle(Color(uiColor: .systemBackground))
                 .buttonStyle(.borderedProminent)
                 .tint(OnionaryTheme.accent)
                 .accessibilityIdentifier("preview-cook")

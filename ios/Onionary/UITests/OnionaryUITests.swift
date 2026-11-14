@@ -175,6 +175,38 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
+    func testRecipeTagSuggestionsAndMultiwordChips() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        app.buttons["add-recipe"].tap()
+        app.buttons["New recipe"].tap()
+        let editor = app.otherElements["recipe-editor"]
+        let tag = app.textFields["recipe-tag-input"]
+        XCTAssertTrue(tag.waitForExistence(timeout: 5))
+        if !tag.isHittable { editor.swipeUp() }
+        tag.tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
+        app.typeText("Quick")
+        let suggestion = app.buttons["suggest-recipe-tag-Quick & easy"]
+        XCTAssertTrue(suggestion.waitForExistence(timeout: 5))
+        suggestion.tap()
+        XCTAssertTrue(app.buttons["remove-tag-Quick & easy"].waitForExistence(timeout: 5))
+
+        tag.tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
+        app.typeText("Weeknight meals")
+        XCTAssertTrue(UIReadiness.waitForValue("Weeknight meals", matching: app.textFields.matching(identifier: "recipe-tag-input")))
+        app.buttons["add-recipe-tag"].tap()
+        let custom = app.buttons["remove-tag-Weeknight meals"]
+        XCTAssertTrue(custom.waitForExistence(timeout: 5))
+        custom.tap()
+        XCTAssertTrue(custom.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["remove-tag-Quick & easy"].exists)
+    }
+
+    @MainActor
     func testSilentRenewalPreservesCookingProgress() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--renew-session", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
@@ -539,6 +571,14 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Settings", in: app)
         XCTAssertTrue(app.buttons["Switch backend"].exists)
         XCTAssertFalse(app.textFields["backend"].exists)
+        app.buttons["accent-picker"].tap()
+        let ocean = app.buttons["accent-Ocean"]
+        XCTAssertTrue(ocean.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["accent-Onion"].isSelected)
+        ocean.tap()
+        XCTAssertTrue(ocean.isSelected)
+        XCTAssertFalse(app.buttons["accent-Onion"].isSelected)
+        app.navigationBars["Accent color"].buttons["Settings"].tap()
         app.buttons["language-picker"].tap()
         app.buttons["Deutsch"].tap()
         XCTAssertTrue(app.navigationBars["Einstellungen"].waitForExistence(timeout: 5))
