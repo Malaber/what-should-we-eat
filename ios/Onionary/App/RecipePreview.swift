@@ -13,9 +13,18 @@ struct RecipePreview: View {
                 if let servings = recipe.servings { LabeledContent("Original recipe serves", value: Numbers.display(servings, locale: L10n.locale)) }
                 if let minutes = recipe.totalTimeMin { LabeledContent("Total minutes", value: String(minutes)) }
                 if let tags = recipe.tags { Text(tags.map(\.name).joined(separator: " · ")).foregroundStyle(.secondary) }
-                Button(store.kitchen.adventures.contains(where: { $0.id == recipe.id }) ? "Resume cooking" : "Cook this recipe", systemImage: "flame") {
+                Button {
                     store.visit(recipe); cook()
-                }.buttonStyle(.borderedProminent).accessibilityIdentifier("preview-cook")
+                } label: {
+                    Label(store.kitchen.adventures.contains(where: { $0.id == recipe.id }) ? "Resume cooking" : "Cook this recipe", systemImage: "flame.fill")
+                        .labelStyle(.titleAndIcon)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 36)
+                }
+                .foregroundStyle(.background)
+                .buttonStyle(.borderedProminent)
+                .tint(OnionaryTheme.accent)
+                .accessibilityIdentifier("preview-cook")
             }
             Section("Ingredients") {
                 ForEach(recipe.ingredients) { ingredient in
