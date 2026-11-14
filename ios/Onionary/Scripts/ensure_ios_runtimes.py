@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-from execution.ios_runtime import RUNTIME_BUILDS as RUNTIMES, configure_sdk_runtime, runtime_identifier
+from execution.ios_runtime import RUNTIME_BUILDS as RUNTIMES, configure_sdk_runtime, prepare_runtime_cache, runtime_identifier
 
 
 def available(version):
@@ -49,6 +49,7 @@ def ensure(version):
             )
     print(f"Verified iOS {version} ({RUNTIMES[version]})", flush=True)
     configure_sdk_runtime(version)
+    prepare_runtime_cache(version)
 
 
 if __name__ == "__main__":

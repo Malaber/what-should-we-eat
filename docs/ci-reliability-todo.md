@@ -821,8 +821,8 @@ Evidence:
 
 ## Prepare the selected runtime cache before cold CI boot
 
-- [ ] On disposable GitHub-hosted macOS runners only, prepare the exact pinned runtime's dyld shared cache once before compilation/boot. Use simctl's supported non-forced update; never delete a cache, modify a developer runtime or run an app/test as warm-up.
-- [ ] Test environment isolation, exact build/bundle selection, ordering, timeout and failure propagation. Cache preparation must be terminal on failure, without retries or fallback to an RC.
+- [x] On disposable GitHub-hosted macOS runners only, prepare the exact pinned runtime's dyld shared cache once before compilation/boot. Use simctl's supported non-forced update; never delete a cache, modify a developer runtime or run an app/test as warm-up.
+- [x] Test environment isolation, exact build/bundle selection, ordering, timeout and failure propagation. Cache preparation must be terminal on failure, without retries or fallback to an RC.
 - [ ] Push and monitor the new SHA through all expected jobs. Retain standard runners, all native cases/assertions/cold launches, existing test deadlines and diagnostics.
 
 At 2dd04d2, Duo still passed 5/6 and failed before the expired-session case's

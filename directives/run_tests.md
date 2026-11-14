@@ -341,6 +341,18 @@ Preserve original command failures and owned-device cleanup. Caller-supplied
 devices are neither booted nor deleted by test.sh. Keep all profiles mandatory,
 with no latest/RC fallback or new test retries/deadlines.
 
+On disposable GitHub-hosted macOS runners, ensure_ios_runtimes.py also prepares
+the exact installed runtime's dyld shared cache before any device is created.
+Use simctl runtime dyld_shared_cache update for the validated pinned bundle,
+without --force/--all. An existing cache is a no-op; a failed or timed-out cache
+operation fails setup once. Never generate or remove developer/self-hosted
+caches. This is host runtime preparation, not a post-boot guest RPC, app warm-up,
+test retry or replacement for real cold launches. Keep native execution limits.
+The 2dd04d2 Duo launch failed before the app existed in its retained system
+sample, with the launch-status reply missing XCTest's internal deadline; merely
+removing the Preview stub did not resolve that platform startup failure.
+Supported operation reference: xcrun simctl help runtime.
+
 Duo injects its simulator-only HID event directly in the XCTest bundle using
 DuoHinge.m, following the in-process approach documented by Appium's
 XCUIDevice+FBHinge. It is never linked into the app/extensions. No host helper,

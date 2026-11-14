@@ -59,6 +59,32 @@ def configure_sdk_runtime(version, environ=None):
     print(f"Mapped SDK {sdk_version} ({sdk_build}) to runtime {expected}", flush=True)
 
 
+def prepare_runtime_cache(version, environ=None):
+    """Prepare cold CI's system-library cache, without booting/running a guest."""
+    expected = runtime_build(version)
+    environ = os.environ if environ is None else environ
+    if not (environ.get('GITHUB_ACTIONS') == 'true'
+            and environ.get('RUNNER_ENVIRONMENT') == 'github-hosted'
+            and environ.get('RUNNER_OS') == 'macOS'):
+        return  # Never generate/remove developer or self-hosted runtime caches.
+    runtimes = json.loads(read_command('xcrun', 'simctl', 'list', 'runtimes', '--json'))['runtimes']
+    bundles = sorted(runtime['bundlePath'] for runtime in runtimes
+                     if runtime.get('isAvailable')
+                     and runtime.get('identifier') == runtime_identifier(version)
+                     and runtime.get('version') == version
+                     and runtime.get('buildversion') == expected
+                     and Path(runtime.get('bundlePath', '')).is_absolute())
+    if not bundles:
+        raise RuntimeError(f'Cannot prepare cache: pinned iOS {version} ({expected}) is unavailable.')
+    bundle = bundles[0]
+    verify_runtime_bundle(bundle, version)
+    # A non-forced update is an immediate no-op when the cache exists. Never
+    # invalidate caches or prepare every installed OS; only this pinned bundle.
+    subprocess.run(['xcrun', 'simctl', 'runtime', 'dyld_shared_cache', 'update', bundle],
+                   check=True, timeout=600)
+    print(f'Prepared dyld shared cache for iOS {version} ({expected}): {bundle}', flush=True)
+
+
 def verify_runtime_bundle(bundle, version):
     """Validate installed system metadata before creating/booting a guest."""
     expected = runtime_build(version)

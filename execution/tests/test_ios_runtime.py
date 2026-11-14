@@ -35,13 +35,17 @@ def test_download_exit_cannot_override_exact_availability(monkeypatch, installed
                         calls.append(command) or subprocess.CompletedProcess(command, 70))
     mapped = []
     monkeypatch.setattr(installer, 'configure_sdk_runtime', mapped.append)
+    prepared = []
+    monkeypatch.setattr(installer, 'prepare_runtime_cache', lambda version: prepared.append((version, list(mapped))))
     if installed_after_download:
         installer.ensure('27.1')
         assert mapped == ['27.1']
+        assert prepared == [('27.1', ['27.1'])]
     else:
         with pytest.raises(RuntimeError, match=r'24A94425.*exit 70'):
             installer.ensure('27.1')
         assert not mapped
+        assert not prepared
     assert calls == [['xcodebuild', '-downloadPlatform', 'iOS', '-buildVersion',
                       '24A94425', '-architectureVariant', 'arm64']]
 
@@ -148,3 +152,58 @@ def test_runtime_reads_have_deadline(monkeypatch):
 
     monkeypatch.setattr(ios_runtime.subprocess, 'check_output', output)
     assert ios_runtime.read_command('xcrun', 'simctl', 'runtime', 'match', 'list', '-j') == '{}'
+
+
+HOSTED_MAC = {'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted', 'RUNNER_OS': 'macOS'}
+
+
+@pytest.mark.parametrize('environment', [
+    {}, {**HOSTED_MAC, 'RUNNER_ENVIRONMENT': 'self-hosted'},
+    {**HOSTED_MAC, 'GITHUB_ACTIONS': 'false'}, {**HOSTED_MAC, 'RUNNER_OS': 'Linux'},
+])
+def test_runtime_cache_does_not_touch_developer_self_hosted_or_linux_machines(monkeypatch, environment):
+    def forbidden(*args, **kwargs):
+        pytest.fail('Cache preparation must not inspect or change this machine')
+    monkeypatch.setattr(ios_runtime, 'read_command', forbidden)
+    monkeypatch.setattr(ios_runtime.subprocess, 'run', forbidden)
+    ios_runtime.prepare_runtime_cache('27.1', environment)
+
+
+@pytest.mark.parametrize('failure', [None, 'exit', 'timeout'])
+def test_runtime_cache_prepares_only_validated_stable_bundle_once(monkeypatch, failure):
+    runtimes = [dict(identifier=ios_runtime.runtime_identifier('27.1'), version='27.1',
+                     buildversion=build, isAvailable=True, bundlePath=path)
+                for build, path in [('24A94232', '/runtimes/rc.simruntime'),
+                                    ('24A94425', '/runtimes/stable.simruntime')]]
+    monkeypatch.setattr(ios_runtime, 'read_command', lambda *args: json.dumps({'runtimes': runtimes}))
+    verified, calls = [], []
+    monkeypatch.setattr(ios_runtime, 'verify_runtime_bundle', lambda *args: verified.append(args))
+    def run(command, **kwargs):
+        assert verified == [('/runtimes/stable.simruntime', '27.1')]
+        calls.append((command, kwargs))
+        if failure == 'exit': raise subprocess.CalledProcessError(2, command)
+        if failure == 'timeout': raise subprocess.TimeoutExpired(command, 600)
+    monkeypatch.setattr(ios_runtime.subprocess, 'run', run)
+    if failure:
+        with pytest.raises(subprocess.SubprocessError):
+            ios_runtime.prepare_runtime_cache('27.1', HOSTED_MAC)
+    else:
+        ios_runtime.prepare_runtime_cache('27.1', HOSTED_MAC)
+    assert calls == [(['xcrun', 'simctl', 'runtime', 'dyld_shared_cache', 'update',
+                       '/runtimes/stable.simruntime'], {'check': True, 'timeout': 600})]
+
+
+@pytest.mark.parametrize('change', ['rc', 'unavailable', 'relative-path', 'wrong-version', 'invalid-metadata'])
+def test_runtime_cache_never_falls_back_or_prepares_invalid_bundle(monkeypatch, change):
+    runtime = dict(identifier=ios_runtime.runtime_identifier('27.1'), version='27.1',
+                   buildversion='24A94425', isAvailable=True, bundlePath='/runtimes/stable.simruntime')
+    if change == 'rc': runtime['buildversion'] = '24A94232'
+    elif change == 'unavailable': runtime['isAvailable'] = False
+    elif change == 'relative-path': runtime['bundlePath'] = 'relative.simruntime'
+    elif change == 'wrong-version': runtime['version'] = '27.0'
+    monkeypatch.setattr(ios_runtime, 'read_command', lambda *args: json.dumps({'runtimes': [runtime]}))
+    def invalid(*args): raise RuntimeError('invalid metadata')
+    monkeypatch.setattr(ios_runtime, 'verify_runtime_bundle', invalid)
+    def forbidden(*args, **kwargs): pytest.fail('An invalid runtime must not be prepared')
+    monkeypatch.setattr(ios_runtime.subprocess, 'run', forbidden)
+    with pytest.raises(RuntimeError): ios_runtime.prepare_runtime_cache('27.1', HOSTED_MAC)
