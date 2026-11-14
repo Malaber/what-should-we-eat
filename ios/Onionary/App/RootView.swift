@@ -367,8 +367,8 @@ struct CookingView: View {
                         List(RecipeBrowsing.recipes(store.kitchen.recipes, category: name)) { recipe in
                             Button(recipe.name) { store.visit(recipe); sheet = nil }
                                 .accessibilityIdentifier("tag-recipe-" + String(recipe.id))
-                        }.navigationTitle(name)
-                            .toolbar { Button("Done") { sheet = nil } }
+                        }.accessibilityIdentifier("tag-recipes-list").navigationTitle(name)
+                            .toolbar { Button("Done") { sheet = nil }.accessibilityIdentifier("close-tag-recipes") }
                     }
                 }
             }

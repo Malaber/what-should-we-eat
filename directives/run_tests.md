@@ -131,6 +131,11 @@ restored name with waitForValue's native `value == expected` predicate: that
 single query requires both field existence and complete string equality, rather
 than an existence query followed by a redundant broad value RPC during sheet
 presentation. Keep the offline error, enabled Save and 180-second case bound.
+For tag results, use tag-recipes-list/close-tag-recipes to identify the presented
+native sheet. Wait for the list to disappear after Done, then resolve new tag and
+result-row elements on reopening. Do not retain their remote handles across
+sheet dismissal/recreation. Keep both presentations, the final result selection,
+actual dismissal checks and the original waits/case budget; no repeated taps.
 
 Run native tests once with `bash ios/Onionary/Scripts/test.sh`; do not enable
 test retries. The script uses isolated DerivedData and writes an xcresult bundle.

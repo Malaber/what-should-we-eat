@@ -324,13 +324,19 @@ final class OnionaryUITests: OnionaryUITestCase {
         let tag = app.buttons["recipe-tag-vegetarian"]
         XCTAssertTrue(tag.waitForExistence(timeout: 5))
         tag.tap()
-        let matchingRecipe = app.buttons["tag-recipe-1"]
+        let matchingRecipe = app.collectionViews["tag-recipes-list"].buttons.matching(identifier: "tag-recipe-1").element(boundBy: 0)
         XCTAssertTrue(matchingRecipe.waitForExistence(timeout: 5))
-        app.buttons["Done"].tap()
-        XCTAssertTrue(tag.waitForExistence(timeout: 5))
-        tag.tap()
-        XCTAssertTrue(matchingRecipe.waitForExistence(timeout: 5))
-        matchingRecipe.tap()
+        app.buttons["close-tag-recipes"].tap()
+        XCTAssertTrue(app.collectionViews["tag-recipes-list"].waitForNonExistence(timeout: 5))
+        // SwiftUI recreates controls across sheet presentations. Resolve each
+        // presentation directly instead of keeping the old remote AX handle.
+        let reopenedTag = app.buttons.matching(identifier: "recipe-tag-vegetarian").element(boundBy: 0)
+        XCTAssertTrue(reopenedTag.waitForExistence(timeout: 5))
+        reopenedTag.tap()
+        let reopenedRecipe = app.collectionViews["tag-recipes-list"].buttons.matching(identifier: "tag-recipe-1").element(boundBy: 0)
+        XCTAssertTrue(reopenedRecipe.waitForExistence(timeout: 5))
+        reopenedRecipe.tap()
+        XCTAssertTrue(app.collectionViews["tag-recipes-list"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
     }
 

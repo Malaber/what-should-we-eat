@@ -924,8 +924,8 @@ Evidence:
 
 ## Resolve tag controls after each sheet presentation
 
-- [ ] Give the tag-results list and its Done action stable accessibility identifiers. Keep the native sheet, labels and selection behavior.
-- [ ] Wait for the first sheet to disappear, then resolve fresh tag and matching-recipe controls when reopening. Keep the complete browse/close/reopen/select scenario, one tap per action and unchanged waits/case budget.
+- [x] Give the tag-results list and its Done action stable accessibility identifiers. Keep the native sheet, labels and selection behavior.
+- [x] Wait for the first sheet to disappear, then resolve fresh tag and matching-recipe controls when reopening. Keep the complete browse/close/reopen/select scenario, one tap per action and unchanged waits/case budget.
 - [ ] Type-check, push and monitor all expected checks for the new SHA.
 
 At e354fae, iPhone and Duo passed. iPad passed 26/27; its tag-browsing case
