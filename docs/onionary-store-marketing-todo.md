@@ -8,7 +8,12 @@
 
 ## Reliability and artwork follow-up
 
-- [ ] Verify recipe reordering with a real UI gesture and persisted row order on both screen sizes.
-- [ ] Stabilize Duo display handoff while keeping physical folds and state assertions covered.
-- [ ] Add richer onion-inspired abstract shapes to creative assets and framed captures. Verify the full artwork and Apple's safe-area crops.
+- [x] Verify accessible recipe move controls and saved row order on iPhone and iPad. Keep the native drag handles.
+- [x] Exercise the Duo shopping pane at 90° before closing to the cover display. All six Duo cases passed locally on iOS 27.1 build 24A94425.
+- [x] Add richer onion-inspired abstract shapes to creative assets and framed captures. Verify the full artwork and Apple's safe-area crops.
 - [ ] Run focused simulator tests and the full GitHub iOS, browser, backend, and artwork checks.
+
+Local checks passed 314 Python tests, 23 desktop and 23 mobile Chromium cases, 16 capture and
+packaging cases, HTML formatting, and ingredient reorder/save/reopen on both
+iOS 27.0 simulator profiles. Both artwork bundles were built from native captures
+and checked at full size and within Apple's safe-area crop.
