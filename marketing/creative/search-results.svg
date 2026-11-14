@@ -1,23 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="5244" height="2950" viewBox="0 0 5244 2950">
+<svg xmlns="http://www.w3.org/2000/svg" width="5244" height="2950" viewBox="0 0 5244 2950">
   <defs>
-    <linearGradient id="plum" x2="1" y2="1"><stop stop-color="#301e2a"/><stop offset="1" stop-color="#622743"/></linearGradient>
-    <clipPath id="screen"><rect x="3180" y="410" width="990" height="2150" rx="100"/></clipPath>
+    <linearGradient id="plum" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#261722"/><stop offset=".58" stop-color="#432439"/><stop offset="1" stop-color="#6a354d"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop stop-color="#ba7391" stop-opacity=".35"/><stop offset="1" stop-color="#ba7391" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="screen"><rect x="2770" y="706" width="430" height="860" rx="42"/></clipPath>
   </defs>
   <rect width="5244" height="2950" fill="url(#plum)"/>
-  <circle cx="4340" cy="1490" r="1540" fill="#f8e9d2" opacity=".045"/>
-  <g fill="none" stroke="#f5c2d6" stroke-width="5" opacity=".12">
-    <path d="M-100 2600 C1300 2300 2100 2800 2700 3200"/>
-    <path d="M-100 2720 C1300 2420 2100 2920 2700 3320"/>
+  <ellipse cx="3180" cy="1160" rx="1550" ry="1160" fill="url(#glow)"/>
+  <g fill="none" stroke="#edb9cc" stroke-width="9" opacity=".18">
+    <path d="M-100 2710 C970 2520 790 1690 420 1470 C900 1740 1800 2480 1660 3120"/>
+    <path d="M-100 2850 C1200 2600 920 1690 465 1470 C1150 1810 1980 2520 1790 3120"/>
+    <path d="M5350 160 C4600 273 4450 775 4610 1060 S5020 1510 5350 1390"/>
+    <path d="M5350 30 C4500 150 4300 760 4500 1110 S5010 1660 5350 1520"/>
   </g>
-  <text x="650" y="770" font-family="Manrope" font-size="80" letter-spacing="12" fill="#f0abc9">ONIONARY</text>
-  <text x="630" y="1190" font-family="Lora" font-size="230" fill="#fff4e7">Your recipes.</text>
-  <text x="630" y="1490" font-family="Lora" font-size="230" fill="#fff4e7">Your rhythm.</text>
-  <text x="650" y="1790" font-family="Manrope" font-size="78" fill="#f2d9df">Scale portions. Cook step by step.</text>
-  <g fill="none" stroke="#bbce9e" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M660 1990 l22 22 45-49"/><path d="M660 2130 l22 22 45-49"/>
+  <g id="safe-content">
+    <text x="1985" y="910" font-family="Manrope" font-size="53" letter-spacing="9" fill="#f0afcc">ONIONARY</text>
+    <text x="1978" y="1080" font-family="Lora" font-size="128" fill="#fff6ed">Cook at</text>
+    <text x="1978" y="1230" font-family="Lora" font-size="128" fill="#fff6ed">your pace.</text>
+    <path d="M1987 1290 H2170" stroke="#d5d6a8" stroke-width="6"/>
+    <text x="1985" y="1405" font-family="Manrope" font-size="50" fill="#f4dce5">Scale portions.</text>
+    <text x="1985" y="1478" font-family="Manrope" font-size="50" fill="#f4dce5">Keep your place.</text>
+    <rect id="device-frame" x="2754" y="690" width="462" height="892" rx="55" fill="#1d171d" stroke="#c790a9" stroke-width="4"/>
+    <image data-source="screenshot" x="2770" y="706" width="430" height="860" preserveAspectRatio="xMidYMid meet" clip-path="url(#screen)"/>
   </g>
-  <text x="780" y="2015" font-family="Manrope" font-size="68" fill="#f2d9df">Flexible portions</text>
-  <text x="780" y="2155" font-family="Manrope" font-size="68" fill="#f2d9df">Every step remembered</text>
-  <rect id="device-frame" x="3148" y="378" width="1054" height="2214" rx="132" fill="#171417" stroke="#af8496" stroke-width="5"/>
-  <image data-source="screenshot" x="3180" y="410" width="990" height="2150" preserveAspectRatio="xMidYMid meet" clip-path="url(#screen)"/>
 </svg>

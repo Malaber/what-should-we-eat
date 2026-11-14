@@ -13,6 +13,7 @@ from PIL import Image, ImageCms
 
 ROOT = Path(__file__).resolve().parents[2]
 SIZE = (5244, 2950)
+SAFE_AREA = (1921, 660, 3323, 1622)
 SVG = 'http://www.w3.org/2000/svg'
 XLINK = 'http://www.w3.org/1999/xlink'
 ET.register_namespace('', SVG)
@@ -53,6 +54,20 @@ def validate(path):
             raise ValueError(f'Expected opaque RGB {SIZE}: {path}')
 
 
+def validate_safe_area(inkscape, svg):
+    # Measure the outlined text and device together in the actual renderer.
+    # SVG coordinates alone do not tell us where the last glyph ends.
+    rows = subprocess.check_output([inkscape, '--query-all', str(svg)], text=True).splitlines()
+    group = next((row for row in rows if row.startswith('safe-content,')), None)
+    if group is None:
+        raise ValueError(f'Missing safe-content artwork: {svg}')
+    x, y, width, height = map(float, group.split(',')[1:])
+    left, top, right, bottom = SAFE_AREA
+    if not (width > 0 and height > 0 and x >= left and y >= top
+            and x + width <= right and y + height <= bottom):
+        raise ValueError(f'Artwork extends outside Apple’s safe area: {svg}: {group}')
+
+
 def render(screenshot, output):
     inkscape = shutil.which('inkscape')
     if not inkscape:
@@ -67,14 +82,14 @@ def render(screenshot, output):
         # Fit the device to the real capture ratio; never letterbox an iPad in a phone.
         with Image.open(screenshot) as captured:
             ratio = captured.width / captured.height
-        screen_width = 990 if ratio < .6 else 1380
-        screen_height = screen_width / ratio
-        screen_x = 3180 if ratio < .6 else 3030
-        screen_y = (2950 - screen_height) / 2
+        screen_height = min(852, 574 / ratio)
+        screen_width = screen_height * ratio
+        screen_x = 3260 - screen_width
+        screen_y = (SAFE_AREA[1] + SAFE_AREA[3] - screen_height) / 2
         for element in tree.getroot().iter():
             if name == 'search-results':
                 if element.attrib.get('id') == 'device-frame':
-                    element.attrib.update(x=str(screen_x-32), y=str(screen_y-32), width=str(screen_width+64), height=str(screen_height+64))
+                    element.attrib.update(x=str(screen_x-16), y=str(screen_y-16), width=str(screen_width+32), height=str(screen_height+32))
                 elif element.attrib.get('id') == 'screen':
                     element[0].attrib.update(x=str(screen_x), y=str(screen_y), width=str(screen_width), height=str(screen_height))
                 elif element.attrib.get('data-source') == 'screenshot':
@@ -88,12 +103,16 @@ def render(screenshot, output):
                 element.set(f'{{{XLINK}}}href', 'data:image/png;base64,' + base64.b64encode(path.read_bytes()).decode())
         svg = output / f'{name}.svg'
         tree.write(svg, encoding='utf-8', xml_declaration=True)
+        validate_safe_area(inkscape, svg)
         png = output / f'{name}.png'
         subprocess.run([inkscape, str(svg), f'--export-filename={png}', '--export-width=5244', '--export-height=2950', '--export-background=#fbf2e3', '--export-background-opacity=255'], check=True)
         with Image.open(png) as image:
             image.load()
             image.convert('RGB').save(png, icc_profile=ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes())
         validate(png)
+        with Image.open(png) as image:
+            preview = image.crop(SAFE_AREA)
+            preview.save(output / f'{name}-safe-area-preview.png', icc_profile=image.info['icc_profile'])
     return [output / 'header.png', output / 'search-results.png']
 
 

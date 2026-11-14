@@ -23,10 +23,12 @@ the exported SVGs are portable and require neither external images nor fonts.
 Pillow fully decodes every export and enforces 5244×2950 RGB, with an sRGB profile.
 Do not upscale the PNG. Change the SVG, then render again.
 
-Main text/icon elements are inset from canvas edges; background curves may crop.
-Apple's different placements still need human review in App Store Connect's
-Preview tool. No workflow uploads/replaces App Store Connect assets automatically.
-Inspect full-size artwork, a thumbnail, and both placement previews before approval.
+Place all critical text, brand marks, and device artwork in the SVG group
+`safe-content`. Inkscape measures the rendered bounds of that group and rejects
+layout outside Apple’s universal safe rectangle (x=1921, y=660, width=1402,
+height=962). The renderer exports the safe rectangle separately as a review
+crop. Use the full-size PNG in App Store Connect and inspect both placements
+there before publication.
 
 ## CI and other apps
 

@@ -1,23 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="5244" height="2950" viewBox="0 0 5244 2950">
+<svg xmlns="http://www.w3.org/2000/svg" width="5244" height="2950" viewBox="0 0 5244 2950">
   <defs>
-    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#fffaf1"/><stop offset="1" stop-color="#edddc9"/></linearGradient>
-    <radialGradient id="glow"><stop stop-color="#ffffff" stop-opacity=".8"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
-    <linearGradient id="fadeX"><stop stop-color="white" stop-opacity="0"/><stop offset=".15" stop-color="white"/><stop offset=".85" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></linearGradient>
-    <linearGradient id="fadeY" x2="0" y2="1"><stop stop-color="white" stop-opacity="0"/><stop offset=".15" stop-color="white"/><stop offset=".85" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></linearGradient>
-    <mask id="fadeVertical" maskUnits="userSpaceOnUse" x="3450" y="1020" width="900" height="900"><rect x="3450" y="1020" width="900" height="900" fill="url(#fadeY)"/></mask>
-    <mask id="softIcon" maskUnits="userSpaceOnUse" x="3450" y="1020" width="900" height="900"><rect x="3450" y="1020" width="900" height="900" fill="url(#fadeX)" mask="url(#fadeVertical)"/></mask>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff9ee"/><stop offset=".58" stop-color="#f4e4d3"/><stop offset="1" stop-color="#e8c9c2"/>
+    </linearGradient>
+    <radialGradient id="light">
+      <stop stop-color="#fffaf5" stop-opacity=".9"/><stop offset="1" stop-color="#fffaf5" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="icon"><rect x="2010" y="937" width="282" height="282" rx="62"/></clipPath>
   </defs>
   <rect width="5244" height="2950" fill="url(#paper)"/>
-  <ellipse cx="3400" cy="1400" rx="1700" ry="1500" fill="url(#glow)"/>
-  <g fill="none" stroke="#783653" opacity=".10" stroke-width="6">
-    <path d="M-150 2700 C900 2350 700 1700 100 1400 C800 1900 1550 2470 1350 3100"/>
-    <path d="M-180 2840 C1100 2490 900 1800 200 1450 C1100 1930 1760 2540 1550 3100"/>
-    <path d="M3800 -200 C3400 400 4250 650 5400 420"/>
-    <path d="M3900 -200 C3590 330 4330 530 5400 290"/>
+  <ellipse cx="2590" cy="1160" rx="1560" ry="1090" fill="url(#light)"/>
+  <g fill="none" stroke="#8e4e63" stroke-width="9" opacity=".15">
+    <path d="M-150 610 C760 610 1340 1210 1230 1840 S520 2770 -110 2940"/>
+    <path d="M-150 470 C900 440 1470 1150 1360 1840 S630 2820 -110 3080"/>
+    <path d="M-150 320 C1010 290 1610 1110 1500 1840 S760 2900 -110 3250"/>
+    <path d="M5460 250 C4210 490 3760 1140 3950 1750 S4770 2370 5480 2350"/>
+    <path d="M5460 90 C4060 360 3610 1130 3810 1770 S4680 2530 5480 2510"/>
+    <path d="M5460 -70 C3930 220 3470 1110 3670 1790 S4590 2690 5480 2670"/>
   </g>
-  <text x="680" y="1170" font-family="Manrope" font-size="62" letter-spacing="12" fill="#6c7148">YOUR COOKING COMPANION</text>
-  <text x="650" y="1590" font-family="Lora" font-size="360" fill="#59223f">Onionary</text>
-  <path d="M690 1720 H1200" stroke="#a6aa7a" stroke-width="8"/>
-  <text x="680" y="1900" font-family="Manrope" font-size="84" fill="#594e51">A little less juggling. A lot more cooking.</text>
-  <image mask="url(#softIcon)" data-source="icon" x="3450" y="1020" width="900" height="900" preserveAspectRatio="xMidYMid meet"/>
+  <g id="safe-content">
+    <image data-source="icon" x="2010" y="937" width="282" height="282" clip-path="url(#icon)"/>
+    <text x="2360" y="995" font-family="Manrope" font-size="37" letter-spacing="5" fill="#695142">YOUR COOKING COMPANION</text>
+    <text x="2349" y="1152" font-family="Lora" font-size="170" fill="#51233b">Onionary</text>
+    <path d="M2361 1200 H2590" stroke="#8a6074" stroke-width="5"/>
+    <text x="2358" y="1297" font-family="Manrope" font-size="51" fill="#624c52">A little help. A lovely meal.</text>
+  </g>
 </svg>
