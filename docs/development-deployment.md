@@ -5,6 +5,11 @@ GitHub `main` initially mirrors upstream GitLab main; do not deploy it as Oniona
 until the companion changes are merged. All new CI runs and images live in
 `Malaber/what-should-we-eat`. GitLab CI has been replaced by GitHub Actions.
 
+Feature pull requests run the complete CI workflow once per update. Push runs
+remain enabled for `main`, `codex/onionary-ios-companion` and version tags;
+manual workflow dispatch remains available. This avoids duplicating all native
+jobs for both a feature push and its PR. Deployment image publication is unchanged.
+
 ## Ship this branch to a test server
 
 Use a separate hostname, for example `onionary-test.malaber.de`. The hostname

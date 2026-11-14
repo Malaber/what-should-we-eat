@@ -1,7 +1,9 @@
 name: Build and test
 on:
   push:
-    branches: [main, 'codex/**']
+    # Feature PRs run the complete suite via pull_request, once per update.
+    # Keep deployment/release pushes independently validated and publishable.
+    branches: [main, 'codex/onionary-ios-companion']
     tags: ['v*']
   pull_request:
   workflow_dispatch:

@@ -94,6 +94,10 @@ UI cases and six Duo cases after adding this coverage.
 
 Do not poll GitHub jobs while idle; the user will return with results. Complete
 local checks and record their evidence in the PR first.
+Feature branches run the complete workflow through pull_request, avoiding a
+second identical push pipeline. main, codex/onionary-ios-companion and v* tags
+retain push validation/publication; workflow_dispatch remains available. All
+three native profiles, backend/browser/HTML/archive and screenshot gates remain.
 
 Run native tests once with `bash ios/Onionary/Scripts/test.sh`; do not enable
 test retries. The script uses isolated DerivedData and writes an xcresult bundle.
@@ -218,6 +222,14 @@ confirmation on the stable cooking view. Keep the real folded options → Edit
 route, with no direct-editor fixture shortcut. Intelligence queries stay within
 intelligence-form and its navigation bar; Cancel uses cancel-intelligence and
 must remove the form and return to Recipe book.
+Transient recent-action feedback owns its state/timer in CookingHistoryBar,
+not CookingView. Expiring that banner must not update the view owning an open
+toolbar menu. Keep its four-second lifetime, animation/reduced-motion handling
+and Undo/Redo/History unchanged. Native coverage includes both immediate edit
+selection and an open menu surviving feedback expiry, followed by one Edit tap,
+editor cancellation and the original checked ingredient. Await actual feedback
+disappearance; never retry a lost menu tap or bypass the menu to open the editor.
+The ordinary profile now contains 27 required cases; Duo retains six.
 Do not enumerate windows and all matching controls inside
 a short predicate wait: those AX RPCs can consume the budget before evaluation.
 iPad's floating navigation is not exposed as an XCTest `TabBar` in this SDK.
