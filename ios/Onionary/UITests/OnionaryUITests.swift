@@ -30,12 +30,10 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     private func dismissIntelligence(in app: XCUIApplication) {
-        let cancel = app.navigationBars["Create with Intelligence"].buttons
-            .matching(identifier: "cancel-intelligence").element(boundBy: 0)
-        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
-        cancel.tap()
+        app.buttons["cancel-intelligence"].tap()
         XCTAssertTrue(app.collectionViews["intelligence-form"].waitForNonExistence(timeout: 5))
-        XCTAssertTrue(app.navigationBars["Recipe book"].waitForExistence(timeout: 5))
+        // The list is the returning screen on both split and compact layouts.
+        XCTAssertTrue(app.collectionViews["recipe-list"].buttons["recipe-1"].exists)
     }
 
     @MainActor
@@ -615,17 +613,18 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Recipes", in: app)
         app.buttons["add-recipe"].tap()
         app.buttons["Create with Intelligence"].tap()
-        XCTAssertTrue(app.textViews["Describe your recipe"].waitForExistence(timeout: 5))
         let form = app.collectionViews["intelligence-form"]
         XCTAssertTrue(form.waitForExistence(timeout: 5))
+        XCTAssertTrue(form.textViews["Describe your recipe"].exists)
         let create = form.buttons.matching(identifier: "Create recipe draft").element(boundBy: 0)
         // This button follows the mode, language and availability explanation.
         for _ in 0..<4 {
             if create.exists { break }
             form.swipeUp()
         }
-        XCTAssertTrue(create.waitForExistence(timeout: 5))
-        XCTAssertFalse(create.isEnabled)
+        let disabledCreate = form.buttons.matching(identifier: "Create recipe draft")
+            .matching(NSPredicate(format: "enabled == NO")).element(boundBy: 0)
+        XCTAssertTrue(disabledCreate.exists, "An empty prompt must show a disabled create action")
         dismissIntelligence(in: app)
     }
 
