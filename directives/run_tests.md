@@ -89,15 +89,33 @@ The mandatory testLiveActivityStartAndStop explicitly launches with
 the final Off assertion. testCookingModeWithFixtureBackend runs the same full
 cycle against the fixture separately. Both cases must pass on ordinary profiles;
 neither is skipped or accepted as a replacement for the other. Release builds
-exclude the fixture and always construct the Apple backend. There are 26 ordinary
+exclude the fixture and always construct the Apple backend. There are 27 ordinary
 UI cases and six Duo cases after adding this coverage.
 
-Do not poll GitHub jobs while idle; the user will return with results. Complete
-local checks and record their evidence in the PR first.
+Follow the global GitHub CI Monitoring and Automatic Fixes workflow. Complete
+local checks, commit/push, then use an attached, bounded shell watcher:
+`gh pr checks --watch --fail-fast --interval 15`. Capture the PR URL/head SHA,
+wait for check registration in the shell, and verify the same SHA plus every
+expected downstream check before reporting success. Never treat missing checks
+as success or use repeated model queries/polling agents. The primary model reads
+failure logs and fixes underlying problems; the shell handles waits. Repeat for
+each new commit until green or a concrete blocker needs user input. Do not merge.
 Feature branches run the complete workflow through pull_request, avoiding a
 second identical push pipeline. main, codex/onionary-ios-companion and v* tags
 retain push validation/publication; workflow_dispatch remains available. All
 three native profiles, backend/browser/HTML/archive and screenshot gates remain.
+
+The headless test command uses ENABLE_DEBUG_DYLIB=NO for both build-for-testing
+and test-without-building. Developer previews and Release archive settings stay
+independent. Validate the actual built app before boot: executable Mach-O,
+bundle-local entry point, no Preview/debug-dylib artifacts. This avoids the extra
+Preview stub loader in repeated native cold launches; it is not a launch retry,
+longer timeout or substitute for a successful native run. The b2f7503 Duo failure
+occurred in dyld dependency loading before app initialization, while the Xcode
+launch-status reply arrived after XCTest's internal deadline. Preserve those
+diagnostics rather than calling it a shopping-list assertion failure. All cases,
+runtime pins and crash checks remain mandatory.
+https://developer.apple.com/documentation/xcode/build-settings-reference
 
 Run native tests once with `bash ios/Onionary/Scripts/test.sh`; do not enable
 test retries. The script uses isolated DerivedData and writes an xcresult bundle.

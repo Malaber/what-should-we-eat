@@ -774,9 +774,9 @@ Implementation checkpoint:
 
 ## Bound loader overhead in the headless UI build
 
-- [ ] Build automation binaries in the normal executable layout, without Xcode's Preview debug-dylib stub. Use the same setting for build-for-testing and test-without-building; preserve ordinary developer previews and Release archives.
-- [ ] Validate the built test app's layout before starting the simulator; retain all 27 ordinary and six Duo cases, native cold launches, crash detection, screenshots, runtime pins and existing deadlines.
-- [ ] Update the repository workflow guidance for the user's new permanent blocking CI monitor. The shell waits; the primary model diagnoses failures. Keep the global AGENTS.md outside version control.
+- [x] Build automation binaries in the normal executable layout, without Xcode's Preview debug-dylib stub. Use the same setting for build-for-testing and test-without-building; preserve ordinary developer previews and Release archives.
+- [x] Validate the built test app's layout before starting the simulator; retain all 27 ordinary and six Duo cases, native cold launches, crash detection, screenshots, runtime pins and existing deadlines.
+- [x] Update the repository workflow guidance for the user's new permanent blocking CI monitor. The shell waits; the primary model diagnoses failures. Keep the global AGENTS.md outside version control.
 - [ ] Run relevant harness checks and complete native verification, push, then monitor the exact new SHA through all expected PR jobs. No retries, skipped assertions, paid runner, release, TestFlight or merge.
 
 At b2f7503, all 27 local iPhone cases and the hosted iPhone job passed. Duo
