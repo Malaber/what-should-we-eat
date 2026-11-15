@@ -329,7 +329,8 @@ failure attachments or command logs. That collector stalls after passed tests
 and consumes disk. Request a separate OS diagnostic explicitly when needed.
 On failure, test.sh invokes collect_ios_test_diagnostics.py before disposing its
 owned device. The collector records CPU/RAM, VM/swap state, device/runtime
-inventory and recent CoreSimulator events. Every read command runs once with a
+inventory, recent CoreSimulator events and the guest's accessibility and
+testmanagerd events. The guest read runs only after failure. Every read runs once with a
 five-second deadline and a 64 KiB retained tail; the collector has a separate
 60-second wall-clock cap. Its failure cannot replace the test's original exit
 code. It never restarts a simulator/test or mutates unrelated devices.
