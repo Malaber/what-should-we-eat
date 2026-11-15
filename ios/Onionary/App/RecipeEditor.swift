@@ -496,6 +496,20 @@ private struct RecipeOrderSheet<Item: Identifiable>: View {
     var body: some View {
         NavigationStack {
             List {
+                if addingGroup {
+                    Section("Add group") {
+                        TextField("Group name", text: $newGroup)
+                            .submitLabel(.done)
+                            .onSubmit(addGroup)
+                            .accessibilityIdentifier("new-recipe-group-name")
+                        Button("Add", action: addGroup)
+                            .disabled(!canAddGroup)
+                            .accessibilityIdentifier("confirm-recipe-group")
+                        Button("Cancel", role: .cancel, action: closeGroupForm)
+                    }
+                } else {
+                    Button("Add group", systemImage: "folder.badge.plus") { addingGroup = true }
+                }
                 ForEach(items) { item in
                     let index = items.firstIndex { $0.id == item.id }
                     let name = rowTitle(item)
@@ -540,18 +554,20 @@ private struct RecipeOrderSheet<Item: Identifiable>: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Add group", systemImage: "folder.badge.plus") { addingGroup = true } }
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
-            .alert("Add group", isPresented: $addingGroup) {
-                TextField("Group name", text: $newGroup)
-                Button("Cancel", role: .cancel) { newGroup = "" }
-                Button("Add") {
-                    if canAddGroup { groupsAdded.append(trimmedGroup) }
-                    newGroup = ""
-                }.disabled(!canAddGroup)
-            }
         }
+    }
+
+    private func addGroup() {
+        guard canAddGroup else { return }
+        groupsAdded.append(trimmedGroup)
+        closeGroupForm()
+    }
+
+    private func closeGroupForm() {
+        newGroup = ""
+        addingGroup = false
     }
 
     private func move(_ offsets: IndexSet, to destination: Int) {

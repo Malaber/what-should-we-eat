@@ -65,3 +65,7 @@ edit test passed on iPhone and iPad with the fixture already in progress.
 Swift passed 50 tests. Four focused iPad tests and three focused iPhone tests
 passed, including the live tag counts, active-recipe edit and ingredient token
 flows. The production backend health check returned OK.
+
+The first follow-up CI run stalled in the group-name alert. Group creation now
+uses a form in the reorder sheet. Creating and saving a group and reordering
+ingredients passed on both iPhone and iPad.

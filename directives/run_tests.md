@@ -388,6 +388,11 @@ same editor directly from Preview and finish after confirming insertion
 and dismissal of the keyboard action. The separate draft test checks
 editor cancellation.
 
+Ingredient and step group creation uses an inline form in the reorder
+sheet. The nested text alert stalled during the iPad accessibility
+transition. UI coverage still creates a group, assigns an ingredient,
+saves and checks the group in the recipe preview.
+
 The active-recipe edit case starts with one checked ingredient in a real
 `Kitchen` adventure. Separate checklist scenarios exercise setting that state
 through taps. This keeps the edit test focused on save, the reload decision

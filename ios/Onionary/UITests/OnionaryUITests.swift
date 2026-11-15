@@ -291,18 +291,20 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(reorder.waitForExistence(timeout: 5))
         reorder.tap()
         let sheet = app.navigationBars["Reorder ingredients"]
-        XCTAssertTrue(sheet.buttons["Add group"].waitForExistence(timeout: 5))
-        sheet.buttons["Add group"].tap()
-        let dialog = app.alerts["Add group"]
-        let groupName = dialog.textFields["Group name"]
+        let orderList = app.collectionViews["recipe-order-list"]
+        let addGroup = orderList.buttons["Add group"]
+        XCTAssertTrue(addGroup.waitForExistence(timeout: 5))
+        addGroup.tap()
+        let groupName = orderList.textFields["new-recipe-group-name"]
         XCTAssertTrue(groupName.waitForExistence(timeout: 5))
-        groupName.typeText("Sauce")
-        dialog.buttons["Add"].tap()
-        let cheeseGroup = app.collectionViews["recipe-order-list"].buttons["recipe-group-Cheese"]
+        groupName.tap()
+        app.typeText("Sauce")
+        orderList.buttons["confirm-recipe-group"].tap()
+        let cheeseGroup = orderList.buttons["recipe-group-Cheese"]
         XCTAssertTrue(cheeseGroup.waitForExistence(timeout: 5))
         cheeseGroup.tap()
         app.buttons["Sauce"].tap()
-        XCTAssertTrue(app.collectionViews["recipe-order-list"].staticTexts["Sauce"].waitForExistence(timeout: 5))
+        XCTAssertTrue(orderList.staticTexts["Sauce"].waitForExistence(timeout: 5))
         sheet.buttons["Done"].tap()
         XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Sauce"].exists)
