@@ -33,3 +33,10 @@
 - Duo exports were validated against the original v0.7.0 CI result. Release tests cover promotion, unrelated RC tags, explicit bumps and immutable tags.
 - A native Duo marketing run produced the four outer screenshots. Local validation covers three framed Duo portraits, the unfolded capture and the four ZIP layouts.
 - Final iOS feedback passed the Swift core suite, five focused iPhone tests and two focused iPad tests. The native Settings capture verified the Blueberry tint.
+
+## Merge verification
+
+- [ ] Exercise grouped editing and cancellation of an unchanged edit in the native editor.
+- [ ] Verify that a saved offline draft exposes the changed fields and still restores after relaunch.
+- [ ] Verify that a scaled ingredient badge shares the checklist and undo state on iOS.
+- [ ] Diagnose the native XCTest startup failures and check the complete GitHub matrix at the current PR head.
