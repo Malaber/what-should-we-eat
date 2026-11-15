@@ -36,7 +36,12 @@
 
 ## Merge verification
 
-- [ ] Exercise grouped editing and cancellation of an unchanged edit in the native editor.
-- [ ] Verify that a saved offline draft exposes the changed fields and still restores after relaunch.
-- [ ] Verify that a scaled ingredient badge shares the checklist and undo state on iOS.
+- [x] Exercise grouped editing and cancellation of an unchanged edit in the native editor.
+- [x] Verify that a saved offline draft exposes the changed fields and still restores after relaunch.
+- [x] Verify that a scaled ingredient badge shares the checklist and undo state on iOS.
 - [ ] Diagnose the native XCTest startup failures and check the complete GitHub matrix at the current PR head.
+
+All four focused iPhone tests passed on iOS 27.0, including the 40 g to 80 g
+ingredient badge and shared undo. Swift package tests and the arm64 simulator
+build passed. The test archive was extracted into a separate location and the
+compiled plan validated there before native execution.
