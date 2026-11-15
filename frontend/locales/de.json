@@ -233,5 +233,6 @@
   "deletion.done": "Konto gelöscht",
   "deletion.success": "Dein Konto wurde dauerhaft gelöscht. Du bist abgemeldet.",
   "deletion.home": "Zurück zu Onionary",
-  "deletion.mismatch": "Die E-Mail-Adresse stimmt nicht mit deinem Konto überein."
+  "deletion.mismatch": "Die E-Mail-Adresse stimmt nicht mit deinem Konto überein.",
+  "recipe.group": "Gruppe (optional)"
 }

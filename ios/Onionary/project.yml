@@ -128,6 +128,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.malaber.onionary.uitests
+        SWIFT_OBJC_BRIDGING_HEADER: UITests/OnionaryUITests-Bridging-Header.h
         GENERATE_INFOPLIST_FILE: YES
 schemes:
   Onionary:
@@ -137,4 +138,9 @@ schemes:
     test:
       # Automated UI assertions need XCTest, not an LLDB attachment at each launch.
       debugEnabled: false
+      # Avoid a display-bound recorder across Duo folds and recorder teardown.
+      # Keep normal failure screenshots and every explicit keepAlways capture.
+      preferredScreenCaptureFormat: screenshots
+      captureScreenshotsAutomatically: true
+      deleteScreenshotsWhenEachTestSucceeds: true
       targets: [OnionaryUITests]

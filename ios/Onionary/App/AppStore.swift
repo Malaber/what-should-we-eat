@@ -11,6 +11,7 @@ final class AppStore {
     var kitchen = Kitchen()
     var error: String?
     var busy = false
+    var refreshing = false
     var needsReauthentication = false
     var reauthenticationError: String?
     var mealItems: [MealPlan.Item] = []
@@ -166,7 +167,9 @@ final class AppStore {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--marketing") { return }
         #endif
-        guard let credential else { return }
+        guard let credential, !refreshing else { return }
+        refreshing = true
+        defer { refreshing = false }
         do {
             let recipes = try OnionaryAPI.decoder.decode([Recipe].self, from: await request("recipes"))
             // A connection may have changed while the request was in flight.
@@ -198,6 +201,14 @@ final class AppStore {
         try KitchenFile.write(next, to: file)
         kitchen = next
         synchronizeCookingActivity()
+    }
+
+    func savePantry(_ supplies: [PantryMatching.Supply]) throws {
+        guard credential != nil else { throw APIError.unauthorized }
+        guard supplies != (kitchen.pantrySupplies ?? []) else { return }
+        var next = kitchen
+        next.pantrySupplies = supplies.isEmpty ? nil : supplies
+        try persist(next)
     }
 
     private func clearWidget() {
@@ -331,11 +342,45 @@ final class AppStore {
         } catch { self.error = error.localizedDescription }
     }
 
-    func saveRecipe(_ draft: RecipeDraft, id: Int? = nil) async throws {
-        guard let credential else { throw CookingError.response("Sign in before saving.") }
+    var savedDrafts: [SavedRecipeDraft] = []
+    private var draftsFile: URL? { file?.appendingPathExtension("drafts") }
+    func loadDrafts() {
+        savedDrafts = []
+        do { savedDrafts = try draftsFile.map { try RecipeDraftFile.read($0) } ?? [] }
+        catch { self.error = error.localizedDescription }
+    }
+    func retainDraft(_ draft: SavedRecipeDraft, scope expected: String) throws {
+        guard scope == expected, let draftsFile else { throw APIError.unavailable }
+        var drafts = try RecipeDraftFile.read(draftsFile)
+        drafts.removeAll { $0.id == draft.id }; drafts.insert(draft, at: 0)
+        try RecipeDraftFile.write(drafts, to: draftsFile); savedDrafts = drafts
+    }
+    func removeDraft(_ id: UUID, scope expected: String) throws {
+        guard scope == expected, let draftsFile else { throw APIError.unavailable }
+        var drafts = try RecipeDraftFile.read(draftsFile)
+        drafts.removeAll { $0.id == id }
+        try RecipeDraftFile.write(drafts, to: draftsFile); savedDrafts = drafts
+    }
+    @discardableResult
+    func saveRecipe(_ draft: RecipeDraft, id: Int? = nil) async throws -> Recipe {
+        guard credential != nil else { throw CookingError.response("Sign in before saving.") }
+        let expectedScope = scope
         let data = try draft.validatedData()
-        _ = try await request(id.map { "recipes/\($0)" } ?? "recipes", method: id == nil ? "POST" : "PUT", body: data)
-        await refresh()
+        let response = try await request(id.map { "recipes/\($0)" } ?? "recipes", method: id == nil ? "POST" : "PUT", body: data)
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let recipe = try decoder.decode(Recipe.self, from: response)
+        guard scope == expectedScope else { throw APIError.unauthorized }
+        var next = kitchen
+        next.recipes.removeAll { $0.id == recipe.id }; next.recipes.append(recipe)
+        // The server has confirmed the write. Cache failures must not trigger another POST.
+        do { try persist(next) } catch { kitchen = next; self.error = error.localizedDescription }
+        return recipe
+    }
+    func reloadCookingRecipe(_ recipe: Recipe) throws {
+        guard current?.id == recipe.id else { return }
+        var next = kitchen
+        next.reloadCurrentRecipe(recipe)
+        try persist(next)
     }
 
     func deleteAccount(email: String) async throws {
@@ -346,6 +391,8 @@ final class AppStore {
         if let file {
             try? FileManager.default.removeItem(at: file)
             try? FileManager.default.removeItem(at: file.appendingPathExtension("meals"))
+            try? FileManager.default.removeItem(at: file.appendingPathExtension("drafts"))
+            savedDrafts = []
         }
         try? CredentialStore.remove()
         await stopCookingActivity(); clearWidget()
@@ -374,6 +421,8 @@ final class AppStore {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             try? FileManager.default.removeItem(at: file!)
+            try? FileManager.default.removeItem(at: file!.appendingPathExtension("drafts"))
+            UserDefaults.standard.removeObject(forKey: "accent")
             UserDefaults.standard.removeObject(forKey: "appearance")
             UserDefaults.standard.removeObject(forKey: "language")
         }
@@ -383,6 +432,9 @@ final class AppStore {
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: Data(json.utf8))
         }
         if ProcessInfo.processInfo.arguments.contains("--marketing") {
+            // Keep screenshot appearance local to this Debug fixture. A global
+            // simulator appearance RPC can race cold SpringBoard startup.
+            UserDefaults.standard.set("light", forKey: "appearance")
             let names = ["Lemon & cheese pasta", "Roasted tomato soup", "Crispy chickpea bowls", "Mushroom risotto", "Apple cinnamon pancakes", "Herby potato salad"]
             let recipes: [[String: Any]] = names.enumerated().map { index, name in
                 var recipe = UITestBackend.recipe
@@ -399,6 +451,7 @@ final class AppStore {
         if ProcessInfo.processInfo.arguments.contains("--renew-session") {
             credential?.refreshToken = "test-refresh"
             credential?.sessionExpiresAt = Date().addingTimeInterval(42 * 86400).timeIntervalSince1970
+            UITestBackend.expireSessionAfterBackgrounding()
         }
     }
     #endif

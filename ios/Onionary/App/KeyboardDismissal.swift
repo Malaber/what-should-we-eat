@@ -14,14 +14,18 @@ private final class OutsideFieldTap: UITapGestureRecognizer, UIGestureRecognizer
         delegate = self
     }
 
-    @objc private func dismissKeyboard() { view?.endEditing(true) }
+    @objc private func dismissKeyboard() {
+        // Complete the original touch before keyboard-driven sheet relayout.
+        // Otherwise a form button can move between touch-down and touch-up.
+        DispatchQueue.main.async { [weak self] in self?.view?.endEditing(true) }
+    }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
         // Do not compete with cooking controls when there is nothing to dismiss.
         guard let window = view, Self.hasFocusedEditor(in: window) else { return false }
         var candidate = touch.view
         while let current = candidate {
-            if current is UITextField || current is UITextView || current is UIToolbar { return false }
+            if current is UIControl || current is UITextView || current is UIToolbar || current.accessibilityTraits.contains(.button) { return false }
             candidate = current.superview
         }
         return true

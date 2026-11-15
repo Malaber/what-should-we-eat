@@ -3,6 +3,7 @@ import OnionaryCore
 
 struct SettingsView: View {
     @Bindable var store: AppStore
+    @AppStorage("accent") private var accent = "Onion"
     @AppStorage("appearance") private var appearance = "system"
     @AppStorage("language") private var language = "system"
     @State private var deleting = false
@@ -18,9 +19,35 @@ struct SettingsView: View {
                 Text("One backend is active. Saved cooking progress stays separate for each account.").font(.footnote).foregroundStyle(.secondary)
             }
             Section("Appearance and language") {
+                NavigationLink {
+                    List(OnionaryTheme.accents, id: \.self) { name in
+                        Button { accent = name } label: {
+                            HStack(spacing: 12) {
+                                accentSwatch(name)
+                                Text(LocalizedStringKey(name)).foregroundStyle(.primary)
+                                Spacer()
+                                if name == accent {
+                                    Image(systemName: "checkmark").foregroundStyle(OnionaryTheme.color(name))
+                                }
+                            }.frame(minHeight: 44).contentShape(Rectangle())
+                        }.buttonStyle(.plain)
+                            .accessibilityAddTraits(name == accent ? .isSelected : [])
+                            .accessibilityIdentifier("accent-" + name)
+                    }
+                    .navigationTitle("Accent color")
+                } label: {
+                    LabeledContent("Accent color") {
+                        HStack(spacing: 8) {
+                            accentSwatch(accent)
+                            Text(LocalizedStringKey(accent))
+                        }
+                    }
+                }
+                .accessibilityIdentifier("accent-picker")
                 Picker("Appearance", selection: $appearance) {
                     Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark")
                 }.accessibilityIdentifier("appearance-picker")
+                    .accessibilityValue(Text(appearance == "light" ? "Light" : appearance == "dark" ? "Dark" : "System"))
                 Picker("Language", selection: $language) {
                     Text("System").tag("system"); Text("English").tag("en"); Text("Deutsch").tag("de")
                 }.accessibilityIdentifier("language-picker")
@@ -68,6 +95,13 @@ struct SettingsView: View {
                         .onChange(of: store.credential?.server) { switching = false }
                 }
             }
+    }
+
+    private func accentSwatch(_ name: String) -> some View {
+        Circle().fill(OnionaryTheme.color(name))
+            .frame(width: 22, height: 22)
+            .overlay { Circle().strokeBorder(.primary.opacity(0.18)) }
+            .accessibilityHidden(true)
     }
 }
 

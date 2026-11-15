@@ -4,6 +4,7 @@ public struct Ingredient: Codable, Identifiable, Equatable, Sendable {
     public let id: Int
     public let name: String
     public let quantity: Decimal?
+    public var groupName: String? = nil
     public let unit: String?
 }
 
@@ -11,6 +12,7 @@ public struct CookingStep: Codable, Identifiable, Equatable, Sendable {
     public let id: Int
     public let stepNumber: Int
     public let description: String
+    public var groupName: String? = nil
     public let durationMin: Int?
 }
 
@@ -20,6 +22,7 @@ public struct Recipe: Codable, Identifiable, Equatable, Sendable {
     public let name: String
     public let notes: String?
     public var tags: [RecipeTag]? = nil
+    public var icon: String? = nil
     public var servings: Decimal? = nil
     public let totalTimeMin: Int?
     public let ingredients: [Ingredient]
@@ -135,12 +138,18 @@ public struct Kitchen: Codable, Equatable, Sendable {
     public var recipes: [Recipe] = []
     public var adventures: [Adventure] = []
     public var currentID: Int?
+    public var pantrySupplies: [PantryMatching.Supply]?
     public init() {}
     public mutating func visit(_ recipe: Recipe, now: Date = Date()) {
         if let index = adventures.firstIndex(where: { $0.id == recipe.id }) {
             adventures[index].lastVisited = now
         } else { adventures.append(Adventure(recipe: recipe, now: now)) }
         currentID = recipe.id
+    }
+    public mutating func reloadCurrentRecipe(_ recipe: Recipe) {
+        guard currentID == recipe.id else { return }
+        adventures.removeAll { $0.id == recipe.id }
+        visit(recipe)
     }
     public var recent: [Adventure] { adventures.sorted { $0.lastVisited > $1.lastVisited } }
 }

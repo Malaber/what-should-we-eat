@@ -1,7 +1,9 @@
 name: Build and test
 on:
   push:
-    branches: [main, 'codex/**']
+    # Feature PRs run the complete suite via pull_request, once per update.
+    # Keep deployment/release pushes independently validated and publishable.
+    branches: [main, 'codex/onionary-ios-companion']
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -12,7 +14,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DATABASE_URL: sqlite:///ci.db
       SECRET_KEY: ci-only-secret-not-for-production-32-bytes
@@ -26,13 +28,15 @@ jobs:
           python-version: '3.14'
           cache: pip
       - run: pip install -r requirements.txt -r marketing/requirements.txt
+      - run: sudo --preserve-env=GITHUB_ACTIONS python3 execution/configure_ci_apt.py
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends inkscape
       - run: python -m execution.db.init_db
       - run: python -m pytest
       - run: docker build -t onionary:ci .
       - name: Test packaged Python 3.14 app against PostgreSQL
         run: python execution/test_container.py --image onionary:ci
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,42 +46,97 @@ jobs:
           python-version: '3.14'
           cache: pip
       - run: pip install -r requirements.txt -r marketing/requirements.txt
+      - run: sudo --preserve-env=GITHUB_ACTIONS python3 execution/configure_ci_apt.py
+      - run: sudo apt-get update
       - run: python -m playwright install --with-deps chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium --device='iPhone 13'
   ios:
-    runs-on: macos-26
-    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: iphone
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
+            runtime: '27.0'
+          - profile: ipad
+            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-16GB
+            runtime: '27.0'
+          - profile: duo
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
+            runtime: '27.1'
+    runs-on: xcode-27
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    timeout-minutes: 65
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Select Xcode 26 or newer
-        run: |
-          xcodebuild -version
-          xcodebuild -version | head -1 | awk '{ if ($2 + 0 < 26) exit 1 }'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Verify matching Xcode build
+        run: python3 execution/check_ios_build_environment.py --xcode-only
+      - run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py '${{ matrix.runtime }}'
       - run: brew install xcodegen
       - name: Core tests, simulator build, and UI tests
-        timeout-minutes: 45
+        timeout-minutes: 60
         env:
           TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
+          SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
+          SIMULATOR_RUNTIME: ${{ matrix.runtime }}
         run: bash ios/Onionary/Scripts/test.sh
+      - run: pip install -r marketing/requirements.txt
+        if: matrix.profile != 'duo'
+      - name: Export captures from this test run
+        if: matrix.profile != 'duo'
+        env:
+          FAMILY: ${{ matrix.profile }}
+          RESULT_BUNDLE: ${{ runner.temp }}/onionary-tests/Onionary.xcresult
+        run: python3 execution/marketing_screenshots.py --result-bundle "$RESULT_BUNDLE" --family "$FAMILY" --output ".tmp/marketing/$FAMILY" --defer-creative
+      - uses: actions/upload-artifact@v4
+        if: matrix.profile != 'duo'
+        with:
+          name: onionary-capture-${{ matrix.profile }}-en-US
+          path: |
+            .tmp/marketing/${{ matrix.profile }}/
+            !.tmp/marketing/${{ matrix.profile }}/attachments/**
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve simulator test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: onionary-ios-test-results
-          path: ${{ runner.temp }}/onionary-tests/Onionary.xcresult
+          name: onionary-ios-test-results-${{ matrix.profile }}
+          path: |
+            ${{ runner.temp }}/onionary-tests/Onionary.xcresult
+            ${{ runner.temp }}/onionary-tests/*.log
+            ${{ runner.temp }}/onionary-tests/duo/
+            ${{ runner.temp }}/onionary-tests/host-diagnostics/
           if-no-files-found: ignore
           retention-days: 7
 
+  appstore-screenshots:
+    needs: ios
+    uses: ./.github/workflows/screenshots.yml
+    permissions:
+      contents: write
+
   ios-archive:
-    runs-on: macos-26
+    runs-on: xcode-27
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Verify matching Xcode build
+        run: python3 execution/check_ios_build_environment.py --xcode-only
       - run: brew install xcodegen
       - name: Archive Release for iOS devices and validate all bundles
         run: |
@@ -135,7 +194,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   release-main:
-    needs: [backend, browser, ios, ios-archive, publish-image, html-format]
+    needs: [backend, browser, ios, ios-archive, publish-image, html-format, appstore-screenshots]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Malaber/what-should-we-eat'
     runs-on: ubuntu-latest
     concurrency:
@@ -145,7 +204,6 @@ jobs:
       contents: write
       packages: write
       pull-requests: read
-      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -175,11 +233,21 @@ jobs:
           build-args: |
             APP_VERSION=${{ steps.release.outputs.version }}
             VCS_REF=${{ github.sha }}
-      - name: Generate screenshots for this release
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: onionary-appstore-*-en-US
+          path: screenshots
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install -r marketing/requirements.txt
+      - name: Attach this run's verified screenshot bundles
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
-        run: gh workflow run screenshots.yml --ref "$RELEASE_TAG"
+        run: |
+          python3 execution/package_marketing_screenshots.py screenshots release-assets
+          gh release upload "$RELEASE_TAG" release-assets/*.zip --clobber
 
   html-format:
     runs-on: ubuntu-latest

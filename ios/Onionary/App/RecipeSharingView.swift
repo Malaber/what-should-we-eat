@@ -25,17 +25,25 @@ struct RecipeSharingView: View {
                     Button("Revoke link", role: .destructive) { Task {
                         do { try await store.revokeRecipeLink(link.id); dismiss() }
                         catch { self.error = error.localizedDescription }
-                    } }
+                    } }.accessibilityIdentifier("revoke-recipe-share")
                 } else {
                     Stepper("Expires in \(hours) hours", value: $hours, in: 1...168)
-                    Button("Create link") { Task {
-                        busy = true; defer { busy = false }
-                        do { link = try await store.shareRecipe(recipe.id, hours: hours) }
-                        catch { self.error = error.localizedDescription }
-                    } }.disabled(busy)
+                    Button {
+                        guard !busy else { return }
+                        busy = true
+                        error = nil
+                        Task {
+                            defer { busy = false }
+                            do { link = try await store.shareRecipe(recipe.id, hours: hours) }
+                            catch { self.error = error.localizedDescription }
+                        }
+                    } label: {
+                        Text("Create link").frame(maxWidth: .infinity, minHeight: 44)
+                    }.buttonStyle(.borderedProminent).disabled(busy)
+                        .accessibilityIdentifier("create-recipe-share")
                 }
                 if let error { Text(error).foregroundStyle(.red) }
-            }.navigationTitle("Share recipe copy").toolbar { Button("Done") { dismiss() } }
+            }.navigationTitle("Share recipe copy").navigationBarTitleDisplayMode(.inline).toolbar { Button("Done") { dismiss() } }
         }
     }
 }

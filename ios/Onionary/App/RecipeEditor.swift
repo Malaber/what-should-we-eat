@@ -4,17 +4,107 @@ import OnionaryCore
 struct RecipeEditor: View {
     @Bindable var store: AppStore
     @State var draft: RecipeDraft
-    var recipeID: Int? = nil
+    @State var recipeID: Int? = nil
+    @State var draftID = UUID()
+    @State private var draftScope: String?
+    @State private var savedRecipe: Recipe?
+    @State private var askingReload = false
+    @State private var completed = false
     @Environment(\.dismiss) private var dismiss
     @State private var saving = false
     @State private var error: String?
     @FocusState private var focusedStep: UUID?
     @State private var showingStepHelp = false
+    @State private var tagInput = ""
+    private enum RecipeOrder: String, Identifiable {
+        case ingredients, steps
+        var id: Self { self }
+    }
+    @State private var recipeOrder: RecipeOrder?
     var body: some View {
         NavigationStack {
-            Form {
+            editorForm.safeAreaInset(edge: .bottom) {
+                if saving { ProgressView("Saving recipe…").padding().frame(maxWidth: .infinity).background(.regularMaterial) }
+                if let error {
+                    ShareLink("Export draft", item: exportText).padding(.horizontal)
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout).foregroundStyle(.red).padding()
+                        .frame(maxWidth: .infinity, alignment: .leading).background(.regularMaterial)
+                        .accessibilityIdentifier("recipe-save-error")
+                }
+            }.connectionRecovery(store).dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "New recipe" : "Edit recipe"))
+                .toolbar { editorToolbar }
+                .sheet(item: $recipeOrder) { order in
+                    switch order {
+                    case .ingredients:
+                        RecipeOrderSheet(title: "Reorder ingredients", items: $draft.ingredients) { item in
+                            item.name.isEmpty ? L10n.text("Ingredient") : item.name
+                        }
+                    case .steps:
+                        RecipeOrderSheet(title: "Reorder steps", items: $draft.instructionSteps, didMove: numberSteps) { step in
+                            step.description.isEmpty ? L10n.format("Step %lld", step.stepNumber) : step.description
+                        }
+                    }
+                }
+                .alert("Ingredient amount help", isPresented: $showingStepHelp) {
+                    Button("Done", role: .cancel) {}
+                } message: {
+                    Text("Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.")
+                }
+                .interactiveDismissDisabled(saving || askingReload)
+                .onAppear { if draftScope == nil { draftScope = store.scope } }
+                .onChange(of: draft) { _, _ in retain() }
+                .onDisappear { if !completed { retain() } }
+                .alert("Reload cooking recipe?", isPresented: $askingReload) {
+                    Button("Reload and reset progress", role: .destructive) {
+                        do { if let savedRecipe { try store.reloadCookingRecipe(savedRecipe) }; finish() }
+                        catch { self.error = error.localizedDescription }
+                    }
+                    Button("Keep cooking progress", role: .cancel) { finish() }
+                } message: { Text("The saved recipe changed. Reloading clears checks, portion adjustments and tap history for this cooking adventure.") }
+        }
+    }
+    @ToolbarContentBuilder private var editorToolbar: some ToolbarContent {
+
+                    ToolbarItemGroup(placement: .keyboard) {
+                        if let focusedStep {
+                            Menu {
+                                ForEach(insertableIngredients) { ingredient in
+                                    Button(ingredient.name) {
+                                        insertAmount(ingredient, into: focusedStep)
+                                    }
+                                }
+                            } label: { Label("Insert ingredient amount", systemImage: "plus.circle") }
+                            .accessibilityIdentifier("insert-ingredient-amount")
+                        }
+                    }
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
+                    ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving || hasOverlongTag || hasInvalidIcon) }
+    }
+    private var editorForm: some View {
+        WorkspacePanes(focus: focusedStep?.uuidString) {
+
+            metadataSection
+            tagsSection
+            ingredientsSection
+        } secondary: {
+            stepsSection
+        }.textFieldStyle(.roundedBorder).accessibilityIdentifier("recipe-editor")
+    }
+    private var metadataSection: some View {
                 Section("Recipe") {
                     TextField("Name", text: $draft.name)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Food icon").font(.caption).foregroundStyle(.secondary)
+                        TextField("One emoji (optional)", text: Binding(
+                            get: { draft.icon ?? "" }, set: { draft.icon = $0.isEmpty ? nil : $0 }))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .accessibilityIdentifier("recipe-emoji")
+                        if hasInvalidIcon {
+                            Text("Enter a single emoji.").font(.footnote).foregroundStyle(.red)
+                        }
+                    }
                     VStack(alignment: .leading) {
                         Text("Original recipe serves").font(.caption).foregroundStyle(.secondary)
                         TextField("Original recipe serves", value: $draft.servings, format: .number).keyboardType(.decimalPad)
@@ -32,85 +122,180 @@ struct RecipeEditor: View {
                         Text("Calories per serving").font(.caption).foregroundStyle(.secondary)
                         TextField("Calories per serving", value: $draft.kcalPerServing, format: .number).keyboardType(.decimalPad)
                     }
-                    TextField("Tags, separated by commas", text: Binding(get: { draft.tags.joined(separator: ", ") }, set: { draft.tags = $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } }))
                 }
-                Section("Ingredients") {
-                    ForEach($draft.ingredients) { $item in
-                        VStack {
-                            TextField("Ingredient", text: $item.name)
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                        Text("Quantity").font(.caption).foregroundStyle(.secondary)
-                        TextField("Quantity", value: $item.quantity, format: .number).keyboardType(.decimalPad)
+    }
+    private var tagsSection: some View {
+        Section("Tags") {
+            if !draft.tags.isEmpty {
+                ChipFlow(spacing: 8) {
+                    ForEach(committedTags, id: \.self) { tag in
+                        RemovableChip(title: tag, removeLabel: String(format: L10n.text("Remove tag %@"), tag)) {
+                            draft.tags.removeAll { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame }
+                        }.accessibilityIdentifier("remove-tag-" + tag)
                     }
-                                TextField("Unit", text: Binding(get: { item.unit ?? "" }, set: { item.unit = $0 }))
-                            }
-                        }
-                    }.onDelete { draft.ingredients.remove(atOffsets: $0) }
-                    Button("Add ingredient") { draft.ingredients.append(.init()) }
                 }
+            }
+            HStack {
+                TextField("Add tag", text: $tagInput)
+                    .submitLabel(.done)
+                    .onSubmit { addTag(pendingTag) }
+                    .onChange(of: tagInput) { _, _ in retain() }
+                    .accessibilityIdentifier("recipe-tag-input")
+                Button { addTag(pendingTag) } label: {
+                    Image(systemName: "plus.circle.fill").font(.title3).frame(minWidth: 44, minHeight: 44)
+                }.buttonStyle(.borderless)
+                    .accessibilityLabel("Add tag")
+                    .accessibilityIdentifier("add-recipe-tag")
+                    .disabled(!canAddTag(pendingTag))
+            }
+            if hasOverlongTag {
+                Text("Use up to 100 characters per tag.").font(.footnote).foregroundStyle(.secondary)
+            }
+            if !pendingTag.isEmpty {
+                ForEach(RecipeBrowsing.categories(store.kitchen.recipes, query: pendingTag)
+                    .filter { canAddTag($0) }.prefix(6), id: \.self) { tag in
+                    Button { addTag(tag) } label: { Label(tag, systemImage: "plus.circle") }
+                        .accessibilityIdentifier("suggest-recipe-tag-" + tag)
+                }
+            }
+        }
+    }
+    private var committedTags: [String] {
+        var seen = Set<String>()
+        return draft.tags.filter { seen.insert($0.lowercased()).inserted }
+    }
+    private var pendingTag: String { tagInput.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var hasInvalidIcon: Bool {
+        guard let icon = draft.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        return FoodIcons.emoji(icon) == nil
+    }
+    private var hasOverlongTag: Bool {
+        pendingTag.unicodeScalars.count > 100 || draft.tags.contains { $0.unicodeScalars.count > 100 }
+    }
+
+    private func canAddTag(_ tag: String) -> Bool {
+        !tag.isEmpty && tag.unicodeScalars.count <= 100
+            && !draft.tags.contains { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame }
+    }
+
+    private func addTag(_ tag: String) {
+        if canAddTag(tag) { draft.tags.append(tag) }
+        if tag.unicodeScalars.count <= 100 { tagInput = "" }
+    }
+
+    private var recoveryCopy: RecipeDraft {
+        var copy = draft
+        copy.tags = committedTags
+        if !pendingTag.isEmpty && !draft.tags.contains(where: { $0.localizedCaseInsensitiveCompare(pendingTag) == .orderedSame }) {
+            copy.tags.append(pendingTag)
+        }
+        return copy
+    }
+    private var ingredientsSection: some View {
+        Section {
+            ForEach($draft.ingredients) { $item in
+                IngredientDraftRow(item: $item, remove: { draft.ingredients.removeAll { $0.id == item.id } })
+            }
+            Button("Add ingredient") { draft.ingredients.append(.init()) }
+        } header: {
+            HStack {
+                Text("Ingredients")
+                Spacer()
+                if draft.ingredients.count > 1 {
+                    Button("Reorder", systemImage: "arrow.up.arrow.down") { recipeOrder = .ingredients }
+                        .accessibilityLabel("Reorder ingredients")
+                }
+            }
+        }
+    }
+    private var stepsSection: some View {
                 Section {
                     ForEach($draft.instructionSteps) { $step in
-                        VStack {
-                            TextField("Instruction", text: $step.description, axis: .vertical)
-                                .focused($focusedStep, equals: step.id)
-                                .accessibilityIdentifier("instruction-" + step.id.uuidString)
-                            VStack(alignment: .leading, spacing: 4) {
-                        Text("Minutes").font(.caption).foregroundStyle(.secondary)
-                        TextField("Minutes", value: $step.durationMin, format: .number).keyboardType(.numberPad)
-                    }
-                        }
-                    }.onDelete { draft.instructionSteps.remove(atOffsets: $0) }
-                     .onMove { draft.instructionSteps.move(fromOffsets: $0, toOffset: $1) }
-                    Button("Add step") { draft.instructionSteps.append(.init()) }
+                        stepRow($step)
+                    }.id("instruction-steps")
+                    Button("Add step") { var step = RecipeDraft.Step(); step.stepNumber = draft.instructionSteps.count + 1; draft.instructionSteps.append(step) }
                 } header: {
                     HStack {
                         Text("Steps")
                         Spacer()
+                        if draft.instructionSteps.count > 1 {
+                            Button("Reorder", systemImage: "arrow.up.arrow.down") { recipeOrder = .steps }
+                                .accessibilityLabel("Reorder steps")
+                        }
                         Button { showingStepHelp = true } label: { Image(systemName: "info.circle") }
                             .accessibilityLabel("Ingredient amount help")
                             .accessibilityIdentifier("step-help")
                     }
                 }
 
-            }.safeAreaInset(edge: .bottom) {
-                if saving { ProgressView("Saving recipe…").padding().frame(maxWidth: .infinity).background(.regularMaterial) }
-                if let error {
-                    Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .font(.callout).foregroundStyle(.red).padding()
-                        .frame(maxWidth: .infinity, alignment: .leading).background(.regularMaterial)
-                        .accessibilityIdentifier("recipe-save-error")
-                }
-            }.connectionRecovery(store).dismissibleKeyboard().navigationTitle(LocalizedStringKey(recipeID == nil ? "New recipe" : "Edit recipe"))
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        if let focusedStep {
-                            Menu {
-                                ForEach(draft.ingredients.filter { ($0.quantity ?? 0) > 0 && !$0.name.isEmpty }) { ingredient in
-                                    Button(ingredient.name) {
-                                        guard let index = draft.instructionSteps.firstIndex(where: { $0.id == focusedStep }) else { return }
-                                        draft.instructionSteps[index].description += " {{" + ingredient.name + "|100%}}"
-                                    }
-                                }
-                            } label: { Label("Insert ingredient amount", systemImage: "plus.circle") }
-                            .accessibilityIdentifier("insert-ingredient-amount")
-                        }
-                    }
-                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
-                    ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving) }
-                }
-                .alert("Ingredient amount help", isPresented: $showingStepHelp) {
-                    Button("Done", role: .cancel) {}
-                } message: {
-                    Text("Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.")
-                }
-                .interactiveDismissDisabled(saving)
+
+    }
+    private func stepRow(_ binding: Binding<RecipeDraft.Step>) -> some View {
+        let id = binding.wrappedValue.id
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Step \(binding.wrappedValue.stepNumber)").font(.caption)
+                Spacer()
+                Menu {
+                    Button("Delete step", role: .destructive) { draft.instructionSteps.removeAll { $0.id == id }; numberSteps() }
+                } label: { Image(systemName: "ellipsis.circle").frame(width: 44, height: 44) }
+                .accessibilityLabel("Step options")
+            }
+            TextField("Instruction group (optional)", text: Binding(
+                get: { binding.wrappedValue.groupName ?? "" },
+                set: { binding.wrappedValue.groupName = $0.isEmpty ? nil : $0 }))
+            TextField("Instruction", text: binding.description, axis: .vertical)
+                .focused($focusedStep, equals: id)
+                .accessibilityIdentifier("instruction-" + id.uuidString)
+            Text("Minutes").font(.caption).foregroundStyle(.secondary)
+            TextField("Minutes", value: binding.durationMin, format: .number).keyboardType(.numberPad)
+        }.id(id.uuidString)
+    }
+    private func numberSteps() {
+        for index in draft.instructionSteps.indices { draft.instructionSteps[index].stepNumber = index + 1 }
+    }
+    private var insertableIngredients: [RecipeDraft.Item] {
+        draft.ingredients.filter { item in
+            guard let quantity = item.quantity else { return false }
+            return quantity > Decimal.zero && !item.name.isEmpty
         }
+    }
+    private func insertAmount(_ ingredient: RecipeDraft.Item, into stepID: UUID) {
+        guard let index = draft.instructionSteps.firstIndex(where: { $0.id == stepID }) else { return }
+        draft.instructionSteps[index].description += " {{" + ingredient.name + "|100%}}"
+    }
+    private var exportText: String {
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return (try? encoder.encode(recoveryCopy)).flatMap { String(data: $0, encoding: .utf8) } ?? draft.name
+    }
+    private func retain() {
+        guard !completed, let draftScope else { return }
+        do { try store.retainDraft(.init(id: draftID, recipeID: recipeID, draft: recoveryCopy), scope: draftScope) }
+        catch { self.error = L10n.text("Could not save recovery copy. Export your draft before closing.") }
+    }
+    private func finish() {
+        do {
+            try store.removeDraft(draftID, scope: draftScope ?? store.scope)
+            completed = true; dismiss()
+        } catch { self.error = error.localizedDescription }
     }
     private func save() async {
         saving = true; error = nil; defer { saving = false }
-        do { try await store.saveRecipe(draft, id: recipeID); dismiss() }
-        catch { self.error = L10n.text(error.localizedDescription) }
+        guard !hasOverlongTag, !hasInvalidIcon else { return }
+        draft.icon = draft.icon.flatMap(FoodIcons.emoji)
+        draft.tags = committedTags
+        addTag(pendingTag)
+        retain()
+        guard draftScope == store.scope else { error = L10n.text("Reconnect to the original account before saving this draft."); return }
+        do {
+            let recipe = try await store.saveRecipe(draft, id: recipeID)
+            recipeID = recipe.id; savedRecipe = recipe; retain()
+            if let current = store.current, current.id == recipe.id, current.recipe != recipe {
+                askingReload = true
+            } else { finish() }
+        } catch {
+            self.error = L10n.text("Save not confirmed. Your draft stays here. Check the server before retrying to avoid duplicates.") + "\n" + L10n.text(error.localizedDescription)
+        }
     }
 }
 
@@ -165,5 +350,77 @@ struct EditRecipeView: View {
     private func load() async {
         error = nil
         do { draft = try await store.recipeDraft(id: id) } catch { self.error = L10n.text(error.localizedDescription) }
+    }
+}
+
+private struct IngredientDraftRow: View {
+    @Binding var item: RecipeDraft.Item
+    var remove: () -> Void
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Ingredient group (optional)", text: Binding(get: { item.groupName ?? "" }, set: { item.groupName = $0.isEmpty ? nil : $0 }))
+            HStack {
+                TextField("Ingredient", text: $item.name)
+                Menu {
+                    Button("Delete ingredient", role: .destructive, action: remove)
+                } label: { Image(systemName: "ellipsis.circle").frame(minWidth: 44, minHeight: 44) }
+                    .accessibilityLabel("Ingredient options")
+            }
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Quantity").font(.caption).foregroundStyle(.secondary)
+                    TextField("Quantity", value: $item.quantity, format: .number).keyboardType(.decimalPad)
+                }
+                TextField("Unit", text: Binding(get: { item.unit ?? "" }, set: { item.unit = $0 }))
+            }
+        }.padding(12).background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct RecipeOrderSheet<Item: Identifiable>: View {
+    let title: LocalizedStringKey
+    @Binding var items: [Item]
+    var didMove: () -> Void = {}
+    var rowTitle: (Item) -> String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(items) { item in
+                    let index = items.firstIndex { $0.id == item.id }
+                    let name = rowTitle(item)
+                    HStack {
+                        Text(name).lineLimit(2)
+                        Spacer()
+                        Button { moveOne(item.id, by: -1) } label: {
+                            Label("Move \(name) up", systemImage: "chevron.up").labelStyle(.iconOnly)
+                                .frame(minWidth: 44, minHeight: 44)
+                        }.disabled(index == items.startIndex)
+                        Button { moveOne(item.id, by: 1) } label: {
+                            Label("Move \(name) down", systemImage: "chevron.down").labelStyle(.iconOnly)
+                                .frame(minWidth: 44, minHeight: 44)
+                        }.disabled(index == items.index(before: items.endIndex))
+                    }
+                    .buttonStyle(.borderless)
+                }.onMove(perform: move)
+            }
+            .environment(\.editMode, .constant(.active))
+            .accessibilityIdentifier("recipe-order-list")
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
+    }
+
+    private func move(_ offsets: IndexSet, to destination: Int) {
+        items.move(fromOffsets: offsets, toOffset: destination)
+        didMove()
+    }
+
+    private func moveOne(_ id: Item.ID, by offset: Int) {
+        guard let index = items.firstIndex(where: { $0.id == id }),
+              items.indices.contains(index + offset) else { return }
+        move(IndexSet(integer: index), to: offset > 0 ? index + 2 : index - 1)
     }
 }

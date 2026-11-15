@@ -134,6 +134,7 @@ class Recipe(Base):
     household_id = Column(Integer, ForeignKey("households.id"), nullable=False)
     name = Column(String(255), nullable=False)
     notes = Column(Text, nullable=True)
+    icon = Column(String(32), nullable=True)
     servings = Column(Float, nullable=False, default=1, server_default="1")
     kcal_per_serving = Column(Float, nullable=True)
     active_cooking_time_min = Column(Integer, nullable=True)
@@ -161,6 +162,7 @@ class Recipe(Base):
         "Ingredient",
         back_populates="recipe",
         cascade="all, delete-orphan",
+        order_by="(Ingredient.position, Ingredient.id)",
     )
     tags = relationship(
         "Tag",
@@ -178,6 +180,7 @@ class InstructionStep(Base):
     step_number = Column(Integer, nullable=False)
     description = Column(Text, nullable=False)
     duration_min = Column(Integer, nullable=True)
+    group_name = Column(String(100), nullable=True)
 
     recipe = relationship("Recipe", back_populates="instruction_steps")
 
@@ -191,6 +194,8 @@ class Ingredient(Base):
     name = Column(String(255), nullable=False)
     quantity = Column(Float, nullable=True)
     unit = Column(String(50), nullable=True)
+    group_name = Column(String(100), nullable=True)
+    position = Column(Integer, nullable=False, default=0, server_default="0")
 
     recipe = relationship("Recipe", back_populates="ingredients")
 

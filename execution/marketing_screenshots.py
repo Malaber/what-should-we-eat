@@ -1,64 +1,76 @@
-"""Capture real iPhone/iPad App Store screenshots from deterministic Debug fixtures."""
+"""Export App Store captures from the normal, successful native UI test result.
+
+This command never starts a simulator or runs tests. CI captures each device once
+in testMarketingScreenshots, then exports that same run's four original images.
+"""
 import argparse
 import json
 from pathlib import Path
+import re
 import shutil
+import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from execution.package_marketing_screenshots import validate_dimensions
-import subprocess
+from execution.package_marketing_screenshots import CAPTURES, validate_dimensions
 
-ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / 'ios/Onionary'
+NAMES = {Path(name).stem for name in CAPTURES}
 
-def run(*args, **kwargs):
-    return subprocess.check_output(args, text=True, **kwargs)
+
+def render_capture(screenshots, family, defer_creative):
+    from execution.render_marketing_assets import render
+    render(screenshots, family, include_creative=not defer_creative)
+
+
+def export_captures(result, output, family, defer_creative=False):
+    if not result.is_dir():
+        raise ValueError(f'Native result bundle does not exist: {result}')
+    summary = json.loads(subprocess.check_output(
+        ['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(result.resolve())], text=True))
+    if (summary.get('result') != 'Passed' or summary.get('failedTests') != 0
+            or summary.get('skippedTests', 0) != 0 or summary.get('passedTests', 0) < 1):
+        raise ValueError('Captures require a completed, passing native result with no failed/skipped tests')
+    output.mkdir(parents=True, exist_ok=False)
+    exported = output/'attachments'
+    subprocess.run(['xcrun', 'xcresulttool', 'export', 'attachments', '--path', str(result.resolve()),
+                    '--output-path', str(exported)], check=True)
+    manifest = json.loads((exported/'manifest.json').read_text())
+    captures = {}
+    for test in manifest:
+        for attachment in test.get('attachments', []):
+            name = attachment.get('suggestedHumanReadableName', '')
+            if not name.startswith('marketing-'):
+                continue
+            match = re.match(r'marketing-([^._]+)(?:_|\.png|$)', name)
+            key = match.group(1) if match else ''
+            if key not in NAMES or key in captures:
+                raise ValueError(f'Unexpected or duplicate marketing capture: {name}')
+            source = (exported/attachment['exportedFileName']).resolve()
+            if not source.is_relative_to(exported.resolve()):
+                raise ValueError('Capture path is outside the attachment export')
+            validate_dimensions(source, family)
+            from PIL import Image
+            with Image.open(source) as image:
+                image.load()
+            captures[key] = source
+    if set(captures) != NAMES:
+        raise ValueError(f'Expected four marketing scenes; missing {sorted(NAMES - set(captures))}')
+    screenshots = output/'en-US'
+    screenshots.mkdir()
+    for key, source in captures.items():
+        shutil.copy2(source, screenshots/(key+'.png'))
+    render_capture(screenshots, family, defer_creative)
+    print(f'Exported four original {family} captures from {result} to {screenshots}')
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--device', default='iPhone 17 Pro')
-    parser.add_argument('--output', type=Path, default=ROOT / '.tmp/marketing')
+    parser.add_argument('--result-bundle', type=Path, required=True)
+    parser.add_argument('--family', choices=['iphone', 'ipad'], required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--defer-creative', action='store_true')
     args = parser.parse_args()
-    output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
-    runtimes = json.loads(run('xcrun','simctl','list','runtimes','--json'))['runtimes']
-    runtime = next(r['identifier'] for r in reversed(runtimes) if r['isAvailable'] and '.iOS-' in r['identifier'])
-    device = run('xcrun','simctl','create','Onionary Marketing',args.device,runtime).strip()
-    try:
-        run('xcrun','simctl','boot',device)
-        run('xcrun','simctl','bootstatus',device,'-b')
-        run('xcrun','simctl','ui',device,'appearance','light')
-        run('xcrun','simctl','status_bar',device,'override','--time','9:41','--dataNetwork','wifi','--wifiMode','active','--wifiBars','3','--batteryState','charged','--batteryLevel','100')
-        subprocess.run(['xcodegen','generate'],cwd=PACKAGE,check=True)
-        result = output / 'Screenshots.xcresult'
-        if result.exists():
-            raise SystemExit('Use a fresh output directory; an existing result bundle will not be overwritten.')
-        subprocess.run(['xcodebuild','-project','Onionary.xcodeproj','-scheme','Onionary',
-            '-derivedDataPath',str(output / 'DerivedData'),
-            '-destination',f'platform=iOS Simulator,id={device}', '-parallel-testing-enabled','NO',
-            '-test-timeouts-enabled','YES','-maximum-test-execution-time-allowance','180',
-            '-only-testing:OnionaryUITests/OnionaryUITests/testMarketingScreenshots',
-            '-resultBundlePath',str(result),'CODE_SIGNING_ALLOWED=NO','test'],cwd=PACKAGE,check=True)
-        exported = output / 'attachments'
-        run('xcrun','xcresulttool','export','attachments','--path',str(result),'--output-path',str(exported))
-        manifest = json.loads((exported / 'manifest.json').read_text())
-        screenshots = output / 'en-US'; screenshots.mkdir(exist_ok=True)
-        count = 0
-        for test in manifest:
-            for attachment in test.get('attachments',[]):
-                name = attachment.get('suggestedHumanReadableName','')
-                if not name.startswith('marketing-'):
-                    continue
-                source = exported / attachment['exportedFileName']
-                validate_dimensions(source, 'ipad' if args.device.startswith('iPad') else 'iphone')
-                shutil.copy2(source,screenshots / (name.removeprefix('marketing-').split('.png')[0]+'.png'))
-                count += 1
-        if count != 4:
-            raise SystemExit(f'Expected 4 marketing screenshots, found {count}. Inspect attachment manifest.')
-        from execution.render_marketing_assets import render
-        render(screenshots, 'ipad' if args.device.startswith('iPad') else 'iphone')
-        print(f'Exported {count} screenshots to {screenshots}')
-    finally:
-        subprocess.run(['xcrun','simctl','delete',device],check=False)
+    export_captures(args.result_bundle, args.output, args.family, args.defer_creative)
+
 
 if __name__ == '__main__':
     main()

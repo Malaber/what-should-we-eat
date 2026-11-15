@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import UIKit
 import OnionaryCore
 
 /// Deterministic UI-test transport. Compiled out of release builds.
@@ -7,6 +8,29 @@ import OnionaryCore
     static var recipe: [String: Any] = ["id":1,"household_id":1,"name":"Lemon & cheese pasta","notes":"Finish with lemon zest.","total_time_min":20,"active_cooking_time_min":10,"kcal_per_serving":400,"tags":[["id":1,"name":"vegetarian"]],"ingredients":[["id":1,"name":"Cheese","quantity":200,"unit":"g"],["id":2,"name":"Pasta","quantity":250,"unit":"g"]],"instruction_steps":[["id":1,"step_number":1,"description":"Boil the pasta in salted water.","duration_min":10],["id":2,"step_number":2,"description":"Fold in cheese and lemon zest."]]]
     static var planned = false
     static var cooked = false
+    private static var sessionExpired = false
+    private static var renewalLifecycle: RenewalLifecycle?
+
+    static func expireSessionAfterBackgrounding() {
+        if renewalLifecycle == nil { renewalLifecycle = RenewalLifecycle() }
+    }
+
+    /// Server expiry is driven by an actual lifecycle event, never a timer or
+    /// request count. A cold launch must not renew before progress is entered.
+    @MainActor private final class RenewalLifecycle: NSObject {
+        private var wasBackgrounded = false
+        override init() {
+            super.init()
+            NotificationCenter.default.addObserver(self, selector: #selector(didBackground(_:)),
+                name: UIApplication.didEnterBackgroundNotification, object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(willForeground(_:)),
+                name: UIApplication.willEnterForegroundNotification, object: nil)
+        }
+        @objc private func didBackground(_ notification: Notification) { wasBackgrounded = true }
+        @objc private func willForeground(_ notification: Notification) {
+            if wasBackgrounded { UITestBackend.sessionExpired = true }
+        }
+    }
     static func data(_ path: String, method: String, body: Data?, token: String) throws -> Data {
         if ProcessInfo.processInfo.arguments.contains("--offline-save"), path == "recipes", method == "POST" { throw APIError.unavailable }
         if path == "auth/mobile/refresh" {
@@ -14,7 +38,7 @@ import OnionaryCore
                 "refresh_token": "renewed-refresh", "access_expires_at": Date().addingTimeInterval(14 * 86400).timeIntervalSince1970,
                 "session_expires_at": Date().addingTimeInterval(42 * 86400).timeIntervalSince1970])
         }
-        if ProcessInfo.processInfo.arguments.contains("--renew-session"), token == "test" { throw APIError.unauthorized }
+        if sessionExpired, token == "test" { throw APIError.unauthorized }
         if ProcessInfo.processInfo.arguments.contains("--expired-session"), token == "test" { throw APIError.unauthorized }
         let input = try body.map { try JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? nil
         var result: Any = [:]

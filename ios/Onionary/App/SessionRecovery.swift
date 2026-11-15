@@ -4,7 +4,7 @@ import OnionaryCore
 private struct SessionRecovery: ViewModifier {
     @Bindable var store: AppStore
     func body(content: Content) -> some View {
-        content.safeAreaInset(edge: .top, spacing: 0) {
+        VStack(spacing: 0) {
             if store.needsReauthentication {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Sign in again to sync. Your progress and draft are safe.", systemImage: "key.fill")
@@ -21,6 +21,7 @@ private struct SessionRecovery: ViewModifier {
                 }.padding().frame(maxWidth: .infinity, alignment: .leading)
                     .background(.regularMaterial).accessibilityIdentifier("session-recovery")
             }
+            content
         }
     }
 }

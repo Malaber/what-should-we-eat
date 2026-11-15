@@ -235,5 +235,6 @@
   "deletion.done": "Account deleted",
   "deletion.success": "Your account has been permanently deleted. You are signed out.",
   "deletion.home": "Back to Onionary",
-  "deletion.mismatch": "Email confirmation does not match your account."
+  "deletion.mismatch": "Email confirmation does not match your account.",
+  "recipe.group": "Group (optional)"
 }

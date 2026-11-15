@@ -91,6 +91,8 @@
 "Set how many portions the original recipe serves. Use + and − for whole-portion changes, or type any amount, such as 1.53 or 4.32." = "Lege die ursprüngliche Portionszahl fest. Nutze + und − für ganze Portionen oder gib eine Menge wie 1,53 oder 4,32 ein.";
 "Settings" = "Einstellungen";
 "Shopping list" = "Einkaufsliste";
+"Move %@ up" = "%@ nach oben bewegen";
+"Move %@ down" = "%@ nach unten bewegen";
 "Sign in with a passkey" = "Mit Passkey anmelden";
 "Sign out" = "Abmelden";
 "Steps" = "Schritte";
@@ -182,6 +184,7 @@
 
 "Ingredient amount help" = "Hilfe zu Zutatenmengen";
 "Browse by tag" = "Nach Tag stöbern";
+"Clear filter" = "Filter zurücksetzen";
 "Find a tag" = "Tag suchen";
 "Tags" = "Tags";
 "Cooking mode" = "Kochmodus";
@@ -231,3 +234,84 @@
 "Account deleted" = "Konto gelöscht";
 "Your account has been permanently deleted. You are signed out." = "Dein Konto wurde dauerhaft gelöscht. Du bist abgemeldet.";
 "Deleting your account permanently removes passkeys, sessions and kitchens without other members, including recipes and shared links. Shared kitchens remain for their other members. This cannot be undone." = "Dein Konto, Passkeys, Sitzungen und Küchen ohne weitere Mitglieder werden dauerhaft gelöscht, einschließlich Rezepten und Freigabelinks. Geteilte Küchen bleiben für ihre anderen Mitglieder erhalten. Dies kann nicht rückgängig gemacht werden.";
+
+"Suggested tags" = "Vorgeschlagene Tags";
+
+"Recipe language" = "Rezeptsprache";
+"Detect input language" = "Eingabesprache erkennen";
+
+"Show less" = "Weniger anzeigen";
+"Show more" = "Mehr anzeigen";
+
+"Recipe mode" = "Rezeptmodus";
+"Format existing recipe" = "Vorhandenes Rezept formatieren";
+"Create a recipe" = "Rezept entwickeln";
+"Keep the supplied recipe. Only organize it into editable fields." = "Das eingegebene Rezept beibehalten und nur in bearbeitbare Felder gliedern.";
+"Create a new recipe from your ideas and ingredients." = "Aus deinen Ideen und Zutaten ein neues Rezept entwickeln.";
+
+"Food icon" = "Essenssymbol";
+
+"Accent color" = "Akzentfarbe";
+"Onion" = "Zwiebel";
+"Herb" = "Kräuter";
+"Ocean" = "Ozean";
+"Paprika" = "Paprika";
+
+"Ingredient group (optional)" = "Zutatengruppe (optional)";
+"Instruction group (optional)" = "Schrittgruppe (optional)";
+
+"Cook with what you have" = "Kochen mit deinen Vorräten";
+"Your pantry" = "Deine Vorräte";
+"Reset" = "Zurücksetzen";
+"Remove ingredient %@" = "%@ entfernen";
+"Enter an ingredient name." = "Gib eine Zutat ein.";
+"What do you have?" = "Was hast du da?";
+"3 bananas and 2 eggs" = "3 Bananen und 2 Eier";
+"One ingredient per line, or separate with ‘and’. Include quantities and units when known." = "Eine Zutat pro Zeile oder mit ‚und‘ trennen. Mengen und Einheiten angeben, wenn bekannt.";
+"Matching recipes" = "Passende Rezepte";
+"Available" = "Vorhanden";
+"Missing" = "Fehlt";
+"Not enough" = "Zu wenig";
+"Check quantity or unit" = "Menge oder Einheit prüfen";
+"Quantities refer to the original recipe. Only identical units are compared. Check your supplies before cooking." = "Mengen beziehen sich auf das Originalrezept. Nur gleiche Einheiten werden verglichen. Prüfe deine Vorräte vor dem Kochen.";
+
+"Saved drafts" = "Gespeicherte Entwürfe";
+"Delete draft" = "Entwurf löschen";
+"Delete saved draft?" = "Gespeicherten Entwurf löschen?";
+"Export draft" = "Entwurf exportieren";
+"Reload cooking recipe?" = "Kochrezept neu laden?";
+"Reload and reset progress" = "Neu laden und Fortschritt zurücksetzen";
+"Keep cooking progress" = "Kochfortschritt behalten";
+"The saved recipe changed. Reloading clears checks, portion adjustments and tap history for this cooking adventure." = "Das gespeicherte Rezept wurde geändert. Beim Neuladen werden Häkchen, Portionsanpassungen und Verlauf dieses Kochabenteuers zurückgesetzt.";
+"Could not save recovery copy. Export your draft before closing." = "Die Sicherung konnte nicht gespeichert werden. Exportiere deinen Entwurf vor dem Schließen.";
+"Reconnect to the original account before saving this draft." = "Melde dich beim ursprünglichen Konto an, bevor du diesen Entwurf speicherst.";
+"Save not confirmed. Your draft stays here. Check the server before retrying to avoid duplicates." = "Speichern nicht bestätigt. Dein Entwurf bleibt hier. Prüfe den Server vor einem weiteren Versuch, um Duplikate zu vermeiden.";
+
+"Recipe preview" = "Rezeptvorschau";
+"Preview a recipe without changing your cooking progress." = "Sieh dir ein Rezept an, ohne deinen Kochfortschritt zu ändern.";
+"Cook this recipe" = "Dieses Rezept kochen";
+"Resume cooking" = "Weiterkochen";
+"Generate shopping list" = "Einkaufsliste erstellen";
+"Refresh shopping list" = "Einkaufsliste aktualisieren";
+"Shopping checks and cooking progress are saved locally on this device, not synchronized between devices." = "Einkaufshäkchen und Kochfortschritt werden lokal auf diesem Gerät gespeichert und nicht zwischen Geräten synchronisiert.";
+"Reorder ingredient" = "Zutat umsortieren";
+"Move up" = "Nach oben";
+"Move down" = "Nach unten";
+"Delete ingredient" = "Zutat löschen";
+"Delete step" = "Schritt löschen";
+
+"Reorder step" = "Schritt umsortieren";
+
+"Refreshing recipes" = "Rezepte werden aktualisiert";
+"Recipes loaded" = "Rezepte geladen";
+
+"Reorder" = "Umsortieren";
+"Reorder ingredients" = "Zutaten umsortieren";
+"Reorder steps" = "Schritte umsortieren";
+"Ingredient options" = "Zutatenoptionen";
+"Step options" = "Schrittoptionen";
+"Add tag" = "Tag hinzufügen";
+"Remove tag %@" = "Tag %@ entfernen";
+"Use up to 100 characters per tag." = "Ein Tag darf bis zu 100 Zeichen enthalten.";
+"One emoji (optional)" = "Ein Emoji (optional)";
+"Enter a single emoji." = "Gib ein einzelnes Emoji ein.";
