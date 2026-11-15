@@ -355,6 +355,11 @@ failure traces both reached the Simulator accessibility handshake and stalled
 before a test case or app launch. Local `test.sh` still builds and runs tests
 in one command.
 
+The marketing fixture uses the same alphabetical ordering as the app. Keep
+the featured recipe near the top so it is visible in the first recipe-book
+capture and can be tapped on the shorter Duo cover. The test checks its
+control against the real receiving window before tapping.
+
 Local release/test profiles run sequentially and reuse one build cache while
 retaining separate xcresults. Keep the 8 GiB test-entry and 6 GiB archive guards;
 report GB/GiB accurately. Finder may include purgeable capacity, and APFS/Time

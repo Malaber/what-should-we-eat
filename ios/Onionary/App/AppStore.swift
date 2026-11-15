@@ -448,7 +448,9 @@ final class AppStore {
             // Keep screenshot appearance local to this Debug fixture. A global
             // simulator appearance RPC can race cold SpringBoard startup.
             UserDefaults.standard.set("light", forKey: "appearance")
-            let names = ["Lemon & cheese pasta", "Roasted tomato soup", "Crispy chickpea bowls", "Mushroom risotto", "Apple cinnamon pancakes", "Herby potato salad"]
+            // Keep the recipe featured in the cooking captures near the top
+            // of the alphabetic book on the Duo's shorter cover display.
+            let names = ["Creamy lemon pasta", "Roasted tomato soup", "Crispy chickpea bowls", "Mushroom risotto", "Apple cinnamon pancakes", "Herby potato salad"]
             let recipes: [[String: Any]] = names.enumerated().map { index, name in
                 var recipe = UITestBackend.recipe
                 recipe["id"] = index + 1

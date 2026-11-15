@@ -45,3 +45,9 @@ All four focused iPhone tests passed on iOS 27.0, including the 40 g to 80 g
 ingredient badge and shared undo. Swift package tests and the arm64 simulator
 build passed. The test archive was extracted into a separate location and the
 compiled plan validated there before native execution.
+
+The iPad passed all 32 native tests from that extracted build. Local Duo
+testing found that the featured marketing recipe sorted below its shorter cover.
+After updating the demo catalogue, the native test captured all four scenes
+and the exporter validated the cover and unfolded images. This Mac ran Duo
+on the iOS 27.1 RC. The GitHub job pins the stable runtime.

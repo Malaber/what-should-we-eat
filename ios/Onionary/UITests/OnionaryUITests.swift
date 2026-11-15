@@ -473,7 +473,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(matches.waitForExistence(timeout: 5))
         app.buttons["close-tag-recipes"].tap()
         XCTAssertTrue(matches.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].exists)
+        XCTAssertTrue(app.staticTexts["Creamy lemon pasta"].exists)
     }
 
     @MainActor
