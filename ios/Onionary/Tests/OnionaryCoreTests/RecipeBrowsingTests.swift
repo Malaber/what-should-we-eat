@@ -25,4 +25,11 @@ final class RecipeBrowsingTests: XCTestCase {
         let recipe = try JSONDecoder().decode(Recipe.self, from: Data(#"{"id":1,"householdId":1,"name":"Old","ingredients":[],"instructionSteps":[]}"#.utf8))
         XCTAssertTrue(RecipeBrowsing.categories([recipe]).isEmpty)
     }
+
+    func testTagNamesDoNotDependOnRecipeOrder() {
+        let tags = [RecipeTag(id: 1, name: "Vegan"), .init(id: 2, name: "Meal prep"), .init(id: 3, name: " ")]
+        XCTAssertEqual(RecipeBrowsing.tagNames(tags), ["Meal prep", "Vegan"])
+        XCTAssertEqual(RecipeBrowsing.tagNames(Array(tags.reversed())), ["Meal prep", "Vegan"])
+        XCTAssertEqual(RecipeBrowsing.tagNames(nil), [])
+    }
 }

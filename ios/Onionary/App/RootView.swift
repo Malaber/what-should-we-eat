@@ -250,8 +250,9 @@ struct RecipesView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
                     if !subtitle.isEmpty { Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary) }
-                    if let tags = recipe.tags, !tags.isEmpty {
-                        Text(tags.map(\.name).joined(separator: " · "))
+                    let tags = RecipeBrowsing.tagNames(recipe.tags)
+                    if !tags.isEmpty {
+                        Text(tags.joined(separator: " · "))
                             .font(.caption).foregroundStyle(onion).fixedSize(horizontal: false, vertical: true)
                     }
                 }

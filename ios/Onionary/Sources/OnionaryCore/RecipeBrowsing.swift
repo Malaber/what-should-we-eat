@@ -22,7 +22,18 @@ public enum RecipeBrowsing {
     public static func categories(_ recipes: [Recipe], query: String = "") -> [String] {
         let names = recipes.flatMap { ($0.tags ?? []).map(\.name) }
         return Array(Set(names)).filter { query.isEmpty || $0.localizedStandardContains(query) }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            .sorted(by: nameOrder)
+    }
+
+    public static func tagNames(_ tags: [RecipeTag]?) -> [String] {
+        (tags ?? []).map(\.name)
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .sorted(by: nameOrder)
+    }
+
+    private static func nameOrder(_ first: String, _ second: String) -> Bool {
+        let order = first.localizedStandardCompare(second)
+        return order == .orderedSame ? first < second : order == .orderedAscending
     }
 
     public static func recipes(_ recipes: [Recipe], query: String = "", category: String? = nil,

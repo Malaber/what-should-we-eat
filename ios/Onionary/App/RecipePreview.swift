@@ -13,7 +13,7 @@ struct RecipePreview: View {
                 Text(recipe.name).font(.title2.bold())
                 if let servings = recipe.servings { LabeledContent("Original recipe serves", value: Numbers.display(servings, locale: L10n.locale)) }
                 if let minutes = recipe.totalTimeMin { LabeledContent("Total minutes", value: String(minutes)) }
-                let tags = (recipe.tags ?? []).map(\.name).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                let tags = RecipeBrowsing.tagNames(recipe.tags)
                 Text(tags.isEmpty ? L10n.text("No tags") : tags.joined(separator: " · ")).foregroundStyle(.secondary)
                 Button {
                     store.visit(recipe); cook()
