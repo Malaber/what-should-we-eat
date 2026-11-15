@@ -14,6 +14,8 @@
 - [x] Recover the v0.7.0 iPhone Duo captures and include verified Duo screenshots in future GitHub releases.
 - [x] Promote the reachable release-candidate version on a normal main release and preserve explicit version bumps.
 
+- [ ] Capture and frame the same four Duo marketing scenes as on iPhone and iPad. Publish a separate shared creative ZIP so artwork appears only once.
+
 ## Verification
 
 - Python 3.14 test suite, Chromium desktop and iPhone-size browser suite, Swift package tests and HTML formatting.
