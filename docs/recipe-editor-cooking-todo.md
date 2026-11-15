@@ -16,6 +16,14 @@
 
 - [x] Capture and frame the same four Duo marketing scenes as on iPhone and iPad. Publish a separate shared creative ZIP so artwork appears only once.
 
+- [ ] Explain cooking mode on activation and deactivation with accessible motion and status feedback.
+- [ ] Rename Ocean to Blueberry, expand the food palette, and update accent-dependent views immediately.
+- [ ] Offer recipe sort criteria for newest, alphabet, ingredients and time with a separate reverse control.
+- [ ] Use 🍽️ as the empty emoji field prompt.
+- [ ] Use a consistent tag order across recipe rows and preview.
+- [ ] Show direct delete buttons for ingredient and step rows.
+- [ ] Adjust preview portions, show scaled quantities, and apply them when cooking starts or resumes.
+
 ## Verification
 
 - Python 3.14 test suite, Chromium desktop and iPhone-size browser suite, Swift package tests and HTML formatting.
