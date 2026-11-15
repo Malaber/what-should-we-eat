@@ -11,8 +11,8 @@
 - [x] Preserve Chefkoch group headings and generate ingredient amount placeholders from unambiguous imported quantities.
 - [x] Render scalable ingredient badges in cooking steps and synchronize checks with the ingredient list.
 
-- [ ] Recover the v0.7.0 iPhone Duo captures and include verified Duo screenshots in future GitHub releases.
-- [ ] Promote the reachable release-candidate version on a normal main release and preserve explicit version bumps.
+- [x] Recover the v0.7.0 iPhone Duo captures and include verified Duo screenshots in future GitHub releases.
+- [x] Promote the reachable release-candidate version on a normal main release and preserve explicit version bumps.
 
 ## Verification
 
@@ -20,3 +20,4 @@
 - Both supplied Chefkoch pages parsed locally. Fixture tests cover grouped ingredient tables and a step heading folded into the previous paragraph.
 - The PR's checks cover the iPhone, iPad and iPhone Duo suites, archive and screenshot jobs.
 - Apple Intelligence model output requires a supported device with the model ready. The automated tests cover URL handling and page extraction.
+- Duo exports were validated against the original v0.7.0 CI result. Release tests cover promotion, unrelated RC tags, explicit bumps and immutable tags.

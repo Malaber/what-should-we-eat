@@ -105,6 +105,10 @@ Like Planini, Git tags are the version authority: stable `v0.2.0`, development
 release candidates `v0.2.0-rc.1`, `v0.2.0-rc.2`, etc. We explicitly tag releases;
 ordinary commits use `<base>-dev.<sha>`. Stable tags publish `latest`; RC tags do
 not. The moving `development` image only tracks successful branch pipelines.
+On main, CI promotes the newest reachable RC when its version meets or exceeds
+the usual next minor release. Otherwise it bumps the latest stable minor version.
+The `release:patch` and `release:major` PR labels bump the latest stable release
+explicitly. CI reuses an existing stable tag on the exact commit when rerun.
 
 ```sh
 git tag -a v0.2.0-rc.2 -m 'Onionary 0.2.0 release candidate 2'
@@ -139,12 +143,15 @@ native CI suite (iPhone and 13-inch iPad), using fictional recipe data and the
 actual system status bar. Both device suites must pass. The reusable App Store
 workflow consumes those same captures, renders artwork through the pinned
 Malaber/github-workflows renderer, and creates the existing device bundles.
-It does not boot another simulator or run the capture test a second time.
+The Duo job exports its outer portrait and inner landscape from the passing
+fold regression. It applies the screenshot's EXIF orientation and preserves the
+actual screen pixels when padding the known one-pixel XCTest rounding difference.
+All captures come from the normal device suites.
 
 Download each workflow artifact's `en-US/` images. Release bundles contain PNGs
 and editable SVG artwork, with validated dimensions. Main-release tags also
-attach `onionary-appstore-iphone-en-US.zip` and
-`onionary-appstore-ipad-en-US.zip` to the matching GitHub Release. RC commits
+attach `onionary-appstore-iphone-en-US.zip`, `onionary-appstore-ipad-en-US.zip`
+and `onionary-appstore-duo-en-US.zip` to the matching GitHub Release. RC commits
 outside main remain workflow artifacts. A rerun may replace generated assets
 for the same immutable tag; it never moves the tag. No customer data or backend
 credentials are used.
@@ -154,6 +161,7 @@ Local export from an already successful native suite:
 ```sh
 python3 execution/marketing_screenshots.py --result-bundle /path/to/Onionary.xcresult --family iphone --output .tmp/marketing-iphone
 python3 execution/marketing_screenshots.py --result-bundle /path/to/iPad/Onionary.xcresult --family ipad --output .tmp/marketing-ipad
+python3 execution/marketing_screenshots.py --result-bundle /path/to/duo/testRecipePreviewAndChecklistSurviveFolds/Onionary.xcresult --family duo --output .tmp/marketing-duo
 ```
 
 Use `--defer-creative` when the pinned shared workflow will render the header and
