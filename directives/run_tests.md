@@ -381,6 +381,13 @@ save. A three-ingredient fixture lets one upward and one downward move leave
 a different order to verify. Unchanged edit cancellation is an independent
 case that returns to the library and checks for the absence of a draft.
 
+Check the exact saved title in the recipe list after saving the active
+recipe. Repeated title-field accessibility reads immediately after typing
+consumed over a minute on the RC 31 iPad run. Step amount tests open the
+same editor directly from Preview and finish after confirming insertion
+and dismissal of the keyboard action. The separate draft test checks
+editor cancellation.
+
 The active-recipe edit case starts with one checked ingredient in a real
 `Kitchen` adventure. Separate checklist scenarios exercise setting that state
 through taps. This keeps the edit test focused on save, the reload decision
