@@ -42,14 +42,23 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
-        app.buttons["category-Vegetarian"].tap()
-        app.buttons["category-Quick & easy"].tap()
-        XCTAssertEqual(app.buttons["category-Vegetarian"].value as? String, "Selected")
-        XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Selected")
+        let vegetarian = app.buttons["category-Vegetarian"]
+        let quick = app.buttons["category-Quick & easy"]
+        let comfort = app.buttons["category-Comfort food"]
+        XCTAssertTrue(vegetarian.label.contains("6 recipes"))
+        XCTAssertTrue(comfort.label.contains("3 recipes"))
+        vegetarian.tap()
+        quick.tap()
+        XCTAssertEqual(vegetarian.value as? String, "Selected")
+        XCTAssertEqual(quick.value as? String, "Selected")
+        XCTAssertTrue(vegetarian.label.contains("3 recipes"))
+        XCTAssertTrue(comfort.label.contains("0 recipes"))
         app.buttons["clear-tag-filter"].tap()
         XCTAssertTrue(app.buttons["clear-tag-filter"].waitForNonExistence(timeout: 5))
-        XCTAssertEqual(app.buttons["category-Vegetarian"].value as? String, "Not selected")
-        XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Not selected")
+        XCTAssertEqual(vegetarian.value as? String, "Not selected")
+        XCTAssertEqual(quick.value as? String, "Not selected")
+        XCTAssertTrue(vegetarian.label.contains("6 recipes"))
+        XCTAssertTrue(comfort.label.contains("3 recipes"))
     }
 
     @MainActor

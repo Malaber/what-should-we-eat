@@ -21,6 +21,22 @@ final class RecipeBrowsingTests: XCTestCase {
         XCTAssertEqual(RecipeBrowsing.recipes(recipes, sort: .newest).map(\.id), [1, 30, 40])
         XCTAssertEqual(RecipeBrowsing.recipes(recipes, sort: .newest, reversed: true).map(\.id), [40, 30, 1])
     }
+    func testCategoryCountsUseCurrentSearchAndTagMatches() throws {
+        let recipes = try JSONDecoder().decode([Recipe].self, from: Data("""
+        [
+          {"id":1,"householdId":1,"name":"Bean stew","tags":[{"id":1,"name":"Vegetarian"},{"id":2,"name":"Quick"}],"ingredients":[],"instructionSteps":[]},
+          {"id":2,"householdId":1,"name":"Bean roast","tags":[{"id":1,"name":"Vegetarian"}],"ingredients":[],"instructionSteps":[]},
+          {"id":3,"householdId":1,"name":"Fish stew","tags":[{"id":2,"name":"Quick"},{"id":3,"name":"Fish"}],"ingredients":[],"instructionSteps":[]}
+        ]
+        """.utf8))
+        let active = RecipeBrowsing.recipes(recipes, categories: ["Vegetarian"])
+        XCTAssertEqual(RecipeBrowsing.categoryCount("Vegetarian", in: active), 2)
+        XCTAssertEqual(RecipeBrowsing.categoryCount("quick", in: active), 1)
+        XCTAssertEqual(RecipeBrowsing.categoryCount("Fish", in: active), 0)
+        let searched = RecipeBrowsing.recipes(recipes, query: "stew", categories: ["Vegetarian"])
+        XCTAssertEqual(RecipeBrowsing.categoryCount("Vegetarian", in: searched), 1)
+        XCTAssertEqual(RecipeBrowsing.categoryCount("Quick", in: searched), 1)
+    }
     func testOldSavedRecipeWithoutTagsStillDecodes() throws {
         let recipe = try JSONDecoder().decode(Recipe.self, from: Data(#"{"id":1,"householdId":1,"name":"Old","ingredients":[],"instructionSteps":[]}"#.utf8))
         XCTAssertTrue(RecipeBrowsing.categories([recipe]).isEmpty)

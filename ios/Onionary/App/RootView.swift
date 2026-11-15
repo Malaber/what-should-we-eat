@@ -101,7 +101,9 @@ struct RecipesView: View {
         }.navigationSplitViewStyle(.balanced)
     }
     private var sidebar: some View {
-        List {
+        let matchingRecipes = filtered
+        let hasFilters = !search.isEmpty || !selectedTags.isEmpty
+        return List {
             if !store.savedDrafts.isEmpty {
                 Section("Saved drafts") {
                     ForEach(store.savedDrafts) { saved in
@@ -133,7 +135,7 @@ struct RecipesView: View {
                                     Button { if !selectedTags.insert(tag).inserted { selectedTags.remove(tag) } } label: {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Label(tag, systemImage: isSelected ? "checkmark.circle.fill" : "tag.fill").font(.headline).lineLimit(1)
-                                            Text("\(RecipeBrowsing.recipes(store.kitchen.recipes, category: tag).count) recipes")
+                                            Text("\(RecipeBrowsing.categoryCount(tag, in: matchingRecipes)) recipes")
                                                 .font(.caption).foregroundStyle(.secondary)
                                         }.padding(.horizontal, 12).padding(.vertical, 8)
                                             .frame(minWidth: 140, alignment: .leading)
@@ -175,7 +177,7 @@ struct RecipesView: View {
                 }
             }
             Section {
-                ForEach(filtered) { recipe in recipeRow(recipe, subtitle: recipe.totalTimeMin.map { "\($0) min" } ?? "") }
+                ForEach(matchingRecipes) { recipe in recipeRow(recipe, subtitle: recipe.totalTimeMin.map { "\($0) min" } ?? "") }
             } header: {
                 HStack {
                     Text("Your recipes")
@@ -198,9 +200,9 @@ struct RecipesView: View {
                     .accessibilityIdentifier("reverse-recipe-sort")
                 }
             }
-            if filtered.isEmpty {
-                ContentUnavailableView(LocalizedStringKey(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes"),
-                    systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
+            if matchingRecipes.isEmpty {
+                ContentUnavailableView(LocalizedStringKey(hasFilters ? "No matching recipes" : "Your recipe book is waiting"),
+                    systemImage: "book.closed", description: Text(LocalizedStringKey(hasFilters ? "Try other tags or a different search." : "Add recipes in your web kitchen, then refresh here.")))
             }
         }.accessibilityIdentifier("recipe-list")
             .accessibilityValue(Text(store.refreshing ? "Refreshing recipes" : "Recipes loaded"))

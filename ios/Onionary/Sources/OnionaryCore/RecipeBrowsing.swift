@@ -31,6 +31,14 @@ public enum RecipeBrowsing {
             .sorted(by: nameOrder)
     }
 
+    public static func categoryCount(_ category: String, in matchingRecipes: [Recipe]) -> Int {
+        matchingRecipes.count { containsCategory(category, in: ($0.tags ?? []).map(\.name)) }
+    }
+
+    private static func containsCategory(_ category: String, in tags: [String]) -> Bool {
+        tags.contains { $0.localizedCaseInsensitiveCompare(category) == .orderedSame }
+    }
+
     private static func nameOrder(_ first: String, _ second: String) -> Bool {
         let order = first.localizedStandardCompare(second)
         return order == .orderedSame ? first < second : order == .orderedAscending
@@ -42,7 +50,7 @@ public enum RecipeBrowsing {
         let filtered = recipes.filter { recipe in
             let tags = (recipe.tags ?? []).map(\.name)
             guard category == nil || tags.contains(category!) else { return false }
-            guard categories.allSatisfy({ selected in tags.contains { $0.localizedCaseInsensitiveCompare(selected) == .orderedSame } }) else { return false }
+            guard categories.allSatisfy({ containsCategory($0, in: tags) }) else { return false }
             let searchable = ([recipe.name] + tags + recipe.ingredients.map(\.name)).joined(separator: " ")
             return terms.allSatisfy { searchable.localizedStandardContains($0) }
         }
