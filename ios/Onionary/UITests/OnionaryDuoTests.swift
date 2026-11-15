@@ -176,8 +176,9 @@ final class OnionaryDuoTests: OnionaryUITestCase {
     @MainActor func testRecipeDraftSurvivesFolds() throws {
         let app = try launchCookingFixture()
         try startCooking(in: app)
-        try pose(180, in: app)
-        try tap("Cooking options", in: app)
+        // The preview has a direct editor entry. The separate cooking-options
+        // test covers the menu, whose animation can stall Duo's XCTest session.
+        try tap("Recipes", in: app)
         try tap("Edit recipe", in: app)
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
@@ -186,12 +187,15 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         app.typeText(" Duo draft")
         XCTAssertTrue(UIReadiness.waitForValue(expected, matching: app.textFields.matching(identifier: "Name")), "Complete draft input must commit before folding")
-        XCTAssertEqual(name.value as? String, expected)
-        for angle in [0, 90, 180] {
+        let keyboard = app.keyboards.element(boundBy: 0)
+        app.buttons["Done"].tap()
+        XCTAssertTrue(keyboard.waitForNonExistence(timeout: 5))
+        for angle in [180, 90, 0, 180] {
             try pose(angle, in: app)
             XCTAssertEqual(app.textFields["Name"].value as? String, expected)
         }
         try tap("Cancel", in: app)
+        try tap("Cooking", in: app)
         XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
         XCTAssertTrue(app.staticTexts["2× recipe"].exists)
     }

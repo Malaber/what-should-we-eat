@@ -427,6 +427,12 @@ predicate: the predicate's first evaluation alone can consume its deadline.
 The current Duo SDK dropped TabContent accessibility identifiers after folding
 in a local experiment, while retaining native tab labels. Keep the existing
 app tab rendering and query those labels; do not add ID/label fallback retries.
+A tag run of `v0.6.0-rc.30` stalled on cooking-menu animation notifications and
+remote keyboard queries. The menu also stalled locally on the cover display.
+Use the recipe preview's direct Edit action in the Duo fold case. The standard
+suite covers the cooking menu separately. Enter the draft on the cover
+display, dismiss the keyboard, and assert the edited name through the real
+folds. Cancel, return to Cooking, and check the original checklist and portions.
 A failed wait captures one coherent hierarchy and normal XCTest attachments.
 Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
