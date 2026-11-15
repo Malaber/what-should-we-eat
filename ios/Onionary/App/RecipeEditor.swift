@@ -359,10 +359,11 @@ struct ImportRecipeView: View {
                             busy = true; error = nil; defer { busy = false }
                             do { draft = try await store.importDraft(link) }
                             catch { self.error = L10n.text(error.localizedDescription) }
-                        } }.disabled(busy)
+                        } }.disabled(busy).accessibilityIdentifier("review-recipe-import")
                         if busy { ProgressView() }
                         if let error { Text(error).foregroundStyle(.red) }
-                    }.connectionRecovery(store).dismissibleKeyboard().navigationTitle("Import recipe")
+                    }.accessibilityIdentifier("recipe-import-form")
+                        .connectionRecovery(store).dismissibleKeyboard().navigationTitle("Import recipe")
                         .interactiveDismissDisabled(busy)
                         .toolbar { Button("Cancel") { dismiss() } }
                 }

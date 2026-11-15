@@ -443,6 +443,10 @@ assertions share one simulator because they never launch or change the app.
 Run 43713865487 showed the same XCTest animation-idle stalls on Undo and Redo
 after the final reopen. Tap Undo at 90° and Redo on the cover. Check both results
 across the next display switch and retain the full sequence and screenshots.
+The iPad import test scopes URL controls to the actual form and ends when the
+imported recipe name is visible in the editor. Each next test launches a reset
+fixture. Run 43716190952 passed the import assertions and hit its allowance
+during the redundant cleanup tap.
 Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 

@@ -604,14 +604,14 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Recipes", in: app)
         app.buttons["add-recipe"].tap()
         app.buttons["Import recipe"].tap()
-        XCTAssertTrue(app.textFields["recipe-import-url"].waitForExistence(timeout: 5))
-        app.textFields["recipe-import-url"].tap()
+        let form = app.collectionViews["recipe-import-form"]
+        let url = form.textFields.matching(identifier: "recipe-import-url")
+        url.element.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         app.typeText("https://www.chefkoch.de/rezepte/123")
-        XCTAssertTrue(UIReadiness.waitForValue("https://www.chefkoch.de/rezepte/123", matching: app.textFields.matching(identifier: "recipe-import-url")))
-        app.buttons["Review recipe"].tap()
-        XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
-        app.buttons["Cancel"].tap()
+        XCTAssertTrue(UIReadiness.waitForValue("https://www.chefkoch.de/rezepte/123", matching: url))
+        form.buttons["review-recipe-import"].tap()
+        XCTAssertTrue(UIReadiness.waitForValue("Lemon & cheese pasta", matching: app.textFields.matching(identifier: "Name")))
     }
 
     @MainActor
