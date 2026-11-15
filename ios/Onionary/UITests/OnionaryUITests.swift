@@ -196,6 +196,16 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Recipes", in: app)
         let saved = app.collectionViews["recipe-list"].buttons.matching(identifier: "saved-draft-My offline soup").element(boundBy: 0)
         XCTAssertTrue(saved.waitForExistence(timeout: 5))
+        let viewChanges = app.collectionViews["recipe-list"].buttons["View draft changes"]
+        XCTAssertTrue(viewChanges.exists)
+        viewChanges.tap()
+        let changes = app.navigationBars["Draft changes"]
+        XCTAssertTrue(changes.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Name"].exists)
+        XCTAssertTrue(app.staticTexts["My offline soup"].exists)
+        XCTAssertFalse(app.staticTexts["No recipe changes"].exists)
+        changes.buttons["Done"].tap()
+        XCTAssertTrue(changes.waitForNonExistence(timeout: 5))
         saved.tap()
         // One native query checks both existence and exact restored text.
         XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")), "Cold restoration must retain the complete draft name")
