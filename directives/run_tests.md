@@ -434,6 +434,12 @@ suite covers the cooking menu separately. Enter the draft on the cover
 display, dismiss the keyboard, and assert the edited name through the real
 folds. Cancel, return to Cooking, and check the original checklist and portions.
 A failed wait captures one coherent hierarchy and normal XCTest attachments.
+The Duo shopping case refreshes on the cover display after closing the hinge.
+Confirm the new fixture item appears and the existing check remains selected
+before reopening, then verify both on the inner display. XCTest on run
+43707934313 waited more than two minutes for animation-idle notifications
+around the refresh just after reopening. Pure hinge input and geometry
+assertions share one simulator because they never launch or change the app.
 Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 
