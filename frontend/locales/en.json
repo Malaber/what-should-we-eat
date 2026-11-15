@@ -250,5 +250,9 @@
   "recipe.ungrouped": "Without group",
   "recipe.move-up": "Move up",
   "recipe.move-down": "Move down",
-  "recipe.remove-row": "Remove row"
+  "recipe.remove-row": "Remove row",
+  "share.cook": "Cook now",
+  "share.stop-cooking": "Exit cooking mode",
+  "share.ingredients": "Ingredients",
+  "share.steps": "Steps"
 }

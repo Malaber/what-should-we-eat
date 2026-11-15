@@ -83,6 +83,13 @@ def test_recipe_share_link_preview_and_revoke(page):
     page.goto(result['url'])
     expect(page.get_by_role('heading', name='Shared soup')).to_be_visible()
     assert '#' not in page.url
+    page.get_by_role('button', name='Cook now').click()
+    page.get_by_role('checkbox', name='2 pieces Onion').check()
+    page.get_by_role('checkbox', name='Chop').check()
+    page.reload()
+    expect(page.get_by_role('checkbox', name='2 pieces Onion')).to_be_checked()
+    expect(page.get_by_role('checkbox', name='Chop')).to_be_checked()
+    assert result['url'].split('#')[-1] not in page.evaluate("localStorage.getItem('onionary.shared-cooking')")
     page.evaluate("""async id => {await fetch('/recipe-shares/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+localStorage.getItem('wswe_token')}})}""",result['id'])
     page.goto(result['url'])
     expect(page.locator('#error')).to_contain_text('expired')

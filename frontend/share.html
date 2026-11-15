@@ -8,6 +8,7 @@
     <script src="/i18n.js"></script>
     <title>Onionary · Recipe copy</title>
     <link rel="stylesheet" href="/passkey.css" />
+    <script src="/ingredient-placeholders.js" defer></script>
     <script src="/share.js" defer></script>
   </head>
   <body class="auth-surface">
@@ -16,7 +17,8 @@
       <p data-i18n="share.explanation"></p>
       <p id="error" role="alert"></p>
       <section id="recipe"></section>
-      <button id="copy" data-i18n="share.copy"></button>
+      <button id="cook-now" hidden data-i18n="share.cook">Cook now</button>
+      <button id="copy" hidden data-i18n="share.copy"></button>
       <p id="status" role="status"></p>
     </main>
   </body>

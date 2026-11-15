@@ -248,5 +248,9 @@
   "recipe.ungrouped": "Ohne Gruppe",
   "recipe.move-up": "Nach oben verschieben",
   "recipe.move-down": "Nach unten verschieben",
-  "recipe.remove-row": "Zeile entfernen"
+  "recipe.remove-row": "Zeile entfernen",
+  "share.cook": "Jetzt kochen",
+  "share.stop-cooking": "Kochmodus verlassen",
+  "share.ingredients": "Zutaten",
+  "share.steps": "Schritte"
 }

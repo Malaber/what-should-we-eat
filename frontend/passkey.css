@@ -12,5 +12,11 @@ dialog { max-width: 420px; border: 1px solid var(--auth-border); border-radius: 
 #keys p { flex: 1 1 100%; margin: 0; }
 #keys button { width: auto; padding: .6rem 1rem; margin: .25rem 0; }
 
+.shared-recipe-list { padding-inline-start: 1.5rem; overflow-wrap: anywhere; }
+.shared-recipe-list li { padding: .55rem 0; }
+.shared-recipe-list label { display: flex; align-items: baseline; gap: .7rem; cursor: pointer; }
+.shared-recipe-list input[type="checkbox"] { display: inline-block; flex: 0 0 auto; width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--auth-accent); }
+.shared-recipe-list input:checked + span { text-decoration: line-through; color: var(--auth-muted); }
+
 .auth-surface .danger { display: inline-block; background: #b42318; color: #fff; padding: .85rem 1.2rem; border: 2px solid #b42318; border-radius: .7rem; font-weight: 700; margin-block: 1rem; }
 .auth-surface .danger:hover { background: #8f1c13; color: #fff; }
