@@ -14,7 +14,7 @@
 - [x] Recover the v0.7.0 iPhone Duo captures and include verified Duo screenshots in future GitHub releases.
 - [x] Promote the reachable release-candidate version on a normal main release and preserve explicit version bumps.
 
-- [ ] Capture and frame the same four Duo marketing scenes as on iPhone and iPad. Publish a separate shared creative ZIP so artwork appears only once.
+- [x] Capture and frame the same four Duo marketing scenes as on iPhone and iPad. Publish a separate shared creative ZIP so artwork appears only once.
 
 ## Verification
 
@@ -23,3 +23,4 @@
 - The PR's checks cover the iPhone, iPad and iPhone Duo suites, archive and screenshot jobs.
 - Apple Intelligence model output requires a supported device with the model ready. The automated tests cover URL handling and page extraction.
 - Duo exports were validated against the original v0.7.0 CI result. Release tests cover promotion, unrelated RC tags, explicit bumps and immutable tags.
+- A native Duo marketing run produced the four outer screenshots. Local validation covers three framed Duo portraits, the unfolded capture and the four ZIP layouts.
