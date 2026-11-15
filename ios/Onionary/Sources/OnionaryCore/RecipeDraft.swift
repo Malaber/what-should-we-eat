@@ -63,6 +63,50 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
     public var instructionSteps: [Step] = []
     public var tags: [String] = []
     public init() {}
+
+    public struct Change: Identifiable, Sendable {
+        public let field: String
+        public let before: String
+        public let after: String
+        public var id: String { field }
+    }
+
+    public func changes(from original: RecipeDraft) -> [Change] {
+        var changes: [Change] = []
+        func compare(_ field: String, _ before: String, _ after: String) {
+            if before != after { changes.append(.init(field: field, before: before, after: after)) }
+        }
+        func quantity(_ value: Decimal?) -> String { value.map { NSDecimalNumber(decimal: $0).stringValue } ?? "" }
+        func ingredientsText(_ items: [Item]) -> String {
+            items.map { [$0.groupName ?? "", quantity($0.quantity), $0.unit ?? "", $0.name]
+                .filter { !$0.isEmpty }.joined(separator: " · ") }.joined(separator: "\n")
+        }
+        func stepsText(_ steps: [Step]) -> String {
+            steps.map { [$0.groupName ?? "", $0.description, $0.durationMin.map(String.init) ?? ""]
+                .filter { !$0.isEmpty }.joined(separator: " · ") }.joined(separator: "\n")
+        }
+        compare("Name", original.name, name)
+        compare("Food icon", original.icon ?? "", icon ?? "")
+        compare("Notes", original.notes ?? "", notes ?? "")
+        compare("Original recipe serves", quantity(original.servings ?? 1), quantity(servings ?? 1))
+        compare("Calories per serving", quantity(original.kcalPerServing), quantity(kcalPerServing))
+        compare("Active minutes", original.activeCookingTimeMin.map(String.init) ?? "", activeCookingTimeMin.map(String.init) ?? "")
+        compare("Total minutes", original.totalTimeMin.map(String.init) ?? "", totalTimeMin.map(String.init) ?? "")
+        compare("Tags", original.tags.joined(separator: "\n"), tags.joined(separator: "\n"))
+        if ingredients.count != original.ingredients.count || zip(ingredients, original.ingredients).contains(where: { item, previous in
+            item.name != previous.name || item.quantity != previous.quantity
+                || (item.unit ?? "") != (previous.unit ?? "") || (item.groupName ?? "") != (previous.groupName ?? "")
+        }) {
+            changes.append(.init(field: "Ingredients", before: ingredientsText(original.ingredients), after: ingredientsText(ingredients)))
+        }
+        if instructionSteps.count != original.instructionSteps.count || zip(instructionSteps, original.instructionSteps).contains(where: { step, previous in
+            step.description != previous.description || step.durationMin != previous.durationMin
+                || (step.groupName ?? "") != (previous.groupName ?? "")
+        }) {
+            changes.append(.init(field: "Steps", before: stepsText(original.instructionSteps), after: stepsText(instructionSteps)))
+        }
+        return changes
+    }
     public static func fromRecipeResponse(_ data: Data) throws -> RecipeDraft {
         guard var json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw CookingError.response("Invalid recipe response.") }
         let tags = json["tags"] as? [[String: Any]] ?? []

@@ -82,6 +82,7 @@ struct RecipesView: View {
     @State private var showAllRecent = false
     @State private var pantry = false
     @State private var recoveryDraft: SavedRecipeDraft?
+    @State private var inspectingDraft: SavedRecipeDraft?
     @State private var deletingDraft: SavedRecipeDraft?
     var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, categories: selectedTags, quickestFirst: quickestFirst) }
     var body: some View {
@@ -100,12 +101,18 @@ struct RecipesView: View {
             if !store.savedDrafts.isEmpty {
                 Section("Saved drafts") {
                     ForEach(store.savedDrafts) { saved in
-                        Button { recoveryDraft = saved } label: {
-                            VStack(alignment: .leading) {
-                                Text(saved.draft.name.isEmpty ? L10n.text("New recipe") : saved.draft.name)
-                                Text(saved.updatedAt, style: .date).font(.caption).foregroundStyle(.secondary)
+                        HStack {
+                            Button { recoveryDraft = saved } label: {
+                                VStack(alignment: .leading) {
+                                    Text(saved.draft.name.isEmpty ? L10n.text("New recipe") : saved.draft.name)
+                                    Text(saved.updatedAt, style: .date).font(.caption).foregroundStyle(.secondary)
+                                }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                            }.accessibilityIdentifier("saved-draft-" + saved.draft.name)
+                            Button { inspectingDraft = saved } label: {
+                                Image(systemName: "info.circle").frame(minWidth: 44, minHeight: 44)
                             }
-                        }.accessibilityIdentifier("saved-draft-" + saved.draft.name)
+                            .accessibilityLabel("View draft changes")
+                        }.buttonStyle(.borderless)
                         .swipeActions { Button("Delete draft", role: .destructive) { deletingDraft = saved } }
                     }
                 }
@@ -183,7 +190,32 @@ struct RecipesView: View {
             .accessibilityValue(Text(store.refreshing ? "Refreshing recipes" : "Recipes loaded"))
             .dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
             .sheet(item: $recoveryDraft) { saved in
-                RecipeEditor(store: store, draft: saved.draft, recipeID: saved.recipeID, draftID: saved.id)
+                RecipeEditor(store: store, draft: saved.draft, recipeID: saved.recipeID, draftID: saved.id,
+                             savedBaseline: saved.baseline, isRecovery: true)
+            }
+            .sheet(item: $inspectingDraft) { saved in
+                NavigationStack {
+                    List {
+                        if let baseline = saved.baseline {
+                            ForEach(saved.draft.changes(from: baseline)) { change in
+                                Section(LocalizedStringKey(change.field)) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        if !change.before.isEmpty {
+                                            Text("Before").font(.caption).foregroundStyle(.secondary)
+                                            Text(change.before)
+                                        }
+                                        Text("Draft").font(.caption).foregroundStyle(.secondary)
+                                        if change.after.isEmpty { Text("Cleared").foregroundStyle(.secondary) }
+                                        else { Text(change.after) }
+                                    }
+                                }
+                            }
+                        } else {
+                            Text("This draft was saved before changes were tracked.")
+                        }
+                    }.navigationTitle("Draft changes").navigationBarTitleDisplayMode(.inline)
+                        .toolbar { Button("Done") { inspectingDraft = nil } }
+                }
             }
             .confirmationDialog("Delete saved draft?", isPresented: Binding(get: { deletingDraft != nil }, set: { if !$0 { deletingDraft = nil } })) {
                 Button("Delete draft", role: .destructive) {

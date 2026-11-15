@@ -315,3 +315,9 @@
 "Use up to 100 characters per tag." = "Ein Tag darf bis zu 100 Zeichen enthalten.";
 "One emoji (optional)" = "Ein Emoji (optional)";
 "Enter a single emoji." = "Gib ein einzelnes Emoji ein.";
+"View draft changes" = "Entwurfsänderungen ansehen";
+"Draft changes" = "Entwurfsänderungen";
+"Before" = "Vorher";
+"Draft" = "Entwurf";
+"Cleared" = "Entfernt";
+"This draft was saved before changes were tracked." = "Dieser Entwurf wurde gespeichert, bevor Änderungen erfasst wurden.";

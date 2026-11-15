@@ -6,6 +6,9 @@ struct RecipeEditor: View {
     @State var draft: RecipeDraft
     @State var recipeID: Int? = nil
     @State var draftID = UUID()
+    var savedBaseline: RecipeDraft? = nil
+    var isRecovery = false
+    @State private var baseline: RecipeDraft?
     @State private var draftScope: String?
     @State private var savedRecipe: Recipe?
     @State private var askingReload = false
@@ -52,7 +55,12 @@ struct RecipeEditor: View {
                     Text("Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.")
                 }
                 .interactiveDismissDisabled(saving || askingReload)
-                .onAppear { if draftScope == nil { draftScope = store.scope } }
+                .onAppear {
+                    if draftScope == nil {
+                        draftScope = store.scope
+                        baseline = isRecovery ? savedBaseline : (recipeID == nil ? RecipeDraft() : draft)
+                    }
+                }
                 .onChange(of: draft) { _, _ in retain() }
                 .onDisappear { if !completed { retain() } }
                 .alert("Reload cooking recipe?", isPresented: $askingReload) {
@@ -270,8 +278,16 @@ struct RecipeEditor: View {
     }
     private func retain() {
         guard !completed, let draftScope else { return }
-        do { try store.retainDraft(.init(id: draftID, recipeID: recipeID, draft: recoveryCopy), scope: draftScope) }
-        catch { self.error = L10n.text("Could not save recovery copy. Export your draft before closing.") }
+        let copy = recoveryCopy
+        do {
+            if let baseline, copy.changes(from: baseline).isEmpty {
+                if store.savedDrafts.contains(where: { $0.id == draftID }) {
+                    try store.removeDraft(draftID, scope: draftScope)
+                }
+            } else {
+                try store.retainDraft(.init(id: draftID, recipeID: recipeID, draft: copy, baseline: baseline), scope: draftScope)
+            }
+        } catch { self.error = L10n.text("Could not save recovery copy. Export your draft before closing.") }
     }
     private func finish() {
         do {
@@ -282,6 +298,10 @@ struct RecipeEditor: View {
     private func save() async {
         saving = true; error = nil; defer { saving = false }
         guard !hasOverlongTag, !hasInvalidIcon else { return }
+        if recipeID != nil, let baseline, recoveryCopy.changes(from: baseline).isEmpty {
+            finish()
+            return
+        }
         draft.icon = draft.icon.flatMap(FoodIcons.emoji)
         draft.tags = committedTags
         addTag(pendingTag)
