@@ -182,6 +182,7 @@ window.WSWEAuth = new AuthHandler();
     link.addEventListener('click', () => {
       navLinks.classList.remove('open');
       burger.textContent = '☰';
+      burger.setAttribute('aria-expanded', 'false');
       document.body.style.overflow = '';
     });
   });
@@ -192,6 +193,7 @@ window.WSWEAuth = new AuthHandler();
       if (navLinks.classList.contains('open')) {
         navLinks.classList.remove('open');
         burger.textContent = '☰';
+        burger.setAttribute('aria-expanded', 'false');
         document.body.style.overflow = '';
       }
     }

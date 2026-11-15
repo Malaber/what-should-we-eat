@@ -244,3 +244,5 @@
 "Enter a public HTTPS recipe URL." = "Enter a public HTTPS recipe URL.";
 "Could not read this recipe page. Paste the recipe text instead." = "Could not read this recipe page. Paste the recipe text instead.";
 "Use a shorter recipe text." = "Use a shorter recipe text.";
+"Compared with the recipe currently on the server." = "Compared with the recipe currently on the server.";
+"No recipe changes" = "No recipe changes";

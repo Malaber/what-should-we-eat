@@ -135,9 +135,13 @@ The ingredient name must match exactly one ingredient (case-insensitive). With
 100 ml Milk this displays 80 ml and 20 ml; changing portions scales both amounts.
 The iOS step editor's **Insert ingredient amount** menu inserts a 100% placeholder
 that you can edit. The web editor accepts the same syntax. Copies preserve it.
-Unmatched names, duplicate names, missing quantities and invalid percentages stay
-visible as raw placeholders so an incorrect quantity is never silently guessed.
-Ordinary imported prose is not rewritten. Rename placeholders when renaming an ingredient.
+Use a group-qualified name such as `{{Filling::Milk|80%}}` when an ingredient
+name occurs in more than one group. Unresolved references stay visible for
+correction. Cooking-mode amount badges check the same ingredient as the main
+checklist. Chefkoch import links supported quantities in the original text.
+Apple Intelligence prepares a reviewable draft for other public HTTPS recipe
+pages, including their named groups when available. Update references if you
+rename a referenced ingredient or move it to another group.
 
 ### Kitchen widget and Live Activity
 

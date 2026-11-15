@@ -194,28 +194,7 @@ struct RecipesView: View {
                              savedBaseline: saved.baseline, isRecovery: true)
             }
             .sheet(item: $inspectingDraft) { saved in
-                NavigationStack {
-                    List {
-                        if let baseline = saved.baseline {
-                            ForEach(saved.draft.changes(from: baseline)) { change in
-                                Section(LocalizedStringKey(change.field)) {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        if !change.before.isEmpty {
-                                            Text("Before").font(.caption).foregroundStyle(.secondary)
-                                            Text(change.before)
-                                        }
-                                        Text("Draft").font(.caption).foregroundStyle(.secondary)
-                                        if change.after.isEmpty { Text("Cleared").foregroundStyle(.secondary) }
-                                        else { Text(change.after) }
-                                    }
-                                }
-                            }
-                        } else {
-                            Text("This draft was saved before changes were tracked.")
-                        }
-                    }.navigationTitle("Draft changes").navigationBarTitleDisplayMode(.inline)
-                        .toolbar { Button("Done") { inspectingDraft = nil } }
-                }
+                DraftChangesView(store: store, saved: saved)
             }
             .confirmationDialog("Delete saved draft?", isPresented: Binding(get: { deletingDraft != nil }, set: { if !$0 { deletingDraft = nil } })) {
                 Button("Delete draft", role: .destructive) {

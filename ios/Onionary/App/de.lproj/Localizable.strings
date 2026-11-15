@@ -331,3 +331,5 @@
 "Enter a public HTTPS recipe URL." = "Gib einen öffentlichen HTTPS-Rezeptlink ein.";
 "Could not read this recipe page. Paste the recipe text instead." = "Diese Rezeptseite konnte nicht gelesen werden. Füge stattdessen den Rezepttext ein.";
 "Use a shorter recipe text." = "Verwende einen kürzeren Rezepttext.";
+"Compared with the recipe currently on the server." = "Verglichen mit dem aktuellen Rezept auf dem Server.";
+"No recipe changes" = "Keine Rezeptänderungen";

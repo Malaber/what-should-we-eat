@@ -33,7 +33,9 @@ Create, read, update, delete, filter, and randomly select recipes via the API. A
 - **Tags**: Matched case-insensitively and created on-the-fly if they don't exist. Orphaned tags are cleaned up after recipe update/delete.
 - **Shopping list**: Merges ingredients by `(name, unit)`. Ingredients without a quantity are listed but not summed.
 - **Random selection**: Returns all candidates if fewer than `count` are available. Supports `exclude_ids` for re-rolling without duplicates.
-- **Recipe import (Chefkoch)**: Parses JSON-LD `@type: Recipe` from HTML. Supports Unicode fractions and German units in ingredient parsing. Only `chefkoch.de` domains are allowed; redirect targets are validated.
+- **Recipe import (Chefkoch)**: Parses Recipe JSON-LD, including Unicode fractions and German units. Visible ingredient headings are applied when the table rows match the JSON-LD. Some Chefkoch pages append the next instruction heading to the preceding JSON-LD step. The importer uses the visible paragraph boundaries when their text matches the structured data.
+- **Scalable step amounts**: Imports turn unambiguous quantities into portable references such as `{{Milk|80%}}`. Duplicate names can use `{{Filling::Milk|80%}}`. Uncertain amounts, cooking times and temperatures stay as written. The iOS cooking view and shared recipe checklist use the same ingredient state for reference badges and ingredient rows.
+- **Other iOS recipe links**: The app fetches the public HTTPS page directly and formats Recipe JSON-LD or visible text with Apple Intelligence on the device. The imported draft remains editable before saving. Availability depends on the device and model.
 - **Household import**: Copies recipes including ingredients, steps, and tags. Tags are shared by reference (not duplicated).
 - **Onionary passkeys**: Uses `fastpasskey` 0.2.6, matching Planini and Tracy.
   Set `APP_BASE_URL` to the exact HTTPS origin; local WebAuthn requires `localhost`,

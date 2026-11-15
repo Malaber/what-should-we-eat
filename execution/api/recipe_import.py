@@ -221,7 +221,7 @@ def _build_ingredients(soup: BeautifulSoup, ingredient_lines: list[str]) -> list
 
 def _group_title(value: str) -> str | None:
     title = _clean_text(value).rstrip(":").strip()
-    return title if title and len(title) <= 120 else None
+    return title if title and len(title) <= 100 else None
 
 
 def _build_instruction_steps_and_notes(

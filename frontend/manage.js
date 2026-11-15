@@ -140,6 +140,7 @@ async function loadTags() {
 async function loadRecipes() {
   try {
     const res = await fetch(`${API}/recipes`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error(`Recipes returned ${res.status}`);
     allRecipes = await res.json();
     renderRecipes();
   } catch (e) {
@@ -159,7 +160,8 @@ function filterCards() {
     if (!card.hidden) count++;
   }
   $listBadge.textContent = count;
-  $manageGrid.querySelector('.empty-state').hidden = count > 0;
+  const empty = $manageGrid.querySelector('.empty-state');
+  if (empty) empty.hidden = count > 0;
 }
 
 function renderRecipes() {

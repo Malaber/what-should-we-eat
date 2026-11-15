@@ -77,7 +77,13 @@ def test_recipe_crud(page: Page):
 def test_account_settings_uses_kitchen_navigation(page):
     login_as_test_user(page)
     page.goto(page.base_url + "/auth/account")
-    expect(page.get_by_role("navigation").get_by_role("link", name="Recipes")).to_be_visible()
+    nav = page.get_by_role("navigation")
+    menu = nav.get_by_role("button", name="Toggle menu")
+    if menu.is_visible():
+        menu.click()
+    expect(nav.get_by_role("link", name="Manage Recipes")).to_be_visible()
+    if menu.is_visible():
+        menu.click()
     page.get_by_role("link", name="Back to your kitchen").click()
     expect(page).to_have_url(page.base_url + "/kitchen.html")
 

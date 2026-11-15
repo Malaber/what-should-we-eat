@@ -392,6 +392,49 @@ struct EditRecipeView: View {
     }
 }
 
+struct DraftChangesView: View {
+    let store: AppStore
+    let saved: SavedRecipeDraft
+    @Environment(\.dismiss) private var dismiss
+    @State private var currentRecipe: RecipeDraft?
+    @State private var loading = true
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let baseline = saved.baseline ?? currentRecipe {
+                    if saved.baseline == nil, saved.recipeID != nil {
+                        Text("Compared with the recipe currently on the server.").foregroundStyle(.secondary)
+                    }
+                    let changes = saved.draft.changes(from: baseline)
+                    if changes.isEmpty { Text("No recipe changes") }
+                    ForEach(changes) { change in
+                        Section(LocalizedStringKey(change.field)) {
+                            if !change.before.isEmpty {
+                                Text("Before").font(.caption).foregroundStyle(.secondary)
+                                Text(change.before)
+                            }
+                            Text("Draft").font(.caption).foregroundStyle(.secondary)
+                            if change.after.isEmpty { Text("Cleared").foregroundStyle(.secondary) }
+                            else { Text(change.after) }
+                        }
+                    }
+                } else if loading {
+                    ProgressView()
+                } else {
+                    Text("This draft was saved before changes were tracked.")
+                }
+            }.navigationTitle("Draft changes").navigationBarTitleDisplayMode(.inline)
+                .toolbar { Button("Done") { dismiss() } }
+        }.task {
+            defer { loading = false }
+            guard saved.baseline == nil else { return }
+            if let id = saved.recipeID { currentRecipe = try? await store.recipeDraft(id: id) }
+            else { currentRecipe = RecipeDraft() }
+        }
+    }
+}
+
 private struct IngredientDraftRow: View {
     @Binding var item: RecipeDraft.Item
     var remove: () -> Void
@@ -439,6 +482,10 @@ private struct RecipeOrderSheet<Item: Identifiable>: View {
         var seen = Set<String>()
         return (items.compactMap { $0[keyPath: groupName] } + groupsAdded)
             .filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
+    private var trimmedGroup: String { newGroup.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var canAddGroup: Bool {
+        !trimmedGroup.isEmpty && trimmedGroup.unicodeScalars.count <= 100 && !groups.contains(trimmedGroup)
     }
 
     var body: some View {
@@ -493,10 +540,9 @@ private struct RecipeOrderSheet<Item: Identifiable>: View {
                 TextField("Group name", text: $newGroup)
                 Button("Cancel", role: .cancel) { newGroup = "" }
                 Button("Add") {
-                    let name = newGroup.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !name.isEmpty, name.count <= 120, !groups.contains(name) { groupsAdded.append(name) }
+                    if canAddGroup { groupsAdded.append(trimmedGroup) }
                     newGroup = ""
-                }.disabled(newGroup.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || newGroup.count > 120)
+                }.disabled(!canAddGroup)
             }
         }
     }
