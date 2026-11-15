@@ -220,7 +220,17 @@
             </div>
             <!-- Ingredients -->
             <div class="list-editor">
-              <h3>Ingredients</h3>
+              <div class="editor-section-heading">
+                <h3>Ingredients</h3>
+                <button
+                  class="btn btn-secondary btn-sm"
+                  id="reorder-ingredients"
+                  type="button"
+                  data-i18n="recipe.order-ingredients"
+                >
+                  Reorder ingredients
+                </button>
+              </div>
               <div id="ingredients-list"></div>
               <button class="btn btn-secondary btn-sm" id="btn-add-ingredient" type="button">
                 + Add Ingredient
@@ -228,7 +238,17 @@
             </div>
             <!-- Steps -->
             <div class="list-editor">
-              <h3>Instruction Steps</h3>
+              <div class="editor-section-heading">
+                <h3>Instruction Steps</h3>
+                <button
+                  class="btn btn-secondary btn-sm"
+                  id="reorder-steps"
+                  type="button"
+                  data-i18n="recipe.order-steps"
+                >
+                  Reorder steps
+                </button>
+              </div>
               <div id="steps-list"></div>
               <button class="btn btn-secondary btn-sm" id="btn-add-step" type="button">
                 + Add Step
@@ -242,6 +262,28 @@
         </div>
       </div>
     </div>
+    <dialog
+      class="modal recipe-order-dialog"
+      id="recipe-order"
+      aria-labelledby="recipe-order-title"
+    >
+      <div class="modal-header"><h2 id="recipe-order-title"></h2></div>
+      <div class="modal-body">
+        <form class="control-group" id="recipe-group-form">
+          <label for="recipe-group-name" data-i18n="recipe.group-name">Group name</label>
+          <div class="add-tag-row">
+            <input id="recipe-group-name" maxlength="100" required type="text" />
+            <button class="btn btn-secondary btn-sm" type="submit" data-i18n="recipe.add-group">
+              Add group
+            </button>
+          </div>
+        </form>
+        <ol id="recipe-order-rows" class="recipe-order-rows"></ol>
+      </div>
+      <form class="modal-footer" method="dialog">
+        <button class="btn btn-primary" data-i18n="recipe.order-done">Done</button>
+      </form>
+    </dialog>
     <!-- Delete Confirmation Modal -->
     <div class="modal-overlay" id="delete-modal" style="display: none">
       <div class="modal modal-sm">

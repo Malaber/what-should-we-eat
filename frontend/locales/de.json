@@ -239,5 +239,14 @@
   "recipe.icon-invalid": "Gib ein einzelnes Emoji ein.",
   "recipe.tags": "Tags",
   "recipe.add-tag": "Tag hinzufügen",
-  "recipe.remove-tag": "Tag entfernen"
+  "recipe.remove-tag": "Tag entfernen",
+  "recipe.order-ingredients": "Zutaten umsortieren",
+  "recipe.order-steps": "Schritte umsortieren",
+  "recipe.group-name": "Gruppenname",
+  "recipe.add-group": "Gruppe hinzufügen",
+  "recipe.order-done": "Fertig",
+  "recipe.ungrouped": "Ohne Gruppe",
+  "recipe.move-up": "Nach oben verschieben",
+  "recipe.move-down": "Nach unten verschieben",
+  "recipe.remove-row": "Zeile entfernen"
 }

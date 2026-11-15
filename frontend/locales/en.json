@@ -241,5 +241,14 @@
   "recipe.icon-invalid": "Enter a single emoji.",
   "recipe.tags": "Tags",
   "recipe.add-tag": "Add tag",
-  "recipe.remove-tag": "Remove tag"
+  "recipe.remove-tag": "Remove tag",
+  "recipe.order-ingredients": "Reorder ingredients",
+  "recipe.order-steps": "Reorder steps",
+  "recipe.group-name": "Group name",
+  "recipe.add-group": "Add group",
+  "recipe.order-done": "Done",
+  "recipe.ungrouped": "Without group",
+  "recipe.move-up": "Move up",
+  "recipe.move-down": "Move down",
+  "recipe.remove-row": "Remove row"
 }
