@@ -55,3 +55,9 @@ on the iOS 27.1 RC. The GitHub job pins the stable runtime.
 The full local iPhone run passed all 33 scenarios, and all five local Duo
 scenarios passed from the same compiled package. The final active-recipe
 edit test passed on iPhone and iPad with the fixture already in progress.
+
+## Follow-up after TestFlight build 31
+
+- [ ] Diagnose and fix the iPad edit and ingredient token UI failures from tag CI.
+- [ ] Update recipe tag counts to preview the intersection with the active filters.
+- [ ] Use the production backend by default on iOS and preserve saved server choices.
