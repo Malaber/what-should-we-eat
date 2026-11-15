@@ -14,6 +14,10 @@ PORTRAITS = (
     "05-cooking-with-onionary.png", "06-your-recipe-book.png", "07-make-it-your-size.png",
 )
 PORTRAIT_SOURCES = dict(zip(PORTRAITS, (CAPTURES[1], CAPTURES[0], CAPTURES[2]), strict=True))
+DUO_CAPTURES = {
+    0: ("01-duo-outer-cooking.png", (1398, 2034)),
+    180: ("02-duo-inner-cooking.png", (2853, 2007)),
+}
 
 
 def validate_dimensions(path: Path, family: str):
@@ -28,6 +32,8 @@ def validate_dimensions(path: Path, family: str):
 
 
 def validate_bundle(root: Path, family: str) -> list[Path]:
+    if family == "duo":
+        return validate_duo_bundle(root)
     raw = [root / name for name in CAPTURES]
     portraits = [root / "portraits" / name for name in PORTRAITS]
     if any(not p.is_file() or p.stat().st_size == 0 for p in raw + portraits):
@@ -73,10 +79,26 @@ def validate_bundle(root: Path, family: str) -> list[Path]:
     return pngs
 
 
+def validate_duo_bundle(root: Path) -> list[Path]:
+    from PIL import Image
+
+    paths = []
+    for name, dimensions in DUO_CAPTURES.values():
+        path = root / name
+        with Image.open(path) as decoded:
+            decoded.load()
+            if decoded.format != "PNG" or decoded.mode != "RGB" or decoded.size != dimensions:
+                raise ValueError(f"Invalid opaque iPhone Duo PNG, expected {dimensions}: {path}")
+            if decoded.getexif().get(274, 1) != 1:
+                raise ValueError(f"iPhone Duo orientation must be encoded in pixels: {path}")
+        paths.append(path)
+    return paths
+
+
 def package(source: Path, output: Path) -> list[Path]:
-    # Validate both devices before producing anything suitable for publishing.
+    # Validate all devices before producing anything suitable for publishing.
     captures = {}
-    for family in ("iphone", "ipad"):
+    for family in ("iphone", "ipad", "duo"):
         root = source / f"onionary-appstore-{family}-en-US" / "en-US"
         captures[family] = (root, validate_bundle(root, family))
     output.mkdir(parents=True, exist_ok=True)
@@ -94,7 +116,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path, nargs="?")
-    parser.add_argument("--validate-family", choices=["iphone", "ipad"])
+    parser.add_argument("--validate-family", choices=["iphone", "ipad", "duo"])
     args = parser.parse_args()
     if args.validate_family:
         validate_bundle(args.source, args.validate_family)

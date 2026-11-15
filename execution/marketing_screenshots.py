@@ -1,7 +1,7 @@
 """Export App Store captures from the normal, successful native UI test result.
 
-This command never starts a simulator or runs tests. CI captures each device once
-in testMarketingScreenshots, then exports that same run's four original images.
+This command never starts a simulator or runs tests. It exports images from the
+marketing test or the iPhone Duo cooking test in the same successful run.
 """
 import argparse
 import json
@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from execution.package_marketing_screenshots import CAPTURES, validate_dimensions
+from execution.package_marketing_screenshots import CAPTURES, DUO_CAPTURES, validate_dimensions, validate_duo_bundle
 
 NAMES = {Path(name).stem for name in CAPTURES}
 
@@ -19,6 +19,53 @@ NAMES = {Path(name).stem for name in CAPTURES}
 def render_capture(screenshots, family, defer_creative):
     from execution.render_marketing_assets import render
     render(screenshots, family, include_creative=not defer_creative)
+
+
+def attachment_path(exported, attachment):
+    source = (exported/attachment['exportedFileName']).resolve()
+    if not source.is_relative_to(exported.resolve()):
+        raise ValueError('Capture path is outside the attachment export')
+    return source
+
+
+def export_duo_captures(manifest, exported, output):
+    from PIL import Image, ImageCms, ImageOps
+
+    captures = {}
+    for test in manifest:
+        for attachment in test.get('attachments', []):
+            match = re.match(r'Duo-workspace-(0|180)(?:_|\.png|$)', attachment.get('suggestedHumanReadableName', ''))
+            if not match:
+                continue
+            angle = int(match.group(1))
+            if angle not in captures or attachment['timestamp'] > captures[angle]['timestamp']:
+                captures[angle] = attachment
+    if captures.keys() != DUO_CAPTURES.keys():
+        raise ValueError('Expected successful outer and inner iPhone Duo cooking captures')
+
+    screenshots = output/'en-US'
+    screenshots.mkdir()
+    srgb = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
+    for angle, (name, size) in DUO_CAPTURES.items():
+        with Image.open(attachment_path(exported, captures[angle])) as image:
+            image.load()
+            if image.format != 'PNG' or image.mode != 'RGB':
+                raise ValueError(f'Expected an RGB PNG from the Duo test: {name}')
+            frame = ImageOps.exif_transpose(image)
+            # XCTest can round the unfolded window down by one pixel in each
+            # dimension. Preserve its pixels and replicate only the outer edge.
+            if angle == 180 and frame.size == (size[0] - 1, size[1] - 1):
+                width, height = frame.size
+                padded = Image.new('RGB', size)
+                padded.paste(frame, (0, 0))
+                padded.paste(frame.crop((width - 1, 0, width, height)), (width, 0))
+                padded.paste(padded.crop((0, height - 1, width + 1, height)), (0, height))
+                frame = padded
+            if frame.size != size:
+                raise ValueError(f'Wrong Duo capture dimensions {frame.size}, expected {size}: {name}')
+            frame.save(screenshots/name, icc_profile=srgb)
+    validate_duo_bundle(screenshots)
+    print(f'Exported both iPhone Duo cooking screens to {screenshots}')
 
 
 def export_captures(result, output, family, defer_creative=False):
@@ -34,6 +81,9 @@ def export_captures(result, output, family, defer_creative=False):
     subprocess.run(['xcrun', 'xcresulttool', 'export', 'attachments', '--path', str(result.resolve()),
                     '--output-path', str(exported)], check=True)
     manifest = json.loads((exported/'manifest.json').read_text())
+    if family == 'duo':
+        export_duo_captures(manifest, exported, output)
+        return
     captures = {}
     for test in manifest:
         for attachment in test.get('attachments', []):
@@ -44,9 +94,7 @@ def export_captures(result, output, family, defer_creative=False):
             key = match.group(1) if match else ''
             if key not in NAMES or key in captures:
                 raise ValueError(f'Unexpected or duplicate marketing capture: {name}')
-            source = (exported/attachment['exportedFileName']).resolve()
-            if not source.is_relative_to(exported.resolve()):
-                raise ValueError('Capture path is outside the attachment export')
+            source = attachment_path(exported, attachment)
             validate_dimensions(source, family)
             from PIL import Image
             with Image.open(source) as image:
@@ -65,7 +113,7 @@ def export_captures(result, output, family, defer_creative=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--result-bundle', type=Path, required=True)
-    parser.add_argument('--family', choices=['iphone', 'ipad'], required=True)
+    parser.add_argument('--family', choices=['iphone', 'ipad', 'duo'], required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--defer-creative', action='store_true')
     args = parser.parse_args()

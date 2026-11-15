@@ -88,7 +88,6 @@ jobs:
           SIMULATOR_RUNTIME: ${{ matrix.runtime }}
         run: bash ios/Onionary/Scripts/test.sh
       - run: pip install -r marketing/requirements.txt
-        if: matrix.profile != 'duo'
       - name: Export captures from this test run
         if: matrix.profile != 'duo'
         env:
@@ -102,6 +101,18 @@ jobs:
           path: |
             .tmp/marketing/${{ matrix.profile }}/
             !.tmp/marketing/${{ matrix.profile }}/attachments/**
+          if-no-files-found: error
+          retention-days: 14
+      - name: Export validated iPhone Duo outer and inner screenshots
+        if: matrix.profile == 'duo'
+        env:
+          RESULT_BUNDLE: ${{ runner.temp }}/onionary-tests/duo/testRecipePreviewAndChecklistSurviveFolds/Onionary.xcresult
+        run: python3 execution/marketing_screenshots.py --result-bundle "$RESULT_BUNDLE" --family duo --output .tmp/marketing/duo
+      - uses: actions/upload-artifact@v4
+        if: matrix.profile == 'duo'
+        with:
+          name: onionary-appstore-duo-en-US
+          path: .tmp/marketing/duo/en-US/
           if-no-files-found: error
           retention-days: 14
       - name: Preserve simulator test diagnostics

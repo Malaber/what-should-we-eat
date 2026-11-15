@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 import pytest
-from PIL import Image
+from PIL import Image, ImageOps
 from execution import marketing_screenshots as capture
 
 SCENES = ['01-recipe-book', '02-cooking-companion', '03-flexible-portions', '04-every-tap-remembered']
@@ -68,6 +68,41 @@ def test_existing_output_is_preserved(export_fixture):
     output.mkdir(); (output/'keep.txt').write_text('existing')
     with pytest.raises(FileExistsError): capture.export_captures(result, output, 'iphone')
     assert (output/'keep.txt').read_text() == 'existing'
+
+
+def test_exports_both_duo_displays_at_native_upload_sizes(tmp_path):
+    exported = tmp_path / "attachments"
+    exported.mkdir()
+    outer = Image.new("RGB", (1398, 2034), "green")
+    outer.save(exported / "outer.png")
+    inner = Image.new("RGB", (2006, 2852), "blue")
+    inner.putpixel((0, 0), (255, 0, 0))
+    exif = inner.getexif()
+    exif[274] = 6
+    inner.save(exported / "inner.png", exif=exif)
+    Image.new("RGB", (2, 2)).save(exported / "old.png")
+    manifest = [{"attachments": [
+        {"suggestedHumanReadableName": "Duo-workspace-0_0_UUID.png", "exportedFileName": "outer.png", "timestamp": 1},
+        {"suggestedHumanReadableName": "Duo-workspace-180_0_UUID.png", "exportedFileName": "inner.png", "timestamp": 3},
+        {"suggestedHumanReadableName": "Duo-workspace-180_0_UUID.png", "exportedFileName": "old.png", "timestamp": 2},
+        {"suggestedHumanReadableName": "Duo-workspace-90_0_UUID.png", "exportedFileName": "old.png", "timestamp": 4},
+    ]}]
+    capture.export_duo_captures(manifest, exported, tmp_path)
+    result = tmp_path / "en-US"
+    with Image.open(result / "01-duo-outer-cooking.png") as actual:
+        assert actual.size == (1398, 2034) and actual.mode == "RGB"
+        assert actual.tobytes() == outer.tobytes()
+    with Image.open(result / "02-duo-inner-cooking.png") as actual:
+        assert actual.size == (2853, 2007) and actual.mode == "RGB"
+        assert actual.getexif().get(274, 1) == 1
+        assert actual.crop((0, 0, 2852, 2006)).tobytes() == ImageOps.exif_transpose(inner).tobytes()
+        assert actual.getpixel((2852, 2006)) == actual.getpixel((2851, 2005))
+
+
+def test_duo_cannot_publish_with_only_one_display(tmp_path):
+    manifest = [{"attachments": [{"suggestedHumanReadableName": "Duo-workspace-0.png"}]}]
+    with pytest.raises(ValueError, match="outer and inner"):
+        capture.export_duo_captures(manifest, tmp_path, tmp_path)
 
 
 @pytest.mark.parametrize('summary', [

@@ -4,7 +4,7 @@ from zipfile import ZipFile
 from PIL import Image
 import pytest
 
-from execution.package_marketing_screenshots import package, validate_dimensions
+from execution.package_marketing_screenshots import DUO_CAPTURES, package, validate_dimensions
 from execution.render_marketing_assets import render, CREATIVE_SIZES
 from marketing.creative.render import SAFE_AREA, validate_safe_area
 
@@ -37,9 +37,13 @@ def test_render_and_package_current_captures(tmp_path):
             with Image.open(root / f'creative/{placement}-safe-area-preview.png') as preview:
                 assert preview.size == (SAFE_AREA[2] - SAFE_AREA[0], SAFE_AREA[3] - SAFE_AREA[1])
         (root.parent / 'private-test-log.txt').write_text('exclude')
+    duo = tmp_path / 'onionary-appstore-duo-en-US/en-US'
+    duo.mkdir(parents=True)
+    for name, size in DUO_CAPTURES.values():
+        Image.new('RGB', size).save(duo / name)
     archives = package(tmp_path, tmp_path / 'output')
-    assert len(archives) == 2
-    for archive in archives:
+    assert len(archives) == 3
+    for archive in archives[:2]:
         with ZipFile(archive) as zipped:
             names = zipped.namelist()
             assert len(names) == 13
@@ -52,6 +56,8 @@ def test_render_and_package_current_captures(tmp_path):
             assert all(name.endswith(('.png', '.svg')) for name in names)
             assert 'en-US/creative/header.svg' in names
             assert 'en-US/creative/search-results.svg' in names
+    with ZipFile(archives[2]) as zipped:
+        assert set(zipped.namelist()) == {f'en-US/{name}' for name, _ in DUO_CAPTURES.values()}
     # A later capture must not accidentally ship with earlier artwork.
     source = tmp_path / 'onionary-appstore-iphone-en-US/en-US/01-recipe-book.png'
     Image.new('RGB', (1206, 2622), 'blue').save(source)
