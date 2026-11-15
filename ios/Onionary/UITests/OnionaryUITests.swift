@@ -239,6 +239,43 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(sheet.waitForExistence(timeout: 5))
         XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
         sheet.buttons["Done"].tap()
+        XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(ingredients.waitForNonExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Saved drafts"].exists)
+    }
+
+    @MainActor
+    func testIngredientGroupPersistsAfterSaving() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        try selectRecipe(in: app)
+        app.buttons["Edit recipe"].tap()
+        let reorder = app.buttons["Reorder ingredients"]
+        XCTAssertTrue(reorder.waitForExistence(timeout: 5))
+        reorder.tap()
+        let sheet = app.navigationBars["Reorder ingredients"]
+        XCTAssertTrue(sheet.buttons["Add group"].waitForExistence(timeout: 5))
+        sheet.buttons["Add group"].tap()
+        let dialog = app.alerts["Add group"]
+        let groupName = dialog.textFields["Group name"]
+        XCTAssertTrue(groupName.waitForExistence(timeout: 5))
+        groupName.typeText("Sauce")
+        dialog.buttons["Add"].tap()
+        let cheeseGroup = app.collectionViews["recipe-order-list"].buttons["recipe-group-Cheese"]
+        XCTAssertTrue(cheeseGroup.waitForExistence(timeout: 5))
+        cheeseGroup.tap()
+        app.buttons["Sauce"].tap()
+        XCTAssertTrue(app.collectionViews["recipe-order-list"].staticTexts["Sauce"].waitForExistence(timeout: 5))
+        sheet.buttons["Done"].tap()
+        XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Sauce"].exists)
+        app.buttons["Save"].tap()
+        let preview = app.collectionViews["recipe-preview"]
+        XCTAssertTrue(preview.staticTexts["Sauce"].waitForExistence(timeout: 5))
+        XCTAssertFalse(reorder.exists)
     }
 
     @MainActor

@@ -519,7 +519,9 @@ private struct RecipeOrderSheet<Item: Identifiable>: View {
                             } label: {
                                 Label("Group", systemImage: "folder").labelStyle(.iconOnly)
                                     .frame(minWidth: 44, minHeight: 44)
-                            }.accessibilityLabel("Group")
+                            }
+                            .accessibilityLabel("Group")
+                            .accessibilityIdentifier("recipe-group-" + name)
                         }
                         Button { moveOne(item.id, by: -1) } label: {
                             Label("Move \(name) up", systemImage: "chevron.up").labelStyle(.iconOnly)
