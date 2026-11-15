@@ -58,6 +58,10 @@ edit test passed on iPhone and iPad with the fixture already in progress.
 
 ## Follow-up after TestFlight build 31
 
-- [ ] Diagnose and fix the iPad edit and ingredient token UI failures from tag CI.
-- [ ] Update recipe tag counts to preview the intersection with the active filters.
-- [ ] Use the production backend by default on iOS and preserve saved server choices.
+- [x] Diagnose and fix the iPad edit and ingredient token UI failures from tag CI.
+- [x] Update recipe tag counts to preview the intersection with the active filters.
+- [x] Use the production backend by default on iOS and preserve saved server choices.
+
+Swift passed 50 tests. Four focused iPad tests and three focused iPhone tests
+passed, including the live tag counts, active-recipe edit and ingredient token
+flows. The production backend health check returned OK.
