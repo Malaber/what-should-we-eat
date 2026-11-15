@@ -784,6 +784,25 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
+    func testScaledStepIngredientSharesCheckAndUndo() throws {
+        let app = try openCookingRecipe()
+        let cheese = app.buttons["ingredient-1"]
+        let badge = app.buttons["step-ingredient-1"]
+        XCTAssertTrue(badge.waitForExistence(timeout: 5))
+        XCTAssertEqual(badge.label, "40 g Cheese")
+        app.buttons["portion-plus"].tap()
+        XCTAssertEqual(badge.label, "80 g Cheese")
+        badge.tap()
+        XCTAssertEqual(badge.value as? String, "Checked")
+        XCTAssertEqual(cheese.value as? String, "Checked")
+        XCTAssertEqual(app.buttons["step-2"].value as? String, "Unchecked")
+        app.buttons["undo"].tap()
+        XCTAssertEqual(badge.value as? String, "Unchecked")
+        XCTAssertEqual(cheese.value as? String, "Unchecked")
+        XCTAssertEqual(badge.label, "80 g Cheese")
+    }
+
+    @MainActor
     private func enterFractionalPortions(in app: XCUIApplication) {
         app.buttons["Adjust portions"].tap()
         XCTAssertTrue(app.staticTexts["Your ingredients right now"].exists)
