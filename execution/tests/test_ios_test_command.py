@@ -17,7 +17,8 @@ SCRIPT = IOS / 'Scripts/test.sh'
     ('iPhone-Duo', '360', 'OnionaryDuoTests'),
 ])
 @pytest.mark.parametrize('fail_test', [False, True])
-def test_supplied_device_is_never_booted_or_deleted(tmp_path, device, allowance, suite, fail_test):
+@pytest.mark.parametrize('mode', ['all', '--build-only', '--test-only'])
+def test_supplied_device_is_never_booted_or_deleted(tmp_path, device, allowance, suite, fail_test, mode):
     bins = tmp_path / 'bin'; bins.mkdir()
     for command in ('swift', 'xcodegen'):
         path = bins / command; path.write_text('#!/bin/sh\nexit 0\n'); path.chmod(0o755)
@@ -41,20 +42,29 @@ elif any(arg.endswith('ios_runtime.py') for arg in sys.argv):
     xcrun.write_text('#!/bin/sh\nprintf called > "$FORBIDDEN_GUEST_COMMAND"\nexit 95\n')
     xcrun.chmod(0o755)
     forbidden = tmp_path / 'guest-command'
-    result = subprocess.run(['bash', str(SCRIPT)], env={**os.environ,
+    arguments = ['bash', str(SCRIPT)] + ([] if mode == 'all' else [mode])
+    result = subprocess.run(arguments, env={**os.environ,
         'PATH': str(bins) + os.pathsep + os.environ['PATH'], 'CAPTURE_ARGS': str(capture),
         'FAIL_TEST': str(int(fail_test)), 'FORBIDDEN_GUEST_COMMAND': str(forbidden),
         'SIMULATOR_ID': 'test-only', 'SIMULATOR_DEVICE_TYPE': device,
         'TEST_RESULTS_DIR': str(tmp_path / 'results'), 'TEST_DERIVED_DATA_DIR': str(tmp_path / 'shared-build')})
-    assert result.returncode == (44 if fail_test else 0)
+    assert result.returncode == (44 if fail_test and mode != '--build-only' else 0)
     assert not forbidden.exists()
-    build, test = [json.loads(line) for line in capture.read_text().splitlines()]
-    assert build[build.index('-derivedDataPath') + 1] == str(tmp_path / 'shared-build')
+    commands = [json.loads(line) for line in capture.read_text().splitlines()]
+    assert len(commands) == (2 if mode == 'all' else 1)
+    if mode != '--test-only':
+        build = commands[0]
+        assert build[build.index('-derivedDataPath') + 1] == str(tmp_path / 'shared-build')
+        assert 'build-for-testing' in build
+        assert build.count('ENABLE_DEBUG_DYLIB=NO') == 1
+        assert 'ARCHS=arm64' in build
+    if mode == '--build-only':
+        assert build[build.index('-destination') + 1] == 'generic/platform=iOS Simulator'
+        return
+    test = commands[-1]
     assert test[test.index('-xctestrun') + 1] == str(tmp_path / 'shared-build/Build/Products/Onionary_iphonesimulator27.1-arm64.xctestrun')
     assert not any(option in test for option in ('-derivedDataPath', '-project', '-scheme'))
-    assert 'build-for-testing' in build
     assert 'test-without-building' in test
-    assert build.count('ENABLE_DEBUG_DYLIB=NO') == 1
     assert not any(option.startswith('ENABLE_DEBUG_DYLIB=') for option in test)
     for option in ('-default-test-execution-time-allowance', '-maximum-test-execution-time-allowance'):
         assert test.count(option) == 1

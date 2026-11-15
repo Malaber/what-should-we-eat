@@ -51,7 +51,40 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium --device='iPhone 13'
+  ios-build:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: brew install xcodegen
+      - name: Run Swift tests and compile the simulator test bundle
+        env:
+          TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-build
+        run: |
+          bash ios/Onionary/Scripts/test.sh --build-only
+          tar -czf "$RUNNER_TEMP/onionary-test-products.tar.gz" -C "$TEST_RESULTS_DIR/DerivedData" Build/Products
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onionary-ios-test-products
+          path: ${{ runner.temp }}/onionary-test-products.tar.gz
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: onionary-ios-test-build-log
+          path: ${{ runner.temp }}/onionary-build/build.log
+          retention-days: 7
   ios:
+    needs: ios-build
     strategy:
       fail-fast: false
       matrix:
@@ -79,14 +112,20 @@ jobs:
       - name: Verify matching Xcode build
         run: python3 execution/check_ios_build_environment.py --xcode-only
       - run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py '${{ matrix.runtime }}'
-      - run: brew install xcodegen
-      - name: Core tests, simulator build, and UI tests
+      - uses: actions/download-artifact@v4
+        with:
+          name: onionary-ios-test-products
+          path: ${{ runner.temp }}
+      - name: Run UI tests on the pinned simulator
         timeout-minutes: 60
         env:
           TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
           SIMULATOR_RUNTIME: ${{ matrix.runtime }}
-        run: bash ios/Onionary/Scripts/test.sh
+        run: |
+          mkdir -p "$TEST_RESULTS_DIR/DerivedData"
+          tar -xzf "$RUNNER_TEMP/onionary-test-products.tar.gz" -C "$TEST_RESULTS_DIR/DerivedData"
+          bash ios/Onionary/Scripts/test.sh --test-only
       - run: pip install -r marketing/requirements.txt
       - name: Export captures from this test run
         if: matrix.profile != 'duo'

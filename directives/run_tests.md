@@ -345,6 +345,16 @@ Do not edit a shell script while a local process is executing it. Bash may read
 later commands using stale file offsets. Freeze local script copies before
 launch or finish the run before editing. CI checkouts are immutable during tests.
 
+CI runs Swift package tests and a generic arm64 Simulator build once in
+`ios-build` (`test.sh --build-only`). It archives Build/Products with tar to
+preserve executable permissions and bundle layout. Each standard macOS UI
+runner extracts the same build from the current workflow run and validates the
+compiled plan before it creates its own pinned simulator (`test.sh --test-only`).
+This keeps compiler and indexing work off the XCTest VMs. The iPad and Duo
+failure traces both reached the Simulator accessibility handshake and stalled
+before a test case or app launch. Local `test.sh` still builds and runs tests
+in one command.
+
 Local release/test profiles run sequentially and reuse one build cache while
 retaining separate xcresults. Keep the 8 GiB test-entry and 6 GiB archive guards;
 report GB/GiB accurately. Finder may include purgeable capacity, and APFS/Time
