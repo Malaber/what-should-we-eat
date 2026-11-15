@@ -355,6 +355,14 @@ failure traces both reached the Simulator accessibility handshake and stalled
 before a test case or app launch. Local `test.sh` still builds and runs tests
 in one command.
 
+CI runs the iPhone and iPad cases in three balanced shards per device type.
+Each shard has its own standard runner, native XCTest process and simulator.
+This limits how many consecutive app replacements share one device. The iPad
+failure occurred when XCTest attempted to terminate the previous app before
+the next test ran. Shard 1 owns the marketing captures. Unit tests verify
+that each device's shards include every declared case exactly once. The
+same per-case time limits and the existing Duo fold isolation still apply.
+
 The marketing fixture uses the same alphabetical ordering as the app. Keep
 the featured recipe near the top so it is visible in the first recipe-book
 capture and can be tapped on the shorter Duo cover. The test checks its

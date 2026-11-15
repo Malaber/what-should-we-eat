@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 import pytest
 
@@ -73,6 +74,42 @@ elif any(arg.endswith('ios_runtime.py') for arg in sys.argv):
     assert '-retry-tests-on-failure' not in test
     assert test[test.index('-collect-test-diagnostics') + 1] == 'never'
     assert '-resultBundlePath' in test
+
+
+@pytest.mark.parametrize('device', ['iPhone-17-Pro', 'iPad-Pro-13-inch-M5-16GB'])
+def test_ui_shards_run_every_case_once(tmp_path, device):
+    bins = tmp_path / 'bin'
+    bins.mkdir()
+    capture = tmp_path / 'args.jsonl'
+    python = bins / 'python3'
+    python.write_text(f'''#!{sys.executable}
+import json, os, sys
+if '--test-products' in sys.argv:
+    print(sys.argv[-1] + '/Onionary_iphonesimulator27.1-arm64.xctestrun')
+if 'xcodebuild' in sys.argv:
+    with open(os.environ['CAPTURE_ARGS'], 'a') as output:
+        output.write(json.dumps(sys.argv) + '\\n')
+''')
+    python.chmod(0o755)
+    env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
+           'CAPTURE_ARGS': str(capture), 'SIMULATOR_ID': 'test-only',
+           'SIMULATOR_DEVICE_TYPE': device, 'TEST_RESULTS_DIR': str(tmp_path / 'results')}
+    for shard in ('1', '2', '3'):
+        subprocess.run(['bash', str(SCRIPT), '--test-only'],
+                       env={**env, 'SIMULATOR_TEST_SHARD': shard}, check=True)
+
+    prefix = '-only-testing:OnionaryUITests/OnionaryUITests/'
+    runs = [json.loads(line) for line in capture.read_text().splitlines()]
+    portions = [[arg.removeprefix(prefix) for arg in run if arg.startswith(prefix)] for run in runs]
+    assert len(portions) == 3
+    assert 'testMarketingScreenshots' in portions[0]
+    assert max(map(len, portions)) - min(map(len, portions)) <= 1
+    source = (IOS / 'UITests/OnionaryUITests.swift').read_text()
+    expected = re.findall(r'\bfunc\s+(test\w+)\s*\(', source)
+    assert sorted(name for portion in portions for name in portion) == sorted(expected)
+    for run in runs:
+        assert 'test-without-building' in run
+        assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '180'
 
 
 @pytest.mark.parametrize('failure_stage', ['none', 'build', 'app', 'plan', 'boot', 'test'])

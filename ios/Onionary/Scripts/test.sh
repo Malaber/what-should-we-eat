@@ -39,6 +39,15 @@ if [[ "$mode" == --build-only ]]; then
 fi
 
 device_type=${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro}
+shard=${SIMULATOR_TEST_SHARD:-all}
+case "$shard" in
+  all|1|2|3) ;;
+  *) echo "Invalid simulator test shard: $shard" >&2; exit 2 ;;
+esac
+if [[ "$device_type" == *iPhone-Duo && "$shard" != all ]]; then
+  echo "Duo fold cases use their own per-case simulators" >&2
+  exit 2
+fi
 simulator_id=${SIMULATOR_ID:-}
 create_simulator() {
   simulator_id=$(python3 Scripts/resolve_simulator.py --create --device-type "$device_type" --runtime "${SIMULATOR_RUNTIME:-}")
@@ -86,13 +95,35 @@ run_tests() {
     -resultBundlePath "$output/Onionary.xcresult" test-without-building "$@"
 }
 
-if [[ "$device_type" != *iPhone-Duo ]]; then
+if [[ "$device_type" != *iPhone-Duo && "$shard" == all ]]; then
   run_tests "$result_dir" 180 -only-testing:OnionaryUITests/OnionaryUITests
+elif [[ "$device_type" != *iPhone-Duo ]]; then
+  # A fresh standard runner runs each third of the suite. Keep the capture
+  # case on shard 1 and balance all other cases in a stable order.
+  native_cases=$(sed -nE 's/^[[:space:]]*(@MainActor[[:space:]]+)?func (test[A-Za-z0-9_]+)\(\).*/\2/p' UITests/OnionaryUITests.swift | LC_ALL=C sort)
+  [[ -n "$native_cases" ]] || { echo 'No iPhone or iPad test cases found' >&2; exit 1; }
+  tests=()
+  index=0
+  while IFS= read -r scenario; do
+    [[ -n "$scenario" ]] || continue
+    if [[ "$scenario" == testMarketingScreenshots ]]; then
+      assigned=1
+    else
+      assigned=$(( (index + 1) % 3 + 1 ))
+      index=$(( index + 1 ))
+    fi
+    if [[ "$assigned" == "$shard" ]]; then
+      tests+=("-only-testing:OnionaryUITests/OnionaryUITests/$scenario")
+    fi
+  done <<< "$native_cases"
+  [[ ${#tests[@]} -gt 0 ]] || { echo "No UI tests found in shard $shard" >&2; exit 1; }
+  run_tests "$result_dir" 180 "${tests[@]}"
 elif [[ -n "${SIMULATOR_ID:-}" ]]; then
   run_tests "$result_dir" 360 -only-testing:OnionaryUITests/OnionaryDuoTests
 else
   # Each fold scenario starts with a clean SpringBoard/AX session. Reusing the
   # guest forces XCTest to terminate a process tracked by the previous display.
+  # Keep the Duo source order: the first fold case validates hinge primitives.
   duo_cases=$(sed -nE 's/^[[:space:]]*(@MainActor[[:space:]]+)?func (test[A-Za-z0-9_]+)\(\).*/\2/p' UITests/OnionaryDuoTests.swift)
   [[ -n "$duo_cases" ]] || { echo 'No Duo test cases found' >&2; exit 1; }
   while IFS= read -r scenario; do

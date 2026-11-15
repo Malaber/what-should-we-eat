@@ -84,10 +84,13 @@ jobs:
           path: ${{ runner.temp }}/onionary-build/build.log
           retention-days: 7
   ios:
+    name: ios (${{ matrix.profile }}, ${{ matrix.shard }})
     needs: ios-build
     strategy:
       fail-fast: false
       matrix:
+        profile: [iphone, ipad]
+        shard: ['1', '2', '3']
         include:
           - profile: iphone
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
@@ -98,6 +101,7 @@ jobs:
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
             runtime: '27.1'
+            shard: all
     runs-on: xcode-27
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
@@ -122,19 +126,21 @@ jobs:
           TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
           SIMULATOR_RUNTIME: ${{ matrix.runtime }}
+          SIMULATOR_TEST_SHARD: ${{ matrix.shard }}
         run: |
           mkdir -p "$TEST_RESULTS_DIR/DerivedData"
           tar -xzf "$RUNNER_TEMP/onionary-test-products.tar.gz" -C "$TEST_RESULTS_DIR/DerivedData"
           bash ios/Onionary/Scripts/test.sh --test-only
-      - run: pip install -r marketing/requirements.txt
+      - if: matrix.shard == '1' || matrix.profile == 'duo'
+        run: pip install -r marketing/requirements.txt
       - name: Export captures from this test run
-        if: matrix.profile != 'duo'
+        if: matrix.shard == '1'
         env:
           FAMILY: ${{ matrix.profile }}
           RESULT_BUNDLE: ${{ runner.temp }}/onionary-tests/Onionary.xcresult
         run: python3 execution/marketing_screenshots.py --result-bundle "$RESULT_BUNDLE" --family "$FAMILY" --output ".tmp/marketing/$FAMILY" --defer-creative
       - uses: actions/upload-artifact@v4
-        if: matrix.profile != 'duo'
+        if: matrix.shard == '1'
         with:
           name: onionary-capture-${{ matrix.profile }}-en-US
           path: |
@@ -165,7 +171,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: onionary-ios-test-results-${{ matrix.profile }}
+          name: onionary-ios-test-results-${{ matrix.profile }}${{ matrix.shard != 'all' && format('-{0}', matrix.shard) || '' }}
           path: |
             ${{ runner.temp }}/onionary-tests/Onionary.xcresult
             ${{ runner.temp }}/onionary-tests/*.log
