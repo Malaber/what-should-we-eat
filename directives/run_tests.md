@@ -360,6 +360,12 @@ the featured recipe near the top so it is visible in the first recipe-book
 capture and can be tapped on the shorter Duo cover. The test checks its
 control against the real receiving window before tapping.
 
+Verify saved ingredient order in the updated recipe preview immediately after
+the editor closes. The iPhone CI case expired while reopening the editor after
+save. A three-ingredient fixture lets one upward and one downward move leave
+a different order to verify. Unchanged edit cancellation is an independent
+case that returns to the library and checks for the absence of a draft.
+
 Local release/test profiles run sequentially and reuse one build cache while
 retaining separate xcresults. Keep the 8 GiB test-entry and 6 GiB archive guards;
 report GB/GiB accurately. Finder may include purgeable capacity, and APFS/Time

@@ -214,7 +214,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
     func testIngredientOrderCanBeMovedAndSaved() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--ui-testing", "--reset", "--ordering-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
         try selectRecipe(in: app)
@@ -223,36 +223,51 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(ingredients.waitForExistence(timeout: 5))
         ingredients.tap()
         let sheet = app.navigationBars["Reorder ingredients"]
-        XCTAssertTrue(sheet.waitForExistence(timeout: 5))
         let list = app.collectionViews["recipe-order-list"]
         XCTAssertTrue(list.waitForExistence(timeout: 5))
         XCTAssertEqual(list.textFields.count, 0)
         let cheese = list.staticTexts["Cheese"]
         let pasta = list.staticTexts["Pasta"]
+        let lemon = list.staticTexts["Lemon"]
         XCTAssertTrue(list.buttons["Reorder Cheese"].exists)
         XCTAssertLessThan(cheese.frame.minY, pasta.frame.minY)
+        XCTAssertLessThan(pasta.frame.minY, lemon.frame.minY)
         XCTAssertFalse(list.buttons["Move Cheese up"].isEnabled)
-        XCTAssertFalse(list.buttons["Move Pasta down"].isEnabled)
+        XCTAssertFalse(list.buttons["Move Lemon down"].isEnabled)
         list.buttons["Move Pasta up"].tap()
         XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
-        list.buttons["Move Pasta down"].tap()
-        XCTAssertLessThan(cheese.frame.minY, pasta.frame.minY)
         list.buttons["Move Cheese down"].tap()
-        XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
+        XCTAssertLessThan(lemon.frame.minY, cheese.frame.minY)
         sheet.buttons["Done"].tap()
         XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
         app.buttons["Save"].tap()
-        XCTAssertTrue(ingredients.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Edit recipe"].waitForNonExistence(timeout: 5))
+        let preview = app.collectionViews["recipe-preview"]
+        let savedRows = ["Pasta", "Lemon", "Cheese"].map { preview.staticTexts[$0] }
+        XCTAssertTrue(savedRows.allSatisfy(\.exists))
+        let savedOrder = savedRows.map { $0.frame.minY }
+        XCTAssertLessThan(savedOrder[0], savedOrder[1])
+        XCTAssertLessThan(savedOrder[1], savedOrder[2])
+    }
+
+    @MainActor
+    func testCancellingUnchangedEditDoesNotSaveDraft() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        try selectRecipe(in: app)
         app.buttons["Edit recipe"].tap()
-        XCTAssertTrue(ingredients.waitForExistence(timeout: 5))
-        ingredients.tap()
-        XCTAssertTrue(sheet.waitForExistence(timeout: 5))
-        XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
-        sheet.buttons["Done"].tap()
-        XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
-        app.buttons["Cancel"].tap()
-        XCTAssertTrue(ingredients.waitForNonExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts["Saved drafts"].exists)
+        let editor = app.navigationBars["Edit recipe"]
+        XCTAssertTrue(editor.buttons["Cancel"].waitForExistence(timeout: 5))
+        editor.buttons["Cancel"].tap()
+        XCTAssertTrue(editor.waitForNonExistence(timeout: 5))
+        let back = app.navigationBars["Recipe preview"].buttons["Recipe book"]
+        if back.exists { back.tap() }
+        let book = app.collectionViews["recipe-list"]
+        XCTAssertTrue(book.buttons["recipe-1"].waitForExistence(timeout: 5))
+        XCTAssertFalse(book.buttons["saved-draft-Lemon & cheese pasta"].exists)
+        XCTAssertFalse(book.staticTexts["Saved drafts"].exists)
     }
 
     @MainActor

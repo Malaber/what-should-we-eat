@@ -440,7 +440,10 @@ final class AppStore {
             UserDefaults.standard.removeObject(forKey: "language")
         }
         kitchen = (try? KitchenFile.read(file!)) ?? Kitchen()
-        if kitchen.recipes.isEmpty {
+        if kitchen.recipes.isEmpty && ProcessInfo.processInfo.arguments.contains("--ordering-fixture") {
+            let data = try! JSONSerialization.data(withJSONObject: [UITestBackend.recipe])
+            kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: data)
+        } else if kitchen.recipes.isEmpty {
             let json = #"[{"id":1,"household_id":1,"name":"Lemon & cheese pasta","notes":"Finish with lemon zest.","total_time_min":20,"ingredients":[{"id":1,"name":"Cheese","quantity":200,"unit":"g"},{"id":2,"name":"Pasta","quantity":250,"unit":"g"}],"instruction_steps":[{"id":1,"step_number":1,"description":"Boil the pasta in salted water.","duration_min":10},{"id":2,"step_number":2,"description":"Fold in {{Cheese|20%}} and lemon zest.","duration_min":null}]}]"#
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: Data(json.utf8))
         }

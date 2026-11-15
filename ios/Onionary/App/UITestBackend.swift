@@ -5,7 +5,21 @@ import OnionaryCore
 
 /// Deterministic UI-test transport. Compiled out of release builds.
 @MainActor enum UITestBackend {
-    static var recipe: [String: Any] = ["id":1,"household_id":1,"name":"Lemon & cheese pasta","notes":"Finish with lemon zest.","total_time_min":20,"active_cooking_time_min":10,"kcal_per_serving":400,"tags":[["id":1,"name":"vegetarian"]],"ingredients":[["id":1,"name":"Cheese","quantity":200,"unit":"g"],["id":2,"name":"Pasta","quantity":250,"unit":"g"]],"instruction_steps":[["id":1,"step_number":1,"description":"Boil the pasta in salted water.","duration_min":10],["id":2,"step_number":2,"description":"Fold in {{Cheese|20%}} and lemon zest."]]]
+    static var recipe: [String: Any] = {
+        var ingredients: [[String: Any]] = [
+            ["id": 1, "name": "Cheese", "quantity": 200, "unit": "g"],
+            ["id": 2, "name": "Pasta", "quantity": 250, "unit": "g"],
+        ]
+        if ProcessInfo.processInfo.arguments.contains("--ordering-fixture") {
+            ingredients.append(["id": 3, "name": "Lemon", "quantity": 1, "unit": "piece"])
+        }
+        return ["id": 1, "household_id": 1, "name": "Lemon & cheese pasta", "notes": "Finish with lemon zest.",
+                "total_time_min": 20, "active_cooking_time_min": 10, "kcal_per_serving": 400,
+                "tags": [["id": 1, "name": "vegetarian"]], "ingredients": ingredients, "instruction_steps": [
+                    ["id": 1, "step_number": 1, "description": "Boil the pasta in salted water.", "duration_min": 10],
+                    ["id": 2, "step_number": 2, "description": "Fold in {{Cheese|20%}} and lemon zest."],
+                ]]
+    }()
     static var planned = false
     static var cooked = false
     private static var generatedShoppingList = false
