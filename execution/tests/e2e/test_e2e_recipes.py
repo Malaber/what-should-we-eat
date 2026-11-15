@@ -58,10 +58,12 @@ def test_recipe_crud(page: Page):
     
     # SEARCH
     search = page.locator("#recipe-search")
+    card_node = cards.first.element_handle()
     search.fill("Not Found")
-    expect(cards).to_have_count(0)
+    expect(cards.first).to_be_hidden()
     search.fill("Updated")
-    expect(cards).to_have_count(1)
+    expect(cards.first).to_be_visible()
+    assert card_node.evaluate("node => node === document.querySelector('.recipe-card')")
     
     # DELETE
     cards.first.locator("text='🗑️ Delete'").click()
@@ -70,6 +72,14 @@ def test_recipe_crud(page: Page):
     
     expect(page.locator("#toast")).to_contain_text("Recipe deleted")
     expect(cards).to_have_count(0)
+
+
+def test_account_settings_uses_kitchen_navigation(page):
+    login_as_test_user(page)
+    page.goto(page.base_url + "/auth/account")
+    expect(page.get_by_role("navigation").get_by_role("link", name="Recipes")).to_be_visible()
+    page.get_by_role("link", name="Back to your kitchen").click()
+    expect(page).to_have_url(page.base_url + "/kitchen.html")
 
 
 def test_recipe_share_link_preview_and_revoke(page):

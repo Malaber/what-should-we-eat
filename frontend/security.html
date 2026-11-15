@@ -7,11 +7,28 @@
     <meta charset="utf-8" />
     <meta content="width=device-width,initial-scale=1" name="viewport" />
     <title>Account · Onionary</title>
+    <link href="/styles.css" rel="stylesheet" />
     <link href="/passkey.css" rel="stylesheet" />
     <script src="/security.js" type="module"></script>
   </head>
-  <body class="auth-surface">
+  <body class="auth-surface account-page">
+    <nav class="top-nav">
+      <div class="container nav-container">
+        <button aria-label="Toggle menu" class="burger-btn" id="burger-btn" aria-expanded="false">
+          ☰
+        </button>
+        <div class="nav-links" id="nav-links">
+          <a class="nav-link" data-i18n="nav.pick_meals" href="/">Pick meals</a>
+          <a class="nav-link" data-i18n="nav.kitchen" href="/kitchen.html">Kitchen</a>
+          <a class="nav-link" data-i18n="nav.manage_recipes" href="/recipes.html">Recipes</a>
+          <a class="nav-link" data-i18n="nav.households" href="/households.html">Households</a>
+        </div>
+      </div>
+    </nav>
     <main>
+      <a class="account-back" data-i18n="security.copy_6" href="/kitchen.html"
+        >Back to your kitchen</a
+      >
       <div aria-hidden="true" class="mark">🧅</div>
       <p class="eyebrow" data-i18n="security.copy_0"></p>
       <h1 data-i18n="account.title"></h1>
@@ -53,7 +70,6 @@
       <p class="help" data-i18n="account.keep-key"></p>
       <div id="keys"></div>
       <button data-i18n="security.copy_3" id="add"></button>
-      <a data-i18n="security.copy_6" href="/"></a>
       <dialog class="auth-surface" id="action-dialog">
         <form id="action-form">
           <h2 id="action-title"></h2>
@@ -65,5 +81,6 @@
         </form>
       </dialog>
     </main>
+    <script src="/auth.js"></script>
   </body>
 </html>

@@ -202,7 +202,7 @@ window.WSWEAuth = new AuthHandler();
 const deployedVersion = document.createElement('small');
 deployedVersion.id = 'deployed-version';
 deployedVersion.className = 'deployed-version';
-document.body.append(deployedVersion);
+(document.querySelector('.site-footer') || document.body).append(deployedVersion);
 fetch('/version', {cache: 'no-store'}).then(response => {
   if (!response.ok) throw new Error('Version unavailable');
   return response.json();

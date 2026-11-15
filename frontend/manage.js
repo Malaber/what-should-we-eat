@@ -71,7 +71,7 @@ const $toast = document.getElementById('toast');
 async function init() {
   // Attach all event listeners synchronously so UI is responsive
   // Search
-  $recipeSearch.addEventListener('input', handleSearch);
+  $recipeSearch.addEventListener('input', filterCards);
 
   // Auth sync
   window.addEventListener('wswe_auth_changed', async () => {
@@ -149,38 +149,22 @@ async function loadRecipes() {
 }
 
 // ── Search & Render ────────────────────────────────────────────
-function handleSearch(e) {
-  const query = e.target.value.toLowerCase().trim();
-  if (!query) {
-    renderRecipes(allRecipes);
-    return;
+function filterCards() {
+  const query = $recipeSearch.value.toLowerCase().trim();
+  let count = 0;
+  for (const [index, card] of [...$manageGrid.querySelectorAll('.recipe-card')].entries()) {
+    const recipe = allRecipes[index];
+    const fields = [recipe.name, ...recipe.tags.map(tag => tag.name), ...recipe.ingredients.map(item => item.name)];
+    card.hidden = !fields.some(value => value.toLowerCase().includes(query));
+    if (!card.hidden) count++;
   }
-
-  const filtered = allRecipes.filter(r => {
-    const matchName = (r.name || '').toLowerCase().includes(query);
-    const matchTags = r.tags.some(t => t.name.toLowerCase().includes(query));
-    // Provide fallback array for ingredients just in case
-    const matchIngs = (r.ingredients || []).some(ing => (ing.name || '').toLowerCase().includes(query));
-    return matchName || matchTags || matchIngs;
-  });
-  renderRecipes(filtered);
+  $listBadge.textContent = count;
+  $manageGrid.querySelector('.empty-state').hidden = count > 0;
 }
 
-function renderRecipes(recipesToRender = allRecipes) {
-  $listBadge.textContent = recipesToRender.length;
-
-  if (recipesToRender.length === 0) {
-    $manageGrid.innerHTML = `
-      <div class="empty-state" style="grid-column: 1 / -1;">
-        <div class="icon">🧅</div>
-        <p>${window.t("ui.0")}</p>
-      </div>
-    `;
-    return;
-  }
-
-  $manageGrid.innerHTML = recipesToRender.map((r, i) => `
-    <div class="recipe-card" style="animation-delay: ${i * 0.03}s">
+function renderRecipes() {
+  $manageGrid.innerHTML = allRecipes.map(r => `
+    <div class="recipe-card">
       <div class="recipe-card-header">
         <h3>${r.icon ? `<span aria-hidden="true">${esc(r.icon)}</span> ` : ''}${esc(r.name)}</h3>
       </div>
@@ -196,10 +180,11 @@ function renderRecipes(recipesToRender = allRecipes) {
       <div class="recipe-card-footer">
         <button class="btn btn-secondary btn-sm" onclick="shareRecipe(${r.id})">${window.t("share.title")}</button>
         <button class="btn btn-secondary btn-sm" onclick="editRecipe(${r.id})">${window.t("ui.1")}</button>
-        <button class="btn btn-secondary btn-sm" onclick="promptDelete(${r.id}, '${escJs(r.name)}')">${window.t("ui.2")}</button>
+        <button class="btn btn-secondary btn-sm" onclick="promptDelete(${r.id})">${window.t("ui.2")}</button>
       </div>
     </div>
-  `).join('');
+  `).join('') + `<div class="empty-state" style="grid-column: 1 / -1"><div class="icon">🧅</div><p>${window.t('ui.0')}</p></div>`;
+  filterCards();
 }
 
 
@@ -637,9 +622,9 @@ async function saveRecipe(e) {
 // ── Delete ─────────────────────────────────────────────────────
 let recipeToDelete = null;
 
-window.promptDelete = function (id, name) {
+window.promptDelete = function (id) {
   recipeToDelete = id;
-  document.getElementById('delete-recipe-name').textContent = name;
+  document.getElementById('delete-recipe-name').textContent = allRecipes.find(recipe => recipe.id === id)?.name || '';
   $deleteModal.style.display = 'flex';
 };
 
@@ -673,11 +658,6 @@ function esc(str) {
   const d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function escJs(str) {
-  if (!str) return '';
-  return str.replace(/'/g, "\\'");
 }
 
 let toastTimer;
