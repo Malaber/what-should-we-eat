@@ -159,8 +159,23 @@
             <input id="recipe-id" type="hidden" />
             <div class="form-row">
               <div class="control-group" style="flex: 2">
-                <label>Recipe Name</label>
+                <label for="recipe-name">Recipe Name</label>
                 <input id="recipe-name" required="" type="text" />
+              </div>
+              <div class="control-group recipe-icon-field">
+                <label for="recipe-icon" data-i18n="recipe.icon">Food icon</label>
+                <input id="recipe-icon" maxlength="32" list="recipe-icons" type="text" />
+                <datalist id="recipe-icons">
+                  <option value="🍲"></option>
+                  <option value="🍝"></option>
+                  <option value="🥗"></option>
+                  <option value="🥦"></option>
+                  <option value="🍕"></option>
+                  <option value="🍛"></option>
+                  <option value="🥐"></option>
+                  <option value="🍰"></option>
+                  <option value="🍪"></option>
+                </datalist>
               </div>
               <div class="control-group">
                 <label>Kcal / Serving</label>

@@ -93,6 +93,13 @@ def test_dark_import_and_share_layout(page: Page):
     dialog.get_by_text('Done', exact=True).click()
     card.get_by_text('✏️ Edit').click()
     expect(page.locator('#recipe-servings')).to_have_value('4.32')
+    page.locator('#ingredients-list .ing-name').fill('Onion')
+    page.locator('#recipe-icon').fill('🧅')
+    assert page.locator('#edit-modal .modal-body').evaluate('(el) => el.scrollWidth <= el.clientWidth + 1')
+    page.locator('#btn-save-recipe').click()
+    expect(card.locator('h3')).to_contain_text('🧅')
+    card.get_by_text('✏️ Edit').click()
+    expect(page.locator('#recipe-icon')).to_have_value('🧅')
 
     page.locator('#btn-close-modal').click()
     page.locator('#btn-create-recipe').click()

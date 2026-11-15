@@ -840,6 +840,7 @@ body::before {
 }
 
 .editor-row input {
+  min-width: 0;
   padding: 8px 12px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
@@ -849,6 +850,10 @@ body::before {
   outline: none;
 }
 .editor-row input:focus { border-color: var(--green); }
+.editor-row > .control-group { min-width: 0; flex: 1; }
+.editor-row > .btn-icon { flex: 0 0 auto; }
+.form-row > .control-group { min-width: 0; }
+.recipe-icon-field { max-width: 9rem; }
 
 /* ── Loading spinner ────────────────────────────────────────── */
 .spinner {

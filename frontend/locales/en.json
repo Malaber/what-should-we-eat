@@ -236,5 +236,7 @@
   "deletion.success": "Your account has been permanently deleted. You are signed out.",
   "deletion.home": "Back to Onionary",
   "deletion.mismatch": "Email confirmation does not match your account.",
-  "recipe.group": "Group (optional)"
+  "recipe.group": "Group (optional)",
+  "recipe.icon": "Food icon",
+  "recipe.icon-invalid": "Enter a single emoji."
 }

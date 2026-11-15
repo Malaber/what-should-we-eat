@@ -16,7 +16,6 @@ function getAuthHeaders(extra = {}) {
 let allRecipes = [];
 let allTags = [];
 let editRecipeId = null;
-let recipeIcon = null;
 let recipeModalMode = 'manual';
 
 // Form DOM refs
@@ -29,6 +28,7 @@ const $recipeSearch = document.getElementById('recipe-search');
 const $recipeForm = document.getElementById('recipe-form');
 const $modalTitle = document.getElementById('modal-title');
 const $recipeName = document.getElementById('recipe-name');
+const $recipeIcon = document.getElementById('recipe-icon');
 const $recipeServings = document.getElementById('recipe-servings');
 const $recipeKcal = document.getElementById('recipe-kcal');
 const $recipeActiveTime = document.getElementById('recipe-active-time');
@@ -163,7 +163,7 @@ function renderRecipes(recipesToRender = allRecipes) {
   $manageGrid.innerHTML = recipesToRender.map((r, i) => `
     <div class="recipe-card" style="animation-delay: ${i * 0.03}s">
       <div class="recipe-card-header">
-        <h3>${esc(r.name)}</h3>
+        <h3>${r.icon ? `<span aria-hidden="true">${esc(r.icon)}</span> ` : ''}${esc(r.name)}</h3>
       </div>
       <div class="recipe-card-meta">
         <span class="meta-chip">${window.t("recipe.servings")}: ${Number(r.servings || 1).toLocaleString(window.I18n.lang, {maximumFractionDigits: 2})}</span>
@@ -187,7 +187,6 @@ function renderRecipes(recipesToRender = allRecipes) {
 // ── Modals & Forms ─────────────────────────────────────────────
 function openCreateModal() {
   editRecipeId = null;
-  recipeIcon = null;
   $modalTitle.textContent = window.t('feedback.1');
   $recipeForm.reset();
   $importUrl.value = '';
@@ -218,7 +217,7 @@ function editRecipe(id) {
   if (!r) return;
 
   editRecipeId = id;
-  recipeIcon = r.icon || null;
+  $recipeIcon.value = r.icon || '';
   $modalTitle.textContent = window.t('feedback.2');
   $recipeModeSwitch.style.display = 'none';
   $importStatus.textContent = '';
@@ -317,7 +316,7 @@ function getApiErrorMessage(data) {
 }
 
 function applyImportedRecipe(recipe) {
-  recipeIcon = recipe.icon || null;
+  $recipeIcon.value = recipe.icon || '';
   $recipeName.value = recipe.name || '';
   $recipeNotes.value = recipe.notes || '';
   $recipeServings.value = recipe.servings || 1;
@@ -407,8 +406,16 @@ async function saveRecipe(e) {
     return;
   }
 
+  const icon = $recipeIcon.value.trim();
+  const glyphs = [...new Intl.Segmenter().segment(icon)];
+  if (icon && (glyphs.length !== 1 || !/(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3)/u.test(icon))) {
+    toast(window.t('recipe.icon-invalid'));
+    $recipeIcon.focus();
+    return;
+  }
+
   const recipeData = {
-    icon: recipeIcon,
+    icon: icon || null,
     name: name,
     notes: $recipeNotes.value.trim() || null,
     servings: Number($recipeServings.value),
