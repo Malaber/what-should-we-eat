@@ -50,7 +50,7 @@ public enum RecipeBrowsing {
         if sort == .newest {
             for recipe in filtered {
                 guard let timestamp = recipe.createdAt else { continue }
-                creationDates[recipe.id] = (try? Date(timestamp, strategy: .iso8601(includingFractionalSeconds: true)))
+                creationDates[recipe.id] = (try? Date(timestamp, strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true)))
                     ?? (try? Date(timestamp, strategy: .iso8601))
             }
         }
