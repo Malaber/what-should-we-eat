@@ -355,8 +355,7 @@ struct CookingView: View {
                                index == 0 || steps[index - 1].groupName != group {
                                 Text(group).font(.headline).accessibilityAddTraits(.isHeader)
                             }
-                            checkRow(key: "step-\(step.id)", label: IngredientPlaceholders.resolve(step.description, ingredients: adventure.recipe.ingredients, multiplier: adventure.multiplier, locale: L10n.locale),
-                                     subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""), adventure: adventure)
+                            cookingStep(step, adventure: adventure)
                         }
                     }
                     if let notes = adventure.recipe.notes, !notes.isEmpty { Section("Kitchen notes") { Text(notes) } }
@@ -418,6 +417,39 @@ struct CookingView: View {
                 }
             }
     }
+    private func cookingStep(_ step: CookingStep, adventure: Adventure) -> some View {
+        let parts = IngredientPlaceholders.parts(step.description, ingredients: adventure.recipe.ingredients,
+                                                 multiplier: adventure.multiplier, locale: L10n.locale)
+        return VStack(alignment: .leading, spacing: 4) {
+            checkRow(key: "step-\(step.id)", label: parts.map(\.text).joined(),
+                     subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""),
+                     adventure: adventure)
+            ChipFlow(spacing: 6) {
+                ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
+                    if case .amount(let ingredient, let label) = part {
+                        ingredientBadge(ingredient, label: label, adventure: adventure)
+                    }
+                }
+            }.padding(.leading, 32)
+        }
+    }
+
+    private func ingredientBadge(_ ingredient: Ingredient, label: String, adventure: Adventure) -> some View {
+        let key = "ingredient-\(ingredient.id)"
+        let checked = adventure.checked.contains(key)
+        return Button {
+            store.update { $0.toggle(key: key, label: ingredient.name) }
+        } label: {
+            Label(label, systemImage: checked ? "checkmark.circle.fill" : "circle")
+                .font(.subheadline.weight(.medium)).padding(.horizontal, 10).padding(.vertical, 6)
+                .foregroundStyle(onion)
+                .background(onion.opacity(0.14), in: Capsule())
+                .frame(minHeight: 44).contentShape(Rectangle())
+        }.buttonStyle(.plain)
+            .accessibilityValue(checked ? "Checked" : "Unchecked")
+            .accessibilityIdentifier("step-ingredient-\(ingredient.id)")
+    }
+
     func checkRow(key: String, label: String, subtitle: String, adventure: Adventure) -> some View {
         let checked = adventure.checked.contains(key)
         return Button { focusedItem = key; store.update { $0.toggle(key: key, label: label) } } label: {

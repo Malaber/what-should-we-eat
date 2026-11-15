@@ -25,3 +25,17 @@ dialog { max-width: 420px; border: 1px solid var(--auth-border); border-radius: 
 
 .auth-surface .danger { display: inline-block; background: #b42318; color: #fff; padding: .85rem 1.2rem; border: 2px solid #b42318; border-radius: .7rem; font-weight: 700; margin-block: 1rem; }
 .auth-surface .danger:hover { background: #8f1c13; color: #fff; }
+.shared-ingredient-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin: .375rem 0 .75rem 1.5rem;
+}
+.shared-ingredient-badges button {
+  width: auto;
+  padding: .375rem .75rem;
+  border-radius: 999px;
+}
+.shared-ingredient-badges button[aria-pressed="true"] {
+  text-decoration: line-through;
+}

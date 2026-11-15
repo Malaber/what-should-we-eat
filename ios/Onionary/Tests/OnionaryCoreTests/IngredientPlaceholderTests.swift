@@ -2,6 +2,14 @@ import XCTest
 @testable import OnionaryCore
 
 final class IngredientPlaceholderTests: XCTestCase {
+    func testGroupedAmountsIdentifyTheChecklistItemAndScaledLabel() throws {
+        let ingredients = try JSONDecoder().decode([Ingredient].self, from: Data(#"[{"id":1,"name":"Milk","quantity":100,"unit":"ml","groupName":"Filling"},{"id":2,"name":"Milk","quantity":200,"unit":"ml","groupName":"Dough"}]"#.utf8))
+        let parts = IngredientPlaceholders.parts("Use {{Filling::Milk|40%}}. {{Milk|40%}} stays unresolved.",
+                                                 ingredients: ingredients, multiplier: 2, locale: Locale(identifier: "en_US"))
+        XCTAssertEqual(parts, [.text("Use "), .amount(ingredients[0], label: "80 ml Milk"),
+                               .text(". {{Milk|40%}} stays unresolved.")])
+    }
+
     func testPercentagesTrackPortionsAndRoundOnlyDisplay() throws {
         let ingredients = try JSONDecoder().decode([Ingredient].self, from: Data(#"[{"id":1,"name":"Milk","quantity":100,"unit":"ml"}]"#.utf8))
         let render: (String, Decimal) -> String = { IngredientPlaceholders.resolve($0, ingredients: ingredients, multiplier: $1, locale: Locale(identifier: "en_US")) }

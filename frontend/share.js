@@ -34,6 +34,18 @@ function element(tag, text) {
 function renderRecipe(recipe, active, checked, persist) {
   const ingredients = recipe.ingredients || [];
   const steps = [...(recipe.instruction_steps || [])].sort((a, b) => a.step_number - b.step_number);
+  const controls = new Map();
+  function observe(id, update) {
+    if (!controls.has(id)) controls.set(id, []);
+    controls.get(id).push(update);
+    update(checked.has(id));
+  }
+  function toggle(id, value) {
+    if (value) checked.add(id);
+    else checked.delete(id);
+    for (const update of controls.get(id) || []) update(value);
+    persist();
+  }
   section.replaceChildren(element('h2', recipe.name));
   if (recipe.notes) section.append(element('p', recipe.notes));
   for (const [key, rows, text] of [
@@ -59,14 +71,24 @@ function renderRecipe(recipe, active, checked, persist) {
         const label = element('label');
         const checkbox = element('input');
         checkbox.type = 'checkbox';
-        checkbox.checked = checked.has(id);
-        checkbox.onchange = () => {
-          if (checkbox.checked) checked.add(id);
-          else checked.delete(id);
-          persist();
-        };
+        observe(id, value => { checkbox.checked = value; });
+        checkbox.onchange = () => toggle(id, checkbox.checked);
         label.append(checkbox, element('span', text(row)));
         item.append(label);
+        if (key === 'steps') {
+          const badges = element('div');
+          badges.className = 'shared-ingredient-badges';
+          for (const part of ingredientPlaceholderParts(row.description, ingredients)) {
+            if (!part.ingredient) continue;
+            const ingredientID = `ingredients-${ingredients.indexOf(part.ingredient)}`;
+            const badge = element('button', part.text);
+            badge.type = 'button';
+            observe(ingredientID, value => badge.setAttribute('aria-pressed', String(value)));
+            badge.onclick = () => toggle(ingredientID, !checked.has(ingredientID));
+            badges.append(badge);
+          }
+          if (badges.childElementCount) item.append(badges);
+        }
       }
       list.append(item);
     }

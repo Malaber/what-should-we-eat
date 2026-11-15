@@ -244,13 +244,84 @@ def _build_instruction_steps_and_notes(
         step, note = _split_step_and_note(text)
         if step:
             instructions.append(InstructionStepCreate(
-                step_number=len(instructions) + 1, description=step, group_name=current_group,
+                step_number=len(instructions) + 1,
+                description=_link_instruction_amounts(step, ingredients, current_group),
+                group_name=current_group,
             ))
         if note:
             note_chunks.append(note)
 
     notes = "\n\n".join(chunk for chunk in note_chunks if chunk) or None
     return instructions, notes
+
+
+_MEASUREMENTS = {
+    "mg": ("mass", 0.001), "g": ("mass", 1), "kg": ("mass", 1000),
+    "ml": ("volume", 1), "cl": ("volume", 10), "dl": ("volume", 100), "l": ("volume", 1000),
+    "tl": ("spoon", 1), "el": ("spoon", 3),
+}
+
+
+def _link_instruction_amounts(text: str, ingredients: list[IngredientCreate], group: str | None) -> str:
+    names: dict[str, list[IngredientCreate]] = {}
+    for item in ingredients:
+        if not item.quantity or item.quantity <= 0 or re.search(r"[{}|]|::", item.name + (item.group_name or "")):
+            continue
+        short = re.sub(r"\s*\(.*$", "", item.name).strip()
+        for name in {item.name.casefold(), short.casefold()} - {""}:
+            names.setdefault(name, []).append(item)
+    if not names:
+        return text
+    alternatives = "|".join(re.escape(name) for name in sorted(names, key=lambda name: (-len(name), name)))
+    units = "|".join(re.escape(unit) for unit in sorted(KNOWN_UNITS | {"%"}, key=lambda unit: (-len(unit), unit)))
+    fractions = "".join(FRACTION_MAP)
+    number = rf"(?:\d+\s+\d+/\d+|\d*[{fractions}]|\d+/\d+|\d+(?:[.,]\d+)?)"
+    pattern = rf"(?<![\w.,/\-–])(?P<number>{number})(?:\s*(?P<unit>{units})\.?)?\s+(?P<name>{alternatives})(?!\w)"
+
+    def replace(match: re.Match) -> str:
+        name = match["name"].casefold()
+        candidates = names[name]
+        if len(candidates) > 1 and group:
+            component = _component_name(group)
+            candidates = [item for item in candidates if _component_name(item.group_name or "") == component]
+        if len(candidates) != 1:
+            return match[0]
+        item = candidates[0]
+        amount, consumed = _consume_quantity(match["number"].split())
+        if not consumed or amount is None or amount <= 0:
+            return match[0]
+        source_unit = _normalize_unit(match["unit"] or "")
+        target_unit = _normalize_unit(item.unit or "")
+        if source_unit == "%":
+            percent = amount
+        else:
+            if source_unit != target_unit:
+                source = _MEASUREMENTS.get(source_unit)
+                target = _MEASUREMENTS.get(target_unit)
+                if source is None or target is None or source[0] != target[0]:
+                    return match[0]
+                amount *= source[1] / target[1]
+            percent = amount / float(item.quantity) * 100
+        if percent > 100.0000001:
+            return match[0]
+        percent_text = f"{min(percent, 100):.8f}".rstrip("0").rstrip(".")
+        if percent_text == "0":
+            return match[0]
+        requires_group = sum(other.name.casefold() == item.name.casefold() for other in ingredients) > 1
+        if requires_group and not item.group_name:
+            return match[0]
+        key = f"{item.group_name}::{item.name}" if requires_group else item.name
+        return f"{{{{{key}|{percent_text}%}}}}"
+
+    # Leave any already-authored portable tokens intact.
+    return "".join(
+        piece if index % 2 else re.sub(pattern, replace, piece, flags=re.IGNORECASE)
+        for index, piece in enumerate(re.split(r"(\{\{[^{}]+\}\})", text))
+    )
+
+
+def _component_name(name: str) -> str:
+    return re.sub(r"^(für (den|die|das) |zubereitung[- ]+)|[- ]+zubereitung$", "", name.casefold())
 
 
 def _is_instruction_heading(text: str) -> bool:

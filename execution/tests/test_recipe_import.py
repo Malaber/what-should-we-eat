@@ -95,6 +95,20 @@ def test_schema_instruction_sections_are_preserved():
     ]
 
 
+def test_import_links_reliable_ingredient_amounts_but_keeps_other_numbers():
+    structured = {
+        "@type": "Recipe",
+        "recipeIngredient": ["1 kg Mehl", "100 ml Milch", "2 EL Öl"],
+        "recipeInstructions": [{
+            "text": "200 g Mehl mit 80 ml Milch und 1 EL Öl mischen. 20 Minuten bei 180 °C backen.",
+        }],
+    }
+    recipe = parse_recipe_html("chefkoch", f'<script type="application/ld+json">{json.dumps(structured)}</script>')
+    assert recipe.instruction_steps[0].description == (
+        "{{Mehl|20%}} mit {{Milch|80%}} und {{Öl|50%}} mischen. 20 Minuten bei 180 °C backen."
+    )
+
+
 class TestParseRecipeHtml:
     def test_parses_name(self):
         r = parse_recipe_html("chefkoch", SAMPLE_HTML, "https://chefkoch.de/test")

@@ -283,7 +283,9 @@ struct RecipeEditor: View {
     }
     private func insertAmount(_ ingredient: RecipeDraft.Item, into stepID: UUID) {
         guard let index = draft.instructionSteps.firstIndex(where: { $0.id == stepID }) else { return }
-        draft.instructionSteps[index].description += " {{" + ingredient.name + "|100%}}"
+        let duplicate = draft.ingredients.filter { $0.name.caseInsensitiveCompare(ingredient.name) == .orderedSame }.count > 1
+        let key = IngredientPlaceholders.key(name: ingredient.name, group: duplicate ? ingredient.groupName : nil)
+        draft.instructionSteps[index].description += " {{" + key + "|100%}}"
     }
     private var exportText: String {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
