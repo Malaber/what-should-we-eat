@@ -4,6 +4,7 @@ test_recipe_import.py — Unit tests for the HTML recipe import parser.
 Tests the pure parsing logic (no database or server needed).
 """
 
+import json
 import pytest
 from unittest.mock import patch
 
@@ -44,6 +45,54 @@ SAMPLE_HTML = """
   <body></body>
 </html>
 """
+
+
+def test_grouped_tables_and_headings_folded_into_chefkoch_instructions():
+    ingredient_tables = "".join(
+        f"""<table class="ds-ingredients-table">
+        <tr><th><h3 class="ds-ingredients-table__headline">{title}:</h3></th></tr>
+        <tr class="ds-ingredients-table__tr">
+          <td><span class="ds-ingredients-table__ingredient-name">{name}</span></td>
+        </tr></table>"""
+        for title, name in [("Für den Teig", "Milch"), ("Für die Füllung", "Milch")]
+    )
+    structured = {
+        "@type": "Recipe",
+        "recipeIngredient": ["100 ml Milch (warm)", "50 ml Milch"],
+        "recipeInstructions": [{
+            "@type": "HowToSection", "name": "Zubereitung", "itemListElement": [
+                {"@type": "HowToStep", "text": "Teig-Zubereitung:"},
+                {"@type": "HowToStep", "position": 1, "text": "Den Teig kneten. Zubereitung-Füllung:"},
+                {"@type": "HowToStep", "position": 2, "text": "Die Füllung verrühren."},
+            ],
+        }],
+    }
+    recipe = parse_recipe_html("chefkoch", f"""
+      <script type="application/ld+json">{json.dumps(structured)}</script>
+      <section class="recipe-ingredients">{ingredient_tables}</section>
+      <section><h2>Zubereitung</h2><p>Teig-Zubereitung:</p><p>Den Teig kneten.</p>
+      <p>Zubereitung-Füllung:</p><p>Die Füllung verrühren.</p></section>
+    """)
+    assert [(item.name, item.group_name) for item in recipe.ingredients] == [
+        ("Milch (warm)", "Für den Teig"), ("Milch", "Für die Füllung"),
+    ]
+    assert [(step.step_number, step.description, step.group_name) for step in recipe.instruction_steps] == [
+        (1, "Den Teig kneten.", "Teig-Zubereitung"), (2, "Die Füllung verrühren.", "Zubereitung-Füllung"),
+    ]
+
+
+def test_schema_instruction_sections_are_preserved():
+    structured = {
+        "@type": "Recipe",
+        "recipeInstructions": [
+            {"@type": "HowToSection", "name": "Dough", "itemListElement": [{"text": "Knead."}]},
+            {"@type": "HowToSection", "name": "Filling", "itemListElement": [{"text": "Mix."}]},
+        ],
+    }
+    recipe = parse_recipe_html("chefkoch", f'<script type="application/ld+json">{json.dumps(structured)}</script>')
+    assert [(step.group_name, step.description) for step in recipe.instruction_steps] == [
+        ("Dough", "Knead."), ("Filling", "Mix."),
+    ]
 
 
 class TestParseRecipeHtml:
