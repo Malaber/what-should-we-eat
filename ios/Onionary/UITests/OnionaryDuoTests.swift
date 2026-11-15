@@ -157,17 +157,26 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         try tap("preview-cook", in: app)
         try tap("portion-plus", in: app)
         try tap("ingredient-1", in: app)
-        for angle in [0, 180, 90, 180, 0, 180] {
+        func verifyPose(_ angle: Int, ingredientState: String, enabledAction: String) throws {
             try pose(angle, in: app)
-            XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+            XCTAssertEqual(app.buttons["ingredient-1"].value as? String, ingredientState)
             XCTAssertTrue(app.staticTexts["2× recipe"].exists)
-            XCTAssertTrue(app.buttons["undo"].isEnabled)
+            XCTAssertTrue(app.buttons[enabledAction].isEnabled)
             capture(angle, in: app)
         }
+        for angle in [0, 180, 90] {
+            try verifyPose(angle, ingredientState: "Checked", enabledAction: "undo")
+        }
+        // Drive Undo on the inner display at 90° and Redo on the cover.
+        // Each result must persist across the next physical display switch.
         try tap("undo", in: app)
         assertIngredient("Unchecked", in: app)
+        for angle in [180, 0] {
+            try verifyPose(angle, ingredientState: "Unchecked", enabledAction: "redo")
+        }
         try tap("redo", in: app)
         assertIngredient("Checked", in: app)
+        try verifyPose(180, ingredientState: "Checked", enabledAction: "undo")
     }
 
     @MainActor func testMarketingScreenshots() throws {

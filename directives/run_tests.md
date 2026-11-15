@@ -440,6 +440,9 @@ before reopening, then verify both on the inner display. XCTest on run
 43707934313 waited more than two minutes for animation-idle notifications
 around the refresh just after reopening. Pure hinge input and geometry
 assertions share one simulator because they never launch or change the app.
+Run 43713865487 showed the same XCTest animation-idle stalls on Undo and Redo
+after the final reopen. Tap Undo at 90° and Redo on the cover. Check both results
+across the next display switch and retain the full sequence and screenshots.
 Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 
