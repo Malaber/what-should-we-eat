@@ -164,6 +164,8 @@ public struct Kitchen: Codable, Equatable, Sendable {
 }
 
 public enum Backend {
+    public static let defaultAddress = "https://onionary.malaber.de"
+
     public static func url(_ text: String) throws -> URL {
         guard var parts = URLComponents(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
               parts.scheme?.lowercased() == "https", let host = parts.host, !host.isEmpty,

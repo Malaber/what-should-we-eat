@@ -26,10 +26,13 @@ between devices. Tokens are stored in Keychain.
 
 ## Backend setup and existing accounts
 
+Onionary defaults to `https://onionary.malaber.de`. You can enter another
+server at sign-in or switch servers in Settings.
+
 1. Install root `requirements.txt`. It pins `fastpasskey` 0.2.6 with the same wheel
    hash used by Planini and Tracy.
 2. Set `APP_BASE_URL` to the exact public HTTPS origin, such as
-   `https://onionary-test.malaber.de`, without an API path or query. Local browser
+   `https://onionary.malaber.de`, without an API path or query. Local browser
    development can use `http://localhost:8000`; IP addresses cannot be RP IDs.
 3. Configure the database and a random `SECRET_KEY` of at least 32 characters.
 4. Run `python -m execution.db.init_db` before deploying the updated application.

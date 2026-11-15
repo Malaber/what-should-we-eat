@@ -25,7 +25,7 @@ final class AppStore {
     var pendingImport: String?
     var editingRecipe: Recipe?
     var sharingRecipe: Recipe?
-    var backend = UserDefaults.standard.string(forKey: "backend") ?? "https://onionary-test.malaber.de"
+    var backend = UserDefaults.standard.string(forKey: "backend") ?? Backend.defaultAddress
     var widgetNavigation: KitchenDeepLink.Destination?
     private var file: URL?
     private let signIn = BrowserSignIn()
