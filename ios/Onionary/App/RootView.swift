@@ -78,13 +78,16 @@ struct RecipesView: View {
     @State private var creation: Creation?
     @State private var showCreationActions = false
     @State private var selectedTags: Set<String> = []
-    @State private var quickestFirst = false
+    @AppStorage("recipe-sort") private var sort = RecipeBrowsing.Sort.alphabetical
+    @AppStorage("recipe-sort-reversed") private var reverseSort = false
     @State private var showAllRecent = false
     @State private var pantry = false
     @State private var recoveryDraft: SavedRecipeDraft?
     @State private var inspectingDraft: SavedRecipeDraft?
     @State private var deletingDraft: SavedRecipeDraft?
-    var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, categories: selectedTags, quickestFirst: quickestFirst) }
+    var filtered: [Recipe] {
+        RecipeBrowsing.recipes(store.kitchen.recipes, query: search, categories: selectedTags, sort: sort, reversed: reverseSort)
+    }
     var body: some View {
         NavigationSplitView(preferredCompactColumn: $preferredColumn) {
             sidebar.navigationSplitViewColumnWidth(min: 280, ideal: 360, max: 460)
@@ -177,9 +180,21 @@ struct RecipesView: View {
                     Text("Your recipes")
                     Spacer()
                     Menu {
-                        Toggle("Quickest first", isOn: $quickestFirst)
-                    } label: { Label("Sort recipes", systemImage: "arrow.up.arrow.down").labelStyle(.iconOnly) }
+                        Picker("Sort recipes", selection: $sort) {
+                            ForEach(RecipeBrowsing.Sort.allCases) { option in
+                                Text(LocalizedStringKey(option.title)).tag(option)
+                            }
+                        }
+                    } label: { Label("Sort recipes", systemImage: "line.3.horizontal.decrease").labelStyle(.iconOnly) }
                     .accessibilityIdentifier("sort-recipes")
+                    .accessibilityValue(Text(LocalizedStringKey(sort.title)))
+                    Button { reverseSort.toggle() } label: {
+                        Label("Reverse sort order", systemImage: reverseSort ? "arrow.up" : "arrow.down").labelStyle(.iconOnly)
+                            .frame(minWidth: 32, minHeight: 44)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityAddTraits(reverseSort ? .isSelected : [])
+                    .accessibilityIdentifier("reverse-recipe-sort")
                 }
             }
             if filtered.isEmpty {

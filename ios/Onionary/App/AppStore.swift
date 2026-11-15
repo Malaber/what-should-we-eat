@@ -425,6 +425,8 @@ final class AppStore {
             try? FileManager.default.removeItem(at: file!)
             try? FileManager.default.removeItem(at: file!.appendingPathExtension("drafts"))
             UserDefaults.standard.removeObject(forKey: "accent")
+            UserDefaults.standard.removeObject(forKey: "recipe-sort")
+            UserDefaults.standard.removeObject(forKey: "recipe-sort-reversed")
             UserDefaults.standard.removeObject(forKey: "appearance")
             UserDefaults.standard.removeObject(forKey: "language")
         }

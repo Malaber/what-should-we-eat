@@ -27,6 +27,7 @@ public struct Recipe: Codable, Identifiable, Equatable, Sendable {
     public let totalTimeMin: Int?
     public let ingredients: [Ingredient]
     public let instructionSteps: [CookingStep]
+    public var createdAt: String? = nil
 }
 
 public enum CookingError: LocalizedError {
