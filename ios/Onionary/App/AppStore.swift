@@ -309,7 +309,9 @@ final class AppStore {
 
     func importDraft(_ link: String) async throws -> RecipeDraft {
         guard let credential else { throw CookingError.response("Sign in before importing.") }
-        let url = try RecipeImportLink.accepted(link)
+        guard let url = try? RecipeImportLink.accepted(link) else {
+            return try await RecipeIntelligence.importPage(RecipeImportLink.webRecipe(link))
+        }
         let isCopy = (try? RecipeImportLink.sharedRecipe(link)) != nil
         let body = try JSONEncoder().encode(["source": "chefkoch", "url": url.absoluteString])
         let data = try await request(isCopy ? "recipe-shares/preview" : "recipes/import/parse/html", method: "POST", body: body)

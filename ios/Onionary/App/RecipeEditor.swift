@@ -347,15 +347,19 @@ struct ImportRecipeView: View {
             else {
                 NavigationStack {
                     Form {
-                        TextField("Chefkoch or Onionary URL", text: $link).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                        TextField("Recipe URL", text: $link).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                            .accessibilityIdentifier("recipe-import-url")
+                        Text("Other recipe websites use Apple Intelligence on this device.")
+                            .font(.footnote).foregroundStyle(.secondary)
                         Button("Review recipe") { Task {
-                            busy = true; defer { busy = false }
+                            busy = true; error = nil; defer { busy = false }
                             do { draft = try await store.importDraft(link) }
                             catch { self.error = L10n.text(error.localizedDescription) }
                         } }.disabled(busy)
                         if busy { ProgressView() }
                         if let error { Text(error).foregroundStyle(.red) }
                     }.connectionRecovery(store).dismissibleKeyboard().navigationTitle("Import recipe")
+                        .interactiveDismissDisabled(busy)
                         .toolbar { Button("Cancel") { dismiss() } }
                 }
             }

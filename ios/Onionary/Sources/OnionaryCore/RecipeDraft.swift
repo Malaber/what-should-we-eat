@@ -12,9 +12,14 @@ public enum RecipeImportLink {
     }
     public static func sharedText(_ text: String) throws -> URL {
         if let url = try? accepted(text) { return url }
+        if let url = try? webRecipe(text) { return url }
         let detector = try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
-        for match in detector.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+        let matches = detector.matches(in: text, range: NSRange(text.startIndex..., in: text))
+        for match in matches {
             if let url = match.url, let accepted = try? accepted(url.absoluteString) { return accepted }
+        }
+        for match in matches {
+            if let url = match.url, let accepted = try? webRecipe(url.absoluteString) { return accepted }
         }
         throw CookingError.response("No supported recipe link found.")
     }
@@ -29,6 +34,22 @@ public enum RecipeImportLink {
               url.user == nil, url.password == nil, url.port == nil else {
             throw CookingError.response("Share an HTTPS Chefkoch recipe link.")
         }
+        return url
+    }
+
+    public static func webRecipe(_ text: String) throws -> URL {
+        let link = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard link.rangeOfCharacter(from: .whitespacesAndNewlines) == nil,
+              var components = URLComponents(string: link), components.scheme?.lowercased() == "https",
+              let host = components.url?.host?.lowercased(),
+              host.range(of: #"^(?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*$"#, options: .regularExpression) != nil,
+              !host.hasSuffix(".local"), !host.hasSuffix(".localhost"), !host.hasSuffix(".internal"),
+              components.user == nil, components.password == nil,
+              components.port == nil || components.port == 443 else {
+            throw CookingError.response("Enter a public HTTPS recipe URL.")
+        }
+        components.fragment = nil
+        guard let url = components.url else { throw CookingError.response("Enter a public HTTPS recipe URL.") }
         return url
     }
 }

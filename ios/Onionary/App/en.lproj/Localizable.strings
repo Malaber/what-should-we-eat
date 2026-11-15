@@ -239,3 +239,8 @@
 "Group name" = "Group name";
 "Without group" = "Without group";
 "No tags" = "No tags";
+"Recipe URL" = "Recipe URL";
+"Other recipe websites use Apple Intelligence on this device." = "Other recipe websites use Apple Intelligence on this device.";
+"Enter a public HTTPS recipe URL." = "Enter a public HTTPS recipe URL.";
+"Could not read this recipe page. Paste the recipe text instead." = "Could not read this recipe page. Paste the recipe text instead.";
+"Use a shorter recipe text." = "Use a shorter recipe text.";
