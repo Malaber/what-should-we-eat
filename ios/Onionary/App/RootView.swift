@@ -350,6 +350,10 @@ struct CookingView: View {
                 } description: { Text("Choose a recipe. We’ll keep your place, even when life interrupts.") }
                 actions: { Button("Choose a recipe", action: browse).buttonStyle(.borderedProminent) }
             }
+        }.overlay(alignment: .topLeading) {
+            if let id = store.current?.id {
+                CookingModeFeedback(active: store.cookingActivity.active).id(id)
+            }
         }.dismissibleKeyboard().navigationTitle("Onionary").navigationBarTitleDisplayMode(.inline)
             .confirmationDialog("Restart cooking? Current checks and history will be cleared; the latest recipe will be used.", isPresented: $restart, titleVisibility: .visible) {
                 Button("Restart", role: .destructive) { store.restartCurrentRecipe() }
@@ -361,7 +365,7 @@ struct CookingView: View {
                     }.accessibilityLabel("Cooking mode")
                         .accessibilityValue(Text(store.cookingActivity.active ? "On" : "Off"))
                         .accessibilityIdentifier("cooking-mode")
-                        .accessibilityHint(store.cookingActivity.lastFailure ?? "")
+                        .accessibilityHint(Text(store.cookingActivity.lastFailure ?? L10n.text("Show cooking progress on the Lock Screen.")))
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     // Let the native menu own its anchor across toolbar/fold
@@ -443,6 +447,50 @@ struct CookingView: View {
         }.buttonStyle(.plain).accessibilityLabel(label + (subtitle.isEmpty ? "" : ", " + subtitle))
             .accessibilityValue(checked ? "Checked" : "Unchecked").accessibilityHint("Double tap to toggle. Undo reverses the last change.")
             .accessibilityIdentifier(key).id(key)
+    }
+}
+
+private struct CookingModeFeedback: View {
+    let active: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var notice: Bool?
+
+    private var animation: Animation { reduceMotion ? .easeOut(duration: 0.15) : .spring(duration: 0.34) }
+
+    var body: some View {
+        Group {
+            if let notice {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: notice ? "flame.fill" : "flame").font(.title3).foregroundStyle(.tint)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(LocalizedStringKey(title(notice))).font(.subheadline.bold())
+                        Text(LocalizedStringKey(detail(notice))).font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(12)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("cooking-mode-feedback")
+                .transition(reduceMotion ? .opacity : .offset(y: -16).combined(with: .opacity))
+                .padding([.top, .horizontal], 12)
+            }
+        }
+        .allowsHitTesting(false)
+        .onChange(of: active) { _, value in
+            withAnimation(animation) { notice = value }
+            AccessibilityNotification.Announcement(L10n.text(title(value)) + ". " + L10n.text(detail(value))).post()
+        }
+        .task(id: notice) {
+            guard notice != nil else { return }
+            guard (try? await Task.sleep(for: .seconds(3.5))) != nil, !Task.isCancelled else { return }
+            withAnimation(animation) { notice = nil }
+        }
+    }
+
+    private func title(_ on: Bool) -> String { on ? "Cooking mode on" : "Cooking mode off" }
+    private func detail(_ on: Bool) -> String {
+        on ? "Follow your progress in the Live Activity on the Lock Screen." : "The Live Activity ended. Your cooking progress is saved."
     }
 }
 

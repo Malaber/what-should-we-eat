@@ -333,3 +333,8 @@
 "Use a shorter recipe text." = "Verwende einen kürzeren Rezepttext.";
 "Compared with the recipe currently on the server." = "Verglichen mit dem aktuellen Rezept auf dem Server.";
 "No recipe changes" = "Keine Rezeptänderungen";
+"Show cooking progress on the Lock Screen." = "Zeigt den Kochfortschritt auf dem Sperrbildschirm.";
+"Cooking mode on" = "Kochmodus an";
+"Cooking mode off" = "Kochmodus aus";
+"Follow your progress in the Live Activity on the Lock Screen." = "Verfolge deinen Fortschritt als Live-Aktivität auf dem Sperrbildschirm.";
+"The Live Activity ended. Your cooking progress is saved." = "Die Live-Aktivität wurde beendet. Dein Kochfortschritt ist gespeichert.";
