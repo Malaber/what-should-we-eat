@@ -105,7 +105,8 @@ struct RecipeEditor: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Food icon").font(.caption).foregroundStyle(.secondary)
                         TextField("One emoji (optional)", text: Binding(
-                            get: { draft.icon ?? "" }, set: { draft.icon = $0.isEmpty ? nil : $0 }))
+                            get: { draft.icon ?? "" }, set: { draft.icon = $0.isEmpty ? nil : $0 }),
+                                  prompt: Text(verbatim: FoodIcons.display(nil)))
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .accessibilityIdentifier("recipe-emoji")
