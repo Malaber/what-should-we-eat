@@ -16,13 +16,13 @@
 
 - [x] Capture and frame the same four Duo marketing scenes as on iPhone and iPad. Publish a separate shared creative ZIP so artwork appears only once.
 
-- [ ] Explain cooking mode on activation and deactivation with accessible motion and status feedback.
-- [ ] Rename Ocean to Blueberry, expand the food palette, and update accent-dependent views immediately.
-- [ ] Offer recipe sort criteria for newest, alphabet, ingredients and time with a separate reverse control.
-- [ ] Use 🍽️ as the empty emoji field prompt.
-- [ ] Use a consistent tag order across recipe rows and preview.
-- [ ] Show direct delete buttons for ingredient and step rows.
-- [ ] Adjust preview portions, show scaled quantities, and apply them when cooking starts or resumes.
+- [x] Explain cooking mode on activation and deactivation with accessible motion and status feedback.
+- [x] Rename Ocean to Blueberry, expand the food palette, and update accent-dependent views immediately.
+- [x] Offer recipe sort criteria for newest, alphabet, ingredients and time with a separate reverse control.
+- [x] Use 🍽️ as the empty emoji field prompt.
+- [x] Use a consistent tag order across recipe rows and preview.
+- [x] Show direct delete buttons for ingredient and step rows.
+- [x] Adjust preview portions, show scaled quantities, and apply them when cooking starts or resumes.
 
 ## Verification
 
@@ -32,3 +32,4 @@
 - Apple Intelligence model output requires a supported device with the model ready. The automated tests cover URL handling and page extraction.
 - Duo exports were validated against the original v0.7.0 CI result. Release tests cover promotion, unrelated RC tags, explicit bumps and immutable tags.
 - A native Duo marketing run produced the four outer screenshots. Local validation covers three framed Duo portraits, the unfolded capture and the four ZIP layouts.
+- Final iOS feedback passed the Swift core suite, five focused iPhone tests and two focused iPad tests. The native Settings capture verified the Blueberry tint.
