@@ -321,3 +321,8 @@
 "Draft" = "Entwurf";
 "Cleared" = "Entfernt";
 "This draft was saved before changes were tracked." = "Dieser Entwurf wurde gespeichert, bevor Änderungen erfasst wurden.";
+"Add group" = "Gruppe hinzufügen";
+"Group" = "Gruppe";
+"Group name" = "Gruppenname";
+"Without group" = "Ohne Gruppe";
+"No tags" = "Keine Tags";

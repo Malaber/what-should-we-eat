@@ -40,11 +40,11 @@ struct RecipeEditor: View {
                 .sheet(item: $recipeOrder) { order in
                     switch order {
                     case .ingredients:
-                        RecipeOrderSheet(title: "Reorder ingredients", items: $draft.ingredients) { item in
+                        RecipeOrderSheet(title: "Reorder ingredients", items: $draft.ingredients, groupName: \.groupName) { item in
                             item.name.isEmpty ? L10n.text("Ingredient") : item.name
                         }
                     case .steps:
-                        RecipeOrderSheet(title: "Reorder steps", items: $draft.instructionSteps, didMove: numberSteps) { step in
+                        RecipeOrderSheet(title: "Reorder steps", items: $draft.instructionSteps, groupName: \.groupName, didMove: numberSteps) { step in
                             step.description.isEmpty ? L10n.format("Step %lld", step.stepNumber) : step.description
                         }
                     }
@@ -202,14 +202,18 @@ struct RecipeEditor: View {
     private var ingredientsSection: some View {
         Section {
             ForEach($draft.ingredients) { $item in
-                IngredientDraftRow(item: $item, remove: { draft.ingredients.removeAll { $0.id == item.id } })
+                VStack(alignment: .leading, spacing: 8) {
+                    groupHeading(item.groupName, startsGroup: startsGroup(item, in: draft.ingredients, group: \.groupName))
+                    IngredientDraftRow(item: $item, remove: { draft.ingredients.removeAll { $0.id == item.id } })
+                        .padding(.leading, item.groupName == nil ? 0 : 8)
+                }
             }
             Button("Add ingredient") { draft.ingredients.append(.init()) }
         } header: {
             HStack {
                 Text("Ingredients")
                 Spacer()
-                if draft.ingredients.count > 1 {
+                if !draft.ingredients.isEmpty {
                     Button("Reorder", systemImage: "arrow.up.arrow.down") { recipeOrder = .ingredients }
                         .accessibilityLabel("Reorder ingredients")
                 }
@@ -219,14 +223,17 @@ struct RecipeEditor: View {
     private var stepsSection: some View {
                 Section {
                     ForEach($draft.instructionSteps) { $step in
-                        stepRow($step)
+                        VStack(alignment: .leading, spacing: 8) {
+                            groupHeading(step.groupName, startsGroup: startsGroup(step, in: draft.instructionSteps, group: \.groupName))
+                            stepRow($step).padding(.leading, step.groupName == nil ? 0 : 8)
+                        }
                     }.id("instruction-steps")
                     Button("Add step") { var step = RecipeDraft.Step(); step.stepNumber = draft.instructionSteps.count + 1; draft.instructionSteps.append(step) }
                 } header: {
                     HStack {
                         Text("Steps")
                         Spacer()
-                        if draft.instructionSteps.count > 1 {
+                        if !draft.instructionSteps.isEmpty {
                             Button("Reorder", systemImage: "arrow.up.arrow.down") { recipeOrder = .steps }
                                 .accessibilityLabel("Reorder steps")
                         }
@@ -237,6 +244,15 @@ struct RecipeEditor: View {
                 }
 
 
+    }
+    @ViewBuilder private func groupHeading(_ name: String?, startsGroup: Bool) -> some View {
+        if startsGroup, let name, !name.isEmpty {
+            Text(name).font(.headline).accessibilityAddTraits(.isHeader)
+        }
+    }
+    private func startsGroup<Item: Identifiable>(_ item: Item, in items: [Item], group: KeyPath<Item, String?>) -> Bool {
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return false }
+        return index == 0 || items[index - 1][keyPath: group] != item[keyPath: group]
     }
     private func stepRow(_ binding: Binding<RecipeDraft.Step>) -> some View {
         let id = binding.wrappedValue.id
@@ -249,15 +265,12 @@ struct RecipeEditor: View {
                 } label: { Image(systemName: "ellipsis.circle").frame(width: 44, height: 44) }
                 .accessibilityLabel("Step options")
             }
-            TextField("Instruction group (optional)", text: Binding(
-                get: { binding.wrappedValue.groupName ?? "" },
-                set: { binding.wrappedValue.groupName = $0.isEmpty ? nil : $0 }))
             TextField("Instruction", text: binding.description, axis: .vertical)
                 .focused($focusedStep, equals: id)
                 .accessibilityIdentifier("instruction-" + id.uuidString)
             Text("Minutes").font(.caption).foregroundStyle(.secondary)
             TextField("Minutes", value: binding.durationMin, format: .number).keyboardType(.numberPad)
-        }.id(id.uuidString)
+        }.recipeDraftCard().id(id.uuidString)
     }
     private func numberSteps() {
         for index in draft.instructionSteps.indices { draft.instructionSteps[index].stepNumber = index + 1 }
@@ -378,7 +391,6 @@ private struct IngredientDraftRow: View {
     var remove: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextField("Ingredient group (optional)", text: Binding(get: { item.groupName ?? "" }, set: { item.groupName = $0.isEmpty ? nil : $0 }))
             HStack {
                 TextField("Ingredient", text: $item.name)
                 Menu {
@@ -393,16 +405,35 @@ private struct IngredientDraftRow: View {
                 }
                 TextField("Unit", text: Binding(get: { item.unit ?? "" }, set: { item.unit = $0 }))
             }
-        }.padding(12).background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+        }.recipeDraftCard()
+    }
+}
+
+private extension View {
+    func recipeDraftCard() -> some View {
+        let shape = RoundedRectangle(cornerRadius: 12)
+        return padding(12)
+            .background(Color(uiColor: .secondarySystemGroupedBackground), in: shape)
+            .overlay { shape.strokeBorder(Color(uiColor: .separator)).allowsHitTesting(false) }
     }
 }
 
 private struct RecipeOrderSheet<Item: Identifiable>: View {
     let title: LocalizedStringKey
     @Binding var items: [Item]
+    let groupName: WritableKeyPath<Item, String?>
     var didMove: () -> Void = {}
     var rowTitle: (Item) -> String
     @Environment(\.dismiss) private var dismiss
+    @State private var groupsAdded: [String] = []
+    @State private var newGroup = ""
+    @State private var addingGroup = false
+
+    private var groups: [String] {
+        var seen = Set<String>()
+        return (items.compactMap { $0[keyPath: groupName] } + groupsAdded)
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
 
     var body: some View {
         NavigationStack {
@@ -411,8 +442,27 @@ private struct RecipeOrderSheet<Item: Identifiable>: View {
                     let index = items.firstIndex { $0.id == item.id }
                     let name = rowTitle(item)
                     HStack {
-                        Text(name).lineLimit(2)
+                        VStack(alignment: .leading) {
+                            Text(name).lineLimit(2)
+                            if let group = item[keyPath: groupName] {
+                                Text(group).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
                         Spacer()
+                        if !groups.isEmpty {
+                            Menu {
+                                Picker("Group", selection: Binding(
+                                    get: { item[keyPath: groupName] },
+                                    set: { assign(item.id, to: $0) }
+                                )) {
+                                    Text("Without group").tag(nil as String?)
+                                    ForEach(groups, id: \.self) { Text($0).tag(Optional($0)) }
+                                }
+                            } label: {
+                                Label("Group", systemImage: "folder").labelStyle(.iconOnly)
+                                    .frame(minWidth: 44, minHeight: 44)
+                            }.accessibilityLabel("Group")
+                        }
                         Button { moveOne(item.id, by: -1) } label: {
                             Label("Move \(name) up", systemImage: "chevron.up").labelStyle(.iconOnly)
                                 .frame(minWidth: 44, minHeight: 44)
@@ -429,7 +479,19 @@ private struct RecipeOrderSheet<Item: Identifiable>: View {
             .accessibilityIdentifier("recipe-order-list")
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { Button("Add group", systemImage: "folder.badge.plus") { addingGroup = true } }
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
+            .alert("Add group", isPresented: $addingGroup) {
+                TextField("Group name", text: $newGroup)
+                Button("Cancel", role: .cancel) { newGroup = "" }
+                Button("Add") {
+                    let name = newGroup.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !name.isEmpty, name.count <= 120, !groups.contains(name) { groupsAdded.append(name) }
+                    newGroup = ""
+                }.disabled(newGroup.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || newGroup.count > 120)
+            }
         }
     }
 
@@ -442,5 +504,16 @@ private struct RecipeOrderSheet<Item: Identifiable>: View {
         guard let index = items.firstIndex(where: { $0.id == id }),
               items.indices.contains(index + offset) else { return }
         move(IndexSet(integer: index), to: offset > 0 ? index + 2 : index - 1)
+    }
+
+    private func assign(_ id: Item.ID, to group: String?) {
+        guard let index = items.firstIndex(where: { $0.id == id }), items[index][keyPath: groupName] != group else { return }
+        var reordered = items
+        var item = reordered.remove(at: index)
+        item[keyPath: groupName] = group
+        let sibling = reordered.lastIndex { $0[keyPath: groupName] == group }
+        reordered.insert(item, at: sibling.map { $0 + 1 } ?? index)
+        items = reordered
+        didMove()
     }
 }
