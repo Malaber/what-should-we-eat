@@ -363,6 +363,13 @@ the next test ran. Shard 1 owns the marketing captures. Unit tests verify
 that each device's shards include every declared case exactly once. The
 same per-case time limits and the existing Duo fold isolation still apply.
 
+The standard GitHub runner uses the default 12 GB iPad Pro 13-inch M5
+device profile. Xcode's two profiles have the same device model and screen
+geometry. The default profile has a lower simulated memory class. The
+16 GB profile's failure diagnostics showed roughly 912 MiB of host swap
+in use and stalled CoreSimulator requests. The specific trigger remains
+unconfirmed.
+
 The marketing fixture uses the same alphabetical ordering as the app. Keep
 the featured recipe near the top so it is visible in the first recipe-book
 capture and can be tapped on the shorter Duo cover. The test checks its

@@ -48,6 +48,7 @@ elif any(arg.endswith('ios_runtime.py') for arg in sys.argv):
         'PATH': str(bins) + os.pathsep + os.environ['PATH'], 'CAPTURE_ARGS': str(capture),
         'FAIL_TEST': str(int(fail_test)), 'FORBIDDEN_GUEST_COMMAND': str(forbidden),
         'SIMULATOR_ID': 'test-only', 'SIMULATOR_DEVICE_TYPE': device,
+        'SIMULATOR_TEST_SHARD': '1' if mode == 'all' else 'all',
         'TEST_RESULTS_DIR': str(tmp_path / 'results'), 'TEST_DERIVED_DATA_DIR': str(tmp_path / 'shared-build')})
     assert result.returncode == (44 if fail_test and mode != '--build-only' else 0)
     assert not forbidden.exists()
@@ -76,7 +77,7 @@ elif any(arg.endswith('ios_runtime.py') for arg in sys.argv):
     assert '-resultBundlePath' in test
 
 
-@pytest.mark.parametrize('device', ['iPhone-17-Pro', 'iPad-Pro-13-inch-M5-16GB'])
+@pytest.mark.parametrize('device', ['iPhone-17-Pro', 'iPad-Pro-13-inch-M5-12GB'])
 def test_ui_shards_run_every_case_once(tmp_path, device):
     bins = tmp_path / 'bin'
     bins.mkdir()

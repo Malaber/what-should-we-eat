@@ -39,7 +39,8 @@ if [[ "$mode" == --build-only ]]; then
 fi
 
 device_type=${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro}
-shard=${SIMULATOR_TEST_SHARD:-all}
+shard=all
+if [[ "$mode" == --test-only ]]; then shard=${SIMULATOR_TEST_SHARD:-all}; fi
 case "$shard" in
   all|1|2|3) ;;
   *) echo "Invalid simulator test shard: $shard" >&2; exit 2 ;;

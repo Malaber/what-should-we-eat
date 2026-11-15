@@ -96,7 +96,7 @@ jobs:
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
             runtime: '27.0'
           - profile: ipad
-            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-16GB
+            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
             runtime: '27.0'
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
