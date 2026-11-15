@@ -11,6 +11,9 @@
 - [x] Preserve Chefkoch group headings and generate ingredient amount placeholders from unambiguous imported quantities.
 - [x] Render scalable ingredient badges in cooking steps and synchronize checks with the ingredient list.
 
+- [ ] Recover the v0.7.0 iPhone Duo captures and include verified Duo screenshots in future GitHub releases.
+- [ ] Promote the reachable release-candidate version on a normal main release and preserve explicit version bumps.
+
 ## Verification
 
 - Python 3.14 test suite, Chromium desktop and iPhone-size browser suite, Swift package tests and HTML formatting.
