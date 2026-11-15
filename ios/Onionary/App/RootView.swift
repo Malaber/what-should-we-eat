@@ -94,6 +94,7 @@ struct RecipesView: View {
         } detail: {
             if let preview {
                 RecipePreview(store: store, recipe: store.kitchen.recipes.first(where: { $0.id == preview.id }) ?? preview, cook: selected)
+                    .id(preview.id)
             } else {
                 ContentUnavailableView("Choose a recipe", systemImage: "book", description: Text("Preview a recipe without changing your cooking progress."))
             }

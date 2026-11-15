@@ -41,6 +41,21 @@ final class RecipeDraftTests: XCTestCase {
         XCTAssertEqual(adventure.portions, Decimal(string: "1.53")!)
         XCTAssertEqual(adventure.multiplier, Decimal(string: "0.3825")!)
     }
+
+    func testStartingAtPreviewPortionsPreservesExistingProgress() throws {
+        let recipe = try JSONDecoder().decode(Recipe.self, from: Data(#"{"id":1,"householdId":1,"name":"Soup","servings":4,"ingredients":[],"instructionSteps":[]}"#.utf8))
+        var kitchen = Kitchen()
+        XCTAssertThrowsError(try kitchen.visit(recipe, portions: 0))
+        XCTAssertNil(kitchen.currentID)
+        XCTAssertTrue(kitchen.adventures.isEmpty)
+        try kitchen.visit(recipe, portions: 2)
+        kitchen.adventures[0].toggle(key: "ingredient-1", label: "Cheese")
+        try kitchen.visit(recipe, portions: Decimal(string: "1.53")!)
+        let adventure = try XCTUnwrap(kitchen.adventures.first)
+        XCTAssertEqual(adventure.portions, Decimal(string: "1.53"))
+        XCTAssertEqual(adventure.checked, ["ingredient-1"])
+        XCTAssertEqual(adventure.history.count, 1)
+    }
     func testChefkochURLBoundary() throws {
         XCTAssertNoThrow(try RecipeImportLink.chefkoch("https://www.chefkoch.de/rezepte/123"))
         for url in ["http://chefkoch.de/123", "https://chefkoch.de.evil.org/123", "https://chefkoch.de@evil.org/123", "https://chefkoch.de:8443/123", "file:///tmp/test"] {

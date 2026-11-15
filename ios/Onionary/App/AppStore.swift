@@ -281,9 +281,18 @@ final class AppStore {
 
     func stopCookingActivity() async { try? await cookingActivity.synchronize(nil, scope: scope) }
 
-    func visit(_ recipe: Recipe) {
-        do { var next = kitchen; next.visit(recipe); try persist(next) }
-        catch { self.error = error.localizedDescription }
+    @discardableResult func visit(_ recipe: Recipe, portions: Decimal? = nil) -> Bool {
+        do {
+            var next = kitchen
+            if let portions { try next.visit(recipe, portions: portions) }
+            else { next.visit(recipe) }
+            try persist(next)
+            if portions != nil { synchronizeCookingActivity() }
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
     }
 
     func update(_ operation: (inout Adventure) throws -> Void) {

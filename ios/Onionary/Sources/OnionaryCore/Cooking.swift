@@ -147,6 +147,14 @@ public struct Kitchen: Codable, Equatable, Sendable {
         } else { adventures.append(Adventure(recipe: recipe, now: now)) }
         currentID = recipe.id
     }
+    public mutating func visit(_ recipe: Recipe, portions: Decimal, now: Date = Date()) throws {
+        var updated = self
+        updated.visit(recipe, now: now)
+        guard let index = updated.adventures.firstIndex(where: { $0.id == recipe.id }) else { return }
+        let base = updated.adventures[index].baseServings
+        try updated.adventures[index].scale(baseServings: base, portions: portions)
+        self = updated
+    }
     public mutating func reloadCurrentRecipe(_ recipe: Recipe) {
         guard currentID == recipe.id else { return }
         adventures.removeAll { $0.id == recipe.id }
