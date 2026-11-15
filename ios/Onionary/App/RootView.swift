@@ -1,8 +1,6 @@
 import SwiftUI
 import OnionaryCore
 
-private var onion: Color { OnionaryTheme.accent }
-
 struct RootView: View {
     @Bindable var store: AppStore
     @State private var tab = 0
@@ -43,6 +41,7 @@ struct RootView: View {
 }
 
 struct ConnectionView: View {
+    @Environment(\.onionaryAccent) private var onion
     @Bindable var store: AppStore
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -69,6 +68,7 @@ struct ConnectionView: View {
 }
 
 struct RecipesView: View {
+    @Environment(\.onionaryAccent) private var onion
     @Bindable var store: AppStore
     var selected: () -> Void
     @State private var search = ""
@@ -133,7 +133,7 @@ struct RecipesView: View {
                                                 .font(.caption).foregroundStyle(.secondary)
                                         }.padding(.horizontal, 12).padding(.vertical, 8)
                                             .frame(minWidth: 140, alignment: .leading)
-                                            .background(OnionaryTheme.accent.opacity(isSelected ? 0.24 : 0.12), in: RoundedRectangle(cornerRadius: 16))
+                                            .background(onion.opacity(isSelected ? 0.24 : 0.12), in: RoundedRectangle(cornerRadius: 16))
                                             .opacity(!selectedTags.isEmpty && !isSelected ? 0.58 : 1)
                                     }.buttonStyle(.plain)
                                         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -153,7 +153,7 @@ struct RecipesView: View {
                             if !selectedTags.isEmpty {
                                 Button("Clear filter") { selectedTags.removeAll() }
                                     .buttonStyle(.borderless)
-                                    .foregroundStyle(OnionaryTheme.accent)
+                                    .foregroundStyle(onion)
                                     .accessibilityIdentifier("clear-tag-filter")
                             }
                         }.padding(.horizontal, 16)
@@ -250,6 +250,7 @@ struct RecipesView: View {
 }
 
 struct CookingView: View {
+    @Environment(\.onionaryAccent) private var onion
     @Bindable var store: AppStore
     var browse: () -> Void
     private enum Sheet: Identifiable {

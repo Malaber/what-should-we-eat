@@ -646,11 +646,11 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.buttons["Switch backend"].exists)
         XCTAssertFalse(app.textFields["backend"].exists)
         app.buttons["accent-picker"].tap()
-        let ocean = app.buttons["accent-Ocean"]
-        XCTAssertTrue(ocean.waitForExistence(timeout: 5))
+        let blueberry = app.buttons["accent-Blueberry"]
+        XCTAssertTrue(blueberry.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["accent-Onion"].isSelected)
-        ocean.tap()
-        XCTAssertTrue(ocean.isSelected)
+        blueberry.tap()
+        XCTAssertTrue(blueberry.isSelected)
         XCTAssertFalse(app.buttons["accent-Onion"].isSelected)
         app.navigationBars["Accent color"].buttons["Settings"].tap()
         app.buttons["language-picker"].tap()

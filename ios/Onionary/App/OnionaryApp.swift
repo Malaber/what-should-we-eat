@@ -11,6 +11,7 @@ struct OnionaryApp: App {
             RootView(store: store)
                 .dismissibleKeyboard()
                 .tint(OnionaryTheme.color(accent))
+                .environment(\.onionaryAccent, OnionaryTheme.color(accent))
                 .preferredColorScheme(appearance == "system" ? nil : appearance == "dark" ? .dark : .light)
                 .environment(\.locale, language == "system" ? Locale.current : Locale(identifier: language))
                 .alert("Your kitchen", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {

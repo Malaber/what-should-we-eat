@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RemovableChip: View {
+    @Environment(\.onionaryAccent) private var accent
     let title: String
     let removeLabel: String
     let remove: () -> Void
@@ -13,8 +14,8 @@ struct RemovableChip: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(OnionaryTheme.accent.opacity(0.15), in: Capsule())
-            .overlay { Capsule().strokeBorder(OnionaryTheme.accent.opacity(0.45)) }
+            .background(accent.opacity(0.15), in: Capsule())
+            .overlay { Capsule().strokeBorder(accent.opacity(0.45)) }
             .frame(minHeight: 44)
             .contentShape(Rectangle())
         }

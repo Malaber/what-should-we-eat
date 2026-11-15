@@ -6,6 +6,7 @@ struct SettingsView: View {
     @AppStorage("accent") private var accent = "Onion"
     @AppStorage("appearance") private var appearance = "system"
     @AppStorage("language") private var language = "system"
+    @Environment(\.onionaryAccent) private var themeAccent
     @State private var deleting = false
     @State private var switching = false
     @State private var confirmSwitch = false
@@ -26,12 +27,12 @@ struct SettingsView: View {
                                 accentSwatch(name)
                                 Text(LocalizedStringKey(name)).foregroundStyle(.primary)
                                 Spacer()
-                                if name == accent {
+                                if name == OnionaryTheme.name(accent) {
                                     Image(systemName: "checkmark").foregroundStyle(OnionaryTheme.color(name))
                                 }
                             }.frame(minHeight: 44).contentShape(Rectangle())
                         }.buttonStyle(.plain)
-                            .accessibilityAddTraits(name == accent ? .isSelected : [])
+                            .accessibilityAddTraits(name == OnionaryTheme.name(accent) ? .isSelected : [])
                             .accessibilityIdentifier("accent-" + name)
                     }
                     .navigationTitle("Accent color")
@@ -39,17 +40,20 @@ struct SettingsView: View {
                     LabeledContent("Accent color") {
                         HStack(spacing: 8) {
                             accentSwatch(accent)
-                            Text(LocalizedStringKey(accent))
+                            Text(LocalizedStringKey(OnionaryTheme.name(accent)))
                         }
                     }
                 }
                 .accessibilityIdentifier("accent-picker")
-                Picker("Appearance", selection: $appearance) {
-                    Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark")
+                preference("Appearance", value: appearance == "light" ? "Light" : appearance == "dark" ? "Dark" : "System") {
+                    Picker("Appearance", selection: $appearance) {
+                        Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark")
+                    }.pickerStyle(.inline)
                 }.accessibilityIdentifier("appearance-picker")
-                    .accessibilityValue(Text(appearance == "light" ? "Light" : appearance == "dark" ? "Dark" : "System"))
-                Picker("Language", selection: $language) {
-                    Text("System").tag("system"); Text("English").tag("en"); Text("Deutsch").tag("de")
+                preference("Language", value: language == "en" ? "English" : language == "de" ? "Deutsch" : "System") {
+                    Picker("Language", selection: $language) {
+                        Text("System").tag("system"); Text("English").tag("en"); Text("Deutsch").tag("de")
+                    }.pickerStyle(.inline)
                 }.accessibilityIdentifier("language-picker")
             }
             Section("Session") {
@@ -95,6 +99,20 @@ struct SettingsView: View {
                         .onChange(of: store.credential?.server) { switching = false }
                 }
             }
+    }
+
+    private func preference<Content: View>(_ title: LocalizedStringKey, value: LocalizedStringKey,
+                                           @ViewBuilder content: () -> Content) -> some View {
+        Menu(content: content) {
+            LabeledContent(title) {
+                HStack(spacing: 5) {
+                    Text(value)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption2).accessibilityHidden(true)
+                }.foregroundStyle(themeAccent)
+            }
+        }
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(Text(value))
     }
 
     private func accentSwatch(_ name: String) -> some View {

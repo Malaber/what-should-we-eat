@@ -3,6 +3,7 @@ import OnionaryCore
 
 /// Preview is read-only; only the explicit cooking action creates/visits an adventure.
 struct RecipePreview: View {
+    @Environment(\.onionaryAccent) private var accent
     @Bindable var store: AppStore
     let recipe: Recipe
     let cook: () -> Void
@@ -24,7 +25,7 @@ struct RecipePreview: View {
                         .frame(maxWidth: .infinity, minHeight: 36)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(OnionaryTheme.accent)
+                .tint(accent)
                 .accessibilityIdentifier("preview-cook")
             }
             Section("Ingredients") {

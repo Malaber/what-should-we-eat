@@ -2,6 +2,7 @@ import SwiftUI
 import OnionaryCore
 
 struct PantryView: View {
+    @Environment(\.onionaryAccent) private var accent
     @Bindable var store: AppStore
     var selected: () -> Void
     @State private var input = ""
@@ -70,7 +71,7 @@ struct PantryView: View {
                         if !saved.isEmpty || hasInput {
                             Button("Reset") { if save([]) { input = "" } }
                                 .buttonStyle(.borderless)
-                                .foregroundStyle(OnionaryTheme.accent)
+                                .foregroundStyle(accent)
                                 .accessibilityIdentifier("pantry-reset")
                         }
                     }
