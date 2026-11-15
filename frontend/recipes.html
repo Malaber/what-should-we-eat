@@ -201,14 +201,22 @@
               </div>
             </div>
             <div class="control-group" style="margin-top: 16px">
-              <label>Tags</label>
+              <label for="new-tag-input" data-i18n="recipe.tags">Tags</label>
               <div class="tag-selector" id="edit-tag-selector">
                 <!-- filled by JS -->
               </div>
               <div class="add-tag-row">
-                <input id="new-tag-input" placeholder="New tag name..." type="text" />
-                <button class="btn btn-secondary btn-sm" id="btn-add-tag" type="button">Add</button>
+                <input id="new-tag-input" data-i18n="recipe.add-tag" maxlength="100" type="text" />
+                <button
+                  class="btn btn-secondary btn-sm"
+                  id="btn-add-tag"
+                  type="button"
+                  data-i18n="recipe.add-tag"
+                >
+                  Add tag
+                </button>
               </div>
+              <div class="tag-selector tag-suggestions" id="tag-suggestions" hidden></div>
             </div>
             <!-- Ingredients -->
             <div class="list-editor">

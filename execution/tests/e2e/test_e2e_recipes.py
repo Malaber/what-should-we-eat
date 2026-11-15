@@ -18,6 +18,10 @@ def test_recipe_crud(page: Page):
     # CREATE
     page.locator("#btn-create-recipe").click()
     page.locator("#recipe-name").fill("CRUD Test Recipe")
+    tag = page.locator("#new-tag-input")
+    tag.fill("Weeknight meals")
+    tag.press("Enter")
+    expect(page.get_by_role("button", name="Remove tag Weeknight meals")).to_be_visible()
     page.locator("#btn-save-recipe").click()
     expect(page.locator("#toast")).to_contain_text("Recipe created!", timeout=5000)
     
@@ -27,6 +31,10 @@ def test_recipe_crud(page: Page):
     
     # EDIT
     cards.first.locator("text='✏️ Edit'").click()
+    page.get_by_role("button", name="Remove tag Weeknight meals").click()
+    tag.fill("night")
+    page.locator("#tag-suggestions").get_by_role("button", name="Weeknight meals").click()
+    expect(page.get_by_role("button", name="Remove tag Weeknight meals")).to_be_visible()
     page.locator("#recipe-name").fill("CRUD Updated Recipe")
     page.locator("#btn-save-recipe").click()
     expect(page.locator("#toast")).to_contain_text("Recipe updated!")

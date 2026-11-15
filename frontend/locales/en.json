@@ -238,5 +238,8 @@
   "deletion.mismatch": "Email confirmation does not match your account.",
   "recipe.group": "Group (optional)",
   "recipe.icon": "Food icon",
-  "recipe.icon-invalid": "Enter a single emoji."
+  "recipe.icon-invalid": "Enter a single emoji.",
+  "recipe.tags": "Tags",
+  "recipe.add-tag": "Add tag",
+  "recipe.remove-tag": "Remove tag"
 }

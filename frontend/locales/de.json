@@ -236,5 +236,8 @@
   "deletion.mismatch": "Die E-Mail-Adresse stimmt nicht mit deinem Konto überein.",
   "recipe.group": "Gruppe (optional)",
   "recipe.icon": "Essenssymbol",
-  "recipe.icon-invalid": "Gib ein einzelnes Emoji ein."
+  "recipe.icon-invalid": "Gib ein einzelnes Emoji ein.",
+  "recipe.tags": "Tags",
+  "recipe.add-tag": "Tag hinzufügen",
+  "recipe.remove-tag": "Tag entfernen"
 }

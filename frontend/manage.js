@@ -50,6 +50,7 @@ const $btnCancelModal = document.getElementById('btn-cancel-modal');
 // Tags
 const $editTagSelector = document.getElementById('edit-tag-selector');
 const $newTagInput = document.getElementById('new-tag-input');
+const $tagSuggestions = document.getElementById('tag-suggestions');
 let selectedTags = new Set();
 
 // Dynamic Lists
@@ -78,7 +79,8 @@ async function init() {
   document.getElementById('btn-create-recipe').addEventListener('click', openCreateModal);
 
   // Tag add
-  document.getElementById('btn-add-tag').addEventListener('click', addNewTag);
+  document.getElementById('btn-add-tag').addEventListener('click', () => addNewTag());
+  $newTagInput.addEventListener('input', renderTagSuggestions);
   $newTagInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -112,7 +114,7 @@ async function init() {
 async function loadTags() {
   try {
     const res = await fetch(`${API}/tags`, { headers: getAuthHeaders() });
-    allTags = await res.json();
+    if (res.ok) allTags = await res.json();
   } catch (e) {
     console.error('Failed to load tags', e);
   }
@@ -194,6 +196,7 @@ function openCreateModal() {
   $importStatus.textContent = '';
   $importHtmlFallback.style.display = 'none';
   selectedTags.clear();
+  $newTagInput.value = '';
   renderEditTags();
 
   $ingredientsList.innerHTML = '';
@@ -231,6 +234,7 @@ function editRecipe(id) {
   $recipeTotalTime.value = r.total_time_min || '';
 
   selectedTags = new Set(r.tags.map(t => t.name));
+  $newTagInput.value = '';
   renderEditTags();
 
   $ingredientsList.innerHTML = '';
@@ -343,29 +347,48 @@ function applyImportedRecipe(recipe) {
 
 // ── Tags in Edit Form ──────────────────────────────────────────
 function renderEditTags() {
-  // Combine all system tags with any custom tags currently selected
-  const allKnownTags = new Set([...allTags.map(t => t.name), ...selectedTags]);
-
-  $editTagSelector.innerHTML = Array.from(allKnownTags).map(tName => `
-    <button type="button" class="tag-pill ${selectedTags.has(tName) ? 'active' : ''}"
-            onclick="toggleTag('${escJs(tName)}')">
-      ${esc(tName)}
-    </button>
-  `).join('');
+  $editTagSelector.replaceChildren(...Array.from(selectedTags, name => {
+    const chip = tagButton(`${name} ×`, () => {
+      selectedTags.delete(name);
+      renderEditTags();
+      $newTagInput.focus();
+    });
+    chip.classList.add('active');
+    chip.setAttribute('aria-label', `${window.t('recipe.remove-tag')} ${name}`);
+    return chip;
+  }));
+  renderTagSuggestions();
 }
 
-window.toggleTag = function (name) {
-  if (selectedTags.has(name)) selectedTags.delete(name);
-  else selectedTags.add(name);
-  renderEditTags();
-};
+function tagButton(label, action) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'tag-pill';
+  button.textContent = label;
+  button.addEventListener('click', action);
+  return button;
+}
 
-function addNewTag() {
-  const val = $newTagInput.value.trim();
-  if (!val) return;
-  selectedTags.add(val);
+function renderTagSuggestions() {
+  const query = $newTagInput.value.trim().toLocaleLowerCase();
+  const selected = new Set([...selectedTags].map(name => name.toLocaleLowerCase()));
+  const suggestions = query ? allTags.filter(({name}) => {
+    const key = name.toLocaleLowerCase();
+    return key.includes(query) && !selected.has(key);
+  }).slice(0, 6) : [];
+  $tagSuggestions.hidden = suggestions.length === 0;
+  $tagSuggestions.replaceChildren(...suggestions.map(({name}) => tagButton(name, () => addNewTag(name))));
+}
+
+function addNewTag(value = $newTagInput.value) {
+  const name = value.trim();
+  if (!name) return;
+  const key = name.toLocaleLowerCase();
+  const known = allTags.find(tag => tag.name.toLocaleLowerCase() === key);
+  if (![...selectedTags].some(tag => tag.toLocaleLowerCase() === key)) selectedTags.add(known?.name || name);
   $newTagInput.value = '';
   renderEditTags();
+  $newTagInput.focus();
 }
 
 
@@ -413,6 +436,7 @@ async function saveRecipe(e) {
     $recipeIcon.focus();
     return;
   }
+  if ($newTagInput.value.trim()) addNewTag();
 
   const recipeData = {
     icon: icon || null,
