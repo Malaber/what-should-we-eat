@@ -261,10 +261,13 @@ struct RecipeEditor: View {
             HStack {
                 Text("Step \(binding.wrappedValue.stepNumber)").font(.caption)
                 Spacer()
-                Menu {
-                    Button("Delete step", role: .destructive) { draft.instructionSteps.removeAll { $0.id == id }; numberSteps() }
-                } label: { Image(systemName: "ellipsis.circle").frame(width: 44, height: 44) }
-                .accessibilityLabel("Step options")
+                Button(role: .destructive) {
+                    draft.instructionSteps.removeAll { $0.id == id }
+                    numberSteps()
+                } label: {
+                    Label("Delete step", systemImage: "trash").labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                }.buttonStyle(.borderless)
             }
             TextField("Instruction", text: binding.description, axis: .vertical)
                 .focused($focusedStep, equals: id)
@@ -443,10 +446,10 @@ private struct IngredientDraftRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 TextField("Ingredient", text: $item.name)
-                Menu {
-                    Button("Delete ingredient", role: .destructive, action: remove)
-                } label: { Image(systemName: "ellipsis.circle").frame(minWidth: 44, minHeight: 44) }
-                    .accessibilityLabel("Ingredient options")
+                Button(role: .destructive, action: remove) {
+                    Label("Delete ingredient", systemImage: "trash").labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                }.buttonStyle(.borderless)
             }
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
