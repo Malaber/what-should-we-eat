@@ -438,8 +438,10 @@ The Duo shopping case refreshes on the cover display after closing the hinge.
 Confirm the new fixture item appears and the existing check remains selected
 before reopening, then verify both on the inner display. XCTest on run
 43707934313 waited more than two minutes for animation-idle notifications
-around the refresh just after reopening. Pure hinge input and geometry
-assertions share one simulator because they never launch or change the app.
+around the refresh just after reopening. Run the hinge input and geometry
+assertions before the first native fold scenario launches the app so they do
+not require another XCTest bootstrap. Run 43719978831 lost the second runner
+in XCTest's stalled-wait handler before any UI test started.
 Run 43713865487 showed the same XCTest animation-idle stalls on Undo and Redo
 after the final reopen. Tap Undo at 90° and Redo on the cover. Check both results
 across the next display switch and retain the full sequence and screenshots.

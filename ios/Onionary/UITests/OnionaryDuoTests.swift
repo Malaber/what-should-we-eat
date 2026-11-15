@@ -85,7 +85,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertEqual(query.element.value as? String, expected)
     }
 
-    @MainActor func testHingeAndWindowReadinessRejectInvalidInputs() {
+    @MainActor private func assertHingeAndWindowReadinessRejectInvalidInputs() {
         for angle in [-1.0, 181.0, Double.nan, Double.infinity] {
             XCTAssertEqual(OnionarySetHingeAngle(angle), 1)
         }
@@ -146,6 +146,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
     }
 
     @MainActor func testRecipePreviewAndChecklistSurviveFolds() throws {
+        assertHingeAndWindowReadinessRejectInvalidInputs()
         let app = try launchCookingFixture()
         try tap("Recipes", in: app)
         try tap("recipe-1", in: app)
