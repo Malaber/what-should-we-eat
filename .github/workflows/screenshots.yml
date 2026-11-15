@@ -5,31 +5,23 @@ permissions:
   contents: read
 jobs:
   creative:
-    strategy:
-      matrix:
-        family: [iphone, ipad]
     uses: Malaber/github-workflows/.github/workflows/reusable-appstore-creative.yml@0fa17543c28e0d43ff74d14ffbbe9c86ddde3bf2
     with:
-      screenshot_artifact: onionary-capture-${{ matrix.family }}-en-US
+      screenshot_artifact: onionary-capture-iphone-en-US
       screenshot_glob: en-US/02-cooking-companion.png
-      output_artifact: onionary-creative-${{ matrix.family }}-en-US
+      output_artifact: onionary-creative-en-US
 
   bundle:
-    needs: creative
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        family: [iphone, ipad]
+        family: [iphone, ipad, duo]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: onionary-capture-${{ matrix.family }}-en-US
           path: bundle
-      - uses: actions/download-artifact@v4
-        with:
-          name: onionary-creative-${{ matrix.family }}-en-US
-          path: bundle/en-US/creative
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14'
@@ -43,8 +35,36 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+  bundle-creative:
+    needs: creative
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: onionary-capture-iphone-en-US
+          path: base-capture
+      - uses: actions/download-artifact@v4
+        with:
+          name: onionary-creative-en-US
+          path: bundle/en-US/creative
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install -r marketing/requirements.txt
+      - name: Verify shared artwork against this run's iPhone capture
+        run: |
+          python execution/package_marketing_screenshots.py --validate-family creative \
+            --creative-source base-capture/en-US/02-cooking-companion.png bundle/en-US/creative
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onionary-appstore-creative-en-US
+          path: bundle/
+          retention-days: 14
+          if-no-files-found: error
+
   release-assets:
-    needs: bundle
+    needs: [bundle, bundle-creative]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:

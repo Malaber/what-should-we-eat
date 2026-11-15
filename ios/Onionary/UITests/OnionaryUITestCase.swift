@@ -24,4 +24,41 @@ class OnionaryUITestCase: XCTestCase {
         super.setUp()
         continueAfterFailure = false
     }
+
+    @MainActor
+    func captureMarketingScenes(
+        in app: XCUIApplication,
+        tap: (String) throws -> Void,
+        capture: (String) -> Void
+    ) throws {
+        try tap("Choose a recipe")
+        XCTAssertTrue(app.buttons.matching(identifier: "recipe-1").firstMatch.waitForExistence(timeout: 5))
+        capture("01-recipe-book")
+        try tap("recipe-1")
+        try tap("preview-cook")
+        try tap("ingredient-1")
+        try tap("ingredient-2")
+        try tap("undo")
+        try tap("redo")
+        try tap("ingredient-1")
+        try tap("ingredient-1")
+        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+        XCTAssertTrue(app.staticTexts["recent-action"].waitForNonExistence(timeout: 8))
+        capture("02-cooking-companion")
+        try tap("Adjust portions")
+        XCTAssertTrue(app.textFields["portions"].waitForExistence(timeout: 5))
+        capture("03-flexible-portions")
+        try tap("apply-portions")
+        try tap("History")
+        XCTAssertTrue(app.staticTexts["Tap history"].waitForExistence(timeout: 5))
+        capture("04-every-tap-remembered")
+    }
+
+    @MainActor
+    func attachMarketingScreenshot(_ screenshot: XCUIScreenshot, name: String) {
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = "marketing-" + name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
 }

@@ -103,16 +103,23 @@ jobs:
             !.tmp/marketing/${{ matrix.profile }}/attachments/**
           if-no-files-found: error
           retention-days: 14
-      - name: Export validated iPhone Duo outer and inner screenshots
+      - name: Export validated iPhone Duo scenes
         if: matrix.profile == 'duo'
         env:
-          RESULT_BUNDLE: ${{ runner.temp }}/onionary-tests/duo/testRecipePreviewAndChecklistSurviveFolds/Onionary.xcresult
-        run: python3 execution/marketing_screenshots.py --result-bundle "$RESULT_BUNDLE" --family duo --output .tmp/marketing/duo
+          DUO_RESULTS: ${{ runner.temp }}/onionary-tests/duo
+        run: |
+          python3 execution/marketing_screenshots.py \
+            --result-bundle "$DUO_RESULTS/testMarketingScreenshots/Onionary.xcresult" \
+            --duo-fold-result "$DUO_RESULTS/testRecipePreviewAndChecklistSurviveFolds/Onionary.xcresult" \
+            --family duo --output .tmp/marketing/duo --defer-creative
       - uses: actions/upload-artifact@v4
         if: matrix.profile == 'duo'
         with:
-          name: onionary-appstore-duo-en-US
-          path: .tmp/marketing/duo/en-US/
+          name: onionary-capture-duo-en-US
+          path: |
+            .tmp/marketing/duo/
+            !.tmp/marketing/duo/attachments/**
+            !.tmp/marketing/duo/fold/**
           if-no-files-found: error
           retention-days: 14
       - name: Preserve simulator test diagnostics

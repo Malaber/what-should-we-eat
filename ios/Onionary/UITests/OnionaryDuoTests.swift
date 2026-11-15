@@ -173,6 +173,16 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         assertIngredient("Checked", in: app)
     }
 
+    @MainActor func testMarketingScreenshots() throws {
+        let app = launchFixture(extraArguments: ["--marketing"])
+        try pose(0, in: app)
+        try captureMarketingScenes(in: app) { identifier in
+            try tap(identifier, in: app)
+        } capture: { name in
+            attachMarketingScreenshot(app.windows.element(boundBy: 0).screenshot(), name: name)
+        }
+    }
+
     @MainActor func testRecipeDraftSurvivesFolds() throws {
         let app = try launchCookingFixture()
         try startCooking(in: app)

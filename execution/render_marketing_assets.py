@@ -110,15 +110,13 @@ def render(root: Path, family: str, *, include_creative: bool = True):
         with Image.open(path) as image:
             image.load()
 
-    creative = root / "creative"
     portraits = root / "portraits"
-    creative.mkdir(exist_ok=True)
     portraits.mkdir(exist_ok=True)
     screenshot = paths[CAPTURES[1]]
     outputs = []
     if include_creative:
         from marketing.creative.render import render as render_vectors
-        outputs.extend(render_vectors(screenshot, creative))
+        outputs.extend(render_vectors(screenshot, root / "creative"))
     hashes = {}
     profile = srgb()
     for name, source in PORTRAIT_SOURCES.items():
@@ -134,7 +132,7 @@ def render(root: Path, family: str, *, include_creative: bool = True):
         "family": family, "captures": captures, "portrait_sources": PORTRAIT_SOURCES,
         "portrait_sha256": hashes,
     }
-    (creative / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return outputs
 
 
@@ -146,7 +144,8 @@ def srgb():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("screenshots", type=Path)
-    parser.add_argument("--family", choices=["iphone", "ipad"], required=True)
+    parser.add_argument("--family", choices=["iphone", "ipad", "duo"], required=True)
+    parser.add_argument("--include-creative", action="store_true", help="Also render the shared artwork from this capture")
     args = parser.parse_args()
-    for path in render(args.screenshots, args.family):
+    for path in render(args.screenshots, args.family, include_creative=args.include_creative):
         print(path)

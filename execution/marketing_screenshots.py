@@ -68,7 +68,7 @@ def export_duo_captures(manifest, exported, output):
     print(f'Exported both iPhone Duo cooking screens to {screenshots}')
 
 
-def export_captures(result, output, family, defer_creative=False):
+def require_passing_result(result):
     if not result.is_dir():
         raise ValueError(f'Native result bundle does not exist: {result}')
     summary = json.loads(subprocess.check_output(
@@ -76,12 +76,25 @@ def export_captures(result, output, family, defer_creative=False):
     if (summary.get('result') != 'Passed' or summary.get('failedTests') != 0
             or summary.get('skippedTests', 0) != 0 or summary.get('passedTests', 0) < 1):
         raise ValueError('Captures require a completed, passing native result with no failed/skipped tests')
-    output.mkdir(parents=True, exist_ok=False)
-    exported = output/'attachments'
+
+
+def export_attachments(result, exported):
     subprocess.run(['xcrun', 'xcresulttool', 'export', 'attachments', '--path', str(result.resolve()),
                     '--output-path', str(exported)], check=True)
-    manifest = json.loads((exported/'manifest.json').read_text())
-    if family == 'duo':
+    return json.loads((exported/'manifest.json').read_text())
+
+
+def export_captures(result, output, family, defer_creative=False, duo_fold_result=None):
+    require_passing_result(result)
+    if duo_fold_result is not None:
+        if family != 'duo':
+            raise ValueError('A fold result is only supported for iPhone Duo')
+        require_passing_result(duo_fold_result)
+    output.mkdir(parents=True, exist_ok=False)
+    exported = output/'attachments'
+    manifest = export_attachments(result, exported)
+    if family == 'duo' and duo_fold_result is None:
+        # Recover the two display captures from an earlier fold-only run.
         export_duo_captures(manifest, exported, output)
         return
     captures = {}
@@ -106,6 +119,15 @@ def export_captures(result, output, family, defer_creative=False):
     screenshots.mkdir()
     for key, source in captures.items():
         shutil.copy2(source, screenshots/(key+'.png'))
+    if duo_fold_result is not None:
+        fold = output/'fold'
+        fold.mkdir()
+        fold_export = fold/'attachments'
+        export_duo_captures(export_attachments(duo_fold_result, fold_export), fold_export, fold)
+        inner_name = DUO_CAPTURES[180][0]
+        inner = screenshots/'inner'
+        inner.mkdir()
+        shutil.copy2(fold/'en-US'/inner_name, inner/inner_name)
     render_capture(screenshots, family, defer_creative)
     print(f'Exported four original {family} captures from {result} to {screenshots}')
 
@@ -116,8 +138,9 @@ def main():
     parser.add_argument('--family', choices=['iphone', 'ipad', 'duo'], required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--defer-creative', action='store_true')
+    parser.add_argument('--duo-fold-result', type=Path, help='Include the unfolded screen from the Duo fold regression')
     args = parser.parse_args()
-    export_captures(args.result_bundle, args.output, args.family, args.defer_creative)
+    export_captures(args.result_bundle, args.output, args.family, args.defer_creative, args.duo_fold_result)
 
 
 if __name__ == '__main__':

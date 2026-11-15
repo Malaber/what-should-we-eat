@@ -675,36 +675,12 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Settings", in: app)
         XCTAssertEqual(app.buttons["appearance-picker"].value as? String, "Light")
         try tapNavigation("Cooking", in: app)
-        app.buttons["Choose a recipe"].tap()
-        capture("01-recipe-book")
-        try selectRecipe(in: app)
-        app.buttons["preview-cook"].tap()
-        XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
-        app.buttons["ingredient-1"].tap()
-        app.buttons["ingredient-2"].tap()
-        app.buttons["undo"].tap()
-        app.buttons["redo"].tap()
-        app.buttons["ingredient-1"].tap()
-        app.buttons["ingredient-1"].tap()
-        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
-        // Capture stable content after the transient action banner has dismissed.
-        XCTAssertTrue(app.staticTexts["recent-action"].waitForNonExistence(timeout: 8))
-        capture("02-cooking-companion")
-        app.buttons["Adjust portions"].tap()
-        XCTAssertTrue(app.textFields["portions"].waitForExistence(timeout: 5))
-        capture("03-flexible-portions")
-        app.buttons["Done"].tap()
-        app.buttons["History"].tap()
-        XCTAssertTrue(app.staticTexts["Tap history"].waitForExistence(timeout: 5))
-        capture("04-every-tap-remembered")
-    }
-
-    @MainActor
-    private func capture(_ name: String) {
-        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        attachment.name = "marketing-" + name
-        attachment.lifetime = .keepAlways
-        add(attachment)
+        try captureMarketingScenes(in: app) { identifier in
+            if identifier == "recipe-1" { try selectRecipe(in: app) }
+            else { app.buttons[identifier].tap() }
+        } capture: { name in
+            attachMarketingScreenshot(XCUIScreen.main.screenshot(), name: name)
+        }
     }
 
     @MainActor
