@@ -2,11 +2,13 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 
 import pytest
 
-SCRIPT = Path(__file__).parents[2] / 'ios/Onionary/Scripts/test.sh'
+IOS = Path(__file__).parents[2] / 'ios/Onionary'
+SCRIPT = IOS / 'Scripts/test.sh'
 
 
 @pytest.mark.parametrize('device,allowance,suite', [
@@ -128,13 +130,16 @@ if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in sys.argv) and 
         assert execution[execution.index('xcodebuild') - 1] == '1800'
     instances = [c[-1] for c in commands if c[:3] == ['xcrun', 'simctl', 'delete']]
     assert instances == [f'isolated-test-device-{index}' for index in range(1, len(instances) + 1)]
-    assert len(instances) == (6 if failure_stage == 'none' else 1)
     if failure_stage == 'none':
+        source = (IOS / 'UITests/OnionaryDuoTests.swift').read_text()
+        scenarios = re.findall(r'\bfunc\s+(test\w+)\s*\(', source)
+        assert 'testMarketingScreenshots' in scenarios
         runs = [c for c in commands if 'test-without-building' in c]
-        assert len({c[-1] for c in runs}) == len(runs) == 6
-        assert all(c[-1].startswith('-only-testing:OnionaryUITests/OnionaryDuoTests/test') for c in runs)
+        assert [c[-1] for c in runs] == [f'-only-testing:OnionaryUITests/OnionaryDuoTests/{name}' for name in scenarios]
         assert [c[c.index('-destination') + 1].split('id=')[-1] for c in runs] == instances
         assert sum('build-for-testing' in c for c in commands) == 1
+    else:
+        assert len(instances) == 1
     diagnostics = [i for i, command in enumerate(commands)
                    if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in command)]
     assert len(diagnostics) == (0 if failure_stage == 'none' else 1)
