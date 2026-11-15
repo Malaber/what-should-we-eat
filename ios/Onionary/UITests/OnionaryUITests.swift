@@ -409,30 +409,36 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testRecipeTagsOpenMatchingRecipes() throws {
+        let app = try openCookingTag()
+        let matches = app.collectionViews["tag-recipes-list"]
+        let chickpeas = matches.buttons["tag-recipe-3"]
+        XCTAssertTrue(chickpeas.waitForExistence(timeout: 5))
+        XCTAssertFalse(matches.buttons["tag-recipe-2"].exists)
+        chickpeas.tap()
+        XCTAssertTrue(matches.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Crispy chickpea bowls"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testRecipeTagDismissalKeepsCurrentRecipe() throws {
+        let app = try openCookingTag()
+        let matches = app.collectionViews["tag-recipes-list"]
+        XCTAssertTrue(matches.waitForExistence(timeout: 5))
+        app.buttons["close-tag-recipes"].tap()
+        XCTAssertTrue(matches.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].exists)
+    }
+
+    @MainActor
+    private func openCookingTag() throws -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        try tapNavigation("Recipes", in: app)
-        pullToRefresh(app)
+        app.buttons["Choose a recipe"].tap()
         try selectRecipe(in: app)
         app.buttons["preview-cook"].tap()
-        let tag = app.buttons["recipe-tag-vegetarian"]
-        XCTAssertTrue(tag.waitForExistence(timeout: 5))
-        tag.tap()
-        let matchingRecipe = app.collectionViews["tag-recipes-list"].buttons.matching(identifier: "tag-recipe-1").element(boundBy: 0)
-        XCTAssertTrue(matchingRecipe.waitForExistence(timeout: 5))
-        app.buttons["close-tag-recipes"].tap()
-        XCTAssertTrue(app.collectionViews["tag-recipes-list"].waitForNonExistence(timeout: 5))
-        // SwiftUI recreates controls across sheet presentations. Resolve each
-        // presentation directly instead of keeping the old remote AX handle.
-        let reopenedTag = app.buttons.matching(identifier: "recipe-tag-vegetarian").element(boundBy: 0)
-        XCTAssertTrue(reopenedTag.waitForExistence(timeout: 5))
-        reopenedTag.tap()
-        let reopenedRecipe = app.collectionViews["tag-recipes-list"].buttons.matching(identifier: "tag-recipe-1").element(boundBy: 0)
-        XCTAssertTrue(reopenedRecipe.waitForExistence(timeout: 5))
-        reopenedRecipe.tap()
-        XCTAssertTrue(app.collectionViews["tag-recipes-list"].waitForNonExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
+        app.buttons["recipe-tag-Quick & easy"].tap()
+        return app
     }
 
     @MainActor
