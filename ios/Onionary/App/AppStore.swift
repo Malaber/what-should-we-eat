@@ -465,6 +465,13 @@ final class AppStore {
             }
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: JSONSerialization.data(withJSONObject: recipes))
         }
+        if ProcessInfo.processInfo.arguments.contains("--editing-active-recipe"),
+           let recipe = kitchen.recipes.first, let ingredient = recipe.ingredients.first {
+            kitchen.visit(recipe)
+            if let current = kitchen.adventures.firstIndex(where: { $0.id == recipe.id }) {
+                kitchen.adventures[current].toggle(key: "ingredient-\(ingredient.id)", label: ingredient.name)
+            }
+        }
         credential = Credential(server: URL(string: "https://ui-test.invalid")!, token: "test", userID: "1", name: "Test Cook", email: "cook@example.org")
         if ProcessInfo.processInfo.arguments.contains("--renew-session") {
             credential?.refreshToken = "test-refresh"

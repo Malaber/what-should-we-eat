@@ -366,6 +366,13 @@ save. A three-ingredient fixture lets one upward and one downward move leave
 a different order to verify. Unchanged edit cancellation is an independent
 case that returns to the library and checks for the absence of a draft.
 
+The active-recipe edit case starts with one checked ingredient in a real
+`Kitchen` adventure. Separate checklist scenarios exercise setting that state
+through taps. This keeps the edit test focused on save, the reload decision
+and verifying both the saved recipe and preserved cooking progress. A slow
+iPhone runner spent 115 seconds reaching the first checked state through UI
+setup before running out of time at the last save assertion.
+
 Local release/test profiles run sequentially and reuse one build cache while
 retaining separate xcresults. Keep the 8 GiB test-entry and 6 GiB archive guards;
 report GB/GiB accurately. Finder may include purgeable capacity, and APFS/Time

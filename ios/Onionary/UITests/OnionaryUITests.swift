@@ -572,17 +572,13 @@ final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
     func testEditRecipeKeepsCookingProgress() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--ui-testing", "--reset", "--editing-active-recipe", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.buttons["Choose a recipe"].tap()
-        try selectRecipe(in: app)
-        app.buttons["preview-cook"].tap()
+        // Starting a recipe and toggling a check are covered by the checklist
+        // tests. Begin from an active adventure to focus on the save decision.
         let checkedIngredient = app.buttons["ingredient-1"]
-        XCTAssertTrue(checkedIngredient.waitForExistence(timeout: 5))
-        checkedIngredient.tap()
-        XCTAssertEqual(checkedIngredient.value as? String, "Checked")
-        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
-        app.buttons["Cooking options"].tap()
+        XCTAssertTrue(UIReadiness.waitForValue("Checked", matching: app.buttons.matching(identifier: "ingredient-1")))
+        app.buttons["cooking-options"].tap()
         app.buttons["Edit recipe"].tap()
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
