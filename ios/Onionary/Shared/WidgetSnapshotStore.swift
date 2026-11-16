@@ -11,7 +11,7 @@ enum WidgetSnapshotStore {
         guard let file, let data = try? Data(contentsOf: file) else { return nil }
         return try? JSONDecoder().decode(KitchenWidgetSnapshot.self, from: data)
     }
-    static func write(_ snapshot: KitchenWidgetSnapshot?) throws {
+    static func write(_ snapshot: KitchenWidgetSnapshot?, to file: URL? = WidgetSnapshotStore.file) throws {
         guard let file else { return }
         if let snapshot {
             try JSONEncoder().encode(snapshot).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])

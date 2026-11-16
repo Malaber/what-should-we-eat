@@ -145,7 +145,7 @@ capture results exported and validated all eight screenshots.
 ## Finish PR #11 and ship the verified TestFlight build
 
 - [x] Trace the iPhone and iPad failures from run 43906504448 to their first failing operations.
-- [ ] Repair the native test setup or app behavior that reproduces the failures. Keep all iPhone, iPad and Duo coverage and the standard runners.
+- [x] Repair the native test setup or app behavior that reproduces the failures. Keep all iPhone, iPad and Duo coverage and the standard runners.
 - [ ] Verify the affected paths locally and all expected checks on the pushed PR head, including the four screenshot bundles.
 - [ ] Publish a new immutable release-candidate tag for that head and confirm the tag's CI run.
 - [ ] Build, upload and verify the matching TestFlight build, then confirm the PR still points to the verified green commit.
@@ -158,3 +158,8 @@ cooks, scales, relaunches and verifies saved progress. A local iPhone capture
 showed the scaled badge below the fixed history bar. Scroll it into view
 before the real tap and keep the check and undo assertions. The focused
 cooking cases passed locally on both iPhone and iPad.
+
+Debug UI fixtures now write weekly widget snapshots inside the test app's
+temporary container. They keep exercising meal-plan fetches and persistence
+without starting the system widget host or sharing demo meals. The cooking
+mode and kitchen-plan UI cases passed with that isolation enabled.
