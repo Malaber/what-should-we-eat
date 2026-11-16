@@ -6,18 +6,30 @@ from pathlib import Path
 import plistlib
 import subprocess
 
-RUNTIME_BUILDS = {"27.0": "24A434", "27.1": "24A94425", "27.2": "24B8117"}
+RUNTIME_VERSION = "27.2"
+STANDARD_BUILD = "24B8117"
+DUO_BUILD = "24B91016s"
 DEFAULT_DEVICE = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro"
+DUO_DEVICE = "com.apple.CoreSimulator.SimDeviceType.iPhone-Duo"
 
 
-def default_runtime(device_type):
-    return "27.1" if device_type.endswith(".iPhone-Duo") else "27.0"
+def runtime_build(version, device_type=DEFAULT_DEVICE):
+    if version != RUNTIME_VERSION:
+        raise ValueError(f"No simulator build pin for iOS {version}. Use iOS {RUNTIME_VERSION}.")
+    return DUO_BUILD if device_type == DUO_DEVICE else STANDARD_BUILD
 
 
-def runtime_build(version):
-    if version not in RUNTIME_BUILDS:
-        raise ValueError(f"No simulator build pin for iOS {version}; no fallback is allowed.")
-    return RUNTIME_BUILDS[version]
+def available_runtime(runtimes, version, device_type):
+    build = runtime_build(version, device_type)
+    bundles = sorted(runtime['bundlePath'] for runtime in runtimes
+                     if runtime.get('isAvailable')
+                     and runtime.get('identifier') == runtime_identifier(version)
+                     and runtime.get('version') == version
+                     and runtime.get('buildversion') == build
+                     and Path(runtime.get('bundlePath', '')).is_absolute()
+                     and any(device.get('identifier') == device_type
+                             for device in runtime.get('supportedDeviceTypes', [])))
+    return next(iter(bundles), None)
 
 
 def runtime_identifier(version):
@@ -28,9 +40,9 @@ def read_command(*arguments):
     return subprocess.check_output(list(arguments), text=True, timeout=15).strip()
 
 
-def configure_sdk_runtime(version, environ=None):
+def configure_sdk_runtime(version, device_type=DEFAULT_DEVICE, *, environ=None):
     """Map duplicate OS builds explicitly, without changing developer preferences."""
-    expected = runtime_build(version)
+    expected = runtime_build(version, device_type)
     sdk_version = read_command("xcrun", "--sdk", "iphonesimulator", "--show-sdk-version")
     if sdk_version != version:
         return  # SDK mappings concern the matching OS version, not older runtimes.
@@ -59,25 +71,19 @@ def configure_sdk_runtime(version, environ=None):
     print(f"Mapped SDK {sdk_version} ({sdk_build}) to runtime {expected}", flush=True)
 
 
-def prepare_runtime_cache(version, environ=None):
+def prepare_runtime_cache(version, device_type=DEFAULT_DEVICE, *, environ=None):
     """Prepare cold CI's system-library cache, without booting/running a guest."""
-    expected = runtime_build(version)
+    expected = runtime_build(version, device_type)
     environ = os.environ if environ is None else environ
     if not (environ.get('GITHUB_ACTIONS') == 'true'
             and environ.get('RUNNER_ENVIRONMENT') == 'github-hosted'
             and environ.get('RUNNER_OS') == 'macOS'):
         return  # Never generate/remove developer or self-hosted runtime caches.
     runtimes = json.loads(read_command('xcrun', 'simctl', 'list', 'runtimes', '--json'))['runtimes']
-    bundles = sorted(runtime['bundlePath'] for runtime in runtimes
-                     if runtime.get('isAvailable')
-                     and runtime.get('identifier') == runtime_identifier(version)
-                     and runtime.get('version') == version
-                     and runtime.get('buildversion') == expected
-                     and Path(runtime.get('bundlePath', '')).is_absolute())
-    if not bundles:
-        raise RuntimeError(f'Cannot prepare cache: pinned iOS {version} ({expected}) is unavailable.')
-    bundle = bundles[0]
-    verify_runtime_bundle(bundle, version)
+    bundle = available_runtime(runtimes, version, device_type)
+    if bundle is None:
+        raise RuntimeError(f'Cannot prepare cache: iOS {version} ({expected}) for {device_type} is unavailable.')
+    verify_runtime_bundle(bundle, version, device_type)
     # A non-forced update is an immediate no-op when the cache exists. Never
     # invalidate caches or prepare every installed OS; only this pinned bundle.
     subprocess.run(['xcrun', 'simctl', 'runtime', 'dyld_shared_cache', 'update', bundle],
@@ -85,9 +91,9 @@ def prepare_runtime_cache(version, environ=None):
     print(f'Prepared dyld shared cache for iOS {version} ({expected}): {bundle}', flush=True)
 
 
-def verify_runtime_bundle(bundle, version):
+def verify_runtime_bundle(bundle, version, device_type=DEFAULT_DEVICE):
     """Validate installed system metadata before creating/booting a guest."""
-    expected = runtime_build(version)
+    expected = runtime_build(version, device_type)
     if not Path(bundle).is_absolute():
         raise ValueError("Runtime bundle must be an absolute path")
     root = Path(bundle) / "Contents/Resources/RuntimeRoot"

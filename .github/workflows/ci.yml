@@ -94,29 +94,22 @@ jobs:
         include:
           - profile: iphone
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
-            runtime: '27.2'
           - profile: ipad
             device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
-            runtime: '27.2'
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            runtime: '27.1'
             shard: testRecipePreviewAndChecklistSurviveFolds
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            runtime: '27.1'
             shard: testMarketingScreenshots
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            runtime: '27.1'
             shard: testRecipeDraftSurvivesFolds
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            runtime: '27.1'
             shard: testKitchenShoppingChecksSurviveFolds
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            runtime: '27.1'
             shard: testExpiredSessionKeepsAdaptiveNavigationReachable
     runs-on: xcode-27
     env:
@@ -131,7 +124,11 @@ jobs:
           python-version: '3.14'
       - name: Verify matching Xcode build
         run: python3 execution/check_ios_build_environment.py --xcode-only
-      - run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py '${{ matrix.runtime }}'
+      - name: Prepare the 27.2 simulator runtime for this device
+        timeout-minutes: 30
+        env:
+          SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
+        run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py --device-type "$SIMULATOR_DEVICE_TYPE"
       - uses: actions/download-artifact@v4
         with:
           name: onionary-ios-test-products
@@ -141,7 +138,6 @@ jobs:
         env:
           TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
-          SIMULATOR_RUNTIME: ${{ matrix.runtime }}
           SIMULATOR_TEST_SHARD: ${{ matrix.shard }}
         run: |
           mkdir -p "$TEST_RESULTS_DIR/DerivedData"

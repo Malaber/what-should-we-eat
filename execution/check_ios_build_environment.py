@@ -9,8 +9,8 @@ import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 
-LOCAL_XCODE = ('27.1', '27A9275')
-HOSTED_XCODE = ('27.2', '27B52')
+XCODE_VERSION = '27.2'
+XCODE_BUILD = '27B52'
 # Release profiles are sequential and reuse one release-specific DerivedData.
 # Entry needs one test profile's reserve, not a cumulative-build reserve.
 # test.sh and archive.sh independently recheck space immediately before their work.
@@ -18,14 +18,10 @@ STAGE_GIB = {"release": 8, "test": 8, "archive": 6}
 MIN_FREE_BYTES = STAGE_GIB["release"] * 1024 ** 3
 
 
-def validate_xcode(output, environ=None):
-    environ = os.environ if environ is None else environ
-    hosted = (environ.get('GITHUB_ACTIONS') == 'true'
-              and environ.get('RUNNER_ENVIRONMENT') == 'github-hosted')
-    version, build = HOSTED_XCODE if hosted else LOCAL_XCODE
-    expected = f'Xcode {version}\nBuild version {build}'
+def validate_xcode(output):
+    expected = f'Xcode {XCODE_VERSION}\nBuild version {XCODE_BUILD}'
     if output.strip() != expected:
-        raise ValueError(f'Expected {expected!r}; found {output.strip()!r}. Select Xcode_{version}.app.')
+        raise ValueError(f'Expected {expected!r}; found {output.strip()!r}. Select Xcode_{XCODE_VERSION}.app.')
 
 
 def validate_disk(path, free_bytes, minimum_bytes=MIN_FREE_BYTES):

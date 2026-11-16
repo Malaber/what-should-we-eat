@@ -13,26 +13,26 @@ DUO = 'com.apple.CoreSimulator.SimDeviceType.iPhone-Duo'
 
 
 def runtime(version, device=DUO, available=True, build=None):
-    build = build or {'27.0': '24A434', '27.1': '24A94425', '27.2': '24B8117'}[version]
+    build = build or ('24B91016s' if device == DUO else '24B8117')
     return {'identifier': simulator.runtime_identifier(version),
             'version': version, 'buildversion': build, 'isAvailable': available,
             'bundlePath': f'/Runtimes/{build}/iOS {version}.simruntime',
             'supportedDeviceTypes': [{'identifier': device}]}
 
 
-def test_declared_duo_build_wins_over_rc_and_newer_installed_runtime():
-    stable = runtime('27.1')
-    runtimes = [runtime('27.2'), runtime('27.1', build='24A94232'), stable]
+def test_declared_duo_build_wins_over_rc_and_standard_runtime():
+    stable = runtime('27.2')
+    runtimes = [runtime('27.2', build='24B8117'), runtime('27.2', build='24B91014'), stable]
     for order in (runtimes, list(reversed(runtimes))):
         assert simulator.select_runtime(order, DUO) == stable['bundlePath']
 
 
 @pytest.mark.parametrize('runtimes', [
-    [runtime('27.2')],
-    [runtime('27.1', available=False)],
-    [runtime('27.1', device=simulator.DEFAULT_DEVICE)],
-    [runtime('27.1', build='24A94232')],
-    [runtime('27.1', available=False), runtime('27.1', build='24A94232')],
+    [runtime('27.2', build='24B8117')],
+    [runtime('27.2', available=False)],
+    [runtime('27.2', device=simulator.DEFAULT_DEVICE)],
+    [runtime('27.2', build='24B91014')],
+    [runtime('27.2', available=False), runtime('27.2', build='24B91014')],
 ])
 def test_missing_or_incompatible_pin_fails_without_fallback(runtimes):
     with pytest.raises(ValueError, match='no fallback'):
@@ -41,7 +41,7 @@ def test_missing_or_incompatible_pin_fails_without_fallback(runtimes):
 
 @pytest.mark.parametrize('missing', ['buildversion', 'bundlePath'])
 def test_incomplete_runtime_metadata_cannot_select_an_ambiguous_build(missing):
-    installed = runtime('27.1')
+    installed = runtime('27.2')
     installed.pop(missing)
     with pytest.raises(ValueError, match='no fallback'):
         simulator.select_runtime([installed], DUO)
@@ -49,13 +49,7 @@ def test_incomplete_runtime_metadata_cannot_select_an_ambiguous_build(missing):
 
 def test_unpinned_version_is_rejected():
     with pytest.raises(ValueError, match='No simulator build pin'):
-        simulator.select_runtime([runtime('27.2')], DUO, '27.3')
-
-
-def test_standard_phone_uses_270_even_when_newer_compatible_runtime_exists():
-    pinned = runtime('27.0', simulator.DEFAULT_DEVICE)
-    runtimes = [runtime('27.2', simulator.DEFAULT_DEVICE), pinned]
-    assert simulator.select_runtime(runtimes) == pinned['bundlePath']
+        simulator.select_runtime([runtime('27.2', build='24B8117')], DUO, '27.3')
 
 
 @pytest.mark.parametrize('model', ['iPhone-17-Pro', 'iPad-Pro-13-inch-M5-12GB'])
@@ -64,7 +58,7 @@ def test_hosted_ordinary_devices_select_stable_272(model):
     pinned = runtime('27.2', device, build='24B8117')
     other = [runtime('27.0', device), runtime('27.2', device, build='24B114'),
              runtime('27.2', build='24B91016s')]
-    assert simulator.select_runtime(other + [pinned], device, '27.2') == pinned['bundlePath']
+    assert simulator.select_runtime(other + [pinned], device) == pinned['bundlePath']
     with pytest.raises(ValueError, match='24B8117'):
         simulator.select_runtime(other, device, '27.2')
 
@@ -72,11 +66,11 @@ def test_hosted_ordinary_devices_select_stable_272(model):
 @pytest.mark.parametrize('create', [False, True])
 @pytest.mark.parametrize('scoped', [False, True])
 def test_cli_creates_with_exact_bundle_path_but_lists_by_os_identifier(monkeypatch, tmp_path, capsys, create, scoped):
-    pinned = runtime('27.1')
-    pinned['bundlePath'] = str(tmp_path / 'iOS 27.1.simruntime')
+    pinned = runtime('27.2')
+    pinned['bundlePath'] = str(tmp_path / 'iOS 27.2.simruntime')
     source = Path(pinned['bundlePath']) / 'Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist'
     source.parent.mkdir(parents=True)
-    source.write_bytes(plistlib.dumps({'ProductVersion': '27.1', 'ProductBuildVersion': '24A94425'}))
+    source.write_bytes(plistlib.dumps({'ProductVersion': '27.2', 'ProductBuildVersion': '24B91016s'}))
     calls = []
     device_set = ['--device-set', str(tmp_path / 'devices')] if scoped else []
     prefix = ['xcrun', 'simctl', '--set', device_set[1]] if scoped else ['xcrun', 'simctl']
@@ -86,7 +80,7 @@ def test_cli_creates_with_exact_bundle_path_but_lists_by_os_identifier(monkeypat
         assert command[:len(prefix)] == prefix
         action = command[len(prefix):]
         if action[:2] == ['list', 'runtimes']:
-            return json.dumps({'runtimes': [runtime('27.1', build='24A94232'), pinned]})
+            return json.dumps({'runtimes': [runtime('27.2', build='24B91014'), pinned]})
         if action[0] == 'create':
             return 'owned-device\n'
         return json.dumps({'devices': {pinned['identifier']: [
@@ -98,7 +92,7 @@ def test_cli_creates_with_exact_bundle_path_but_lists_by_os_identifier(monkeypat
     simulator.main()
     output = capsys.readouterr()
     assert output.out.strip() == ('owned-device' if create else 'existing-device')
-    assert 'iOS 27.1 (24A94425)' in output.err
+    assert 'iOS 27.2 (24B91016s)' in output.err
     if create:
         assert calls[-1] == [*prefix, 'create', 'Onionary Isolated Tests', DUO, pinned['bundlePath']]
     else:
@@ -106,11 +100,11 @@ def test_cli_creates_with_exact_bundle_path_but_lists_by_os_identifier(monkeypat
 
 
 def test_wrong_bundle_metadata_stops_before_device_creation(monkeypatch, tmp_path):
-    pinned = runtime('27.1')
+    pinned = runtime('27.2')
     pinned['bundlePath'] = str(tmp_path)
     source = tmp_path / 'Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist'
     source.parent.mkdir(parents=True)
-    source.write_bytes(plistlib.dumps({'ProductVersion': '27.1', 'ProductBuildVersion': '24A94232'}))
+    source.write_bytes(plistlib.dumps({'ProductVersion': '27.2', 'ProductBuildVersion': '24B91014'}))
     calls = []
     monkeypatch.setattr(simulator.subprocess, 'check_output', lambda command, **kwargs:
                         calls.append(command) or json.dumps({'runtimes': [pinned]}))
