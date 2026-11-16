@@ -459,27 +459,22 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    func testLiveActivityStartAndStop() throws {
-        try assertCookingModeCycle(systemActivityKit: true)
+    func testLiveActivityStartAndStop() {
+        assertCookingModeCycle(systemActivityKit: true)
     }
 
     @MainActor
-    func testCookingModeWithFixtureBackend() throws {
-        try assertCookingModeCycle(systemActivityKit: false)
+    func testCookingModeWithFixtureBackend() {
+        assertCookingModeCycle(systemActivityKit: false)
     }
 
     @MainActor
-    private func assertCookingModeCycle(systemActivityKit: Bool) throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        if systemActivityKit { app.launchArguments.append("--system-live-activity") }
-        app.launch()
-        app.buttons["Choose a recipe"].tap()
-        try selectRecipe(in: app)
-        app.buttons["preview-cook"].tap()
+    private func assertCookingModeCycle(systemActivityKit: Bool) {
+        let app = launchCookingControlsFixture(systemActivityKit: systemActivityKit)
         let modes = app.buttons.matching(identifier: "cooking-mode")
         let mode = modes.element(boundBy: 0)
         XCTAssertTrue(mode.waitForExistence(timeout: 5))
+        XCTAssertEqual(mode.value as? String, "Off")
         app.buttons["portion-plus"].tap()
         XCTAssertTrue(app.staticTexts["2× recipe"].waitForExistence(timeout: 5), "The first portion tap must update the recipe before starting its activity")
         XCTAssertTrue(UIReadiness.waitForValue("On", matching: modes))
@@ -821,20 +816,20 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    private func openCookingRecipe() throws -> XCUIApplication {
+    private func launchCookingControlsFixture(systemActivityKit: Bool = false) -> XCUIApplication {
+        // Cover the full recipe selection separately in the cold-restoration
+        // test. Start these control tests with the same recipe already active.
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--ui-testing", "--reset", "--active-recipe", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        if systemActivityKit { app.launchArguments.append("--system-live-activity") }
         app.launch()
-        app.buttons["Choose a recipe"].tap()
-        try selectRecipe(in: app)
-        app.buttons["preview-cook"].tap()
         XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
         return app
     }
 
     @MainActor
-    func testCookingChecklistUndoRedo() throws {
-        let app = try openCookingRecipe()
+    func testCookingChecklistUndoRedo() {
+        let app = launchCookingControlsFixture()
         let cheese = app.buttons["ingredient-1"]
         cheese.tap()
         XCTAssertEqual(cheese.value as? String, "Checked")
@@ -849,14 +844,17 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    func testScaledStepIngredientSharesCheckAndUndo() throws {
-        let app = try openCookingRecipe()
+    func testScaledStepIngredientSharesCheckAndUndo() {
+        let app = launchCookingControlsFixture()
         let cheese = app.buttons["ingredient-1"]
         let badge = app.buttons["step-ingredient-1"]
         XCTAssertTrue(badge.waitForExistence(timeout: 5))
         XCTAssertEqual(badge.label, "40 g Cheese")
         app.buttons["portion-plus"].tap()
         XCTAssertEqual(badge.label, "80 g Cheese")
+        // The compact layout can place this badge beneath the fixed history bar.
+        app.swipeUp()
+        XCTAssertTrue(badge.isHittable)
         badge.tap()
         XCTAssertEqual(badge.value as? String, "Checked")
         XCTAssertEqual(cheese.value as? String, "Checked")
@@ -882,8 +880,8 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    func testFractionalPortionsKeyboardAndSteppers() throws {
-        let app = try openCookingRecipe()
+    func testFractionalPortionsKeyboardAndSteppers() {
+        let app = launchCookingControlsFixture()
         enterFractionalPortions(in: app)
         app.staticTexts["By portions"].tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForNonExistence(timeout: 5), "Outside tap must dismiss the keyboard")
@@ -897,8 +895,14 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testCookUndoScaleAndRestoreAfterTermination() throws {
-        let app = try openCookingRecipe()
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        app.buttons["Choose a recipe"].tap()
+        try selectRecipe(in: app)
+        app.buttons["preview-cook"].tap()
         let cheese = app.buttons["ingredient-1"]
+        XCTAssertTrue(cheese.waitForExistence(timeout: 5))
         cheese.tap()
         cheese.tap()
         app.buttons["undo"].tap()
