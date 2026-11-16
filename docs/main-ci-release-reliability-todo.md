@@ -141,3 +141,11 @@ The revised iPhone menu and both capture cases passed locally, and the phone
 and tablet capture bundles validated. Four Duo cases passed on this run. The
 shopping job was canceled before XCTest reported a case. Both passing Duo
 capture results exported and validated all eight screenshots.
+
+## Finish PR #11 and ship the verified TestFlight build
+
+- [ ] Trace the iPhone and iPad failures from run 43906504448 to their first failing operations.
+- [ ] Repair the native test setup or app behavior that reproduces the failures. Keep all iPhone, iPad and Duo coverage and the standard runners.
+- [ ] Verify the affected paths locally and all expected checks on the pushed PR head, including the four screenshot bundles.
+- [ ] Publish a new immutable release-candidate tag for that head and confirm the tag's CI run.
+- [ ] Build, upload and verify the matching TestFlight build, then confirm the PR still points to the verified green commit.
