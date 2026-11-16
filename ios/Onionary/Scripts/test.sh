@@ -88,8 +88,8 @@ fi
 validate_test_products
 if [[ -z "$simulator_id" ]]; then create_simulator; fi
 run_tests() {
-  local output=$1 allowance=$2
-  shift 2
+  local output=$1 default_allowance=$2 maximum_allowance=$3
+  shift 3
   mkdir -p "$output"
   # Keep the new device shut down until XCTest takes ownership of its boot,
   # app installation and test session. A prebooted session can disappear
@@ -98,12 +98,12 @@ run_tests() {
     --log "$output/tests.log" 1800 xcodebuild -xctestrun "$test_plan" \
     -destination "platform=iOS Simulator,id=$simulator_id" \
     -parallel-testing-enabled NO -collect-test-diagnostics never -test-timeouts-enabled YES \
-    -default-test-execution-time-allowance "$allowance" -maximum-test-execution-time-allowance "$allowance" \
+    -default-test-execution-time-allowance "$default_allowance" -maximum-test-execution-time-allowance "$maximum_allowance" \
     -resultBundlePath "$output/Onionary.xcresult" test-without-building "$@"
 }
 
 if [[ "$device_type" != *iPhone-Duo && "$shard" == all ]]; then
-  run_tests "$result_dir" 180 -only-testing:OnionaryUITests/OnionaryUITests
+  run_tests "$result_dir" 180 240 -only-testing:OnionaryUITests/OnionaryUITests
 elif [[ "$device_type" != *iPhone-Duo ]]; then
   # A fresh standard runner runs each third of the suite. Keep the capture
   # case on shard 1 and balance all other cases in a stable order.
@@ -124,16 +124,16 @@ elif [[ "$device_type" != *iPhone-Duo ]]; then
     fi
   done <<< "$native_cases"
   [[ ${#tests[@]} -gt 0 ]] || { echo "No UI tests found in shard $shard" >&2; exit 1; }
-  run_tests "$result_dir" 180 "${tests[@]}"
+  run_tests "$result_dir" 180 240 "${tests[@]}"
 elif [[ -n "${SIMULATOR_ID:-}" && "$shard" == all ]]; then
-  run_tests "$result_dir" 360 -only-testing:OnionaryUITests/OnionaryDuoTests
+  run_tests "$result_dir" 360 360 -only-testing:OnionaryUITests/OnionaryDuoTests
 else
   # Each fold scenario starts with a clean SpringBoard/AX session. Reusing the
   # guest forces XCTest to terminate a process tracked by the previous display.
   # CI selects one case per VM. Local full runs use the Duo source order.
   while IFS= read -r scenario; do
     if [[ -z "$simulator_id" ]]; then create_simulator; fi
-    run_tests "$result_dir/duo/$scenario" 360 "-only-testing:OnionaryUITests/OnionaryDuoTests/$scenario"
+    run_tests "$result_dir/duo/$scenario" 360 360 "-only-testing:OnionaryUITests/OnionaryDuoTests/$scenario"
     delete_owned_simulator
   done <<< "$duo_cases"
 fi

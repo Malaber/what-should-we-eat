@@ -7,6 +7,7 @@
 - [x] Pin the hosted build, test, export and archive toolchain to Xcode 27.2 across both GitHub runner images.
 - [x] Use the SDK-matched iOS 27.2 runtime build 24B8117 for hosted iPhone and iPad. Keep their device models and the existing stable Duo runtime.
 - [x] Shorten the cooking-menu feedback test setup, retaining the real checklist tap, menu action, editor cancellation and checked progress.
+- [x] Allow up to four minutes for the two native menu cases that hit two 60-second XCTest animation waits. Keep standard and suite deadlines.
 - [x] Verify GHCR publishing and exercise stable screenshot packaging on PRs. Publish the stable GitHub release with all four ZIPs after its matching image is pushed.
 - [x] Run focused local verification. Swift 50, Python harness 87, release/artifact tests 10. iPhone and iPad passed both draft cases. Duo fold and screenshot cases passed locally on the simulator RC selected by Xcode. The stable Duo runtime is verified by hosted CI.
 - [ ] Verify the stable GitHub release and versioned GHCR image after the follow-up merges and main CI passes.
@@ -48,3 +49,8 @@ cooking-menu feedback case separately exhausted its budget after two
 60-second XCTest animation waits. Give that case an active recipe fixture to
 reach its original assertions sooner. The release ZIP packager passed using
 the four genuine RC 32 bundles, with all ZIP checksums verified.
+
+[Run 43834232110](https://github.com/Malaber/what-should-we-eat/actions/runs/43834232110)
+logged two consecutive 60-second XCTest animation waits in the step ingredient
+picker. The token assertion and dismissal still ran. The iPad tag test
+separately lost its connection and was terminated after the simulator shut down.

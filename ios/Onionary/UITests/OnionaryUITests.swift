@@ -548,6 +548,8 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testStepAmountTools() throws {
+        // Allow the same native menu transition waits as the cooking-menu case.
+        executionTimeAllowance = 240
         let app = try openStepEditor()
         let instruction = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-")).element(boundBy: 0)
         XCTAssertTrue(instruction.waitForExistence(timeout: 5))
@@ -633,6 +635,8 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testCookingOptionsSurviveActionFeedbackExpiry() {
+        // XCTest can wait 60 seconds for each of the native menu transitions.
+        executionTimeAllowance = 240
         let clock = "de.malaber.onionary.uitest.feedback." + UUID().uuidString
         let app = XCUIApplication()
         // Start at the active adventure. The independent cooking tests cover

@@ -155,7 +155,9 @@ Runner initialization has a separate 600-second limit. The unchanged
 tests' started at " log line. Missing suite registration never counts as success;
 failed command statuses are preserved and either phase terminates its process
 group on timeout. Total command time is bounded by 2400 seconds plus termination.
-Per-case 180/360-second limits and workflow timeouts remain unchanged. This keeps
+The ordinary case limit defaults to 180 seconds. The two native menu tests
+may request 240 seconds, and Duo cases have 360 seconds. Workflow timeouts
+remain unchanged. This keeps
 platform startup out of the UI budget without retrying or skipping a test.
 Reference: https://developer.apple.com/library/archive/technotes/tn2339/_index.html
 CI sets `TEST_RESULTS_DIR` and uploads that bundle even when tests fail.
@@ -360,8 +362,8 @@ Each shard has its own standard runner, native XCTest process and simulator.
 This limits how many consecutive app replacements share one device. The iPad
 failure occurred when XCTest attempted to terminate the previous app before
 the next test ran. Shard 1 owns the marketing captures. Unit tests verify
-that each device's shards include every declared case exactly once. The
-same per-case time limits apply.
+that each device's shards include every declared case exactly once. Both
+profiles apply the same ordinary and menu case limits.
 
 Duo uses one standard GitHub runner per native case. In run 43818237211 the
 first two guests on the shared runner passed, but the third stalled loading
@@ -469,6 +471,10 @@ is covered by the cooking scenarios. On run 43826496965 XCTest waited twice
 for a 60-second animation notification while its menu was open. Keep the
 controlled feedback expiry, edit sheet, cancellation and checked-progress
 assertions, with the editor's own navigation bar as the sheet boundary.
+On run 43834232110 the step ingredient picker reached its exact token and
+keyboard dismissal checks after two of these waits. Only these two tests
+request four minutes through `XCTestCase.executionTimeAllowance`. Native
+assertions and the 30-minute suite budget still apply.
 
 On disposable GitHub-hosted macOS runners, ensure_ios_runtimes.py also prepares
 the exact installed runtime's dyld shared cache before any device is created.

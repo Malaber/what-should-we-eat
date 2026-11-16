@@ -68,9 +68,11 @@ elif any(arg.endswith('ios_runtime.py') for arg in sys.argv):
     assert not any(option in test for option in ('-derivedDataPath', '-project', '-scheme'))
     assert 'test-without-building' in test
     assert not any(option.startswith('ENABLE_DEBUG_DYLIB=') for option in test)
-    for option in ('-default-test-execution-time-allowance', '-maximum-test-execution-time-allowance'):
-        assert test.count(option) == 1
-        assert test[test.index(option) + 1] == allowance
+    default_limit = '-default-test-execution-time-allowance'
+    maximum_limit = '-maximum-test-execution-time-allowance'
+    assert test.count(default_limit) == test.count(maximum_limit) == 1
+    assert test[test.index(default_limit) + 1] == allowance
+    assert test[test.index(maximum_limit) + 1] == ('240' if allowance == '180' else allowance)
     assert f'-only-testing:OnionaryUITests/{suite}' in test
     assert '-retry-tests-on-failure' not in test
     assert test[test.index('-collect-test-diagnostics') + 1] == 'never'
@@ -110,7 +112,8 @@ if 'xcodebuild' in sys.argv:
     assert sorted(name for portion in portions for name in portion) == sorted(expected)
     for run in runs:
         assert 'test-without-building' in run
-        assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '180'
+        assert run[run.index('-default-test-execution-time-allowance') + 1] == '180'
+        assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '240'
 
 
 def test_hosted_duo_jobs_each_select_one_declared_case(tmp_path):
