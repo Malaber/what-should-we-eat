@@ -32,17 +32,21 @@ def main():
     parser.add_argument('--create', action='store_true')
     parser.add_argument('--device-type', default=DEFAULT_DEVICE)
     parser.add_argument('--runtime', help='Exact iOS version; defaults to the profile pin')
+    parser.add_argument('--device-set', type=Path)
     args = parser.parse_args()
-    runtimes = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'runtimes', '--json']))['runtimes']
+    simctl = ['xcrun', 'simctl']
+    if args.device_set:
+        simctl.extend(['--set', str(args.device_set)])
+    runtimes = json.loads(subprocess.check_output([*simctl, 'list', 'runtimes', '--json']))['runtimes']
     runtime = select_runtime(runtimes, args.device_type, args.runtime)
     version = args.runtime or default_runtime(args.device_type)
     verify_runtime_bundle(runtime, version)
     print(f"Verified installed iOS {version} ({runtime_build(version)}) at {runtime} for {args.device_type}", file=sys.stderr)
     if args.create:
-        print(subprocess.check_output(['xcrun', 'simctl', 'create', 'Onionary Isolated Tests',
+        print(subprocess.check_output([*simctl, 'create', 'Onionary Isolated Tests',
                                        args.device_type, runtime], text=True).strip())
     else:
-        devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '--json']))['devices']
+        devices = json.loads(subprocess.check_output([*simctl, 'list', 'devices', 'available', '--json']))['devices']
         matching = [d for d in devices.get(runtime_identifier(version), [])
                     if d.get('deviceTypeIdentifier') == args.device_type]
         if not matching:

@@ -156,6 +156,44 @@ if 'xcodebuild' in sys.argv:
         assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '360'
 
 
+def test_hosted_xctest_owns_a_private_simulator_set(tmp_path):
+    bins = tmp_path / 'bin'
+    bins.mkdir()
+    capture = tmp_path / 'commands.jsonl'
+    shim = f'''#!{sys.executable}
+import json, os, sys
+with open(os.environ['CAPTURE_ARGS'], 'a') as output:
+    output.write(json.dumps([os.path.basename(sys.argv[0]), *sys.argv[1:]]) + '\\n')
+if '--test-products' in sys.argv:
+    print(sys.argv[-1] + '/Onionary_iphonesimulator27.2-arm64.xctestrun')
+if any(arg.endswith('resolve_simulator.py') for arg in sys.argv): print('hosted-test-device')
+if 'test-without-building' in sys.argv: sys.exit(44)
+'''
+    for name in ('python3', 'xcrun'):
+        command = bins / name
+        command.write_text(shim)
+        command.chmod(0o755)
+    results = tmp_path / 'results'
+    device_set = str(results / 'simulator-set')
+    env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
+           'CAPTURE_ARGS': str(capture), 'TEST_RESULTS_DIR': str(results),
+           'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted',
+           'SIMULATOR_DEVICE_TYPE': 'com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro',
+           'SIMULATOR_RUNTIME': '27.2', 'SIMULATOR_TEST_SHARD': '1'}
+    env.pop('SIMULATOR_ID', None)
+    result = subprocess.run(['bash', str(SCRIPT), '--test-only'], env=env)
+    assert result.returncode == 44
+    runs = [json.loads(line) for line in capture.read_text().splitlines()]
+    create, = [run for run in runs if '--create' in run]
+    xctest, = [run for run in runs if 'test-without-building' in run]
+    diagnostics, = [run for run in runs if '--simulator' in run]
+    assert create[-2:] == ['--device-set', device_set]
+    assert f'-DVTSimulatorSetLocation={device_set}' in xctest
+    assert xctest[xctest.index('-destination') + 1] == 'platform=iOS Simulator,id=hosted-test-device'
+    assert diagnostics[-2:] == ['--device-set', device_set]
+    assert runs[-1] == ['xcrun', 'simctl', '--set', device_set, 'delete', 'hosted-test-device']
+
+
 @pytest.mark.parametrize('failure_stage', ['none', 'build', 'app', 'plan', 'test'])
 @pytest.mark.parametrize('runtime_override', [None, '27.1'])
 @pytest.mark.parametrize('diagnostics_fail', [False, True])

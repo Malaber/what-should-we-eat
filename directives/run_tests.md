@@ -357,6 +357,12 @@ failure traces both reached the Simulator accessibility handshake and stalled
 before a test case or app launch. Local `test.sh` still builds and runs tests
 in one command.
 
+GitHub-hosted `--test-only` runs create a private CoreSimulator device set
+under the result directory. In run 43838616167 the iPad startup expired while
+Xcode enumerated unrelated devices whose runtimes were unavailable. Pass the
+same set to device creation, XCTest, diagnostics and cleanup so only the
+destination created for that job is visible to XCTest.
+
 CI runs the iPhone and iPad cases in three balanced shards per device type.
 Each shard has its own standard runner, native XCTest process and simulator.
 This limits how many consecutive app replacements share one device. The iPad

@@ -54,3 +54,9 @@ the four genuine RC 32 bundles, with all ZIP checksums verified.
 logged two consecutive 60-second XCTest animation waits in the step ingredient
 picker. The token assertion and dismissal still ran. The iPad tag test
 separately lost its connection and was terminated after the simulator shut down.
+
+[Run 43838616167](https://github.com/Malaber/what-should-we-eat/actions/runs/43838616167/job/133204272091)
+timed out before launching the iPad test suite. Xcode encountered preset watch
+devices with unavailable runtimes while looking up destinations. Give each
+hosted native job a separate CoreSimulator device set containing its test
+destination and use that set for diagnostics and cleanup.

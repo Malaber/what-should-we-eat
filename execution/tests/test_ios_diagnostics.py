@@ -37,7 +37,7 @@ def test_capture_timeout_is_reported_without_retry(tmp_path, monkeypatch):
 
 def test_missing_tool_does_not_prevent_other_evidence(tmp_path, monkeypatch):
     simulator = "A1C60F1B-3CA3-4D80-A108-6AA0C745D2BF"
-    monkeypatch.setattr("execution.collect_ios_test_diagnostics.commands", lambda device: {
+    monkeypatch.setattr("execution.collect_ios_test_diagnostics.commands", lambda device, device_set: {
         "unavailable": [str(tmp_path / "missing-command")],
         "available": [sys.executable, "-c", "print('evidence retained')"],
     })
@@ -58,3 +58,12 @@ def test_inventory_is_read_only_and_filters_device():
     assert 'process == "SpringBoard"' in plan["guest-automation"][-1]
     assert not {"shutdown", "erase", "delete", "boot"}.intersection(
         argument for command in plan.values() for argument in command)
+
+
+def test_simulator_evidence_uses_the_test_device_set(tmp_path):
+    simulator = "A1C60F1B-3CA3-4D80-A108-6AA0C745D2BF"
+    plan = commands(simulator, tmp_path)
+    scope = ["xcrun", "simctl", "--set", str(tmp_path)]
+    for evidence in ("devices", "runtimes", "guest-automation"):
+        assert plan[evidence][:len(scope)] == scope
+    assert plan["guest-automation"][len(scope):len(scope) + 2] == ["spawn", simulator]

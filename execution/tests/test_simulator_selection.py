@@ -70,33 +70,39 @@ def test_hosted_ordinary_devices_select_stable_272(model):
 
 
 @pytest.mark.parametrize('create', [False, True])
-def test_cli_creates_with_exact_bundle_path_but_lists_by_os_identifier(monkeypatch, tmp_path, capsys, create):
+@pytest.mark.parametrize('scoped', [False, True])
+def test_cli_creates_with_exact_bundle_path_but_lists_by_os_identifier(monkeypatch, tmp_path, capsys, create, scoped):
     pinned = runtime('27.1')
     pinned['bundlePath'] = str(tmp_path / 'iOS 27.1.simruntime')
     source = Path(pinned['bundlePath']) / 'Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist'
     source.parent.mkdir(parents=True)
     source.write_bytes(plistlib.dumps({'ProductVersion': '27.1', 'ProductBuildVersion': '24A94425'}))
     calls = []
+    device_set = ['--device-set', str(tmp_path / 'devices')] if scoped else []
+    prefix = ['xcrun', 'simctl', '--set', device_set[1]] if scoped else ['xcrun', 'simctl']
 
     def output(command, **kwargs):
         calls.append(command)
-        if command[2:4] == ['list', 'runtimes']:
+        assert command[:len(prefix)] == prefix
+        action = command[len(prefix):]
+        if action[:2] == ['list', 'runtimes']:
             return json.dumps({'runtimes': [runtime('27.1', build='24A94232'), pinned]})
-        if command[2] == 'create':
+        if action[0] == 'create':
             return 'owned-device\n'
         return json.dumps({'devices': {pinned['identifier']: [
             {'udid': 'existing-device', 'deviceTypeIdentifier': DUO}]}})
 
     monkeypatch.setattr(simulator.subprocess, 'check_output', output)
-    monkeypatch.setattr(sys, 'argv', ['resolve_simulator.py', '--device-type', DUO] + (['--create'] if create else []))
+    monkeypatch.setattr(sys, 'argv', ['resolve_simulator.py', '--device-type', DUO, *device_set]
+                        + (['--create'] if create else []))
     simulator.main()
     output = capsys.readouterr()
     assert output.out.strip() == ('owned-device' if create else 'existing-device')
     assert 'iOS 27.1 (24A94425)' in output.err
     if create:
-        assert calls[-1] == ['xcrun', 'simctl', 'create', 'Onionary Isolated Tests', DUO, pinned['bundlePath']]
+        assert calls[-1] == [*prefix, 'create', 'Onionary Isolated Tests', DUO, pinned['bundlePath']]
     else:
-        assert calls[-1] == ['xcrun', 'simctl', 'list', 'devices', 'available', '--json']
+        assert calls[-1] == [*prefix, 'list', 'devices', 'available', '--json']
 
 
 def test_wrong_bundle_metadata_stops_before_device_creation(monkeypatch, tmp_path):

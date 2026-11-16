@@ -58,12 +58,26 @@ else
   esac
 fi
 simulator_id=${SIMULATOR_ID:-}
+simulator_set=
+simctl=(xcrun simctl)
+resolve_options=(--device-type "$device_type" --runtime "${SIMULATOR_RUNTIME:-}")
+xctest_command=(xcodebuild)
+if [[ "$mode" == --test-only && -z "$simulator_id" &&
+      "${GITHUB_ACTIONS:-}" == true && "${RUNNER_ENVIRONMENT:-}" == github-hosted ]]; then
+  # Avoid enumerating the runner image's unrelated precreated devices, which
+  # can reference runtime builds absent from this image.
+  simulator_set="$result_dir/simulator-set"
+  mkdir -p "$simulator_set"
+  simctl+=(--set "$simulator_set")
+  resolve_options+=(--device-set "$simulator_set")
+  xctest_command+=("-DVTSimulatorSetLocation=$simulator_set")
+fi
 create_simulator() {
-  simulator_id=$(python3 Scripts/resolve_simulator.py --create --device-type "$device_type" --runtime "${SIMULATOR_RUNTIME:-}")
+  simulator_id=$(python3 Scripts/resolve_simulator.py --create "${resolve_options[@]}")
 }
 delete_owned_simulator() {
   if [[ -z "${SIMULATOR_ID:-}" && -n "$simulator_id" ]]; then
-    xcrun simctl delete "$simulator_id" >/dev/null 2>&1 || true
+    "${simctl[@]}" delete "$simulator_id" >/dev/null 2>&1 || true
     simulator_id=
   fi
 }
@@ -73,9 +87,10 @@ cleanup() {
   if [[ "$result" != 0 && -n "$simulator_id" ]]; then
     # Preserve the original failure. Diagnostics are read-only and bounded;
     # neither an unavailable log service nor cleanup can replace its exit code.
+    local diagnostics_options=(--simulator "$simulator_id" --output "$result_dir/host-diagnostics")
+    if [[ -n "$simulator_set" ]]; then diagnostics_options+=(--device-set "$simulator_set"); fi
     python3 ../../execution/run_bounded.py --log "$result_dir/host-diagnostics.log" 60 \
-      python3 ../../execution/collect_ios_test_diagnostics.py \
-      --simulator "$simulator_id" --output "$result_dir/host-diagnostics" || true
+      python3 ../../execution/collect_ios_test_diagnostics.py "${diagnostics_options[@]}" || true
   fi
   delete_owned_simulator
   exit "$result"
@@ -95,7 +110,7 @@ run_tests() {
   # app installation and test session. A prebooted session can disappear
   # while xcodebuild is still initializing its runner.
   python3 ../../execution/run_bounded.py --startup-seconds 600 --ready-prefix "Test Suite 'Selected tests' started at " \
-    --log "$output/tests.log" 1800 xcodebuild -xctestrun "$test_plan" \
+    --log "$output/tests.log" 1800 "${xctest_command[@]}" -xctestrun "$test_plan" \
     -destination "platform=iOS Simulator,id=$simulator_id" \
     -parallel-testing-enabled NO -collect-test-diagnostics never -test-timeouts-enabled YES \
     -default-test-execution-time-allowance "$default_allowance" -maximum-test-execution-time-allowance "$maximum_allowance" \
