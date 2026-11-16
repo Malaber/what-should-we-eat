@@ -1,8 +1,6 @@
 import SwiftUI
 import OnionaryCore
 
-private var onion: Color { OnionaryTheme.accent }
-
 struct RootView: View {
     @Bindable var store: AppStore
     @State private var tab = 0
@@ -43,6 +41,7 @@ struct RootView: View {
 }
 
 struct ConnectionView: View {
+    @Environment(\.onionaryAccent) private var onion
     @Bindable var store: AppStore
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -52,7 +51,7 @@ struct ConnectionView: View {
             Text("Your recipes. Your kitchen. Pick up where you left off.").foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Backend address").font(.caption.bold())
-                TextField("https://onionary-test.malaber.de", text: $store.backend)
+                TextField(Backend.defaultAddress, text: $store.backend)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     .textFieldStyle(.roundedBorder).accessibilityIdentifier("backend")
                 Text("Choose your own Onionary server. Your passkey is verified on that server in a secure browser window.")
@@ -69,6 +68,7 @@ struct ConnectionView: View {
 }
 
 struct RecipesView: View {
+    @Environment(\.onionaryAccent) private var onion
     @Bindable var store: AppStore
     var selected: () -> Void
     @State private var search = ""
@@ -78,34 +78,47 @@ struct RecipesView: View {
     @State private var creation: Creation?
     @State private var showCreationActions = false
     @State private var selectedTags: Set<String> = []
-    @State private var quickestFirst = false
+    @AppStorage("recipe-sort") private var sort = RecipeBrowsing.Sort.alphabetical
+    @AppStorage("recipe-sort-reversed") private var reverseSort = false
     @State private var showAllRecent = false
     @State private var pantry = false
     @State private var recoveryDraft: SavedRecipeDraft?
+    @State private var inspectingDraft: SavedRecipeDraft?
     @State private var deletingDraft: SavedRecipeDraft?
-    var filtered: [Recipe] { RecipeBrowsing.recipes(store.kitchen.recipes, query: search, categories: selectedTags, quickestFirst: quickestFirst) }
+    var filtered: [Recipe] {
+        RecipeBrowsing.recipes(store.kitchen.recipes, query: search, categories: selectedTags, sort: sort, reversed: reverseSort)
+    }
     var body: some View {
         NavigationSplitView(preferredCompactColumn: $preferredColumn) {
             sidebar.navigationSplitViewColumnWidth(min: 280, ideal: 360, max: 460)
         } detail: {
             if let preview {
                 RecipePreview(store: store, recipe: store.kitchen.recipes.first(where: { $0.id == preview.id }) ?? preview, cook: selected)
+                    .id(preview.id)
             } else {
                 ContentUnavailableView("Choose a recipe", systemImage: "book", description: Text("Preview a recipe without changing your cooking progress."))
             }
         }.navigationSplitViewStyle(.balanced)
     }
     private var sidebar: some View {
-        List {
+        let matchingRecipes = filtered
+        let hasFilters = !search.isEmpty || !selectedTags.isEmpty
+        return List {
             if !store.savedDrafts.isEmpty {
                 Section("Saved drafts") {
                     ForEach(store.savedDrafts) { saved in
-                        Button { recoveryDraft = saved } label: {
-                            VStack(alignment: .leading) {
-                                Text(saved.draft.name.isEmpty ? L10n.text("New recipe") : saved.draft.name)
-                                Text(saved.updatedAt, style: .date).font(.caption).foregroundStyle(.secondary)
+                        HStack {
+                            Button { recoveryDraft = saved } label: {
+                                VStack(alignment: .leading) {
+                                    Text(saved.draft.name.isEmpty ? L10n.text("New recipe") : saved.draft.name)
+                                    Text(saved.updatedAt, style: .date).font(.caption).foregroundStyle(.secondary)
+                                }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                            }.accessibilityIdentifier("saved-draft-" + saved.draft.name)
+                            Button { inspectingDraft = saved } label: {
+                                Image(systemName: "info.circle").frame(minWidth: 44, minHeight: 44)
                             }
-                        }.accessibilityIdentifier("saved-draft-" + saved.draft.name)
+                            .accessibilityLabel("View draft changes")
+                        }.buttonStyle(.borderless)
                         .swipeActions { Button("Delete draft", role: .destructive) { deletingDraft = saved } }
                     }
                 }
@@ -122,11 +135,11 @@ struct RecipesView: View {
                                     Button { if !selectedTags.insert(tag).inserted { selectedTags.remove(tag) } } label: {
                                         VStack(alignment: .leading, spacing: 4) {
                                             Label(tag, systemImage: isSelected ? "checkmark.circle.fill" : "tag.fill").font(.headline).lineLimit(1)
-                                            Text("\(RecipeBrowsing.recipes(store.kitchen.recipes, category: tag).count) recipes")
+                                            Text("\(RecipeBrowsing.categoryCount(tag, in: matchingRecipes)) recipes")
                                                 .font(.caption).foregroundStyle(.secondary)
                                         }.padding(.horizontal, 12).padding(.vertical, 8)
                                             .frame(minWidth: 140, alignment: .leading)
-                                            .background(OnionaryTheme.accent.opacity(isSelected ? 0.24 : 0.12), in: RoundedRectangle(cornerRadius: 16))
+                                            .background(onion.opacity(isSelected ? 0.24 : 0.12), in: RoundedRectangle(cornerRadius: 16))
                                             .opacity(!selectedTags.isEmpty && !isSelected ? 0.58 : 1)
                                     }.buttonStyle(.plain)
                                         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -146,7 +159,7 @@ struct RecipesView: View {
                             if !selectedTags.isEmpty {
                                 Button("Clear filter") { selectedTags.removeAll() }
                                     .buttonStyle(.borderless)
-                                    .foregroundStyle(OnionaryTheme.accent)
+                                    .foregroundStyle(onion)
                                     .accessibilityIdentifier("clear-tag-filter")
                             }
                         }.padding(.horizontal, 16)
@@ -164,26 +177,42 @@ struct RecipesView: View {
                 }
             }
             Section {
-                ForEach(filtered) { recipe in recipeRow(recipe, subtitle: recipe.totalTimeMin.map { "\($0) min" } ?? "") }
+                ForEach(matchingRecipes) { recipe in recipeRow(recipe, subtitle: recipe.totalTimeMin.map { "\($0) min" } ?? "") }
             } header: {
                 HStack {
                     Text("Your recipes")
                     Spacer()
                     Menu {
-                        Toggle("Quickest first", isOn: $quickestFirst)
-                    } label: { Label("Sort recipes", systemImage: "arrow.up.arrow.down").labelStyle(.iconOnly) }
+                        Picker("Sort recipes", selection: $sort) {
+                            ForEach(RecipeBrowsing.Sort.allCases) { option in
+                                Text(LocalizedStringKey(option.title)).tag(option)
+                            }
+                        }
+                    } label: { Label("Sort recipes", systemImage: "line.3.horizontal.decrease").labelStyle(.iconOnly) }
                     .accessibilityIdentifier("sort-recipes")
+                    .accessibilityValue(Text(LocalizedStringKey(sort.title)))
+                    Button { reverseSort.toggle() } label: {
+                        Label("Reverse sort order", systemImage: reverseSort ? "arrow.up" : "arrow.down").labelStyle(.iconOnly)
+                            .frame(minWidth: 32, minHeight: 44)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityAddTraits(reverseSort ? .isSelected : [])
+                    .accessibilityIdentifier("reverse-recipe-sort")
                 }
             }
-            if filtered.isEmpty {
-                ContentUnavailableView(LocalizedStringKey(search.isEmpty ? "Your recipe book is waiting" : "No matching recipes"),
-                    systemImage: "book.closed", description: Text(LocalizedStringKey(search.isEmpty ? "Add recipes in your web kitchen, then refresh here." : "Try another search.")))
+            if matchingRecipes.isEmpty {
+                ContentUnavailableView(LocalizedStringKey(hasFilters ? "No matching recipes" : "Your recipe book is waiting"),
+                    systemImage: "book.closed", description: Text(LocalizedStringKey(hasFilters ? "Try other tags or a different search." : "Add recipes in your web kitchen, then refresh here.")))
             }
         }.accessibilityIdentifier("recipe-list")
             .accessibilityValue(Text(store.refreshing ? "Refreshing recipes" : "Recipes loaded"))
             .dismissibleKeyboard().navigationTitle("Recipe book").searchable(text: $search, prompt: "Find something delicious")
             .sheet(item: $recoveryDraft) { saved in
-                RecipeEditor(store: store, draft: saved.draft, recipeID: saved.recipeID, draftID: saved.id)
+                RecipeEditor(store: store, draft: saved.draft, recipeID: saved.recipeID, draftID: saved.id,
+                             savedBaseline: saved.baseline, isRecovery: true)
+            }
+            .sheet(item: $inspectingDraft) { saved in
+                DraftChangesView(store: store, saved: saved)
             }
             .confirmationDialog("Delete saved draft?", isPresented: Binding(get: { deletingDraft != nil }, set: { if !$0 { deletingDraft = nil } })) {
                 Button("Delete draft", role: .destructive) {
@@ -224,8 +253,9 @@ struct RecipesView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.name).font(.headline).foregroundStyle(.primary)
                     if !subtitle.isEmpty { Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(.secondary) }
-                    if let tags = recipe.tags, !tags.isEmpty {
-                        Text(tags.map(\.name).joined(separator: " · "))
+                    let tags = RecipeBrowsing.tagNames(recipe.tags)
+                    if !tags.isEmpty {
+                        Text(tags.joined(separator: " · "))
                             .font(.caption).foregroundStyle(onion).fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -239,6 +269,7 @@ struct RecipesView: View {
 }
 
 struct CookingView: View {
+    @Environment(\.onionaryAccent) private var onion
     @Bindable var store: AppStore
     var browse: () -> Void
     private enum Sheet: Identifiable {
@@ -323,8 +354,7 @@ struct CookingView: View {
                                index == 0 || steps[index - 1].groupName != group {
                                 Text(group).font(.headline).accessibilityAddTraits(.isHeader)
                             }
-                            checkRow(key: "step-\(step.id)", label: IngredientPlaceholders.resolve(step.description, ingredients: adventure.recipe.ingredients, multiplier: adventure.multiplier, locale: L10n.locale),
-                                     subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""), adventure: adventure)
+                            cookingStep(step, adventure: adventure)
                         }
                     }
                     if let notes = adventure.recipe.notes, !notes.isEmpty { Section("Kitchen notes") { Text(notes) } }
@@ -340,6 +370,10 @@ struct CookingView: View {
                 } description: { Text("Choose a recipe. We’ll keep your place, even when life interrupts.") }
                 actions: { Button("Choose a recipe", action: browse).buttonStyle(.borderedProminent) }
             }
+        }.overlay(alignment: .topLeading) {
+            if let id = store.current?.id {
+                CookingModeFeedback(active: store.cookingActivity.active).id(id)
+            }
         }.dismissibleKeyboard().navigationTitle("Onionary").navigationBarTitleDisplayMode(.inline)
             .confirmationDialog("Restart cooking? Current checks and history will be cleared; the latest recipe will be used.", isPresented: $restart, titleVisibility: .visible) {
                 Button("Restart", role: .destructive) { store.restartCurrentRecipe() }
@@ -351,7 +385,7 @@ struct CookingView: View {
                     }.accessibilityLabel("Cooking mode")
                         .accessibilityValue(Text(store.cookingActivity.active ? "On" : "Off"))
                         .accessibilityIdentifier("cooking-mode")
-                        .accessibilityHint(store.cookingActivity.lastFailure ?? "")
+                        .accessibilityHint(Text(store.cookingActivity.lastFailure ?? L10n.text("Show cooking progress on the Lock Screen.")))
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     // Let the native menu own its anchor across toolbar/fold
@@ -386,6 +420,39 @@ struct CookingView: View {
                 }
             }
     }
+    private func cookingStep(_ step: CookingStep, adventure: Adventure) -> some View {
+        let parts = IngredientPlaceholders.parts(step.description, ingredients: adventure.recipe.ingredients,
+                                                 multiplier: adventure.multiplier, locale: L10n.locale)
+        return VStack(alignment: .leading, spacing: 4) {
+            checkRow(key: "step-\(step.id)", label: parts.map(\.text).joined(),
+                     subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""),
+                     adventure: adventure)
+            ChipFlow(spacing: 6) {
+                ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
+                    if case .amount(let ingredient, let label) = part {
+                        ingredientBadge(ingredient, label: label, adventure: adventure)
+                    }
+                }
+            }.padding(.leading, 32)
+        }
+    }
+
+    private func ingredientBadge(_ ingredient: Ingredient, label: String, adventure: Adventure) -> some View {
+        let key = "ingredient-\(ingredient.id)"
+        let checked = adventure.checked.contains(key)
+        return Button {
+            store.update { $0.toggle(key: key, label: ingredient.name) }
+        } label: {
+            Label(label, systemImage: checked ? "checkmark.circle.fill" : "circle")
+                .font(.subheadline.weight(.medium)).padding(.horizontal, 10).padding(.vertical, 6)
+                .foregroundStyle(onion)
+                .background(onion.opacity(0.14), in: Capsule())
+                .frame(minHeight: 44).contentShape(Rectangle())
+        }.buttonStyle(.plain)
+            .accessibilityValue(checked ? "Checked" : "Unchecked")
+            .accessibilityIdentifier("step-ingredient-\(ingredient.id)")
+    }
+
     func checkRow(key: String, label: String, subtitle: String, adventure: Adventure) -> some View {
         let checked = adventure.checked.contains(key)
         return Button { focusedItem = key; store.update { $0.toggle(key: key, label: label) } } label: {
@@ -400,6 +467,50 @@ struct CookingView: View {
         }.buttonStyle(.plain).accessibilityLabel(label + (subtitle.isEmpty ? "" : ", " + subtitle))
             .accessibilityValue(checked ? "Checked" : "Unchecked").accessibilityHint("Double tap to toggle. Undo reverses the last change.")
             .accessibilityIdentifier(key).id(key)
+    }
+}
+
+private struct CookingModeFeedback: View {
+    let active: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var notice: Bool?
+
+    private var animation: Animation { reduceMotion ? .easeOut(duration: 0.15) : .spring(duration: 0.34) }
+
+    var body: some View {
+        Group {
+            if let notice {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: notice ? "flame.fill" : "flame").font(.title3).foregroundStyle(.tint)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(LocalizedStringKey(title(notice))).font(.subheadline.bold())
+                        Text(LocalizedStringKey(detail(notice))).font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(12)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("cooking-mode-feedback")
+                .transition(reduceMotion ? .opacity : .offset(y: -16).combined(with: .opacity))
+                .padding([.top, .horizontal], 12)
+            }
+        }
+        .allowsHitTesting(false)
+        .onChange(of: active) { _, value in
+            withAnimation(animation) { notice = value }
+            AccessibilityNotification.Announcement(L10n.text(title(value)) + ". " + L10n.text(detail(value))).post()
+        }
+        .task(id: notice) {
+            guard notice != nil else { return }
+            guard (try? await Task.sleep(for: .seconds(3.5))) != nil, !Task.isCancelled else { return }
+            withAnimation(animation) { notice = nil }
+        }
+    }
+
+    private func title(_ on: Bool) -> String { on ? "Cooking mode on" : "Cooking mode off" }
+    private func detail(_ on: Bool) -> String {
+        on ? "Follow your progress in the Live Activity on the Lock Screen." : "The Live Activity ended. Your cooking progress is saved."
     }
 }
 

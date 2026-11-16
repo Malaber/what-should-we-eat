@@ -105,6 +105,10 @@ Like Planini, Git tags are the version authority: stable `v0.2.0`, development
 release candidates `v0.2.0-rc.1`, `v0.2.0-rc.2`, etc. We explicitly tag releases;
 ordinary commits use `<base>-dev.<sha>`. Stable tags publish `latest`; RC tags do
 not. The moving `development` image only tracks successful branch pipelines.
+On main, CI promotes the newest reachable RC when its version meets or exceeds
+the usual next minor release. Otherwise it bumps the latest stable minor version.
+The `release:patch` and `release:major` PR labels bump the latest stable release
+explicitly. CI reuses an existing stable tag on the exact commit when rerun.
 
 ```sh
 git tag -a v0.2.0-rc.2 -m 'Onionary 0.2.0 release candidate 2'
@@ -134,17 +138,19 @@ App Store URLs:
 - Privacy: https://app.onionary.malaber.de/privacy/
 - Contact: onionary@schaedler.rocks
 
-**App Store screenshots** exports four real English app screens from each normal
-native CI suite (iPhone and 13-inch iPad), using fictional recipe data and the
-actual system status bar. Both device suites must pass. The reusable App Store
-workflow consumes those same captures, renders artwork through the pinned
-Malaber/github-workflows renderer, and creates the existing device bundles.
-It does not boot another simulator or run the capture test a second time.
+**App Store screenshots** exports four real English app screens on iPhone,
+13-inch iPad and the Duo outer display, using fictional recipe data and the
+actual system status bar. Each device gets three framed screenshots in its
+native dimensions. The Duo bundle also includes its inner landscape cooking
+screen from the passing fold regression. The exporter applies the inner
+screenshot's EXIF orientation and preserves the actual screen pixels when
+padding the known one-pixel XCTest rounding difference.
 
-Download each workflow artifact's `en-US/` images. Release bundles contain PNGs
-and editable SVG artwork, with validated dimensions. Main-release tags also
-attach `onionary-appstore-iphone-en-US.zip` and
-`onionary-appstore-ipad-en-US.zip` to the matching GitHub Release. RC commits
+Download each workflow artifact's `en-US/` images. The reusable workflow renders
+one shared set of header and search artwork from this run's iPhone capture.
+Main releases attach four ZIPs to the matching GitHub Release: iPhone, iPad,
+Duo and creative. The creative ZIP contains editable SVGs, opaque upload PNGs
+and the safe-area previews. RC commits
 outside main remain workflow artifacts. A rerun may replace generated assets
 for the same immutable tag; it never moves the tag. No customer data or backend
 credentials are used.
@@ -154,6 +160,10 @@ Local export from an already successful native suite:
 ```sh
 python3 execution/marketing_screenshots.py --result-bundle /path/to/Onionary.xcresult --family iphone --output .tmp/marketing-iphone
 python3 execution/marketing_screenshots.py --result-bundle /path/to/iPad/Onionary.xcresult --family ipad --output .tmp/marketing-ipad
+python3 execution/marketing_screenshots.py \
+  --result-bundle /path/to/duo/testMarketingScreenshots/Onionary.xcresult \
+  --duo-fold-result /path/to/duo/testRecipePreviewAndChecklistSurviveFolds/Onionary.xcresult \
+  --family duo --output .tmp/marketing-duo --defer-creative
 ```
 
 Use `--defer-creative` when the pinned shared workflow will render the header and

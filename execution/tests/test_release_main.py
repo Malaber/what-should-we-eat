@@ -1,11 +1,13 @@
 from execution.release_main import release_version
 
-def test_main_release_promotes_rc_and_bumps_minor():
-    assert release_version(['v0.2.0-rc.1', 'v0.2.0-rc.3']) == '0.3.0'
-    assert release_version(['v0.3.0', 'v0.2.0-rc.3']) == '0.4.0'
+def test_main_release_promotes_a_reachable_rc_or_bumps_minor():
+    tags = ['v0.4.0', 'v0.6.0-rc.29', 'v0.6.0-rc.30', 'v0.99.0-rc.1']
+    assert release_version(tags, reachable_candidates=tags[1:3]) == '0.6.0'
+    assert release_version(tags) == '0.5.0'
+    assert release_version(tags + ['v0.7.0'], reachable_candidates=tags[1:3]) == '0.8.0'
     assert release_version([]) == '0.2.0'
-    assert release_version(['junk', 'v0.3.0'], 'patch') == '0.3.1'
-    assert release_version(['v0.3.0'], 'major') == '1.0.0'
+    assert release_version(tags, 'patch', reachable_candidates=tags[1:3]) == '0.4.1'
+    assert release_version(tags, 'major', reachable_candidates=tags[1:3]) == '1.0.0'
 
 
 def test_release_uses_pr_text_without_shell_and_reuses_tag(monkeypatch, tmp_path):
@@ -49,7 +51,7 @@ def test_first_stable_release_publishes_new_tag_and_preserves_it(monkeypatch, tm
     remote = tmp_path / 'remote.git'
     repo = tmp_path / 'repo'
     real_run(['git', 'init', '--bare', str(remote)], check=True, capture_output=True)
-    real_run(['git', 'init', str(repo)], check=True, capture_output=True)
+    real_run(['git', 'init', '-b', 'candidate', str(repo)], check=True, capture_output=True)
     monkeypatch.chdir(repo)
 
     def git(*args):
@@ -57,9 +59,12 @@ def test_first_stable_release_publishes_new_tag_and_preserves_it(monkeypatch, tm
 
     git('config', 'user.email', 'ci@example.org')
     git('config', 'user.name', 'CI test')
+    git('commit', '--allow-empty', '-m', 'unrelated candidate')
+    git('tag', 'v0.30.0-rc.1')
+    git('switch', '--orphan', 'main')
     git('commit', '--allow-empty', '-m', 'merged feature')
     git('remote', 'add', 'origin', str(remote))
-    git('tag', 'v0.2.0-rc.7')
+    git('tag', 'v0.6.0-rc.7')
     sha = git('rev-parse', 'HEAD')
     monkeypatch.setenv('GITHUB_SHA', sha)
     monkeypatch.setenv('GITHUB_REPOSITORY', 'Malaber/what-should-we-eat')
@@ -87,11 +92,11 @@ def test_first_stable_release_publishes_new_tag_and_preserves_it(monkeypatch, tm
     monkeypatch.setattr(release_main.subprocess, 'check_output', output)
     monkeypatch.setattr(release_main.subprocess, 'run', run)
     release_main.main()
-    assert git('ls-remote', 'origin', 'refs/tags/v0.3.0').split()[0] == sha
-    assert creates[0][3] == 'v0.3.0'
+    assert git('ls-remote', 'origin', 'refs/tags/v0.6.0').split()[0] == sha
+    assert creates[0][3] == 'v0.6.0'
     assert creates[0][creates[0].index('--title') + 1] == 'Cooking and widgets'
     assert '--verify-tag' in creates[0]
     assert (repo / 'release-notes.md').read_text().startswith('Recipe discovery\n\nValidated changes.')
     release_main.main()
     assert len(creates) == 1
-    assert git('ls-remote', 'origin', 'refs/tags/v0.3.0').split()[0] == sha
+    assert git('ls-remote', 'origin', 'refs/tags/v0.6.0').split()[0] == sha

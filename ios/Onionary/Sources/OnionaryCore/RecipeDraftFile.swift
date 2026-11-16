@@ -6,8 +6,10 @@ public struct SavedRecipeDraft: Codable, Identifiable, Sendable {
     public var recipeID: Int?
     public var updatedAt: Date
     public var draft: RecipeDraft
-    public init(id: UUID, recipeID: Int?, draft: RecipeDraft) {
+    public var baseline: RecipeDraft?
+    public init(id: UUID, recipeID: Int?, draft: RecipeDraft, baseline: RecipeDraft? = nil) {
         self.id = id; self.recipeID = recipeID; self.draft = draft; updatedAt = Date()
+        self.baseline = baseline
     }
 }
 

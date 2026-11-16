@@ -1,12 +1,13 @@
 # Onionary App Store artwork
 
-The CI workflow uses the iPhone and iPad captures from the passing native test
-suite. Each device artifact contains four unmodified screenshots and three
-framed portraits in `en-US/portraits/`. The three portraits feature the cooking
-checklist, recipe book, and portion controls. Each portrait retains the
-corresponding device's App Store upload dimensions.
+The CI workflow uses real captures from the passing iPhone, iPad and iPhone Duo
+native suites. Each device gets a ZIP with four screenshots and three framed
+portraits in `en-US/portraits/`. The portraits feature the cooking checklist,
+recipe book and portion controls at the device's App Store upload dimensions.
+The Duo ZIP also includes an unfolded cooking screenshot in `en-US/inner/`.
 
-The `en-US/creative/` directory contains editable SVGs and opaque
+The separate creative ZIP is shared across devices. Its `en-US/creative/`
+directory contains editable SVGs and opaque
 5244 × 2950 PNGs for the product-page header and search results. The versions
 ending in `-safe-area-preview.png` are review crops. Upload the full-size
 `header.png` and `search-results.png` through App Store Connect.
@@ -19,12 +20,14 @@ placement previews before publishing.
 - [Apple creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications)
 - [Editable artwork and shared CI renderer](creative/README.md)
 
-Generate both kinds of artwork locally from the four original XCTest PNGs:
+Generate framed portraits locally from the four original XCTest PNGs:
 
 ```sh
 python -m pip install -r marketing/requirements.txt
 python execution/render_marketing_assets.py .tmp/marketing/iphone/en-US --family iphone
 ```
+
+Add `--include-creative` to render the shared artwork using that iPhone capture.
 
 Use Inkscape for SVG output. The renderer uses bundled Lora and Manrope fonts
 with their SIL Open Font Licenses. CI checks every output's dimensions and

@@ -42,14 +42,23 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
-        app.buttons["category-Vegetarian"].tap()
-        app.buttons["category-Quick & easy"].tap()
-        XCTAssertEqual(app.buttons["category-Vegetarian"].value as? String, "Selected")
-        XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Selected")
+        let vegetarian = app.buttons["category-Vegetarian"]
+        let quick = app.buttons["category-Quick & easy"]
+        let comfort = app.buttons["category-Comfort food"]
+        XCTAssertTrue(vegetarian.label.contains("6 recipes"))
+        XCTAssertTrue(comfort.label.contains("3 recipes"))
+        vegetarian.tap()
+        quick.tap()
+        XCTAssertEqual(vegetarian.value as? String, "Selected")
+        XCTAssertEqual(quick.value as? String, "Selected")
+        XCTAssertTrue(vegetarian.label.contains("3 recipes"))
+        XCTAssertTrue(comfort.label.contains("0 recipes"))
         app.buttons["clear-tag-filter"].tap()
         XCTAssertTrue(app.buttons["clear-tag-filter"].waitForNonExistence(timeout: 5))
-        XCTAssertEqual(app.buttons["category-Vegetarian"].value as? String, "Not selected")
-        XCTAssertEqual(app.buttons["category-Quick & easy"].value as? String, "Not selected")
+        XCTAssertEqual(vegetarian.value as? String, "Not selected")
+        XCTAssertEqual(quick.value as? String, "Not selected")
+        XCTAssertTrue(vegetarian.label.contains("6 recipes"))
+        XCTAssertTrue(comfort.label.contains("3 recipes"))
     }
 
     @MainActor
@@ -196,6 +205,16 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Recipes", in: app)
         let saved = app.collectionViews["recipe-list"].buttons.matching(identifier: "saved-draft-My offline soup").element(boundBy: 0)
         XCTAssertTrue(saved.waitForExistence(timeout: 5))
+        let viewChanges = app.collectionViews["recipe-list"].buttons["View draft changes"]
+        XCTAssertTrue(viewChanges.exists)
+        viewChanges.tap()
+        let changes = app.navigationBars["Draft changes"]
+        XCTAssertTrue(changes.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Name"].exists)
+        XCTAssertTrue(app.staticTexts["My offline soup"].exists)
+        XCTAssertFalse(app.staticTexts["No recipe changes"].exists)
+        changes.buttons["Done"].tap()
+        XCTAssertTrue(changes.waitForNonExistence(timeout: 5))
         saved.tap()
         // One native query checks both existence and exact restored text.
         XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")), "Cold restoration must retain the complete draft name")
@@ -204,7 +223,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
     func testIngredientOrderCanBeMovedAndSaved() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--ui-testing", "--reset", "--ordering-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
         try selectRecipe(in: app)
@@ -213,32 +232,86 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(ingredients.waitForExistence(timeout: 5))
         ingredients.tap()
         let sheet = app.navigationBars["Reorder ingredients"]
-        XCTAssertTrue(sheet.waitForExistence(timeout: 5))
         let list = app.collectionViews["recipe-order-list"]
         XCTAssertTrue(list.waitForExistence(timeout: 5))
         XCTAssertEqual(list.textFields.count, 0)
         let cheese = list.staticTexts["Cheese"]
         let pasta = list.staticTexts["Pasta"]
+        let lemon = list.staticTexts["Lemon"]
         XCTAssertTrue(list.buttons["Reorder Cheese"].exists)
         XCTAssertLessThan(cheese.frame.minY, pasta.frame.minY)
+        XCTAssertLessThan(pasta.frame.minY, lemon.frame.minY)
         XCTAssertFalse(list.buttons["Move Cheese up"].isEnabled)
-        XCTAssertFalse(list.buttons["Move Pasta down"].isEnabled)
+        XCTAssertFalse(list.buttons["Move Lemon down"].isEnabled)
         list.buttons["Move Pasta up"].tap()
         XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
-        list.buttons["Move Pasta down"].tap()
-        XCTAssertLessThan(cheese.frame.minY, pasta.frame.minY)
         list.buttons["Move Cheese down"].tap()
-        XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
+        XCTAssertLessThan(lemon.frame.minY, cheese.frame.minY)
         sheet.buttons["Done"].tap()
         XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
         app.buttons["Save"].tap()
-        XCTAssertTrue(ingredients.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Edit recipe"].waitForNonExistence(timeout: 5))
+        let preview = app.collectionViews["recipe-preview"]
+        let savedRows = ["Pasta", "Lemon", "Cheese"].map { preview.staticTexts[$0] }
+        XCTAssertTrue(savedRows.allSatisfy(\.exists))
+        let savedOrder = savedRows.map { $0.frame.minY }
+        XCTAssertLessThan(savedOrder[0], savedOrder[1])
+        XCTAssertLessThan(savedOrder[1], savedOrder[2])
+    }
+
+    @MainActor
+    func testCancellingUnchangedEditDoesNotSaveDraft() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        try selectRecipe(in: app)
         app.buttons["Edit recipe"].tap()
-        XCTAssertTrue(ingredients.waitForExistence(timeout: 5))
-        ingredients.tap()
-        XCTAssertTrue(sheet.waitForExistence(timeout: 5))
-        XCTAssertLessThan(pasta.frame.minY, cheese.frame.minY)
+        let editor = app.navigationBars["Edit recipe"]
+        XCTAssertTrue(editor.buttons["Cancel"].waitForExistence(timeout: 5))
+        editor.buttons["Cancel"].tap()
+        XCTAssertTrue(editor.waitForNonExistence(timeout: 5))
+        let back = app.navigationBars["Recipe preview"].buttons["Recipe book"]
+        if back.exists { back.tap() }
+        let book = app.collectionViews["recipe-list"]
+        XCTAssertTrue(book.buttons["recipe-1"].waitForExistence(timeout: 5))
+        XCTAssertFalse(book.buttons["saved-draft-Lemon & cheese pasta"].exists)
+        XCTAssertFalse(book.staticTexts["Saved drafts"].exists)
+    }
+
+    @MainActor
+    func testIngredientGroupPersistsAfterSaving() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        try selectRecipe(in: app)
+        app.buttons["Edit recipe"].tap()
+        let reorder = app.buttons["Reorder ingredients"]
+        XCTAssertTrue(reorder.waitForExistence(timeout: 5))
+        reorder.tap()
+        let sheet = app.navigationBars["Reorder ingredients"]
+        let orderList = app.collectionViews["recipe-order-list"]
+        let addGroup = orderList.buttons["Add group"]
+        XCTAssertTrue(addGroup.waitForExistence(timeout: 5))
+        addGroup.tap()
+        let groupName = orderList.textFields["new-recipe-group-name"]
+        XCTAssertTrue(groupName.waitForExistence(timeout: 5))
+        groupName.tap()
+        app.typeText("Sauce")
+        orderList.buttons["confirm-recipe-group"].tap()
+        let cheeseGroup = orderList.buttons["recipe-group-Cheese"]
+        XCTAssertTrue(cheeseGroup.waitForExistence(timeout: 5))
+        cheeseGroup.tap()
+        app.buttons["Sauce"].tap()
+        XCTAssertTrue(orderList.staticTexts["Sauce"].waitForExistence(timeout: 5))
         sheet.buttons["Done"].tap()
+        XCTAssertTrue(sheet.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Sauce"].exists)
+        app.buttons["Save"].tap()
+        let preview = app.collectionViews["recipe-preview"]
+        XCTAssertTrue(preview.staticTexts["Sauce"].waitForExistence(timeout: 5))
+        XCTAssertFalse(reorder.exists)
     }
 
     @MainActor
@@ -426,7 +499,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(matches.waitForExistence(timeout: 5))
         app.buttons["close-tag-recipes"].tap()
         XCTAssertTrue(matches.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].exists)
+        XCTAssertTrue(app.staticTexts["Creamy lemon pasta"].exists)
     }
 
     @MainActor
@@ -448,9 +521,6 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.launch()
         try tapNavigation("Recipes", in: app)
         try selectRecipe(in: app)
-        app.buttons["preview-cook"].tap()
-        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
-        app.buttons["Cooking options"].tap()
         app.buttons["Edit recipe"].tap()
         XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["insert-ingredient-amount"].exists)
@@ -472,8 +542,6 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue((instruction.value as? String ?? "").contains("{{Cheese|100%}}"))
         app.buttons["Done"].tap()
         XCTAssertFalse(insert.exists)
-        app.buttons["Cancel"].tap()
-        XCTAssertTrue(app.textFields["Name"].waitForNonExistence(timeout: 5))
     }
 
     @MainActor
@@ -510,17 +578,13 @@ final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
     func testEditRecipeKeepsCookingProgress() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["--ui-testing", "--reset", "--editing-active-recipe", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.buttons["Choose a recipe"].tap()
-        try selectRecipe(in: app)
-        app.buttons["preview-cook"].tap()
+        // Starting a recipe and toggling a check are covered by the checklist
+        // tests. Begin from an active adventure to focus on the save decision.
         let checkedIngredient = app.buttons["ingredient-1"]
-        XCTAssertTrue(checkedIngredient.waitForExistence(timeout: 5))
-        checkedIngredient.tap()
-        XCTAssertEqual(checkedIngredient.value as? String, "Checked")
-        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
-        app.buttons["Cooking options"].tap()
+        XCTAssertTrue(UIReadiness.waitForValue("Checked", matching: app.buttons.matching(identifier: "ingredient-1")))
+        app.buttons["cooking-options"].tap()
         app.buttons["Edit recipe"].tap()
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
@@ -534,9 +598,9 @@ final class OnionaryUITests: OnionaryUITestCase {
         // its containing app instead of resolving the field again while the
         // keyboard's remote accessibility process is transitioning.
         app.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldName.count) + "Edited pasta")
-        XCTAssertTrue(UIReadiness.waitForValue("Edited pasta", matching: app.textFields.matching(identifier: "Name")))
-        XCTAssertEqual(name.value as? String, "Edited pasta")
-        app.buttons["Save"].tap()
+        // Verify the exact name in the saved recipe list. Reading the text
+        // field again here makes XCTest query the transient keyboard hierarchy.
+        app.navigationBars["Edit recipe"].buttons["Save"].tap()
         // Resolve the actual presented alert, not an app-wide button during
         // the editor/keyboard presentation transition.
         let reloadAlert = app.alerts["Reload cooking recipe?"]
@@ -546,8 +610,8 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(reloadAlert.waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].waitForExistence(timeout: 5))
         XCTAssertEqual(checkedIngredient.value as? String, "Checked")
-        try tapNavigation("Recipes", in: app)
-        XCTAssertTrue(app.staticTexts["Edited pasta"].waitForExistence(timeout: 5))
+        UIReadiness.button("Recipes", in: app).tap()
+        XCTAssertTrue(app.collectionViews["recipe-list"].staticTexts["Edited pasta"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -604,14 +668,14 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Recipes", in: app)
         app.buttons["add-recipe"].tap()
         app.buttons["Import recipe"].tap()
-        XCTAssertTrue(app.textFields["Chefkoch or Onionary URL"].waitForExistence(timeout: 5))
-        app.textFields["Chefkoch or Onionary URL"].tap()
+        let form = app.collectionViews["recipe-import-form"]
+        let url = form.textFields.matching(identifier: "recipe-import-url")
+        url.element.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         app.typeText("https://www.chefkoch.de/rezepte/123")
-        XCTAssertTrue(UIReadiness.waitForValue("https://www.chefkoch.de/rezepte/123", matching: app.textFields.matching(identifier: "Chefkoch or Onionary URL")))
-        app.buttons["Review recipe"].tap()
-        XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
-        app.buttons["Cancel"].tap()
+        XCTAssertTrue(UIReadiness.waitForValue("https://www.chefkoch.de/rezepte/123", matching: url))
+        form.buttons["review-recipe-import"].tap()
+        XCTAssertTrue(UIReadiness.waitForValue("Lemon & cheese pasta", matching: app.textFields.matching(identifier: "Name")))
     }
 
     @MainActor
@@ -646,11 +710,11 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(app.buttons["Switch backend"].exists)
         XCTAssertFalse(app.textFields["backend"].exists)
         app.buttons["accent-picker"].tap()
-        let ocean = app.buttons["accent-Ocean"]
-        XCTAssertTrue(ocean.waitForExistence(timeout: 5))
+        let blueberry = app.buttons["accent-Blueberry"]
+        XCTAssertTrue(blueberry.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["accent-Onion"].isSelected)
-        ocean.tap()
-        XCTAssertTrue(ocean.isSelected)
+        blueberry.tap()
+        XCTAssertTrue(blueberry.isSelected)
         XCTAssertFalse(app.buttons["accent-Onion"].isSelected)
         app.navigationBars["Accent color"].buttons["Settings"].tap()
         app.buttons["language-picker"].tap()
@@ -675,36 +739,12 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Settings", in: app)
         XCTAssertEqual(app.buttons["appearance-picker"].value as? String, "Light")
         try tapNavigation("Cooking", in: app)
-        app.buttons["Choose a recipe"].tap()
-        capture("01-recipe-book")
-        try selectRecipe(in: app)
-        app.buttons["preview-cook"].tap()
-        XCTAssertTrue(app.buttons["ingredient-1"].waitForExistence(timeout: 5))
-        app.buttons["ingredient-1"].tap()
-        app.buttons["ingredient-2"].tap()
-        app.buttons["undo"].tap()
-        app.buttons["redo"].tap()
-        app.buttons["ingredient-1"].tap()
-        app.buttons["ingredient-1"].tap()
-        XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
-        // Capture stable content after the transient action banner has dismissed.
-        XCTAssertTrue(app.staticTexts["recent-action"].waitForNonExistence(timeout: 8))
-        capture("02-cooking-companion")
-        app.buttons["Adjust portions"].tap()
-        XCTAssertTrue(app.textFields["portions"].waitForExistence(timeout: 5))
-        capture("03-flexible-portions")
-        app.buttons["Done"].tap()
-        app.buttons["History"].tap()
-        XCTAssertTrue(app.staticTexts["Tap history"].waitForExistence(timeout: 5))
-        capture("04-every-tap-remembered")
-    }
-
-    @MainActor
-    private func capture(_ name: String) {
-        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        attachment.name = "marketing-" + name
-        attachment.lifetime = .keepAlways
-        add(attachment)
+        try captureMarketingScenes(in: app) { identifier in
+            if identifier == "recipe-1" { try selectRecipe(in: app) }
+            else { app.buttons[identifier].tap() }
+        } capture: { name in
+            attachMarketingScreenshot(XCUIScreen.main.screenshot(), name: name)
+        }
     }
 
     @MainActor
@@ -714,10 +754,17 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.launch()
         app.buttons["Choose a recipe"].tap()
         try selectRecipe(in: app)
+        let previewPlus = app.buttons["preview-portion-plus"]
+        XCTAssertTrue(previewPlus.waitForExistence(timeout: 5))
+        previewPlus.tap()
+        XCTAssertEqual(app.textFields["preview-portion-count"].value as? String, "2")
         app.buttons["preview-cook"].tap()
         XCTAssertTrue(app.buttons["portion-plus"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["2× recipe"].exists)
         XCTAssertFalse(app.keyboards.element(boundBy: 0).exists)
         app.buttons["portion-plus"].tap()
+        XCTAssertTrue(app.staticTexts["3× recipe"].waitForExistence(timeout: 5))
+        app.buttons["portion-minus"].tap()
         XCTAssertTrue(app.staticTexts["2× recipe"].waitForExistence(timeout: 5))
         app.buttons["portion-minus"].tap()
         XCTAssertTrue(app.staticTexts["1× recipe"].waitForExistence(timeout: 5))
@@ -751,6 +798,25 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertEqual(cheese.value as? String, "Unchecked")
         app.buttons["undo"].tap()
         XCTAssertEqual(cheese.value as? String, "Checked")
+    }
+
+    @MainActor
+    func testScaledStepIngredientSharesCheckAndUndo() throws {
+        let app = try openCookingRecipe()
+        let cheese = app.buttons["ingredient-1"]
+        let badge = app.buttons["step-ingredient-1"]
+        XCTAssertTrue(badge.waitForExistence(timeout: 5))
+        XCTAssertEqual(badge.label, "40 g Cheese")
+        app.buttons["portion-plus"].tap()
+        XCTAssertEqual(badge.label, "80 g Cheese")
+        badge.tap()
+        XCTAssertEqual(badge.value as? String, "Checked")
+        XCTAssertEqual(cheese.value as? String, "Checked")
+        XCTAssertEqual(app.buttons["step-2"].value as? String, "Unchecked")
+        app.buttons["undo"].tap()
+        XCTAssertEqual(badge.value as? String, "Unchecked")
+        XCTAssertEqual(cheese.value as? String, "Unchecked")
+        XCTAssertEqual(badge.label, "80 g Cheese")
     }
 
     @MainActor

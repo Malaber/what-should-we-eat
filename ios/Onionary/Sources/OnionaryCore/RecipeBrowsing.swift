@@ -6,26 +6,80 @@ public struct RecipeTag: Codable, Equatable, Sendable, Identifiable {
 }
 
 public enum RecipeBrowsing {
+    public enum Sort: String, CaseIterable, Identifiable, Sendable {
+        case alphabetical, newest, ingredients, quickest
+        public var id: Self { self }
+        public var title: String {
+            switch self {
+            case .alphabetical: "Alphabetical"
+            case .newest: "Last added"
+            case .ingredients: "Ingredient count"
+            case .quickest: "Quickest first"
+            }
+        }
+    }
+
     public static func categories(_ recipes: [Recipe], query: String = "") -> [String] {
         let names = recipes.flatMap { ($0.tags ?? []).map(\.name) }
         return Array(Set(names)).filter { query.isEmpty || $0.localizedStandardContains(query) }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            .sorted(by: nameOrder)
     }
 
-    public static func recipes(_ recipes: [Recipe], query: String = "", category: String? = nil, categories: Set<String> = [], quickestFirst: Bool = false) -> [Recipe] {
+    public static func tagNames(_ tags: [RecipeTag]?) -> [String] {
+        (tags ?? []).map(\.name)
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .sorted(by: nameOrder)
+    }
+
+    public static func categoryCount(_ category: String, in matchingRecipes: [Recipe]) -> Int {
+        matchingRecipes.count { containsCategory(category, in: ($0.tags ?? []).map(\.name)) }
+    }
+
+    private static func containsCategory(_ category: String, in tags: [String]) -> Bool {
+        tags.contains { $0.localizedCaseInsensitiveCompare(category) == .orderedSame }
+    }
+
+    private static func nameOrder(_ first: String, _ second: String) -> Bool {
+        let order = first.localizedStandardCompare(second)
+        return order == .orderedSame ? first < second : order == .orderedAscending
+    }
+
+    public static func recipes(_ recipes: [Recipe], query: String = "", category: String? = nil,
+                               categories: Set<String> = [], sort: Sort = .alphabetical, reversed: Bool = false) -> [Recipe] {
         let terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
-        return recipes.filter { recipe in
+        let filtered = recipes.filter { recipe in
             let tags = (recipe.tags ?? []).map(\.name)
             guard category == nil || tags.contains(category!) else { return false }
-            guard categories.allSatisfy({ selected in tags.contains { $0.localizedCaseInsensitiveCompare(selected) == .orderedSame } }) else { return false }
+            guard categories.allSatisfy({ containsCategory($0, in: tags) }) else { return false }
             let searchable = ([recipe.name] + tags + recipe.ingredients.map(\.name)).joined(separator: " ")
             return terms.allSatisfy { searchable.localizedStandardContains($0) }
-        }.sorted { lhs, rhs in
-            if quickestFirst && lhs.totalTimeMin != rhs.totalTimeMin {
-                return (lhs.totalTimeMin ?? Int.max) < (rhs.totalTimeMin ?? Int.max)
+        }
+        var creationDates: [Int: Date] = [:]
+        if sort == .newest {
+            for recipe in filtered {
+                guard let timestamp = recipe.createdAt else { continue }
+                creationDates[recipe.id] = (try? Date(timestamp, strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true)))
+                    ?? (try? Date(timestamp, strategy: .iso8601))
+            }
+        }
+        let ordered = filtered.sorted { lhs, rhs in
+            switch sort {
+            case .newest:
+                let first = creationDates[lhs.id] ?? .distantPast
+                let second = creationDates[rhs.id] ?? .distantPast
+                return first == second ? lhs.id > rhs.id : first > second
+            case .ingredients:
+                if lhs.ingredients.count != rhs.ingredients.count { return lhs.ingredients.count < rhs.ingredients.count }
+            case .quickest:
+                let first = lhs.totalTimeMin ?? Int.max
+                let second = rhs.totalTimeMin ?? Int.max
+                if first != second { return first < second }
+            case .alphabetical:
+                break
             }
             let order = lhs.name.localizedStandardCompare(rhs.name)
             return order == .orderedSame ? lhs.id < rhs.id : order == .orderedAscending
         }
+        return reversed ? Array(ordered.reversed()) : ordered
     }
 }

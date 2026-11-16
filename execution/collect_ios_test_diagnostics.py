@@ -31,11 +31,17 @@ def commands(simulator):
     # to simulator state, no environment dump and no unrelated process cleanup.
     simulator = str(UUID(simulator)).upper()
     predicate = (
-        '(process CONTAINS "CoreSimulator" OR process == "launchd_sim") AND '
+        '(process CONTAINS "CoreSimulator" OR process == "launchd_sim") AND NOT '
+        '(eventMessage BEGINSWITH "Failed to get a device identity for simulator device") AND '
         f'(eventMessage CONTAINS[c] "{simulator}" OR '
         'eventMessage CONTAINS[c] "shutdown" OR '
         'eventMessage CONTAINS[c] "termination" OR '
         'eventMessage CONTAINS[c] "memory pressure")'
+    )
+    automation_predicate = (
+        'process == "testmanagerd" OR '
+        '((process == "SpringBoard" OR process == "backboardd" OR process == "OnionaryUITests-Runner") AND '
+        '(subsystem BEGINSWITH[c] "com.apple.accessibility" OR eventMessage CONTAINS[c] "Accessibility"))'
     )
     return {
         "hardware": ["sysctl", "hw.ncpu", "hw.memsize"],
@@ -45,6 +51,8 @@ def commands(simulator):
         "runtimes": ["xcrun", "simctl", "list", "runtimes", "--json"],
         "simulator-events": ["/usr/bin/log", "show", "--last", "15m", "--style",
                              "compact", "--predicate", predicate],
+        "guest-automation": ["xcrun", "simctl", "spawn", simulator, "log", "show",
+                             "--last", "15m", "--style", "compact", "--predicate", automation_predicate],
     }
 
 

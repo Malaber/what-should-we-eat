@@ -5,9 +5,24 @@ import OnionaryCore
 
 /// Deterministic UI-test transport. Compiled out of release builds.
 @MainActor enum UITestBackend {
-    static var recipe: [String: Any] = ["id":1,"household_id":1,"name":"Lemon & cheese pasta","notes":"Finish with lemon zest.","total_time_min":20,"active_cooking_time_min":10,"kcal_per_serving":400,"tags":[["id":1,"name":"vegetarian"]],"ingredients":[["id":1,"name":"Cheese","quantity":200,"unit":"g"],["id":2,"name":"Pasta","quantity":250,"unit":"g"]],"instruction_steps":[["id":1,"step_number":1,"description":"Boil the pasta in salted water.","duration_min":10],["id":2,"step_number":2,"description":"Fold in cheese and lemon zest."]]]
+    static var recipe: [String: Any] = {
+        var ingredients: [[String: Any]] = [
+            ["id": 1, "name": "Cheese", "quantity": 200, "unit": "g"],
+            ["id": 2, "name": "Pasta", "quantity": 250, "unit": "g"],
+        ]
+        if ProcessInfo.processInfo.arguments.contains("--ordering-fixture") {
+            ingredients.append(["id": 3, "name": "Lemon", "quantity": 1, "unit": "piece"])
+        }
+        return ["id": 1, "household_id": 1, "name": "Lemon & cheese pasta", "notes": "Finish with lemon zest.",
+                "total_time_min": 20, "active_cooking_time_min": 10, "kcal_per_serving": 400,
+                "tags": [["id": 1, "name": "vegetarian"]], "ingredients": ingredients, "instruction_steps": [
+                    ["id": 1, "step_number": 1, "description": "Boil the pasta in salted water.", "duration_min": 10],
+                    ["id": 2, "step_number": 2, "description": "Fold in {{Cheese|20%}} and lemon zest."],
+                ]]
+    }()
     static var planned = false
     static var cooked = false
+    private static var generatedShoppingList = false
     private static var sessionExpired = false
     private static var renewalLifecycle: RenewalLifecycle?
 
@@ -63,7 +78,14 @@ import OnionaryCore
         else if path == "meal-plan/1/cooked" { cooked=method == "POST" }
         else if path == "meal-plan/1" || (path == "meal-plan" && method == "DELETE") { planned=false }
         else if path == "meal-plan" { result=["items":planned ? [["id":1,"recipe_id":1,"is_cooked":cooked,"recipe":recipe]] : []] }
-        else if path == "shopping-list" { result=["items":[["name":"cheese","total_quantity":200,"unit":"g"]]] }
+        else if path == "shopping-list" {
+            var items = [["name": "cheese", "total_quantity": 200, "unit": "g"] as [String: Any]]
+            if generatedShoppingList, ProcessInfo.processInfo.arguments.contains("--shopping-refresh") {
+                items.append(["name": "pasta", "total_quantity": 250, "unit": "g"])
+            }
+            generatedShoppingList = true
+            result = ["items": items]
+        }
         else if path == "recipe-shares" && method == "POST" { result=["id":"test-link","url":"https://example.org/share.html#"+String(repeating:"a",count:43),"expires_at":"2026-12-01T12:00:00Z"] }
         else if path == "recipe-shares" { result=[] }
         else if path == "recipe-shares/test-link" && method == "DELETE" { result=[:] }

@@ -2,11 +2,14 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
+import sys
 
 import pytest
 
-SCRIPT = Path(__file__).parents[2] / 'ios/Onionary/Scripts/test.sh'
+IOS = Path(__file__).parents[2] / 'ios/Onionary'
+SCRIPT = IOS / 'Scripts/test.sh'
 
 
 @pytest.mark.parametrize('device,allowance,suite', [
@@ -15,7 +18,8 @@ SCRIPT = Path(__file__).parents[2] / 'ios/Onionary/Scripts/test.sh'
     ('iPhone-Duo', '360', 'OnionaryDuoTests'),
 ])
 @pytest.mark.parametrize('fail_test', [False, True])
-def test_supplied_device_is_never_booted_or_deleted(tmp_path, device, allowance, suite, fail_test):
+@pytest.mark.parametrize('mode', ['all', '--build-only', '--test-only'])
+def test_supplied_device_is_never_booted_or_deleted(tmp_path, device, allowance, suite, fail_test, mode):
     bins = tmp_path / 'bin'; bins.mkdir()
     for command in ('swift', 'xcodegen'):
         path = bins / command; path.write_text('#!/bin/sh\nexit 0\n'); path.chmod(0o755)
@@ -39,20 +43,30 @@ elif any(arg.endswith('ios_runtime.py') for arg in sys.argv):
     xcrun.write_text('#!/bin/sh\nprintf called > "$FORBIDDEN_GUEST_COMMAND"\nexit 95\n')
     xcrun.chmod(0o755)
     forbidden = tmp_path / 'guest-command'
-    result = subprocess.run(['bash', str(SCRIPT)], env={**os.environ,
+    arguments = ['bash', str(SCRIPT)] + ([] if mode == 'all' else [mode])
+    result = subprocess.run(arguments, env={**os.environ,
         'PATH': str(bins) + os.pathsep + os.environ['PATH'], 'CAPTURE_ARGS': str(capture),
         'FAIL_TEST': str(int(fail_test)), 'FORBIDDEN_GUEST_COMMAND': str(forbidden),
         'SIMULATOR_ID': 'test-only', 'SIMULATOR_DEVICE_TYPE': device,
+        'SIMULATOR_TEST_SHARD': '1' if mode == 'all' else 'all',
         'TEST_RESULTS_DIR': str(tmp_path / 'results'), 'TEST_DERIVED_DATA_DIR': str(tmp_path / 'shared-build')})
-    assert result.returncode == (44 if fail_test else 0)
+    assert result.returncode == (44 if fail_test and mode != '--build-only' else 0)
     assert not forbidden.exists()
-    build, test = [json.loads(line) for line in capture.read_text().splitlines()]
-    assert build[build.index('-derivedDataPath') + 1] == str(tmp_path / 'shared-build')
+    commands = [json.loads(line) for line in capture.read_text().splitlines()]
+    assert len(commands) == (2 if mode == 'all' else 1)
+    if mode != '--test-only':
+        build = commands[0]
+        assert build[build.index('-derivedDataPath') + 1] == str(tmp_path / 'shared-build')
+        assert 'build-for-testing' in build
+        assert build.count('ENABLE_DEBUG_DYLIB=NO') == 1
+        assert 'ARCHS=arm64' in build
+    if mode == '--build-only':
+        assert build[build.index('-destination') + 1] == 'generic/platform=iOS Simulator'
+        return
+    test = commands[-1]
     assert test[test.index('-xctestrun') + 1] == str(tmp_path / 'shared-build/Build/Products/Onionary_iphonesimulator27.1-arm64.xctestrun')
     assert not any(option in test for option in ('-derivedDataPath', '-project', '-scheme'))
-    assert 'build-for-testing' in build
     assert 'test-without-building' in test
-    assert build.count('ENABLE_DEBUG_DYLIB=NO') == 1
     assert not any(option.startswith('ENABLE_DEBUG_DYLIB=') for option in test)
     for option in ('-default-test-execution-time-allowance', '-maximum-test-execution-time-allowance'):
         assert test.count(option) == 1
@@ -61,6 +75,42 @@ elif any(arg.endswith('ios_runtime.py') for arg in sys.argv):
     assert '-retry-tests-on-failure' not in test
     assert test[test.index('-collect-test-diagnostics') + 1] == 'never'
     assert '-resultBundlePath' in test
+
+
+@pytest.mark.parametrize('device', ['iPhone-17-Pro', 'iPad-Pro-13-inch-M5-12GB'])
+def test_ui_shards_run_every_case_once(tmp_path, device):
+    bins = tmp_path / 'bin'
+    bins.mkdir()
+    capture = tmp_path / 'args.jsonl'
+    python = bins / 'python3'
+    python.write_text(f'''#!{sys.executable}
+import json, os, sys
+if '--test-products' in sys.argv:
+    print(sys.argv[-1] + '/Onionary_iphonesimulator27.1-arm64.xctestrun')
+if 'xcodebuild' in sys.argv:
+    with open(os.environ['CAPTURE_ARGS'], 'a') as output:
+        output.write(json.dumps(sys.argv) + '\\n')
+''')
+    python.chmod(0o755)
+    env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
+           'CAPTURE_ARGS': str(capture), 'SIMULATOR_ID': 'test-only',
+           'SIMULATOR_DEVICE_TYPE': device, 'TEST_RESULTS_DIR': str(tmp_path / 'results')}
+    for shard in ('1', '2', '3'):
+        subprocess.run(['bash', str(SCRIPT), '--test-only'],
+                       env={**env, 'SIMULATOR_TEST_SHARD': shard}, check=True)
+
+    prefix = '-only-testing:OnionaryUITests/OnionaryUITests/'
+    runs = [json.loads(line) for line in capture.read_text().splitlines()]
+    portions = [[arg.removeprefix(prefix) for arg in run if arg.startswith(prefix)] for run in runs]
+    assert len(portions) == 3
+    assert 'testMarketingScreenshots' in portions[0]
+    assert max(map(len, portions)) - min(map(len, portions)) <= 1
+    source = (IOS / 'UITests/OnionaryUITests.swift').read_text()
+    expected = re.findall(r'\bfunc\s+(test\w+)\s*\(', source)
+    assert sorted(name for portion in portions for name in portion) == sorted(expected)
+    for run in runs:
+        assert 'test-without-building' in run
+        assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '180'
 
 
 @pytest.mark.parametrize('failure_stage', ['none', 'build', 'app', 'plan', 'boot', 'test'])
@@ -128,13 +178,16 @@ if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in sys.argv) and 
         assert execution[execution.index('xcodebuild') - 1] == '1800'
     instances = [c[-1] for c in commands if c[:3] == ['xcrun', 'simctl', 'delete']]
     assert instances == [f'isolated-test-device-{index}' for index in range(1, len(instances) + 1)]
-    assert len(instances) == (6 if failure_stage == 'none' else 1)
     if failure_stage == 'none':
+        source = (IOS / 'UITests/OnionaryDuoTests.swift').read_text()
+        scenarios = re.findall(r'\bfunc\s+(test\w+)\s*\(', source)
+        assert 'testMarketingScreenshots' in scenarios
         runs = [c for c in commands if 'test-without-building' in c]
-        assert len({c[-1] for c in runs}) == len(runs) == 6
-        assert all(c[-1].startswith('-only-testing:OnionaryUITests/OnionaryDuoTests/test') for c in runs)
+        assert [c[-1] for c in runs] == [f'-only-testing:OnionaryUITests/OnionaryDuoTests/{name}' for name in scenarios]
         assert [c[c.index('-destination') + 1].split('id=')[-1] for c in runs] == instances
         assert sum('build-for-testing' in c for c in commands) == 1
+    else:
+        assert len(instances) == 1
     diagnostics = [i for i, command in enumerate(commands)
                    if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in command)]
     assert len(diagnostics) == (0 if failure_stage == 'none' else 1)

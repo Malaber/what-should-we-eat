@@ -10,6 +10,7 @@ import re
 from typing import Any
 
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 import httpx
 
 from execution.api.schemas import IngredientCreate, InstructionStepCreate, RecipeDraftOut
@@ -55,12 +56,10 @@ def parse_recipe_html(source: str, html: str, url: str | None = None) -> RecipeD
     if recipe_data is None:
         raise ValueError("No recipe data found in the supplied HTML.")
 
-    ingredients = [
-        IngredientCreate(**_parse_ingredient_line(line))
-        for line in recipe_data.get("recipeIngredient", [])
-        if _clean_text(line)
-    ]
-    instructions, notes = _build_instruction_steps_and_notes(recipe_data.get("recipeInstructions"))
+    ingredients = _build_ingredients(soup, recipe_data.get("recipeIngredient", []))
+    instructions, notes = _build_instruction_steps_and_notes(
+        recipe_data.get("recipeInstructions"), soup, ingredients
+    )
     tags = _extract_tags(recipe_data)
 
     nutrition = recipe_data.get("nutrition") or {}
@@ -194,43 +193,197 @@ def _is_recipe_type(value: Any) -> bool:
     return False
 
 
-def _build_instruction_steps_and_notes(raw_instructions: Any) -> tuple[list[InstructionStepCreate], str | None]:
-    flattened = _flatten_instruction_texts(raw_instructions)
-    step_texts: list[str] = []
-    note_chunks: list[str] = []
+def _build_ingredients(soup: BeautifulSoup, ingredient_lines: list[str]) -> list[IngredientCreate]:
+    ingredients = [
+        IngredientCreate(**_parse_ingredient_line(line))
+        for line in ingredient_lines
+        if _clean_text(line)
+    ]
+    visible = []
+    for table in soup.select(".recipe-ingredients .ds-ingredients-table"):
+        heading = table.select_one(".ds-ingredients-table__headline")
+        group = _group_title(heading.get_text(" ", strip=True)) if heading else None
+        for row in table.select(".ds-ingredients-table__tr"):
+            name = row.select_one(".ds-ingredients-table__ingredient-name")
+            if name:
+                visible.append((_clean_text(name.get_text(" ", strip=True)), group))
 
-    for text in flattened:
+    # The visible table adds groups. The structured data retains ingredient notes
+    # and quantities. Match the rows before applying labels from the table.
+    if len(visible) == len(ingredients) and all(
+        item.name == name or item.name.startswith(name + " ")
+        for item, (name, _) in zip(ingredients, visible)
+    ):
+        for item, (_, group) in zip(ingredients, visible):
+            item.group_name = group
+    return ingredients
+
+
+def _group_title(value: str) -> str | None:
+    title = _clean_text(value).rstrip(":").strip()
+    return title if title and len(title) <= 100 else None
+
+
+def _build_instruction_steps_and_notes(
+    raw_instructions: Any, soup: BeautifulSoup, ingredients: list[IngredientCreate]
+) -> tuple[list[InstructionStepCreate], str | None]:
+    flattened = _flatten_instruction_steps(raw_instructions)
+    flattened = _restore_visible_instruction_headings(soup, flattened)
+    ingredient_groups = list(dict.fromkeys(item.group_name for item in ingredients if item.group_name))
+    instructions: list[InstructionStepCreate] = []
+    note_chunks: list[str] = []
+    current_group = None
+
+    for text, group, heading in flattened:
+        if heading and _is_instruction_heading(text):
+            current_group = _group_title(text)
+            continue
+        new_group = group or _instruction_prefix(text, ingredient_groups)
+        if new_group:
+            current_group = new_group
         step, note = _split_step_and_note(text)
         if step:
-            step_texts.append(step)
+            instructions.append(InstructionStepCreate(
+                step_number=len(instructions) + 1,
+                description=_link_instruction_amounts(step, ingredients, current_group),
+                group_name=current_group,
+            ))
         if note:
             note_chunks.append(note)
 
     notes = "\n\n".join(chunk for chunk in note_chunks if chunk) or None
-    return [
-        InstructionStepCreate(step_number=index + 1, description=text, duration_min=None)
-        for index, text in enumerate(step_texts)
-        if text
-    ], notes
+    return instructions, notes
 
 
-def _flatten_instruction_texts(value: Any) -> list[str]:
-    if value is None:
-        return []
+_MEASUREMENTS = {
+    "mg": ("mass", 0.001), "g": ("mass", 1), "kg": ("mass", 1000),
+    "ml": ("volume", 1), "cl": ("volume", 10), "dl": ("volume", 100), "l": ("volume", 1000),
+    "tl": ("spoon", 1), "el": ("spoon", 3),
+}
+
+
+def _link_instruction_amounts(text: str, ingredients: list[IngredientCreate], group: str | None) -> str:
+    names: dict[str, list[IngredientCreate]] = {}
+    for item in ingredients:
+        if not item.quantity or item.quantity <= 0 or re.search(r"[{}|]|::", item.name + (item.group_name or "")):
+            continue
+        short = re.sub(r"\s*\(.*$", "", item.name).strip()
+        for name in {item.name.casefold(), short.casefold()} - {""}:
+            names.setdefault(name, []).append(item)
+    if not names:
+        return text
+    alternatives = "|".join(re.escape(name) for name in sorted(names, key=lambda name: (-len(name), name)))
+    units = "|".join(re.escape(unit) for unit in sorted(KNOWN_UNITS | {"%"}, key=lambda unit: (-len(unit), unit)))
+    fractions = "".join(FRACTION_MAP)
+    number = rf"(?:\d+\s+\d+/\d+|\d*[{fractions}]|\d+/\d+|\d+(?:[.,]\d+)?)"
+    pattern = rf"(?<![\w.,/\-–])(?P<number>{number})(?:\s*(?P<unit>{units})\.?)?\s+(?P<name>{alternatives})(?!\w)"
+
+    def replace(match: re.Match) -> str:
+        name = match["name"].casefold()
+        candidates = names[name]
+        if len(candidates) > 1 and group:
+            component = _component_name(group)
+            candidates = [item for item in candidates if _component_name(item.group_name or "") == component]
+        if len(candidates) != 1:
+            return match[0]
+        item = candidates[0]
+        amount, consumed = _consume_quantity(match["number"].split())
+        if not consumed or amount is None or amount <= 0:
+            return match[0]
+        source_unit = _normalize_unit(match["unit"] or "")
+        target_unit = _normalize_unit(item.unit or "")
+        if source_unit == "%":
+            percent = amount
+        else:
+            if source_unit != target_unit:
+                source = _MEASUREMENTS.get(source_unit)
+                target = _MEASUREMENTS.get(target_unit)
+                if source is None or target is None or source[0] != target[0]:
+                    return match[0]
+                amount *= source[1] / target[1]
+            percent = amount / float(item.quantity) * 100
+        if percent > 100.0000001:
+            return match[0]
+        percent_text = f"{min(percent, 100):.8f}".rstrip("0").rstrip(".")
+        if percent_text == "0":
+            return match[0]
+        requires_group = sum(other.name.casefold() == item.name.casefold() for other in ingredients) > 1
+        if requires_group and not item.group_name:
+            return match[0]
+        key = f"{item.group_name}::{item.name}" if requires_group else item.name
+        return f"{{{{{key}|{percent_text}%}}}}"
+
+    # Leave any already-authored portable tokens intact.
+    return "".join(
+        piece if index % 2 else re.sub(pattern, replace, piece, flags=re.IGNORECASE)
+        for index, piece in enumerate(re.split(r"(\{\{[^{}]+\}\})", text))
+    )
+
+
+def _component_name(name: str) -> str:
+    return re.sub(r"^(für (den|die|das) |zubereitung[- ]+)|[- ]+zubereitung$", "", name.casefold())
+
+
+def _is_instruction_heading(text: str) -> bool:
+    return (
+        text.endswith(":") and len(text.split()) <= 8
+        and text.casefold() not in {"hinweis:", "anmerkung:", "nachtrag:"}
+    )
+
+
+def _restore_visible_instruction_headings(
+    soup: BeautifulSoup, flattened: list[tuple[str, str | None, bool]]
+) -> list[tuple[str, str | None, bool]]:
+    if any(group for _, group, _ in flattened):
+        return flattened
+    section_title = next(
+        (heading for heading in soup.select("h2")
+         if heading.get_text(" ", strip=True).casefold() == "zubereitung"),
+        None,
+    )
+    if section_title is None or not isinstance(section_title.parent, Tag):
+        return flattened
+    paragraphs = [_clean_text(node.get_text(" ", strip=True))
+                  for node in section_title.parent.select("p")]
+    paragraphs = [text for text in paragraphs if text]
+    if any(_is_instruction_heading(text) for text in paragraphs) and " ".join(paragraphs) == " ".join(
+        text for text, _, _ in flattened
+    ):
+        return [(text, None, _is_instruction_heading(text)) for text in paragraphs]
+    return flattened
+
+
+def _instruction_prefix(text: str, names: list[str]) -> str | None:
+    if not names:
+        return None
+    for name in names:
+        if re.match(re.escape(name) + r"(?!\w)", text, re.IGNORECASE):
+            return name
+    preparation = re.match(r"^Zum Anfertigen der ([^\W\d_]+)", text)
+    if preparation:
+        return next((name for name in names if name.split()[-1] == preparation.group(1)), None)
+    # Chefkoch sometimes gives a component only in the paragraph's opening phrase.
+    component = re.match(r"^(Für (?:den|die|das) [A-ZÄÖÜ][^\W\d_]+)(?=\s)", text)
+    return component.group(1) if component else None
+
+
+def _flatten_instruction_steps(
+    value: Any, group: str | None = None
+) -> list[tuple[str, str | None, bool]]:
     if isinstance(value, str):
         text = _clean_text(value)
-        return [text] if text else []
+        return [(text, group, False)] if text else []
     if isinstance(value, list):
-        items: list[str] = []
-        for item in value:
-            items.extend(_flatten_instruction_texts(item))
-        return items
+        return [step for item in value for step in _flatten_instruction_steps(item, group)]
     if isinstance(value, dict):
+        if isinstance(value.get("itemListElement"), list):
+            title = _group_title(value.get("name", ""))
+            if title and title.casefold() != "zubereitung":
+                group = title
+            return _flatten_instruction_steps(value["itemListElement"], group)
         if isinstance(value.get("text"), str):
             text = _clean_text(value["text"])
-            return [text] if text else []
-        if isinstance(value.get("itemListElement"), list):
-            return _flatten_instruction_texts(value["itemListElement"])
+            return [(text, group, value.get("position") is None)] if text else []
     return []
 
 
@@ -375,7 +528,7 @@ def _parse_number_token(token: str) -> float | None:
 
 
 def _normalize_unit(token: str) -> str:
-    return token.strip().strip(" ,.;:").lower()
+    return re.sub(r"\(n\)$", "", token.strip().strip(" ,.;:").lower())
 
 
 def _clean_text(value: Any) -> str:

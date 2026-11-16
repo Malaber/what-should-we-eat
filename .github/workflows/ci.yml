@@ -51,20 +51,57 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium
       - run: python -m pytest execution/tests/e2e -o addopts='' --browser chromium --device='iPhone 13'
+  ios-build:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: brew install xcodegen
+      - name: Run Swift tests and compile the simulator test bundle
+        env:
+          TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-build
+        run: |
+          bash ios/Onionary/Scripts/test.sh --build-only
+          tar -czf "$RUNNER_TEMP/onionary-test-products.tar.gz" -C "$TEST_RESULTS_DIR/DerivedData" Build/Products
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onionary-ios-test-products
+          path: ${{ runner.temp }}/onionary-test-products.tar.gz
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: onionary-ios-test-build-log
+          path: ${{ runner.temp }}/onionary-build/build.log
+          retention-days: 7
   ios:
+    name: ios (${{ matrix.profile }}, ${{ matrix.shard }})
+    needs: ios-build
     strategy:
       fail-fast: false
       matrix:
+        profile: [iphone, ipad]
+        shard: ['1', '2', '3']
         include:
           - profile: iphone
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
             runtime: '27.0'
           - profile: ipad
-            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-16GB
+            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
             runtime: '27.0'
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
             runtime: '27.1'
+            shard: all
     runs-on: xcode-27
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
@@ -79,24 +116,31 @@ jobs:
       - name: Verify matching Xcode build
         run: python3 execution/check_ios_build_environment.py --xcode-only
       - run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py '${{ matrix.runtime }}'
-      - run: brew install xcodegen
-      - name: Core tests, simulator build, and UI tests
+      - uses: actions/download-artifact@v4
+        with:
+          name: onionary-ios-test-products
+          path: ${{ runner.temp }}
+      - name: Run UI tests on the pinned simulator
         timeout-minutes: 60
         env:
           TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
           SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
           SIMULATOR_RUNTIME: ${{ matrix.runtime }}
-        run: bash ios/Onionary/Scripts/test.sh
-      - run: pip install -r marketing/requirements.txt
-        if: matrix.profile != 'duo'
+          SIMULATOR_TEST_SHARD: ${{ matrix.shard }}
+        run: |
+          mkdir -p "$TEST_RESULTS_DIR/DerivedData"
+          tar -xzf "$RUNNER_TEMP/onionary-test-products.tar.gz" -C "$TEST_RESULTS_DIR/DerivedData"
+          bash ios/Onionary/Scripts/test.sh --test-only
+      - if: matrix.shard == '1' || matrix.profile == 'duo'
+        run: pip install -r marketing/requirements.txt
       - name: Export captures from this test run
-        if: matrix.profile != 'duo'
+        if: matrix.shard == '1'
         env:
           FAMILY: ${{ matrix.profile }}
           RESULT_BUNDLE: ${{ runner.temp }}/onionary-tests/Onionary.xcresult
         run: python3 execution/marketing_screenshots.py --result-bundle "$RESULT_BUNDLE" --family "$FAMILY" --output ".tmp/marketing/$FAMILY" --defer-creative
       - uses: actions/upload-artifact@v4
-        if: matrix.profile != 'duo'
+        if: matrix.shard == '1'
         with:
           name: onionary-capture-${{ matrix.profile }}-en-US
           path: |
@@ -104,11 +148,30 @@ jobs:
             !.tmp/marketing/${{ matrix.profile }}/attachments/**
           if-no-files-found: error
           retention-days: 14
+      - name: Export validated iPhone Duo scenes
+        if: matrix.profile == 'duo'
+        env:
+          DUO_RESULTS: ${{ runner.temp }}/onionary-tests/duo
+        run: |
+          python3 execution/marketing_screenshots.py \
+            --result-bundle "$DUO_RESULTS/testMarketingScreenshots/Onionary.xcresult" \
+            --duo-fold-result "$DUO_RESULTS/testRecipePreviewAndChecklistSurviveFolds/Onionary.xcresult" \
+            --family duo --output .tmp/marketing/duo --defer-creative
+      - uses: actions/upload-artifact@v4
+        if: matrix.profile == 'duo'
+        with:
+          name: onionary-capture-duo-en-US
+          path: |
+            .tmp/marketing/duo/
+            !.tmp/marketing/duo/attachments/**
+            !.tmp/marketing/duo/fold/**
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve simulator test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: onionary-ios-test-results-${{ matrix.profile }}
+          name: onionary-ios-test-results-${{ matrix.profile }}${{ matrix.shard != 'all' && format('-{0}', matrix.shard) || '' }}
           path: |
             ${{ runner.temp }}/onionary-tests/Onionary.xcresult
             ${{ runner.temp }}/onionary-tests/*.log

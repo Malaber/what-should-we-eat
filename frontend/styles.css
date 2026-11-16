@@ -839,7 +839,8 @@ body::before {
   align-items: flex-start;
 }
 
-.editor-row input {
+.editor-row input, .editor-row textarea {
+  min-width: 0;
   padding: 8px 12px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
@@ -849,6 +850,24 @@ body::before {
   outline: none;
 }
 .editor-row input:focus { border-color: var(--green); }
+.editor-row > .control-group { min-width: 0; flex: 1; }
+.editor-row > .btn-icon { flex: 0 0 auto; }
+.form-row > .control-group { min-width: 0; }
+.recipe-icon-field { max-width: 9rem; }
+.editor-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.ingredient-row .ing-name, .step-row .step-desc { flex: 3 1 0; }
+.ingredient-row .ing-qty, .ingredient-row .ing-unit, .step-row .step-dur { flex: 1 1 0; max-width: 10rem; }
+.editor-row.group-member { border-inline-start: 3px solid var(--border); padding-inline-start: .75rem; }
+.editor-group { color: var(--text-muted); margin: .85rem 0 .5rem; }
+.recipe-order-dialog { margin: auto; width: min(42rem, calc(100% - 2rem)); color: var(--text); }
+.recipe-order-dialog:not([open]) { display: none; }
+.recipe-order-dialog::backdrop { background: rgb(0 0 0 / 45%); }
+.recipe-order-rows { padding: 0; margin: 1rem 0 0; list-style: none; }
+.recipe-order-rows li { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .5rem 0; border-bottom: 1px solid var(--border); }
+.recipe-order-rows li > span:first-child { flex: 1 1 12rem; overflow-wrap: anywhere; }
+.recipe-order-rows select { max-width: min(100%, 12rem); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .4rem; }
+.recipe-order-rows button:disabled { opacity: .4; cursor: default; }
+.order-grabber { cursor: grab; padding: .5rem; color: var(--text-muted); }
 
 /* ── Loading spinner ────────────────────────────────────────── */
 .spinner {
@@ -1120,7 +1139,7 @@ body::before {
     flex-wrap: wrap;
   }
 
-  .editor-row.step-row input.step-desc {
+  .editor-row.step-row .step-desc {
     flex: 1 1 100% !important;
     width: 100%;
   }
@@ -1442,6 +1461,10 @@ body::before {
 input, textarea, select { background: var(--bg-card); color: var(--text); }
 .toast { color: var(--bg); }
 @media (prefers-reduced-motion: reduce) { .toast { transition: opacity .15s; } }
-footer > a { color: var(--orange-dark); display: inline-block; margin-top: .75rem; }
+.site-footer { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: .65rem 1.5rem; padding-inline: 1rem; }
+.site-footer > a { color: var(--orange-dark); }
+.site-footer .deployed-version { padding: 0; }
+#manage-grid .recipe-card { animation: none; }
+#manage-grid [hidden] { display: none; }
 
 .deployed-version { display: block; padding: 12px 24px; text-align: center; color: var(--text-muted); overflow-wrap: anywhere; }

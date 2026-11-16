@@ -35,7 +35,9 @@ there before publication.
 Onionary's screenshot workflow captures fictional demo content on both device
 families. Capture jobs defer universal artwork to the pinned shared workflow;
 bundle jobs reunite its SVG/PNG outputs with the captures. Local
-`execution/render_marketing_assets.py` runs both stages together.
+`execution/render_marketing_assets.py --include-creative` runs both stages together
+locally. GitHub Actions renders the shared artwork once from the iPhone cooking
+capture and publishes a separate creative ZIP.
 The existing release job validates the image sizes, full PNG decoding and source
 hash, then attaches the bundle to its matching main release.
 

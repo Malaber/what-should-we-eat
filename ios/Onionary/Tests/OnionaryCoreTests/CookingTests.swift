@@ -89,6 +89,7 @@ private func recipe(_ id: Int = 1) throws -> Recipe {
 }
 
 @Test func customBackendValidation() throws {
+    #expect(try Backend.url(Backend.defaultAddress).absoluteString == "https://onionary.malaber.de")
     #expect(try Backend.url(" https://Kitchen.Example:8443/ ").absoluteString == "https://kitchen.example:8443")
     for value in ["http://example.com", "https://user:pass@example.com", "https://example.com/api", "https://example.com?token=1", "https://example.com#foo", "file:///tmp/a"] {
         #expect(throws: CookingError.self) { try Backend.url(value) }

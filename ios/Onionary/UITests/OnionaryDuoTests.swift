@@ -85,13 +85,10 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         XCTAssertEqual(query.element.value as? String, expected)
     }
 
-    @MainActor func testInvalidHingeAnglesAreRejected() {
+    @MainActor private func assertHingeAndWindowReadinessRejectInvalidInputs() {
         for angle in [-1.0, 181.0, Double.nan, Double.infinity] {
             XCTAssertEqual(OnionarySetHingeAngle(angle), 1)
         }
-    }
-
-    func testReadinessRejectsWrongDisplayAndHiddenFrames() {
         XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 466, height: 678), angle: 0))
         XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 678, height: 466), angle: 0))
         XCTAssertTrue(UIReadiness.duoViewport(CGRect(x: 0, y: 0, width: 951, height: 669), angle: 180))
@@ -129,8 +126,8 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         return app
     }
 
-    @MainActor private func launchCookingFixture() throws -> XCUIApplication {
-        let app = launchFixture()
+    @MainActor private func launchCookingFixture(extraArguments: [String] = []) throws -> XCUIApplication {
+        let app = launchFixture(extraArguments: extraArguments)
         // Hinge state belongs to the device, not the app's reset fixture.
         // Every independent case establishes its own initial physical display.
         try pose(0, in: app)
@@ -149,6 +146,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
     }
 
     @MainActor func testRecipePreviewAndChecklistSurviveFolds() throws {
+        assertHingeAndWindowReadinessRejectInvalidInputs()
         let app = try launchCookingFixture()
         try tap("Recipes", in: app)
         try tap("recipe-1", in: app)
@@ -160,17 +158,36 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         try tap("preview-cook", in: app)
         try tap("portion-plus", in: app)
         try tap("ingredient-1", in: app)
-        for angle in [0, 180, 90, 180, 0, 180] {
+        func verifyPose(_ angle: Int, ingredientState: String, enabledAction: String) throws {
             try pose(angle, in: app)
-            XCTAssertEqual(app.buttons["ingredient-1"].value as? String, "Checked")
+            XCTAssertEqual(app.buttons["ingredient-1"].value as? String, ingredientState)
             XCTAssertTrue(app.staticTexts["2× recipe"].exists)
-            XCTAssertTrue(app.buttons["undo"].isEnabled)
+            XCTAssertTrue(app.buttons[enabledAction].isEnabled)
             capture(angle, in: app)
         }
+        for angle in [0, 180, 90] {
+            try verifyPose(angle, ingredientState: "Checked", enabledAction: "undo")
+        }
+        // Drive Undo on the inner display at 90° and Redo on the cover.
+        // Each result must persist across the next physical display switch.
         try tap("undo", in: app)
         assertIngredient("Unchecked", in: app)
+        for angle in [180, 0] {
+            try verifyPose(angle, ingredientState: "Unchecked", enabledAction: "redo")
+        }
         try tap("redo", in: app)
         assertIngredient("Checked", in: app)
+        try verifyPose(180, ingredientState: "Checked", enabledAction: "undo")
+    }
+
+    @MainActor func testMarketingScreenshots() throws {
+        let app = launchFixture(extraArguments: ["--marketing"])
+        try pose(0, in: app)
+        try captureMarketingScenes(in: app) { identifier in
+            try tap(identifier, in: app)
+        } capture: { name in
+            attachMarketingScreenshot(app.windows.element(boundBy: 0).screenshot(), name: name)
+        }
     }
 
     @MainActor func testRecipeDraftSurvivesFolds() throws {
@@ -201,7 +218,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
     }
 
     @MainActor func testKitchenShoppingChecksSurviveFolds() throws {
-        let app = try launchCookingFixture()
+        let app = try launchCookingFixture(extraArguments: ["--shopping-refresh"])
         try startCooking(in: app)
         try pose(180, in: app)
         try tap("Kitchen", in: app)
@@ -212,14 +229,20 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         try tap("Generate shopping list", in: app)
         XCTAssertTrue(app.buttons["shopping-cheese"].waitForExistence(timeout: 5))
         try tap("shopping-cheese", in: app)
-        // Check the shopping pane during the partial fold before moving it to
-        // the cover display. Avoid a single fully-open to closed scene update.
-        for angle in [90, 0, 180] {
+        // Check both receiving displays. Refresh once on the cover before
+        // reopening, while the actual list is still in the foreground.
+        for angle in [90, 0] {
             try pose(angle, in: app)
             XCTAssertEqual(app.buttons["shopping-cheese"].value as? String, "Checked")
         }
+        let added = UIReadiness.buttons("shopping-pasta", in: app).element
+        XCTAssertFalse(added.exists)
         try tap("Refresh shopping list", in: app)
+        XCTAssertTrue(added.waitForExistence(timeout: 10))
         XCTAssertEqual(app.buttons["shopping-cheese"].value as? String, "Checked")
+        try pose(180, in: app)
+        XCTAssertEqual(app.buttons["shopping-cheese"].value as? String, "Checked")
+        XCTAssertTrue(added.exists)
     }
 
     @MainActor func testExpiredSessionKeepsAdaptiveNavigationReachable() throws {

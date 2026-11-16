@@ -159,8 +159,23 @@
             <input id="recipe-id" type="hidden" />
             <div class="form-row">
               <div class="control-group" style="flex: 2">
-                <label>Recipe Name</label>
+                <label for="recipe-name">Recipe Name</label>
                 <input id="recipe-name" required="" type="text" />
+              </div>
+              <div class="control-group recipe-icon-field">
+                <label for="recipe-icon" data-i18n="recipe.icon">Food icon</label>
+                <input id="recipe-icon" maxlength="32" list="recipe-icons" type="text" />
+                <datalist id="recipe-icons">
+                  <option value="🍲"></option>
+                  <option value="🍝"></option>
+                  <option value="🥗"></option>
+                  <option value="🥦"></option>
+                  <option value="🍕"></option>
+                  <option value="🍛"></option>
+                  <option value="🥐"></option>
+                  <option value="🍰"></option>
+                  <option value="🍪"></option>
+                </datalist>
               </div>
               <div class="control-group">
                 <label>Kcal / Serving</label>
@@ -186,18 +201,36 @@
               </div>
             </div>
             <div class="control-group" style="margin-top: 16px">
-              <label>Tags</label>
+              <label for="new-tag-input" data-i18n="recipe.tags">Tags</label>
               <div class="tag-selector" id="edit-tag-selector">
                 <!-- filled by JS -->
               </div>
               <div class="add-tag-row">
-                <input id="new-tag-input" placeholder="New tag name..." type="text" />
-                <button class="btn btn-secondary btn-sm" id="btn-add-tag" type="button">Add</button>
+                <input id="new-tag-input" data-i18n="recipe.add-tag" maxlength="100" type="text" />
+                <button
+                  class="btn btn-secondary btn-sm"
+                  id="btn-add-tag"
+                  type="button"
+                  data-i18n="recipe.add-tag"
+                >
+                  Add tag
+                </button>
               </div>
+              <div class="tag-selector tag-suggestions" id="tag-suggestions" hidden></div>
             </div>
             <!-- Ingredients -->
             <div class="list-editor">
-              <h3>Ingredients</h3>
+              <div class="editor-section-heading">
+                <h3>Ingredients</h3>
+                <button
+                  class="btn btn-secondary btn-sm"
+                  id="reorder-ingredients"
+                  type="button"
+                  data-i18n="recipe.order-ingredients"
+                >
+                  Reorder ingredients
+                </button>
+              </div>
               <div id="ingredients-list"></div>
               <button class="btn btn-secondary btn-sm" id="btn-add-ingredient" type="button">
                 + Add Ingredient
@@ -205,7 +238,17 @@
             </div>
             <!-- Steps -->
             <div class="list-editor">
-              <h3>Instruction Steps</h3>
+              <div class="editor-section-heading">
+                <h3>Instruction Steps</h3>
+                <button
+                  class="btn btn-secondary btn-sm"
+                  id="reorder-steps"
+                  type="button"
+                  data-i18n="recipe.order-steps"
+                >
+                  Reorder steps
+                </button>
+              </div>
               <div id="steps-list"></div>
               <button class="btn btn-secondary btn-sm" id="btn-add-step" type="button">
                 + Add Step
@@ -219,6 +262,28 @@
         </div>
       </div>
     </div>
+    <dialog
+      class="modal recipe-order-dialog"
+      id="recipe-order"
+      aria-labelledby="recipe-order-title"
+    >
+      <div class="modal-header"><h2 id="recipe-order-title"></h2></div>
+      <div class="modal-body">
+        <form class="control-group" id="recipe-group-form">
+          <label for="recipe-group-name" data-i18n="recipe.group-name">Group name</label>
+          <div class="add-tag-row">
+            <input id="recipe-group-name" maxlength="100" required type="text" />
+            <button class="btn btn-secondary btn-sm" type="submit" data-i18n="recipe.add-group">
+              Add group
+            </button>
+          </div>
+        </form>
+        <ol id="recipe-order-rows" class="recipe-order-rows"></ol>
+      </div>
+      <form class="modal-footer" method="dialog">
+        <button class="btn btn-primary" data-i18n="recipe.order-done">Done</button>
+      </form>
+    </dialog>
     <!-- Delete Confirmation Modal -->
     <div class="modal-overlay" id="delete-modal" style="display: none">
       <div class="modal modal-sm">
@@ -241,15 +306,7 @@
     </div>
     <div class="toast" id="toast"></div>
     <footer class="site-footer">
-      <div class="container">
-        <div style="font-size: 0.85rem">
-          <a
-            data-i18n="footer.impressum"
-            href="/impressum.html"
-            style="color: var(--text-muted); text-decoration: none"
-          ></a>
-        </div>
-      </div>
+      <a href="/impressum.html" data-i18n="footer.impressum">Impressum</a>
       <a href="https://app.onionary.malaber.de" data-i18n="app.website"></a>
     </footer>
 

@@ -16,7 +16,6 @@ function getAuthHeaders(extra = {}) {
 let allRecipes = [];
 let allTags = [];
 let editRecipeId = null;
-let recipeIcon = null;
 let recipeModalMode = 'manual';
 
 // Form DOM refs
@@ -29,6 +28,7 @@ const $recipeSearch = document.getElementById('recipe-search');
 const $recipeForm = document.getElementById('recipe-form');
 const $modalTitle = document.getElementById('modal-title');
 const $recipeName = document.getElementById('recipe-name');
+const $recipeIcon = document.getElementById('recipe-icon');
 const $recipeServings = document.getElementById('recipe-servings');
 const $recipeKcal = document.getElementById('recipe-kcal');
 const $recipeActiveTime = document.getElementById('recipe-active-time');
@@ -50,11 +50,18 @@ const $btnCancelModal = document.getElementById('btn-cancel-modal');
 // Tags
 const $editTagSelector = document.getElementById('edit-tag-selector');
 const $newTagInput = document.getElementById('new-tag-input');
+const $tagSuggestions = document.getElementById('tag-suggestions');
 let selectedTags = new Set();
 
 // Dynamic Lists
 const $ingredientsList = document.getElementById('ingredients-list');
 const $stepsList = document.getElementById('steps-list');
+const $orderDialog = document.getElementById('recipe-order');
+const $orderRows = document.getElementById('recipe-order-rows');
+const $groupName = document.getElementById('recipe-group-name');
+let orderList;
+let orderGroups;
+let draggingRow;
 
 // Toast
 const $toast = document.getElementById('toast');
@@ -64,7 +71,7 @@ const $toast = document.getElementById('toast');
 async function init() {
   // Attach all event listeners synchronously so UI is responsive
   // Search
-  $recipeSearch.addEventListener('input', handleSearch);
+  $recipeSearch.addEventListener('input', filterCards);
 
   // Auth sync
   window.addEventListener('wswe_auth_changed', async () => {
@@ -78,7 +85,8 @@ async function init() {
   document.getElementById('btn-create-recipe').addEventListener('click', openCreateModal);
 
   // Tag add
-  document.getElementById('btn-add-tag').addEventListener('click', addNewTag);
+  document.getElementById('btn-add-tag').addEventListener('click', () => addNewTag());
+  $newTagInput.addEventListener('input', renderTagSuggestions);
   $newTagInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -89,6 +97,17 @@ async function init() {
   // Dynamic lists handlers
   document.getElementById('btn-add-ingredient').addEventListener('click', () => addIngredientRow());
   document.getElementById('btn-add-step').addEventListener('click', () => addStepRow());
+  document.getElementById('reorder-ingredients').addEventListener('click', () => openOrder($ingredientsList, 'recipe.order-ingredients'));
+  document.getElementById('reorder-steps').addEventListener('click', () => openOrder($stepsList, 'recipe.order-steps'));
+  document.getElementById('recipe-group-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const name = $groupName.value.trim();
+    if (!name) return;
+    orderGroups.add(name);
+    $groupName.value = '';
+    renderOrder();
+  });
+  $orderDialog.addEventListener('close', () => updateGroupHeadings(orderList));
 
   // Save recipe
   document.getElementById('btn-save-recipe').addEventListener('click', saveRecipe);
@@ -112,7 +131,7 @@ async function init() {
 async function loadTags() {
   try {
     const res = await fetch(`${API}/tags`, { headers: getAuthHeaders() });
-    allTags = await res.json();
+    if (res.ok) allTags = await res.json();
   } catch (e) {
     console.error('Failed to load tags', e);
   }
@@ -121,6 +140,7 @@ async function loadTags() {
 async function loadRecipes() {
   try {
     const res = await fetch(`${API}/recipes`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error(`Recipes returned ${res.status}`);
     allRecipes = await res.json();
     renderRecipes();
   } catch (e) {
@@ -130,40 +150,25 @@ async function loadRecipes() {
 }
 
 // ── Search & Render ────────────────────────────────────────────
-function handleSearch(e) {
-  const query = e.target.value.toLowerCase().trim();
-  if (!query) {
-    renderRecipes(allRecipes);
-    return;
+function filterCards() {
+  const query = $recipeSearch.value.toLowerCase().trim();
+  let count = 0;
+  for (const [index, card] of [...$manageGrid.querySelectorAll('.recipe-card')].entries()) {
+    const recipe = allRecipes[index];
+    const fields = [recipe.name, ...recipe.tags.map(tag => tag.name), ...recipe.ingredients.map(item => item.name)];
+    card.hidden = !fields.some(value => value.toLowerCase().includes(query));
+    if (!card.hidden) count++;
   }
-
-  const filtered = allRecipes.filter(r => {
-    const matchName = (r.name || '').toLowerCase().includes(query);
-    const matchTags = r.tags.some(t => t.name.toLowerCase().includes(query));
-    // Provide fallback array for ingredients just in case
-    const matchIngs = (r.ingredients || []).some(ing => (ing.name || '').toLowerCase().includes(query));
-    return matchName || matchTags || matchIngs;
-  });
-  renderRecipes(filtered);
+  $listBadge.textContent = count;
+  const empty = $manageGrid.querySelector('.empty-state');
+  if (empty) empty.hidden = count > 0;
 }
 
-function renderRecipes(recipesToRender = allRecipes) {
-  $listBadge.textContent = recipesToRender.length;
-
-  if (recipesToRender.length === 0) {
-    $manageGrid.innerHTML = `
-      <div class="empty-state" style="grid-column: 1 / -1;">
-        <div class="icon">🧅</div>
-        <p>${window.t("ui.0")}</p>
-      </div>
-    `;
-    return;
-  }
-
-  $manageGrid.innerHTML = recipesToRender.map((r, i) => `
-    <div class="recipe-card" style="animation-delay: ${i * 0.03}s">
+function renderRecipes() {
+  $manageGrid.innerHTML = allRecipes.map(r => `
+    <div class="recipe-card">
       <div class="recipe-card-header">
-        <h3>${esc(r.name)}</h3>
+        <h3>${r.icon ? `<span aria-hidden="true">${esc(r.icon)}</span> ` : ''}${esc(r.name)}</h3>
       </div>
       <div class="recipe-card-meta">
         <span class="meta-chip">${window.t("recipe.servings")}: ${Number(r.servings || 1).toLocaleString(window.I18n.lang, {maximumFractionDigits: 2})}</span>
@@ -177,17 +182,17 @@ function renderRecipes(recipesToRender = allRecipes) {
       <div class="recipe-card-footer">
         <button class="btn btn-secondary btn-sm" onclick="shareRecipe(${r.id})">${window.t("share.title")}</button>
         <button class="btn btn-secondary btn-sm" onclick="editRecipe(${r.id})">${window.t("ui.1")}</button>
-        <button class="btn btn-secondary btn-sm" onclick="promptDelete(${r.id}, '${escJs(r.name)}')">${window.t("ui.2")}</button>
+        <button class="btn btn-secondary btn-sm" onclick="promptDelete(${r.id})">${window.t("ui.2")}</button>
       </div>
     </div>
-  `).join('');
+  `).join('') + `<div class="empty-state" style="grid-column: 1 / -1"><div class="icon">🧅</div><p>${window.t('ui.0')}</p></div>`;
+  filterCards();
 }
 
 
 // ── Modals & Forms ─────────────────────────────────────────────
 function openCreateModal() {
   editRecipeId = null;
-  recipeIcon = null;
   $modalTitle.textContent = window.t('feedback.1');
   $recipeForm.reset();
   $importUrl.value = '';
@@ -195,6 +200,7 @@ function openCreateModal() {
   $importStatus.textContent = '';
   $importHtmlFallback.style.display = 'none';
   selectedTags.clear();
+  $newTagInput.value = '';
   renderEditTags();
 
   $ingredientsList.innerHTML = '';
@@ -218,7 +224,7 @@ function editRecipe(id) {
   if (!r) return;
 
   editRecipeId = id;
-  recipeIcon = r.icon || null;
+  $recipeIcon.value = r.icon || '';
   $modalTitle.textContent = window.t('feedback.2');
   $recipeModeSwitch.style.display = 'none';
   $importStatus.textContent = '';
@@ -232,6 +238,7 @@ function editRecipe(id) {
   $recipeTotalTime.value = r.total_time_min || '';
 
   selectedTags = new Set(r.tags.map(t => t.name));
+  $newTagInput.value = '';
   renderEditTags();
 
   $ingredientsList.innerHTML = '';
@@ -317,7 +324,7 @@ function getApiErrorMessage(data) {
 }
 
 function applyImportedRecipe(recipe) {
-  recipeIcon = recipe.icon || null;
+  $recipeIcon.value = recipe.icon || '';
   $recipeName.value = recipe.name || '';
   $recipeNotes.value = recipe.notes || '';
   $recipeServings.value = recipe.servings || 1;
@@ -344,29 +351,48 @@ function applyImportedRecipe(recipe) {
 
 // ── Tags in Edit Form ──────────────────────────────────────────
 function renderEditTags() {
-  // Combine all system tags with any custom tags currently selected
-  const allKnownTags = new Set([...allTags.map(t => t.name), ...selectedTags]);
-
-  $editTagSelector.innerHTML = Array.from(allKnownTags).map(tName => `
-    <button type="button" class="tag-pill ${selectedTags.has(tName) ? 'active' : ''}"
-            onclick="toggleTag('${escJs(tName)}')">
-      ${esc(tName)}
-    </button>
-  `).join('');
+  $editTagSelector.replaceChildren(...Array.from(selectedTags, name => {
+    const chip = tagButton(`${name} ×`, () => {
+      selectedTags.delete(name);
+      renderEditTags();
+      $newTagInput.focus();
+    });
+    chip.classList.add('active');
+    chip.setAttribute('aria-label', `${window.t('recipe.remove-tag')} ${name}`);
+    return chip;
+  }));
+  renderTagSuggestions();
 }
 
-window.toggleTag = function (name) {
-  if (selectedTags.has(name)) selectedTags.delete(name);
-  else selectedTags.add(name);
-  renderEditTags();
-};
+function tagButton(label, action) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'tag-pill';
+  button.textContent = label;
+  button.addEventListener('click', action);
+  return button;
+}
 
-function addNewTag() {
-  const val = $newTagInput.value.trim();
-  if (!val) return;
-  selectedTags.add(val);
+function renderTagSuggestions() {
+  const query = $newTagInput.value.trim().toLocaleLowerCase();
+  const selected = new Set([...selectedTags].map(name => name.toLocaleLowerCase()));
+  const suggestions = query ? allTags.filter(({name}) => {
+    const key = name.toLocaleLowerCase();
+    return key.includes(query) && !selected.has(key);
+  }).slice(0, 6) : [];
+  $tagSuggestions.hidden = suggestions.length === 0;
+  $tagSuggestions.replaceChildren(...suggestions.map(({name}) => tagButton(name, () => addNewTag(name))));
+}
+
+function addNewTag(value = $newTagInput.value) {
+  const name = value.trim();
+  if (!name) return;
+  const key = name.toLocaleLowerCase();
+  const known = allTags.find(tag => tag.name.toLocaleLowerCase() === key);
+  if (![...selectedTags].some(tag => tag.toLocaleLowerCase() === key)) selectedTags.add(known?.name || name);
   $newTagInput.value = '';
   renderEditTags();
+  $newTagInput.focus();
 }
 
 
@@ -374,26 +400,139 @@ function addNewTag() {
 function addIngredientRow(name = '', qty = '', unit = '', group = '') {
   const div = document.createElement('div');
   div.className = 'editor-row ingredient-row';
+  div.dataset.group = group || '';
   div.innerHTML = `
-    <label class="control-group">${window.t('recipe.group')}<input class="ing-group" type="text" maxlength="100" value="${esc(group)}" /></label>
-    <input type="text" placeholder="${window.t('feedback.31')}" class="ing-name" value="${esc(name)}" style="flex:2;" />
-    <input type="number" placeholder="${window.t('feedback.32')}" class="ing-qty" step="any" value="${qty}" style="flex:1;" />
-    <input type="text" placeholder="${window.t('feedback.33')}" class="ing-unit" value="${esc(unit)}" style="flex:1;" />
-    <button type="button" class="btn-icon" onclick="this.parentElement.remove()">✕</button>
+    <input type="text" aria-label="${window.t('feedback.31')}" placeholder="${window.t('feedback.31')}" class="ing-name" value="${esc(name)}" />
+    <input type="number" aria-label="${window.t('feedback.32')}" placeholder="${window.t('feedback.32')}" class="ing-qty" step="any" value="${esc(qty ?? '')}" />
+    <input type="text" aria-label="${window.t('feedback.33')}" placeholder="${window.t('feedback.33')}" class="ing-unit" value="${esc(unit)}" />
   `;
-  $ingredientsList.appendChild(div);
+  appendRow($ingredientsList, div);
 }
 
 function addStepRow(desc = '', dur = '', group = '') {
   const div = document.createElement('div');
   div.className = 'editor-row step-row';
+  div.dataset.group = group || '';
   div.innerHTML = `
-    <label class="control-group">${window.t('recipe.group')}<input class="step-group" type="text" maxlength="100" value="${esc(group)}" /></label>
-    <input type="text" placeholder="${window.t('feedback.34')}" class="step-desc" value="${esc(desc)}" style="flex:3;" />
-    <input type="number" placeholder="${window.t('feedback.35')}" class="step-dur" value="${dur}" style="max-width:100px;" />
-    <button type="button" class="btn-icon" onclick="this.parentElement.remove()">✕</button>
+    <textarea aria-label="${window.t('feedback.34')}" placeholder="${window.t('feedback.34')}" class="step-desc" rows="2">${esc(desc)}</textarea>
+    <input type="number" aria-label="${window.t('feedback.35')}" placeholder="${window.t('feedback.35')}" class="step-dur" value="${esc(dur ?? '')}" />
   `;
-  $stepsList.appendChild(div);
+  appendRow($stepsList, div);
+}
+
+function editorRows(list) { return Array.from(list.querySelectorAll('.editor-row')); }
+
+function appendRow(list, row) {
+  const remove = orderButton('✕', window.t('recipe.remove-row'), () => {
+    row.remove();
+    updateGroupHeadings(list);
+  });
+  row.append(remove);
+  list.append(row);
+  updateGroupHeadings(list);
+}
+
+function updateGroupHeadings(list) {
+  list.querySelectorAll('.editor-group').forEach(group => group.remove());
+  let previous = '';
+  for (const row of editorRows(list)) {
+    const name = row.dataset.group;
+    const grouped = name && name !== previous;
+    row.classList.toggle('group-member', Boolean(name));
+    if (grouped) {
+      const heading = document.createElement('h4');
+      heading.className = 'editor-group';
+      heading.textContent = name;
+      row.before(heading);
+    }
+    previous = name;
+  }
+}
+
+function openOrder(list, title) {
+  orderList = list;
+  orderGroups = new Set(editorRows(list).map(row => row.dataset.group).filter(Boolean));
+  document.getElementById('recipe-order-title').textContent = window.t(title);
+  $groupName.value = '';
+  renderOrder();
+  $orderDialog.showModal();
+}
+
+function orderButton(symbol, label, action) {
+  const button = document.createElement('button');
+  button.className = 'btn-icon';
+  button.type = 'button';
+  button.textContent = symbol;
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  button.addEventListener('click', action);
+  return button;
+}
+
+function renderOrder(focusRow, direction) {
+  const rows = editorRows(orderList);
+  const items = rows.map((row, index) => {
+    const item = document.createElement('li');
+    const title = document.createElement('span');
+    title.textContent = row.querySelector('.ing-name,.step-desc').value.trim() || `${index + 1}`;
+    const up = orderButton('↑', `${window.t('recipe.move-up')} ${title.textContent}`, () => move(rows[index - 1], true, 'up'));
+    const down = orderButton('↓', `${window.t('recipe.move-down')} ${title.textContent}`, () => move(rows[index + 1], false, 'down'));
+    up.disabled = index === 0;
+    down.disabled = index === rows.length - 1;
+    const handle = document.createElement('span');
+    handle.className = 'order-grabber';
+    handle.textContent = '☰';
+    handle.draggable = true;
+    handle.setAttribute('aria-hidden', 'true');
+    handle.addEventListener('dragstart', event => {
+      draggingRow = row;
+      event.dataTransfer.setData('text/plain', title.textContent);
+      event.dataTransfer.effectAllowed = 'move';
+    });
+    handle.addEventListener('dragend', () => { draggingRow = null; });
+    item.addEventListener('dragover', event => { if (draggingRow) event.preventDefault(); });
+    item.addEventListener('drop', event => {
+      if (!draggingRow || draggingRow === row) return;
+      event.preventDefault();
+      if (rows.indexOf(draggingRow) < index) row.after(draggingRow);
+      else row.before(draggingRow);
+      draggingRow = null;
+      updateGroupHeadings(orderList);
+      renderOrder();
+    });
+    item.append(title);
+    if (orderGroups.size) {
+      const select = document.createElement('select');
+      select.setAttribute('aria-label', `${window.t('recipe.group-name')} · ${title.textContent}`);
+      select.add(new Option(window.t('recipe.ungrouped'), ''));
+      for (const name of orderGroups) select.add(new Option(name, name));
+      select.value = row.dataset.group;
+      select.addEventListener('change', () => {
+        row.dataset.group = select.value;
+        const last = editorRows(orderList).findLast(other => other !== row && other.dataset.group === select.value);
+        last?.after(row);
+        updateGroupHeadings(orderList);
+        renderOrder(row, 'group');
+      });
+      item.append(select);
+    }
+    item.append(up, down, handle);
+    function move(neighbor, before, nextDirection) {
+      if (!neighbor) return;
+      if (before) neighbor.before(row);
+      else neighbor.after(row);
+      updateGroupHeadings(orderList);
+      renderOrder(row, nextDirection);
+    }
+    return item;
+  });
+  $orderRows.replaceChildren(...items);
+  if (focusRow) {
+    const item = items[rows.indexOf(focusRow)];
+    const [up, down] = item.querySelectorAll('button');
+    const control = direction === 'group' ? item.querySelector('select') : direction === 'up' && !up.disabled ? up : !down.disabled ? down : up;
+    control.focus();
+  }
 }
 
 
@@ -407,8 +546,17 @@ async function saveRecipe(e) {
     return;
   }
 
+  const icon = $recipeIcon.value.trim();
+  const glyphs = [...new Intl.Segmenter().segment(icon)];
+  if (icon && (glyphs.length !== 1 || !/(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3)/u.test(icon))) {
+    toast(window.t('recipe.icon-invalid'));
+    $recipeIcon.focus();
+    return;
+  }
+  if ($newTagInput.value.trim()) addNewTag();
+
   const recipeData = {
-    icon: recipeIcon,
+    icon: icon || null,
     name: name,
     notes: $recipeNotes.value.trim() || null,
     servings: Number($recipeServings.value),
@@ -428,7 +576,7 @@ async function saveRecipe(e) {
     const u = row.querySelector('.ing-unit').value.trim();
     recipeData.ingredients.push({
       name: n,
-      group_name: row.querySelector('.ing-group').value.trim() || null,
+      group_name: row.dataset.group || null,
       quantity: isNaN(q) ? null : q,
       unit: u || null
     });
@@ -443,7 +591,7 @@ async function saveRecipe(e) {
     recipeData.instruction_steps.push({
       step_number: stepNum++,
       description: d,
-      group_name: row.querySelector('.step-group').value.trim() || null,
+      group_name: row.dataset.group || null,
       duration_min: isNaN(dur) ? null : dur
     });
   });
@@ -476,9 +624,9 @@ async function saveRecipe(e) {
 // ── Delete ─────────────────────────────────────────────────────
 let recipeToDelete = null;
 
-window.promptDelete = function (id, name) {
+window.promptDelete = function (id) {
   recipeToDelete = id;
-  document.getElementById('delete-recipe-name').textContent = name;
+  document.getElementById('delete-recipe-name').textContent = allRecipes.find(recipe => recipe.id === id)?.name || '';
   $deleteModal.style.display = 'flex';
 };
 
@@ -511,12 +659,7 @@ function esc(str) {
   if (!str) return '';
   const d = document.createElement('div');
   d.textContent = str;
-  return d.innerHTML;
-}
-
-function escJs(str) {
-  if (!str) return '';
-  return str.replace(/'/g, "\\'");
+  return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 let toastTimer;

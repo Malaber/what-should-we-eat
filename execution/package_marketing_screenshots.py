@@ -1,5 +1,6 @@
 """Package successful screenshot artifacts for GitHub Releases, excluding test logs."""
 import argparse
+import base64
 import hashlib
 import json
 import struct
@@ -14,6 +15,12 @@ PORTRAITS = (
     "05-cooking-with-onionary.png", "06-your-recipe-book.png", "07-make-it-your-size.png",
 )
 PORTRAIT_SOURCES = dict(zip(PORTRAITS, (CAPTURES[1], CAPTURES[0], CAPTURES[2]), strict=True))
+DUO_CAPTURES = {
+    0: ("01-duo-outer-cooking.png", (1398, 2034)),
+    180: ("02-duo-inner-cooking.png", (2853, 2007)),
+}
+DEVICE_FAMILIES = ("iphone", "ipad", "duo")
+RELEASE_FAMILIES = (*DEVICE_FAMILIES, "creative")
 
 
 def validate_dimensions(path: Path, family: str):
@@ -22,7 +29,8 @@ def validate_dimensions(path: Path, family: str):
         raise ValueError(f"Invalid PNG: {path}")
     size = struct.unpack(">II", data[16:24])
     allowed = {"iphone": {(1179, 2556), (1206, 2622)},
-               "ipad": {(2064, 2752), (2048, 2732)}}
+               "ipad": {(2064, 2752), (2048, 2732)},
+               "duo": {DUO_CAPTURES[0][1]}}
     if size not in allowed[family]:
         raise ValueError(f"Wrong {family} App Store dimensions {size}: {path}")
 
@@ -40,7 +48,26 @@ def validate_bundle(root: Path, family: str) -> list[Path]:
             decoded.load()
             if png in portraits and decoded.mode != "RGB":
                 raise ValueError(f"Invalid opaque RGB portrait: {png}")
-    creative = root / "creative"
+    manifest = json.loads((root / "manifest.json").read_text())
+    hashes = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in raw}
+    if (manifest["family"] != family or manifest["captures"] != hashes
+            or manifest["portrait_sources"] != PORTRAIT_SOURCES
+            or manifest["source"] != CAPTURES[1] or manifest["source_sha256"] != hashes[CAPTURES[1]]):
+        raise ValueError("Marketing artwork does not match the current capture")
+    if manifest['portrait_sha256'] != {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in portraits}:
+        raise ValueError("Marketing portrait does not match the rendered output")
+    if family == "duo":
+        name, size = DUO_CAPTURES[180]
+        inner = root / "inner" / name
+        validate_duo_png(inner, size)
+        pngs.append(inner)
+    return pngs
+
+
+def validate_creative_bundle(creative: Path, screenshot: Path) -> list[Path]:
+    from PIL import Image
+
+    pngs = []
     for name, size in {"header.png": (5244, 2950), "search-results.png": (5244, 2950)}.items():
         image = creative / name
         data = image.read_bytes()
@@ -53,14 +80,6 @@ def validate_bundle(root: Path, family: str) -> list[Path]:
                 raise ValueError(f"Invalid opaque RGB creative: {image}")
         pngs.append(image)
         pngs.append(creative / name.replace(".png", ".svg"))
-    manifest = json.loads((creative / "manifest.json").read_text())
-    hashes = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in raw}
-    if (manifest["family"] != family or manifest["captures"] != hashes
-            or manifest["portrait_sources"] != PORTRAIT_SOURCES
-            or manifest["source"] != CAPTURES[1] or manifest["source_sha256"] != hashes[CAPTURES[1]]):
-        raise ValueError("Marketing artwork does not match the current capture")
-    if manifest['portrait_sha256'] != {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in portraits}:
-        raise ValueError("Marketing portrait does not match the rendered output")
     pngs.extend(creative / f"{name}-safe-area-preview.png" for name in ("header", "search-results"))
     for name in ("header", "search-results"):
         preview = creative / f"{name}-safe-area-preview.png"
@@ -70,15 +89,39 @@ def validate_bundle(root: Path, family: str) -> list[Path]:
                 raise ValueError(f"Invalid Apple safe-area preview: {preview}")
         if not (creative / f"{name}.svg").is_file():
             raise ValueError(f"Missing editable {name} artwork")
+    embedded = b"data:image/png;base64," + base64.b64encode(screenshot.read_bytes())
+    if embedded not in (creative / "search-results.svg").read_bytes():
+        raise ValueError("Search artwork does not embed the current iPhone capture")
     return pngs
 
 
+def validate_duo_png(path: Path, dimensions: tuple[int, int]) -> None:
+    from PIL import Image
+
+    with Image.open(path) as decoded:
+        decoded.load()
+        if decoded.format != "PNG" or decoded.mode != "RGB" or decoded.size != dimensions:
+            raise ValueError(f"Invalid opaque iPhone Duo PNG, expected {dimensions}: {path}")
+        if decoded.getexif().get(274, 1) != 1:
+            raise ValueError(f"iPhone Duo orientation must be encoded in pixels: {path}")
+
+
+def validate_duo_bundle(root: Path) -> list[Path]:
+    for name, size in DUO_CAPTURES.values():
+        validate_duo_png(root / name, size)
+    return [root / name for name, _ in DUO_CAPTURES.values()]
+
+
 def package(source: Path, output: Path) -> list[Path]:
-    # Validate both devices before producing anything suitable for publishing.
+    # Validate all devices before producing anything suitable for publishing.
     captures = {}
-    for family in ("iphone", "ipad"):
+    for family in DEVICE_FAMILIES:
         root = source / f"onionary-appstore-{family}-en-US" / "en-US"
         captures[family] = (root, validate_bundle(root, family))
+    creative = source / "onionary-appstore-creative-en-US" / "en-US"
+    captures["creative"] = (creative, validate_creative_bundle(
+        creative / "creative", captures["iphone"][0] / CAPTURES[1],
+    ))
     output.mkdir(parents=True, exist_ok=True)
     archives = []
     for family, (root, pngs) in captures.items():
@@ -94,9 +137,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path, nargs="?")
-    parser.add_argument("--validate-family", choices=["iphone", "ipad"])
+    parser.add_argument("--validate-family", choices=RELEASE_FAMILIES)
+    parser.add_argument("--creative-source", type=Path)
     args = parser.parse_args()
-    if args.validate_family:
+    if args.validate_family == "creative":
+        if args.creative_source is None:
+            parser.error("--creative-source is required to validate the shared artwork")
+        validate_creative_bundle(args.source, args.creative_source)
+    elif args.validate_family:
         validate_bundle(args.source, args.validate_family)
     else:
         if args.output is None:

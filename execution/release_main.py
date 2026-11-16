@@ -6,13 +6,20 @@ import re
 import subprocess
 
 
-def release_version(tags, bump='minor'):
-    versions = [tuple(map(int, m.groups())) for t in tags
-                if (m := re.fullmatch(r'v(\d+)\.(\d+)\.(\d+)(?:-rc\.\d+)?', t))]
-    major, minor, patch = max(versions, default=(0, 1, 0))
-    if bump == 'major': return f'{major + 1}.0.0'
-    if bump == 'patch': return f'{major}.{minor}.{patch + 1}'
-    return f'{major}.{minor + 1}.0'
+def release_version(tags, bump='minor', *, reachable_candidates=()):
+    stable_versions = [tuple(map(int, match.groups())) for tag in tags
+                       if (match := re.fullmatch(r'v(\d+)\.(\d+)\.(\d+)', tag))]
+    major, minor, patch = max(stable_versions, default=(0, 1, 0))
+    if bump == 'major':
+        return f'{major + 1}.0.0'
+    if bump == 'patch':
+        return f'{major}.{minor}.{patch + 1}'
+    # An RC already names its intended release. Only an RC included in this
+    # merge can influence the result, and a release never regresses the version.
+    candidates = [tuple(map(int, match.groups())) for tag in reachable_candidates
+                  if (match := re.fullmatch(r'v(\d+)\.(\d+)\.(\d+)-rc\.\d+', tag))]
+    target = max([(major, minor + 1, 0), *candidates])
+    return '.'.join(map(str, target))
 
 
 def main():
@@ -26,7 +33,8 @@ def main():
     pr = next((p for p in merged if p.get('merge_commit_sha') == sha), merged[0] if merged else None)
     labels = {label['name'] for label in pr.get('labels', [])} if pr else set()
     bump = 'major' if 'release:major' in labels else 'patch' if 'release:patch' in labels else 'minor'
-    tag = exact[0] if exact else 'v' + release_version(tags, bump)
+    reachable_candidates = git('tag', '--merged', sha, '--list', 'v*-rc.*').splitlines()
+    tag = exact[0] if exact else 'v' + release_version(tags, bump, reachable_candidates=reachable_candidates)
     title = pr['title'] if pr else git('show', '-s', '--format=%s', sha)
     notes = (pr.get('body') or '') if pr else f'Main commit {sha}.'
     if pr: notes += f"\n\nSource: {pr['html_url']}\n"

@@ -329,7 +329,8 @@ failure attachments or command logs. That collector stalls after passed tests
 and consumes disk. Request a separate OS diagnostic explicitly when needed.
 On failure, test.sh invokes collect_ios_test_diagnostics.py before disposing its
 owned device. The collector records CPU/RAM, VM/swap state, device/runtime
-inventory and recent CoreSimulator events. Every read command runs once with a
+inventory, recent CoreSimulator events and the guest's accessibility and
+testmanagerd events. The guest read runs only after failure. Every read runs once with a
 five-second deadline and a 64 KiB retained tail; the collector has a separate
 60-second wall-clock cap. Its failure cannot replace the test's original exit
 code. It never restarts a simulator/test or mutates unrelated devices.
@@ -343,6 +344,61 @@ billable larger runner without user approval.
 Do not edit a shell script while a local process is executing it. Bash may read
 later commands using stale file offsets. Freeze local script copies before
 launch or finish the run before editing. CI checkouts are immutable during tests.
+
+CI runs Swift package tests and a generic arm64 Simulator build once in
+`ios-build` (`test.sh --build-only`). It archives Build/Products with tar to
+preserve executable permissions and bundle layout. Each standard macOS UI
+runner extracts the same build from the current workflow run and validates the
+compiled plan before it creates its own pinned simulator (`test.sh --test-only`).
+This keeps compiler and indexing work off the XCTest VMs. The iPad and Duo
+failure traces both reached the Simulator accessibility handshake and stalled
+before a test case or app launch. Local `test.sh` still builds and runs tests
+in one command.
+
+CI runs the iPhone and iPad cases in three balanced shards per device type.
+Each shard has its own standard runner, native XCTest process and simulator.
+This limits how many consecutive app replacements share one device. The iPad
+failure occurred when XCTest attempted to terminate the previous app before
+the next test ran. Shard 1 owns the marketing captures. Unit tests verify
+that each device's shards include every declared case exactly once. The
+same per-case time limits and the existing Duo fold isolation still apply.
+
+The standard GitHub runner uses the default 12 GB iPad Pro 13-inch M5
+device profile. Xcode's two profiles have the same device model and screen
+geometry. The default profile has a lower simulated memory class. The
+16 GB profile's failure diagnostics showed roughly 912 MiB of host swap
+in use and stalled CoreSimulator requests. The specific trigger remains
+unconfirmed.
+
+The marketing fixture uses the same alphabetical ordering as the app. Keep
+the featured recipe near the top so it is visible in the first recipe-book
+capture and can be tapped on the shorter Duo cover. The test checks its
+control against the real receiving window before tapping.
+
+Verify saved ingredient order in the updated recipe preview immediately after
+the editor closes. The iPhone CI case expired while reopening the editor after
+save. A three-ingredient fixture lets one upward and one downward move leave
+a different order to verify. Unchanged edit cancellation is an independent
+case that returns to the library and checks for the absence of a draft.
+
+Check the exact saved title in the recipe list after saving the active
+recipe. Repeated title-field accessibility reads immediately after typing
+consumed over a minute on the RC 31 iPad run. Step amount tests open the
+same editor directly from Preview and finish after confirming insertion
+and dismissal of the keyboard action. The separate draft test checks
+editor cancellation.
+
+Ingredient and step group creation uses an inline form in the reorder
+sheet. The nested text alert stalled during the iPad accessibility
+transition. UI coverage still creates a group, assigns an ingredient,
+saves and checks the group in the recipe preview.
+
+The active-recipe edit case starts with one checked ingredient in a real
+`Kitchen` adventure. Separate checklist scenarios exercise setting that state
+through taps. This keeps the edit test focused on save, the reload decision
+and verifying both the saved recipe and preserved cooking progress. A slow
+iPhone runner spent 115 seconds reaching the first checked state through UI
+setup before running out of time at the last save assertion.
 
 Local release/test profiles run sequentially and reuse one build cache while
 retaining separate xcresults. Keep the 8 GiB test-entry and 6 GiB archive guards;
@@ -434,6 +490,21 @@ suite covers the cooking menu separately. Enter the draft on the cover
 display, dismiss the keyboard, and assert the edited name through the real
 folds. Cancel, return to Cooking, and check the original checklist and portions.
 A failed wait captures one coherent hierarchy and normal XCTest attachments.
+The Duo shopping case refreshes on the cover display after closing the hinge.
+Confirm the new fixture item appears and the existing check remains selected
+before reopening, then verify both on the inner display. XCTest on run
+43707934313 waited more than two minutes for animation-idle notifications
+around the refresh just after reopening. Run the hinge input and geometry
+assertions before the first native fold scenario launches the app so they do
+not require another XCTest bootstrap. Run 43719978831 lost the second runner
+in XCTest's stalled-wait handler before any UI test started.
+Run 43713865487 showed the same XCTest animation-idle stalls on Undo and Redo
+after the final reopen. Tap Undo at 90° and Redo on the cover. Check both results
+across the next display switch and retain the full sequence and screenshots.
+The iPad import test scopes URL controls to the actual form and ends when the
+imported recipe name is visible in the editor. Each next test launches a reset
+fixture. Run 43716190952 passed the import assertions and hit its allowance
+during the redundant cleanup tap.
 Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 

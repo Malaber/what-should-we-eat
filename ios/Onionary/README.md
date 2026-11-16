@@ -26,10 +26,13 @@ between devices. Tokens are stored in Keychain.
 
 ## Backend setup and existing accounts
 
+Onionary defaults to `https://onionary.malaber.de`. You can enter another
+server at sign-in or switch servers in Settings.
+
 1. Install root `requirements.txt`. It pins `fastpasskey` 0.2.6 with the same wheel
    hash used by Planini and Tracy.
 2. Set `APP_BASE_URL` to the exact public HTTPS origin, such as
-   `https://onionary-test.malaber.de`, without an API path or query. Local browser
+   `https://onionary.malaber.de`, without an API path or query. Local browser
    development can use `http://localhost:8000`; IP addresses cannot be RP IDs.
 3. Configure the database and a random `SECRET_KEY` of at least 32 characters.
 4. Run `python -m execution.db.init_db` before deploying the updated application.
@@ -135,9 +138,13 @@ The ingredient name must match exactly one ingredient (case-insensitive). With
 100 ml Milk this displays 80 ml and 20 ml; changing portions scales both amounts.
 The iOS step editor's **Insert ingredient amount** menu inserts a 100% placeholder
 that you can edit. The web editor accepts the same syntax. Copies preserve it.
-Unmatched names, duplicate names, missing quantities and invalid percentages stay
-visible as raw placeholders so an incorrect quantity is never silently guessed.
-Ordinary imported prose is not rewritten. Rename placeholders when renaming an ingredient.
+Use a group-qualified name such as `{{Filling::Milk|80%}}` when an ingredient
+name occurs in more than one group. Unresolved references stay visible for
+correction. Cooking-mode amount badges check the same ingredient as the main
+checklist. Chefkoch import links supported quantities in the original text.
+Apple Intelligence prepares a reviewable draft for other public HTTPS recipe
+pages, including their named groups when available. Update references if you
+rename a referenced ingredient or move it to another group.
 
 ### Kitchen widget and Live Activity
 

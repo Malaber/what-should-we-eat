@@ -25,7 +25,7 @@ final class AppStore {
     var pendingImport: String?
     var editingRecipe: Recipe?
     var sharingRecipe: Recipe?
-    var backend = UserDefaults.standard.string(forKey: "backend") ?? "https://onionary-test.malaber.de"
+    var backend = UserDefaults.standard.string(forKey: "backend") ?? Backend.defaultAddress
     var widgetNavigation: KitchenDeepLink.Destination?
     private var file: URL?
     private let signIn = BrowserSignIn()
@@ -281,9 +281,18 @@ final class AppStore {
 
     func stopCookingActivity() async { try? await cookingActivity.synchronize(nil, scope: scope) }
 
-    func visit(_ recipe: Recipe) {
-        do { var next = kitchen; next.visit(recipe); try persist(next) }
-        catch { self.error = error.localizedDescription }
+    @discardableResult func visit(_ recipe: Recipe, portions: Decimal? = nil) -> Bool {
+        do {
+            var next = kitchen
+            if let portions { try next.visit(recipe, portions: portions) }
+            else { next.visit(recipe) }
+            try persist(next)
+            if portions != nil { synchronizeCookingActivity() }
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
     }
 
     func update(_ operation: (inout Adventure) throws -> Void) {
@@ -309,7 +318,9 @@ final class AppStore {
 
     func importDraft(_ link: String) async throws -> RecipeDraft {
         guard let credential else { throw CookingError.response("Sign in before importing.") }
-        let url = try RecipeImportLink.accepted(link)
+        guard let url = try? RecipeImportLink.accepted(link) else {
+            return try await RecipeIntelligence.importPage(RecipeImportLink.webRecipe(link))
+        }
         let isCopy = (try? RecipeImportLink.sharedRecipe(link)) != nil
         let body = try JSONEncoder().encode(["source": "chefkoch", "url": url.absoluteString])
         let data = try await request(isCopy ? "recipe-shares/preview" : "recipes/import/parse/html", method: "POST", body: body)
@@ -423,19 +434,26 @@ final class AppStore {
             try? FileManager.default.removeItem(at: file!)
             try? FileManager.default.removeItem(at: file!.appendingPathExtension("drafts"))
             UserDefaults.standard.removeObject(forKey: "accent")
+            UserDefaults.standard.removeObject(forKey: "recipe-sort")
+            UserDefaults.standard.removeObject(forKey: "recipe-sort-reversed")
             UserDefaults.standard.removeObject(forKey: "appearance")
             UserDefaults.standard.removeObject(forKey: "language")
         }
         kitchen = (try? KitchenFile.read(file!)) ?? Kitchen()
-        if kitchen.recipes.isEmpty {
-            let json = #"[{"id":1,"household_id":1,"name":"Lemon & cheese pasta","notes":"Finish with lemon zest.","total_time_min":20,"ingredients":[{"id":1,"name":"Cheese","quantity":200,"unit":"g"},{"id":2,"name":"Pasta","quantity":250,"unit":"g"}],"instruction_steps":[{"id":1,"step_number":1,"description":"Boil the pasta in salted water.","duration_min":10},{"id":2,"step_number":2,"description":"Fold in cheese and lemon zest.","duration_min":null}]}]"#
+        if kitchen.recipes.isEmpty && ProcessInfo.processInfo.arguments.contains("--ordering-fixture") {
+            let data = try! JSONSerialization.data(withJSONObject: [UITestBackend.recipe])
+            kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: data)
+        } else if kitchen.recipes.isEmpty {
+            let json = #"[{"id":1,"household_id":1,"name":"Lemon & cheese pasta","notes":"Finish with lemon zest.","total_time_min":20,"ingredients":[{"id":1,"name":"Cheese","quantity":200,"unit":"g"},{"id":2,"name":"Pasta","quantity":250,"unit":"g"}],"instruction_steps":[{"id":1,"step_number":1,"description":"Boil the pasta in salted water.","duration_min":10},{"id":2,"step_number":2,"description":"Fold in {{Cheese|20%}} and lemon zest.","duration_min":null}]}]"#
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: Data(json.utf8))
         }
         if ProcessInfo.processInfo.arguments.contains("--marketing") {
             // Keep screenshot appearance local to this Debug fixture. A global
             // simulator appearance RPC can race cold SpringBoard startup.
             UserDefaults.standard.set("light", forKey: "appearance")
-            let names = ["Lemon & cheese pasta", "Roasted tomato soup", "Crispy chickpea bowls", "Mushroom risotto", "Apple cinnamon pancakes", "Herby potato salad"]
+            // Keep the recipe featured in the cooking captures near the top
+            // of the alphabetic book on the Duo's shorter cover display.
+            let names = ["Creamy lemon pasta", "Roasted tomato soup", "Crispy chickpea bowls", "Mushroom risotto", "Apple cinnamon pancakes", "Herby potato salad"]
             let recipes: [[String: Any]] = names.enumerated().map { index, name in
                 var recipe = UITestBackend.recipe
                 recipe["id"] = index + 1
@@ -446,6 +464,13 @@ final class AppStore {
                 return recipe
             }
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: JSONSerialization.data(withJSONObject: recipes))
+        }
+        if ProcessInfo.processInfo.arguments.contains("--editing-active-recipe"),
+           let recipe = kitchen.recipes.first, let ingredient = recipe.ingredients.first {
+            kitchen.visit(recipe)
+            if let current = kitchen.adventures.firstIndex(where: { $0.id == recipe.id }) {
+                kitchen.adventures[current].toggle(key: "ingredient-\(ingredient.id)", label: ingredient.name)
+            }
         }
         credential = Credential(server: URL(string: "https://ui-test.invalid")!, token: "test", userID: "1", name: "Test Cook", email: "cook@example.org")
         if ProcessInfo.processInfo.arguments.contains("--renew-session") {

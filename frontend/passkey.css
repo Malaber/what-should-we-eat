@@ -6,11 +6,36 @@ details { padding: 18px 0; } summary { cursor: pointer; } form { padding-top: 24
 dialog { max-width: 420px; border: 1px solid var(--auth-border); border-radius: 20px; padding: 24px; } dialog::backdrop { background: #0009; } [hidden] { display: none !important; }
 
 .account-section { padding: 1rem 0; border-bottom: 1px solid var(--auth-border); }
+.account-page { display: block; padding: 0; }
+.account-page main { max-width: 45rem; margin: auto; padding: clamp(1rem, 4vw, 2rem); }
+.account-page .account-back { display: inline-block; font-weight: 700; padding: .65rem 1rem; border: 1px solid var(--auth-border); border-radius: 1rem; }
+.account-page .burger-btn { width: 40px; padding: 0; margin: 0; border: 1px solid var(--auth-border); }
+@media (min-width: 769px) { .account-page .burger-btn { display: none; } }
 .account-section select { display: block; width: 100%; padding: .75rem; margin: .5rem 0 1rem; background: var(--auth-card); color: var(--auth-text); border: 1px solid var(--auth-border); border-radius: .75rem; font: inherit; }
 #keys section { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; border-bottom: 1px solid var(--auth-border); padding: 1rem 0; }
 #keys h2 { flex: 1 1 100%; font: 600 1.1rem system-ui; margin: 0; overflow-wrap: anywhere; }
 #keys p { flex: 1 1 100%; margin: 0; }
 #keys button { width: auto; padding: .6rem 1rem; margin: .25rem 0; }
 
+.shared-recipe-list { padding-inline-start: 1.5rem; overflow-wrap: anywhere; }
+.shared-recipe-list li { padding: .55rem 0; }
+.shared-recipe-list label { display: flex; align-items: baseline; gap: .7rem; cursor: pointer; }
+.shared-recipe-list input[type="checkbox"] { display: inline-block; flex: 0 0 auto; width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--auth-accent); }
+.shared-recipe-list input:checked + span { text-decoration: line-through; color: var(--auth-muted); }
+
 .auth-surface .danger { display: inline-block; background: #b42318; color: #fff; padding: .85rem 1.2rem; border: 2px solid #b42318; border-radius: .7rem; font-weight: 700; margin-block: 1rem; }
 .auth-surface .danger:hover { background: #8f1c13; color: #fff; }
+.shared-ingredient-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin: .375rem 0 .75rem 1.5rem;
+}
+.shared-ingredient-badges button {
+  width: auto;
+  padding: .375rem .75rem;
+  border-radius: 999px;
+}
+.shared-ingredient-badges button[aria-pressed="true"] {
+  text-decoration: line-through;
+}
