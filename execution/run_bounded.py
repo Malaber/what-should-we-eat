@@ -72,16 +72,31 @@ def wait_for_startup(child, log, prefix, seconds):
 def terminate_command(child):
     if child.poll() is not None:
         return
-    try:
-        os.killpg(child.pid, signal.SIGTERM)
-    except ProcessLookupError:
-        child.wait()
-        return
+    signal_command(child, signal.SIGTERM)
     try:
         child.wait(timeout=10)
     except subprocess.TimeoutExpired:
-        os.killpg(child.pid, signal.SIGKILL)
-        child.wait()
+        signal_command(child, signal.SIGKILL)
+        try:
+            child.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            print(f'Command {child.pid} did not exit after termination signals.', file=sys.stderr, flush=True)
+
+
+def signal_command(child, signum):
+    try:
+        os.killpg(child.pid, signum)
+    except ProcessLookupError:
+        pass  # Group exited before the signal could be sent.
+    except PermissionError:
+        # Xcode can add protected helpers to its process group on hosted macOS.
+        # Signal the owned child directly and retain the original timeout status.
+        print(f'Cannot send {signum.name} to process group {child.pid}. Signaling the command.',
+              file=sys.stderr, flush=True)
+        try:
+            child.send_signal(signum)
+        except PermissionError:
+            print(f'Cannot send {signum.name} to command {child.pid}.', file=sys.stderr, flush=True)
 
 
 def wait_for_command(child, seconds, command):

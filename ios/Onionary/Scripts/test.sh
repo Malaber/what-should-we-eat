@@ -62,6 +62,7 @@ simulator_set=
 simctl=(xcrun simctl)
 resolve_options=(--device-type "$device_type" --runtime "${SIMULATOR_RUNTIME:-}")
 xctest_command=(xcodebuild)
+startup_seconds=600
 if [[ "$mode" == --test-only && -z "$simulator_id" &&
       "${GITHUB_ACTIONS:-}" == true && "${RUNNER_ENVIRONMENT:-}" == github-hosted ]]; then
   # Avoid enumerating the runner image's unrelated precreated devices, which
@@ -71,6 +72,8 @@ if [[ "$mode" == --test-only && -z "$simulator_id" &&
   simctl+=(--set "$simulator_set")
   resolve_options+=(--device-set "$simulator_set")
   xctest_command+=("-DVTSimulatorSetLocation=$simulator_set")
+  # A successful 27.2 Duo worker took 576 seconds to register XCTest.
+  startup_seconds=900
 fi
 create_simulator() {
   simulator_id=$(python3 Scripts/resolve_simulator.py --create "${resolve_options[@]}")
@@ -109,7 +112,7 @@ run_tests() {
   # Keep the new device shut down until XCTest takes ownership of its boot,
   # app installation and test session. A prebooted session can disappear
   # while xcodebuild is still initializing its runner.
-  python3 ../../execution/run_bounded.py --startup-seconds 600 --ready-prefix "Test Suite 'Selected tests' started at " \
+  python3 ../../execution/run_bounded.py --startup-seconds "$startup_seconds" --ready-prefix "Test Suite 'Selected tests' started at " \
     --log "$output/tests.log" 1800 "${xctest_command[@]}" -xctestrun "$test_plan" \
     -destination "platform=iOS Simulator,id=$simulator_id" \
     -parallel-testing-enabled NO -collect-test-diagnostics never -test-timeouts-enabled YES \

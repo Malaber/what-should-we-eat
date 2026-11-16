@@ -150,11 +150,12 @@ with -xctestrun and the existing full-profile selector, not -project/-scheme:
 the latter reopens project/package resolution even with test-without-building.
 Validate the UI target, screenshot policy and compiled app/runner/bundle paths;
 missing, ambiguous or filtered plans fail before boot.
-Runner initialization has a separate 600-second limit. The unchanged
-1800-second UI-suite budget begins at the first literal "Test Suite 'Selected
-tests' started at " log line. Missing suite registration never counts as success;
-failed command statuses are preserved and either phase terminates its process
-group on timeout. Total command time is bounded by 2400 seconds plus termination.
+Runner initialization has a separate 900-second limit on hosted CI and
+600 seconds locally. A passing Duo 27.2 worker took 576 seconds to register.
+The 1800-second UI-suite budget begins at the first literal "Test Suite 'Selected
+tests' started at " log line. If startup or execution expires, the wrapper
+returns 124 and preserves the log. If macOS rejects a group signal, signal the
+owned command directly and bound the remaining cleanup wait.
 The ordinary case limit defaults to 180 seconds. The two native menu tests
 may request 240 seconds, and Duo cases have 360 seconds. Workflow timeouts
 remain unchanged. This keeps

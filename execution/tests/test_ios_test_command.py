@@ -189,6 +189,7 @@ if 'test-without-building' in sys.argv: sys.exit(44)
     diagnostics, = [run for run in runs if '--simulator' in run]
     assert create[-2:] == ['--device-set', device_set]
     assert f'-DVTSimulatorSetLocation={device_set}' in xctest
+    assert xctest[xctest.index('--startup-seconds') + 1] == '900'
     assert xctest[xctest.index('-destination') + 1] == 'platform=iOS Simulator,id=hosted-test-device'
     assert diagnostics[-2:] == ['--device-set', device_set]
     assert runs[-1] == ['xcrun', 'simctl', '--set', device_set, 'delete', 'hosted-test-device']

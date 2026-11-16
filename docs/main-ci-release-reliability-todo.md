@@ -92,3 +92,10 @@ downloaded on the older image. The availability check only accepted the
 generic iOS runtime identifier. Recognize Duo's device-specific identifier
 while still requiring the stable build, supported device type and bundle
 system metadata.
+
+[Run 43856952320](https://github.com/Malaber/what-should-we-eat/actions/runs/43856952320)
+confirmed that native Duo marketing and reauthentication run on `24B91016s`.
+The marketing suite took 576 seconds to start. On the same run an iPad
+worker reached the 600-second startup limit, then macOS rejected the kill
+signal for the process group. Extend hosted startup to 900 seconds. Keep
+case and execution limits and preserve timeout diagnostics if group signaling fails.
