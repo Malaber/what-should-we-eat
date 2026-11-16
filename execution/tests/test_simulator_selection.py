@@ -13,7 +13,7 @@ DUO = 'com.apple.CoreSimulator.SimDeviceType.iPhone-Duo'
 
 
 def runtime(version, device=DUO, available=True, build=None):
-    build = build or {'27.0': '24A434', '27.1': '24A94425', '27.2': '24B1'}[version]
+    build = build or {'27.0': '24A434', '27.1': '24A94425', '27.2': '24B8117'}[version]
     return {'identifier': simulator.runtime_identifier(version),
             'version': version, 'buildversion': build, 'isAvailable': available,
             'bundlePath': f'/Runtimes/{build}/iOS {version}.simruntime',
@@ -49,13 +49,24 @@ def test_incomplete_runtime_metadata_cannot_select_an_ambiguous_build(missing):
 
 def test_unpinned_version_is_rejected():
     with pytest.raises(ValueError, match='No simulator build pin'):
-        simulator.select_runtime([runtime('27.2')], DUO, '27.2')
+        simulator.select_runtime([runtime('27.2')], DUO, '27.3')
 
 
 def test_standard_phone_uses_270_even_when_newer_compatible_runtime_exists():
     pinned = runtime('27.0', simulator.DEFAULT_DEVICE)
     runtimes = [runtime('27.2', simulator.DEFAULT_DEVICE), pinned]
     assert simulator.select_runtime(runtimes) == pinned['bundlePath']
+
+
+@pytest.mark.parametrize('model', ['iPhone-17-Pro', 'iPad-Pro-13-inch-M5-12GB'])
+def test_hosted_ordinary_devices_select_stable_272(model):
+    device = f'com.apple.CoreSimulator.SimDeviceType.{model}'
+    pinned = runtime('27.2', device, build='24B8117')
+    other = [runtime('27.0', device), runtime('27.2', device, build='24B114'),
+             runtime('27.2', build='24B91016s')]
+    assert simulator.select_runtime(other + [pinned], device, '27.2') == pinned['bundlePath']
+    with pytest.raises(ValueError, match='24B8117'):
+        simulator.select_runtime(other, device, '27.2')
 
 
 @pytest.mark.parametrize('create', [False, True])

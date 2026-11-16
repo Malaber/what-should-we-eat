@@ -94,10 +94,10 @@ jobs:
         include:
           - profile: iphone
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
-            runtime: '27.0'
+            runtime: '27.2'
           - profile: ipad
             device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
-            runtime: '27.0'
+            runtime: '27.2'
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
             runtime: '27.1'

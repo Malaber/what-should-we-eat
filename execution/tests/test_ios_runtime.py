@@ -14,16 +14,18 @@ installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
 
 
-@pytest.mark.parametrize('build,available,expected', [
-    ('24A94425', True, True), ('24A94232', True, False), ('24A94425', False, False),
+@pytest.mark.parametrize('version,build,available,expected', [
+    ('27.1', '24A94425', True, True), ('27.1', '24A94232', True, False),
+    ('27.1', '24A94425', False, False), ('27.2', '24B8117', True, True),
+    ('27.2', '24B114', True, False), ('27.2', '24B91016s', True, False),
 ])
-def test_installer_uses_shared_exact_stable_pin(monkeypatch, build, available, expected):
-    installed = {'identifier': ios_runtime.runtime_identifier('27.1'),
+def test_installer_uses_shared_exact_stable_pin(monkeypatch, version, build, available, expected):
+    installed = {'identifier': ios_runtime.runtime_identifier(version),
                  'buildversion': build, 'isAvailable': available}
     monkeypatch.setattr(installer.subprocess, 'run', lambda *a, **k:
                         subprocess.CompletedProcess(a, 0, stdout=json.dumps({'runtimes': [installed]})))
     assert installer.RUNTIMES is ios_runtime.RUNTIME_BUILDS
-    assert installer.available('27.1') is expected
+    assert installer.available(version) is expected
 
 
 @pytest.mark.parametrize('installed_after_download', [False, True])

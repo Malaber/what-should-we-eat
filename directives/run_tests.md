@@ -376,9 +376,8 @@ GitHub-hosted build, native test, result export and archive jobs select Xcode
 27.2 (27B52). The standard `xcode-27` label served macOS 27.0.1 and 27.2 on
 adjacent jobs. Both runner images include this exact Xcode build. At 54e2648 an
 isolated Duo guest on the older image failed in Instruments before XCTest
-timed out waiting for Accessibility. Keep the same device/runtime builds and
-verify the newer toolchain through the native jobs. Developer machines and
-local TestFlight retain the existing Xcode 27.1 preflight.
+timed out waiting for Accessibility. Developer machines and local TestFlight
+retain the existing Xcode 27.1 preflight.
 
 The standard GitHub runner uses the default 12 GB iPad Pro 13-inch M5
 device profile. Xcode's two profiles have the same device model and screen
@@ -425,9 +424,12 @@ Wait for the previous test command to return, including disposable-device
 cleanup, before starting the next profile. A finalized xcresult alone does not
 mean its simulator has been deleted or its disk reserve has been released.
 
-Runtime installation is not selection. Pass SIMULATOR_RUNTIME from the matrix;
-require the exact compatible runtime/build from execution/ios_runtime.py:
-27.0/24A434 for phone/tablet and stable 27.1/24A94425 for Duo. Apple's catalog
+Pass SIMULATOR_RUNTIME from the matrix and require the exact compatible build
+from execution/ios_runtime.py. Hosted phone and iPad use the SDK-matched
+27.2/24B8117. On run 43823651650 the older 27.0 runtime was preflight-verified,
+then remounted at a different path during iPad testing. The runner inventory
+also verified that 24B8117 supports both current device models. Local phone and
+iPad retain 27.0/24A434 by default. Duo uses stable 27.1/24A94425. Apple's catalog
 identifies 24A94232 as the 27.1 RC; do not silently substitute it. RC/stable can
 coexist under one OS identifier. Select the compatible build's absolute runtime
 bundle path when creating the disposable device, regardless of inventory order.

@@ -6,7 +6,7 @@ from pathlib import Path
 import plistlib
 import subprocess
 
-RUNTIME_BUILDS = {"27.0": "24A434", "27.1": "24A94425"}
+RUNTIME_BUILDS = {"27.0": "24A434", "27.1": "24A94425", "27.2": "24B8117"}
 DEFAULT_DEVICE = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro"
 
 

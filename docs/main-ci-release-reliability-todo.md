@@ -5,6 +5,7 @@
 - [x] Separate offline save/cold restoration from the saved-draft changes sheet. Keep both flows in the native phone and tablet suites.
 - [x] Isolate each Duo case on its own standard runner. Export both display sizes from the passing screenshot and fold results of that run.
 - [x] Pin the hosted build, test, export and archive toolchain to Xcode 27.2 across both GitHub runner images.
+- [x] Use the SDK-matched iOS 27.2 runtime build 24B8117 for hosted iPhone and iPad. Keep their device models and the existing stable Duo runtime.
 - [x] Verify GHCR publishing and exercise stable screenshot packaging on PRs. Publish the stable GitHub release with all four ZIPs after its matching image is pushed.
 - [x] Run focused local verification. Swift 50, Python harness 87, release/artifact tests 10. iPhone and iPad passed both draft cases. Duo fold and screenshot cases passed locally on the simulator RC selected by Xcode. The stable Duo runtime is verified by hosted CI.
 - [ ] Verify the stable GitHub release and versioned GHCR image after the follow-up merges and main CI passes.
@@ -33,3 +34,8 @@ using `xcode-27` received two different macOS images. The iPad job on the
 newer image lost a preflight-verified 27.0 runtime during app installation.
 The hosted toolchain
 pin advances to the same [Xcode build available on both images](https://github.com/actions/runner-images/releases).
+
+[The newer toolchain run](https://github.com/Malaber/what-should-we-eat/actions/runs/43823651650/job/133155500972)
+again lost the iPad's iOS 27.0 runtime during app installation. The runner's
+post-failure inventory lists the same build remounted under a different path.
+Its installed 27.2/24B8117 runtime supports both tested iPhone and iPad models.
