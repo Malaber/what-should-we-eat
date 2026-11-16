@@ -83,11 +83,9 @@ run_tests() {
   local output=$1 allowance=$2
   shift 2
   mkdir -p "$output"
-  if [[ -z "${SIMULATOR_ID:-}" ]]; then
-    # Cold compilation is complete before the first guest boots. Avoid extra
-    # post-boot guest RPCs before XCTest starts.
-    python3 ../../execution/run_bounded.py 600 xcrun simctl bootstatus "$simulator_id" -b
-  fi
+  # Keep the new device shut down until XCTest takes ownership of its boot,
+  # app installation and test session. A prebooted session can disappear
+  # while xcodebuild is still initializing its runner.
   python3 ../../execution/run_bounded.py --startup-seconds 600 --ready-prefix "Test Suite 'Selected tests' started at " \
     --log "$output/tests.log" 1800 xcodebuild -xctestrun "$test_plan" \
     -destination "platform=iOS Simulator,id=$simulator_id" \
