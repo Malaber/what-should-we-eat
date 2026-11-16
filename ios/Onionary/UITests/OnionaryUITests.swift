@@ -181,6 +181,43 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testManualRecipeKeepsDraftWhenServerUnavailable() throws {
+        let app = try newRecipeWithName("My offline soup")
+        let editor = app.navigationBars["New recipe"]
+        editor.buttons["Save"].tap()
+        XCTAssertTrue(app.staticTexts["recipe-save-error"].waitForExistence(timeout: 5))
+        XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")), "Failed save must retain the complete draft name")
+        XCTAssertTrue(editor.buttons["Save"].isEnabled)
+        editor.buttons["Cancel"].tap()
+        XCTAssertTrue(editor.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(savedDraft("My offline soup", in: app).waitForExistence(timeout: 5))
+
+        Self.relaunchPreservingData(app)
+        try tapNavigation("Recipes", in: app)
+        let restoredDraft = savedDraft("My offline soup", in: app)
+        XCTAssertTrue(restoredDraft.waitForExistence(timeout: 5))
+        restoredDraft.tap()
+        XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")), "Cold restoration must retain the complete draft name")
+    }
+
+    @MainActor
+    func testSavedDraftShowsChanges() throws {
+        let app = try newRecipeWithName("My offline soup")
+        app.navigationBars["New recipe"].buttons["Cancel"].tap()
+        let library = app.collectionViews["recipe-list"]
+        let viewChanges = library.buttons["View draft changes"]
+        XCTAssertTrue(viewChanges.waitForExistence(timeout: 5))
+        viewChanges.tap()
+        let changes = app.collectionViews["recipe-draft-changes"]
+        XCTAssertTrue(changes.staticTexts["My offline soup"].waitForExistence(timeout: 5))
+        XCTAssertTrue(changes.staticTexts["Name"].exists)
+        XCTAssertFalse(changes.staticTexts["No recipe changes"].exists)
+        app.navigationBars["Draft changes"].buttons["Done"].tap()
+        XCTAssertTrue(changes.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(savedDraft("My offline soup", in: app).exists)
+    }
+
+    @MainActor
+    private func newRecipeWithName(_ title: String) throws -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--offline-save", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
@@ -191,33 +228,13 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
-        app.typeText("My offline soup")
-        XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")))
-        app.buttons["Save"].tap()
-        XCTAssertTrue(app.staticTexts["recipe-save-error"].waitForExistence(timeout: 5))
-        XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")), "Failed save must retain the complete draft name")
-        XCTAssertTrue(app.buttons["Save"].isEnabled)
-        app.buttons["Cancel"].tap()
-        // Finish dismissal/persistence before the real cold restart.
-        XCTAssertTrue(name.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(app.collectionViews["recipe-list"].buttons.matching(identifier: "saved-draft-My offline soup").element(boundBy: 0).waitForExistence(timeout: 5))
-        Self.relaunchPreservingData(app)
-        try tapNavigation("Recipes", in: app)
-        let saved = app.collectionViews["recipe-list"].buttons.matching(identifier: "saved-draft-My offline soup").element(boundBy: 0)
-        XCTAssertTrue(saved.waitForExistence(timeout: 5))
-        let viewChanges = app.collectionViews["recipe-list"].buttons["View draft changes"]
-        XCTAssertTrue(viewChanges.exists)
-        viewChanges.tap()
-        let changes = app.navigationBars["Draft changes"]
-        XCTAssertTrue(changes.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Name"].exists)
-        XCTAssertTrue(app.staticTexts["My offline soup"].exists)
-        XCTAssertFalse(app.staticTexts["No recipe changes"].exists)
-        changes.buttons["Done"].tap()
-        XCTAssertTrue(changes.waitForNonExistence(timeout: 5))
-        saved.tap()
-        // One native query checks both existence and exact restored text.
-        XCTAssertTrue(UIReadiness.waitForValue("My offline soup", matching: app.textFields.matching(identifier: "Name")), "Cold restoration must retain the complete draft name")
+        app.typeText(title)
+        return app
+    }
+
+    @MainActor
+    private func savedDraft(_ title: String, in app: XCUIApplication) -> XCUIElement {
+        app.collectionViews["recipe-list"].buttons.matching(identifier: "saved-draft-\(title)").element(boundBy: 0)
     }
 
     @MainActor
