@@ -690,12 +690,13 @@ final class OnionaryUITests: OnionaryUITestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        app.buttons["Choose a recipe"].tap()
+        try tapNavigation("Recipes", in: app)
         try selectRecipe(in: app)
-        app.buttons["preview-cook"].tap()
-        XCTAssertTrue(app.buttons["Cooking options"].waitForExistence(timeout: 5))
-        app.buttons["Cooking options"].tap()
-        app.buttons["Share recipe copy"].tap()
+        // Preview offers the same sharing sheet without changing the active
+        // recipe or depending on a native menu animation.
+        let share = app.buttons["Share recipe copy"]
+        XCTAssertTrue(share.waitForExistence(timeout: 5))
+        share.tap()
         let createLink = app.buttons["create-recipe-share"]
         XCTAssertTrue(createLink.waitForExistence(timeout: 5))
         createLink.tap()
