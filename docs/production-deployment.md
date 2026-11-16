@@ -38,9 +38,12 @@ Successful main CI runs create a stable release, bumping the highest version's
 minor component by default (`v0.2.0-rc.3` becomes `v0.3.0`). Merged PR title and
 body supply release title and notes. Labels `release:patch` / `release:major`
 opt into other increments. Re-runs reuse an existing stable tag on that commit.
-The release publishes matching versioned, main and latest Docker images. An
-explicit screenshot workflow dispatch on the tag attaches marketing assets;
-this avoids relying on tag events suppressed for GITHUB_TOKEN-created tags.
+The backend/browser publication job pushes `:main` and the immutable commit
+image. The stable release waits for all CI gates. The same workflow packages
+four verified screenshot ZIPs on PRs and on main. Main publishes matching
+versioned, main and latest Docker images, then creates the GitHub release with
+those build artifacts attached. This works in one run even when GitHub
+suppresses tag events created by its workflow token.
 
 Unicode deployment fixes: [selfhosted !30](https://gitlab.com/malaber-ansible/selfhosted/-/merge_requests/30)
 and [infra !38](https://gitlab.com/Malaber/infra/-/merge_requests/38).
