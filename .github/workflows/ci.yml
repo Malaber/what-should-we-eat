@@ -98,19 +98,15 @@ jobs:
             device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            shard: testRecipePreviewAndChecklistSurviveFolds
+            shard: testRecipeDraftSurvivesFolds,testRecipePreviewAndChecklistSurviveFolds
+            capture: testRecipePreviewAndChecklistSurviveFolds
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
             shard: testMarketingScreenshots
+            capture: testMarketingScreenshots
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            shard: testRecipeDraftSurvivesFolds
-          - profile: duo
-            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            shard: testKitchenShoppingChecksSurviveFolds
-          - profile: duo
-            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            shard: testExpiredSessionKeepsAdaptiveNavigationReachable
+            shard: testExpiredSessionKeepsAdaptiveNavigationReachable,testKitchenShoppingChecksSurviveFolds
     runs-on: xcode-27
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
@@ -162,9 +158,9 @@ jobs:
           retention-days: 14
       - name: Preserve passing Duo screenshot results
         uses: actions/upload-artifact@v4
-        if: matrix.profile == 'duo' && (matrix.shard == 'testMarketingScreenshots' || matrix.shard == 'testRecipePreviewAndChecklistSurviveFolds')
+        if: matrix.profile == 'duo' && matrix.capture != ''
         with:
-          name: onionary-duo-result-${{ matrix.shard }}
+          name: onionary-duo-result-${{ matrix.capture }}
           path: ${{ runner.temp }}/onionary-tests/duo/${{ matrix.shard }}/Onionary.xcresult/
           if-no-files-found: error
           retention-days: 14

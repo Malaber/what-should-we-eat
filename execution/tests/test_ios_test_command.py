@@ -116,11 +116,12 @@ if 'xcodebuild' in sys.argv:
         assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '240'
 
 
-def test_hosted_duo_jobs_each_select_one_declared_case(tmp_path):
+def test_hosted_duo_jobs_select_each_declared_case_once(tmp_path):
     workflow = (IOS.parents[1] / '.github/workflows/ci.yml').read_text()
-    shards = re.findall(r'^\s+shard: (test\w+)$', workflow, re.MULTILINE)
+    shards = re.findall(r'^\s+shard: (test\w+(?:,test\w+)*)$', workflow, re.MULTILINE)
     cases = re.findall(r'\bfunc\s+(test\w+)\s*\(', (IOS / 'UITests/OnionaryDuoTests.swift').read_text())
-    assert shards and sorted(shards) == sorted(cases)
+    assert len(shards) == 3
+    assert sorted(case for shard in shards for case in shard.split(',')) == sorted(cases)
 
     bins = tmp_path / 'bin'
     bins.mkdir()
@@ -145,12 +146,15 @@ if 'xcodebuild' in sys.argv:
     unknown = subprocess.run(['bash', str(SCRIPT), '--test-only'],
                              env={**env, 'SIMULATOR_TEST_SHARD': 'testNonexistent'})
     assert unknown.returncode == 2
+    malformed = subprocess.run(['bash', str(SCRIPT), '--test-only'],
+                               env={**env, 'SIMULATOR_TEST_SHARD': f'{cases[0]},'})
+    assert malformed.returncode == 2
 
     runs = [json.loads(line) for line in capture.read_text().splitlines()]
     assert len(runs) == len(shards)
     for shard, run in zip(shards, runs, strict=True):
         assert [arg for arg in run if arg.startswith('-only-testing:')] == [
-            f'-only-testing:OnionaryUITests/OnionaryDuoTests/{shard}'
+            f'-only-testing:OnionaryUITests/OnionaryDuoTests/{case}' for case in shard.split(',')
         ]
         assert run[run.index('-resultBundlePath') + 1].endswith(f'/duo/{shard}/Onionary.xcresult')
         assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '360'

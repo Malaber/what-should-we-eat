@@ -89,8 +89,10 @@ The mandatory testLiveActivityStartAndStop explicitly launches with
 the final Off assertion. testCookingModeWithFixtureBackend runs the same full
 cycle against the fixture separately. Both cases must pass on ordinary profiles;
 neither is skipped or accepted as a replacement for the other. Release builds
-exclude the fixture and always construct the Apple backend. There are 29 ordinary
-UI cases and six Duo cases after adding this coverage.
+exclude the fixture and always construct the Apple backend. Widget snapshots
+from these fixtures stay inside the app's temporary container. The fixture
+still persists and displays meal-plan data, while the release app writes to
+its shared container and requests a WidgetKit timeline reload.
 
 Follow the global GitHub CI Monitoring and Automatic Fixes workflow. Complete
 local checks, commit/push, then use an attached, bounded shell watcher:
@@ -372,13 +374,13 @@ the next test ran. Shard 1 owns the marketing captures. Unit tests verify
 that each device's shards include every declared case exactly once. Both
 profiles apply the same ordinary and menu case limits.
 
-Duo uses one standard GitHub runner per native case. In run 43818237211 the
-first two guests on the shared runner passed, but the third stalled loading
-Accessibility before XCTest could register the case. VM isolation removes
-successive SpringBoard, accessibility and Instruments sessions from one host.
-Keep all five cases required. The shell contract test checks that each case
-declared in `OnionaryDuoTests` has exactly one matrix entry and matching result
-path. Export the Duo outer and unfolded screenshots from the two passing
+Duo uses three standard runners with one simulator startup per runner. Pair
+draft restoration with the fold checklist, and session expiry with kitchen
+shopping. The marketing case has its own runner. Each case resets its app
+fixture and establishes its starting hinge position. Two-case shards reuse
+the native XCTest session, avoiding two cold startup transitions. The shell
+contract test checks that all five declared cases run exactly once. Export
+the Duo outer and unfolded screenshots from the passing marketing and fold
 result bundles in the same workflow. The capture job needs all native jobs.
 
 GitHub-hosted build, native test, result export and archive jobs use Xcode
@@ -448,12 +450,13 @@ Leave the disposable simulator shut down after creation. Let the bounded
 XCTest command boot the destination and own app installation and runner startup.
 On main run 43811873620, the iPhone had completed an explicit preboot. Its device
 entered Booting again under XCTest, then the Instruments service connection
-timed out before any case ran. Startup is still bounded at 600 seconds. Keep
+timed out before any case ran. Startup is bounded at 600 seconds locally and
+900 seconds on GitHub-hosted runners. Keep
 guest readiness probes out of the launch path. XCTest class setup records
 `ProcessInfo.operatingSystemVersionString` once the native runner initializes.
 Preserve the original failure and diagnostics before disposing an owned device.
 `test.sh` never deletes caller-supplied devices. Keep all profiles, runtime pins,
-and test deadlines. Use one invocation per selected suite or Duo case.
+and test deadlines. Use one invocation per selected suite or Duo shard.
 
 Verify offline-save recovery and draft change descriptions in separate native
 cases. Recovery must still observe the save error, retain the exact edited name

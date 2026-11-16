@@ -45,11 +45,19 @@ if [[ "$device_type" == *iPhone-Duo ]]; then
   duo_cases=$(sed -nE 's/^[[:space:]]*(@MainActor[[:space:]]+)?func (test[A-Za-z0-9_]+)\(\).*/\2/p' UITests/OnionaryDuoTests.swift)
   [[ -n "$duo_cases" ]] || { echo 'No Duo test cases found' >&2; exit 1; }
   if [[ "$shard" != all ]]; then
-    if ! grep -Fxq -- "$shard" <<< "$duo_cases"; then
-      echo "Unknown Duo test case: $shard" >&2
+    if [[ ! "$shard" =~ ^test[A-Za-z0-9_]+(,test[A-Za-z0-9_]+)*$ ]]; then
+      echo "Invalid Duo test selection: $shard" >&2
       exit 2
     fi
-    duo_cases=$shard
+    IFS=, read -r -a selected_cases <<< "$shard"
+    duo_filters=()
+    for scenario in "${selected_cases[@]}"; do
+      if ! grep -Fxq -- "$scenario" <<< "$duo_cases"; then
+        echo "Unknown Duo test case: $scenario" >&2
+        exit 2
+      fi
+      duo_filters+=("-only-testing:OnionaryUITests/OnionaryDuoTests/$scenario")
+    done
   fi
 else
   case "$shard" in
@@ -143,12 +151,14 @@ elif [[ "$device_type" != *iPhone-Duo ]]; then
   done <<< "$native_cases"
   [[ ${#tests[@]} -gt 0 ]] || { echo "No UI tests found in shard $shard" >&2; exit 1; }
   run_tests "$result_dir" 180 240 "${tests[@]}"
-elif [[ -n "${SIMULATOR_ID:-}" && "$shard" == all ]]; then
+elif [[ "$shard" != all ]]; then
+  # Hosted scenarios each reset their app fixture and establish their own
+  # hinge pose. Run the selected group in one native startup on this job.
+  run_tests "$result_dir/duo/$shard" 360 360 "${duo_filters[@]}"
+elif [[ -n "${SIMULATOR_ID:-}" ]]; then
   run_tests "$result_dir" 360 360 -only-testing:OnionaryUITests/OnionaryDuoTests
 else
-  # Each fold scenario starts with a clean SpringBoard/AX session. Reusing the
-  # guest forces XCTest to terminate a process tracked by the previous display.
-  # CI selects one case per VM. Local full runs use the Duo source order.
+  # Local full runs start a clean guest per case in source order.
   while IFS= read -r scenario; do
     if [[ -z "$simulator_id" ]]; then create_simulator; fi
     run_tests "$result_dir/duo/$scenario" 360 360 "-only-testing:OnionaryUITests/OnionaryDuoTests/$scenario"

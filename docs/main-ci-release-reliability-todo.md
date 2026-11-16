@@ -163,3 +163,14 @@ Debug UI fixtures now write weekly widget snapshots inside the test app's
 temporary container. They keep exercising meal-plan fetches and persistence
 without starting the system widget host or sharing demo meals. The cooking
 mode and kitchen-plan UI cases passed with that isolation enabled.
+
+[Run 43954638198](https://github.com/Malaber/what-should-we-eat/actions/runs/43954638198)
+passed the revised cooking-mode case. An iPhone sharing case spent two
+60-second waits inside the cooking menu before it could create the link. Open
+the same native sharing sheet from Recipe Preview and keep creation and
+revocation checks. Another iPhone shard failed on app launch. Three Duo shards
+failed before starting a case and the fold case spent its budget on repeated
+accessibility lookups and waits after display changes. Check the current
+window after folding and capture the checked cover and inside screens once.
+Group the five Duo cases across three standard runners to avoid two independent
+XCTest startups while preserving the case deadlines and screenshot gate.
