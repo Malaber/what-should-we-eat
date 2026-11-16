@@ -3,8 +3,9 @@
 - [x] Trace all three failed iOS jobs from [main CI](https://github.com/Malaber/what-should-we-eat/actions/runs/43811873620) to their original XCTest logs.
 - [x] Let XCTest boot the pinned simulator for each session. Keep the standard runners, selectors, case deadlines and failure diagnostics.
 - [x] Separate offline save/cold restoration from the saved-draft changes sheet. Keep both flows in the native phone and tablet suites.
+- [x] Isolate each Duo case on its own standard runner. Export both display sizes from the passing screenshot and fold results of that run.
 - [x] Verify GHCR publishing and exercise stable screenshot packaging on PRs. Publish the stable GitHub release with all four ZIPs after its matching image is pushed.
-- [x] Run focused local verification. Swift 50, Python harness 86, release/artifact tests 10. iPad passed both draft cases. iPhone passed cold boot and offline draft restoration.
+- [x] Run focused local verification. Swift 50, Python harness 87, release/artifact tests 10. iPhone and iPad passed both draft cases. Duo fold and screenshot cases passed locally on the simulator RC selected by Xcode. The stable Duo runtime is verified by hosted CI.
 - [ ] Verify the stable GitHub release and versioned GHCR image after the follow-up merges and main CI passes.
 
 The merged commit and RC 32 have the same Git tree. In the failing main run,
@@ -17,3 +18,9 @@ GHCR returned the same multi-architecture manifest for `main` and
 `sha-f1e1b9752947c015151389511355191d26972ee8`. Image digest
 `sha256:5108a1193b14f0f3544ecab4f9078084da8ec4e9dae55bcd77f3df78486a21d9`.
 The stable GitHub release job was skipped after the iOS failures.
+
+[PR run 43818237211](https://github.com/Malaber/what-should-we-eat/actions/runs/43818237211)
+passed the Duo fold and marketing cases on 27.1 build 24A94425. The third
+guest on the same runner stalled loading Accessibility before the suite
+started. The same passing result bundles produced and validated the combined
+Duo artwork locally.

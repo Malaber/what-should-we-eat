@@ -101,7 +101,23 @@ jobs:
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
             runtime: '27.1'
-            shard: all
+            shard: testRecipePreviewAndChecklistSurviveFolds
+          - profile: duo
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
+            runtime: '27.1'
+            shard: testMarketingScreenshots
+          - profile: duo
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
+            runtime: '27.1'
+            shard: testRecipeDraftSurvivesFolds
+          - profile: duo
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
+            runtime: '27.1'
+            shard: testKitchenShoppingChecksSurviveFolds
+          - profile: duo
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
+            runtime: '27.1'
+            shard: testExpiredSessionKeepsAdaptiveNavigationReachable
     runs-on: xcode-27
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
@@ -131,7 +147,7 @@ jobs:
           mkdir -p "$TEST_RESULTS_DIR/DerivedData"
           tar -xzf "$RUNNER_TEMP/onionary-test-products.tar.gz" -C "$TEST_RESULTS_DIR/DerivedData"
           bash ios/Onionary/Scripts/test.sh --test-only
-      - if: matrix.shard == '1' || matrix.profile == 'duo'
+      - if: matrix.shard == '1'
         run: pip install -r marketing/requirements.txt
       - name: Export captures from this test run
         if: matrix.shard == '1'
@@ -148,30 +164,19 @@ jobs:
             !.tmp/marketing/${{ matrix.profile }}/attachments/**
           if-no-files-found: error
           retention-days: 14
-      - name: Export validated iPhone Duo scenes
-        if: matrix.profile == 'duo'
-        env:
-          DUO_RESULTS: ${{ runner.temp }}/onionary-tests/duo
-        run: |
-          python3 execution/marketing_screenshots.py \
-            --result-bundle "$DUO_RESULTS/testMarketingScreenshots/Onionary.xcresult" \
-            --duo-fold-result "$DUO_RESULTS/testRecipePreviewAndChecklistSurviveFolds/Onionary.xcresult" \
-            --family duo --output .tmp/marketing/duo --defer-creative
-      - uses: actions/upload-artifact@v4
-        if: matrix.profile == 'duo'
+      - name: Preserve passing Duo screenshot results
+        uses: actions/upload-artifact@v4
+        if: matrix.profile == 'duo' && (matrix.shard == 'testMarketingScreenshots' || matrix.shard == 'testRecipePreviewAndChecklistSurviveFolds')
         with:
-          name: onionary-capture-duo-en-US
-          path: |
-            .tmp/marketing/duo/
-            !.tmp/marketing/duo/attachments/**
-            !.tmp/marketing/duo/fold/**
+          name: onionary-duo-result-${{ matrix.shard }}
+          path: ${{ runner.temp }}/onionary-tests/duo/${{ matrix.shard }}/Onionary.xcresult/
           if-no-files-found: error
           retention-days: 14
       - name: Preserve simulator test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: onionary-ios-test-results-${{ matrix.profile }}${{ matrix.shard != 'all' && format('-{0}', matrix.shard) || '' }}
+          name: onionary-ios-test-results-${{ matrix.profile }}-${{ matrix.shard }}
           path: |
             ${{ runner.temp }}/onionary-tests/Onionary.xcresult
             ${{ runner.temp }}/onionary-tests/*.log
@@ -180,8 +185,44 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  appstore-screenshots:
+  duo-captures:
     needs: ios
+    runs-on: xcode-27
+    timeout-minutes: 15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install -r marketing/requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: onionary-duo-result-testMarketingScreenshots
+          path: ${{ runner.temp }}/DuoMarketing.xcresult
+      - uses: actions/download-artifact@v4
+        with:
+          name: onionary-duo-result-testRecipePreviewAndChecklistSurviveFolds
+          path: ${{ runner.temp }}/DuoFold.xcresult
+      - name: Export validated iPhone Duo scenes
+        run: |
+          python3 execution/marketing_screenshots.py \
+            --result-bundle "$RUNNER_TEMP/DuoMarketing.xcresult" \
+            --duo-fold-result "$RUNNER_TEMP/DuoFold.xcresult" \
+            --family duo --output .tmp/marketing/duo --defer-creative
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onionary-capture-duo-en-US
+          path: |
+            .tmp/marketing/duo/
+            !.tmp/marketing/duo/attachments/**
+            !.tmp/marketing/duo/fold/**
+          if-no-files-found: error
+          retention-days: 14
+
+  appstore-screenshots:
+    needs: [ios, duo-captures]
     uses: ./.github/workflows/screenshots.yml
     permissions:
       contents: write

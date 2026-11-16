@@ -113,6 +113,46 @@ if 'xcodebuild' in sys.argv:
         assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '180'
 
 
+def test_hosted_duo_jobs_each_select_one_declared_case(tmp_path):
+    workflow = (IOS.parents[1] / '.github/workflows/ci.yml').read_text()
+    shards = re.findall(r'^\s+shard: (test\w+)$', workflow, re.MULTILINE)
+    cases = re.findall(r'\bfunc\s+(test\w+)\s*\(', (IOS / 'UITests/OnionaryDuoTests.swift').read_text())
+    assert shards and sorted(shards) == sorted(cases)
+
+    bins = tmp_path / 'bin'
+    bins.mkdir()
+    capture = tmp_path / 'args.jsonl'
+    python = bins / 'python3'
+    python.write_text(f'''#!{sys.executable}
+import json, os, sys
+if '--test-products' in sys.argv:
+    print(sys.argv[-1] + '/Onionary_iphonesimulator27.1-arm64.xctestrun')
+if 'xcodebuild' in sys.argv:
+    with open(os.environ['CAPTURE_ARGS'], 'a') as output:
+        output.write(json.dumps(sys.argv) + '\\n')
+''')
+    python.chmod(0o755)
+    env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
+           'CAPTURE_ARGS': str(capture), 'SIMULATOR_ID': 'test-only',
+           'SIMULATOR_DEVICE_TYPE': 'com.apple.CoreSimulator.SimDeviceType.iPhone-Duo',
+           'TEST_RESULTS_DIR': str(tmp_path / 'results')}
+    for shard in shards:
+        subprocess.run(['bash', str(SCRIPT), '--test-only'],
+                       env={**env, 'SIMULATOR_TEST_SHARD': shard}, check=True)
+    unknown = subprocess.run(['bash', str(SCRIPT), '--test-only'],
+                             env={**env, 'SIMULATOR_TEST_SHARD': 'testNonexistent'})
+    assert unknown.returncode == 2
+
+    runs = [json.loads(line) for line in capture.read_text().splitlines()]
+    assert len(runs) == len(shards)
+    for shard, run in zip(shards, runs, strict=True):
+        assert [arg for arg in run if arg.startswith('-only-testing:')] == [
+            f'-only-testing:OnionaryUITests/OnionaryDuoTests/{shard}'
+        ]
+        assert run[run.index('-resultBundlePath') + 1].endswith(f'/duo/{shard}/Onionary.xcresult')
+        assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '360'
+
+
 @pytest.mark.parametrize('failure_stage', ['none', 'build', 'app', 'plan', 'test'])
 @pytest.mark.parametrize('runtime_override', [None, '27.1'])
 @pytest.mark.parametrize('diagnostics_fail', [False, True])

@@ -361,7 +361,16 @@ This limits how many consecutive app replacements share one device. The iPad
 failure occurred when XCTest attempted to terminate the previous app before
 the next test ran. Shard 1 owns the marketing captures. Unit tests verify
 that each device's shards include every declared case exactly once. The
-same per-case time limits and the existing Duo fold isolation still apply.
+same per-case time limits apply.
+
+Duo uses one standard GitHub runner per native case. In run 43818237211 the
+first two guests on the shared runner passed, but the third stalled loading
+Accessibility before XCTest could register the case. VM isolation removes
+successive SpringBoard, accessibility and Instruments sessions from one host.
+Keep all five cases required. The shell contract test checks that each case
+declared in `OnionaryDuoTests` has exactly one matrix entry and matching result
+path. Export the Duo outer and unfolded screenshots from the two passing
+result bundles in the same workflow. The capture job needs all native jobs.
 
 The standard GitHub runner uses the default 12 GB iPad Pro 13-inch M5
 device profile. Xcode's two profiles have the same device model and screen
