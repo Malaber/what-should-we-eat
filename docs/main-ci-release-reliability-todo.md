@@ -75,7 +75,13 @@ and reactivating the app after backgrounding. Four other Duo cases passed.
 
 ## iOS 27.2 and Duo follow-up
 
-- [ ] Diagnose the red native checks on PR #11 and verify Apple's exact 27.2 simulator builds.
-- [ ] Use Xcode 27.2 for build, test and archive. Select the matching 27.2 runtime build by device profile and test both builds sharing an OS version.
-- [ ] Document the migration from Xcode 26.x, including older device support, local setup, Duo layout checks and screenshot capture.
+- [x] Diagnose the red native checks on PR #11 and verify Apple's exact 27.2 simulator builds.
+- [x] Use Xcode 27.2 for build, test and archive. Select the matching 27.2 runtime build by device profile and test both builds sharing an OS version.
+- [x] Document the migration from Xcode 26.x, including older device support, local setup, Duo layout checks and screenshot capture.
 - [ ] Run local checks, push to PR #11 and verify required checks on the new commit. Record any unresolved hosted runner failure.
+
+[Run 43850578132](https://github.com/Malaber/what-should-we-eat/actions/runs/43850578132)
+timed out before the iPad XCTest suite started. Its Duo marketing case could
+not launch the app during XCTest. Apple's catalog lists `24B8117` and
+`24B91016s` as separate stable iOS 27.2 simulator builds. The former is the
+runner's regular iPhone/iPad runtime. The latter adds the Duo profile.

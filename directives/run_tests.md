@@ -380,12 +380,11 @@ declared in `OnionaryDuoTests` has exactly one matrix entry and matching result
 path. Export the Duo outer and unfolded screenshots from the two passing
 result bundles in the same workflow. The capture job needs all native jobs.
 
-GitHub-hosted build, native test, result export and archive jobs select Xcode
-27.2 (27B52). The standard `xcode-27` label served macOS 27.0.1 and 27.2 on
-adjacent jobs. Both runner images include this exact Xcode build. At 54e2648 an
-isolated Duo guest on the older image failed in Instruments before XCTest
-timed out waiting for Accessibility. Developer machines and local TestFlight
-retain the existing Xcode 27.1 preflight.
+GitHub-hosted build, native test, result export and archive jobs use Xcode
+27.2 (27B52). Local verification and TestFlight use the same Xcode pin. The
+standard `xcode-27` label served macOS 27.0.1 and 27.2 on adjacent jobs. Both
+runner images include this Xcode build. See [Xcode and Duo migration](../docs/ios-duo-migration.md)
+for local setup and advice for apps coming from 26.x.
 
 The standard GitHub runner uses the default 12 GB iPad Pro 13-inch M5
 device profile. Xcode's two profiles have the same device model and screen
@@ -432,22 +431,13 @@ Wait for the previous test command to return, including disposable-device
 cleanup, before starting the next profile. A finalized xcresult alone does not
 mean its simulator has been deleted or its disk reserve has been released.
 
-Pass SIMULATOR_RUNTIME from the matrix and require the exact compatible build
-from execution/ios_runtime.py. Hosted phone and iPad use the SDK-matched
-27.2/24B8117. On run 43823651650 the older 27.0 runtime was preflight-verified,
-then remounted at a different path during iPad testing. The runner inventory
-also verified that 24B8117 supports both current device models. Local phone and
-iPad retain 27.0/24A434 by default. Duo uses stable 27.1/24A94425. Apple's catalog
-identifies 24A94232 as the 27.1 RC; do not silently substitute it. RC/stable can
-coexist under one OS identifier. Select the compatible build's absolute runtime
-bundle path when creating the disposable device, regardless of inventory order.
-For matching SDK versions, ensure_ios_runtimes.py checks CoreSimulator's SDK
-mapping too. It may set `simctl runtime match set iphoneos27.1 24A94425 --sdkBuild
-<sdk-build>` only on disposable GitHub-hosted runners, then verifies the result.
-Local/self-hosted preferences are never changed automatically: a mismatch fails
-with the explicit command for a developer to review. Never delete runtimes to
-force selection. Catalog reference:
-https://devimages-cdn.apple.com/downloads/xcode/simulators/index2.dvtdownloadableindex
+Pass `SIMULATOR_DEVICE_TYPE` from the matrix. `execution/ios_runtime.py` pins
+iOS 27.2 build 24B8117 for iPhone and iPad, and 24B91016s for Duo. Both builds
+share a runtime identifier. Match the exact build and its supported device
+list. Create the device using the selected absolute runtime bundle path.
+`ensure_ios_runtimes.py` verifies the SDK mapping and may set the selected
+build on a disposable GitHub-hosted runner. Local and self-hosted mismatches
+report the exact mapping command for the developer to run.
 
 Before creating a device, resolve_simulator.py validates ProductVersion and
 ProductBuildVersion in the selected bundle's
