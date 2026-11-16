@@ -122,3 +122,9 @@ The revised renewal case also passed on iPhone in 52 seconds. That shard
 failed independently when XCTest could not terminate the previous app process
 to start the draft-details case. Both revised input and edit tests passed
 locally in 39 and 51 seconds respectively.
+
+[Run 43890269707](https://github.com/Malaber/what-should-we-eat/actions/runs/43890269707)
+passed the iPhone ingredient picker and edit-progress checks. In a separate
+case XCTest repeatedly queried the editor's retired navigation bar after
+Cancel. Assert the cooking toolbar is actionable and the ingredient is still
+checked after cancellation.

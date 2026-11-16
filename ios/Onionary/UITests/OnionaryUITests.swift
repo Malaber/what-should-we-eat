@@ -662,7 +662,8 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertEqual(ingredient.value as? String, "Checked")
         let feedback = app.staticTexts["recent-action"]
         XCTAssertTrue(feedback.waitForExistence(timeout: 5))
-        app.buttons["cooking-options"].tap()
+        let cookingOptions = app.buttons["cooking-options"]
+        cookingOptions.tap()
         let edit = app.buttons["Edit recipe"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
         // Expire the real feedback while the native menu is open. Accessibility
@@ -674,8 +675,10 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         let editor = app.navigationBars["Edit recipe"]
         editor.buttons["Cancel"].tap()
-        XCTAssertTrue(editor.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["cooking-options"].waitForExistence(timeout: 5))
+        // The cooking control must be actionable again after cancellation.
+        // Resolving the dismissed bar can block on its retired AX hierarchy.
+        XCTAssertTrue(cookingOptions.waitForExistence(timeout: 5))
+        XCTAssertTrue(cookingOptions.isHittable)
         XCTAssertEqual(ingredient.value as? String, "Checked")
     }
 
