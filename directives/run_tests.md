@@ -432,12 +432,12 @@ cleanup, before starting the next profile. A finalized xcresult alone does not
 mean its simulator has been deleted or its disk reserve has been released.
 
 Pass `SIMULATOR_DEVICE_TYPE` from the matrix. `execution/ios_runtime.py` pins
-iOS 27.2 build 24B8117 for iPhone and iPad, and 24B91016s for Duo. Both builds
-share a runtime identifier. Match the exact build and its supported device
-list. Create the device using the selected absolute runtime bundle path.
-`ensure_ios_runtimes.py` verifies the SDK mapping and may set the selected
-build on a disposable GitHub-hosted runner. Local and self-hosted mismatches
-report the exact mapping command for the developer to run.
+iOS 27.2 build 24B8117 for iPhone and iPad, and 24B91016s for Duo. Duo can use
+the suffix `-iPhone19-4` on the runtime identifier. Match the exact build and
+its supported device list, and create the device by absolute bundle path.
+For the generic identifier, `ensure_ios_runtimes.py` verifies the SDK mapping
+and may set it on a disposable GitHub-hosted runner. Local and self-hosted
+mismatches report the command for the developer to run.
 
 Before creating a device, resolve_simulator.py validates ProductVersion and
 ProductBuildVersion in the selected bundle's

@@ -7,18 +7,16 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-from execution.ios_runtime import (
-    DEFAULT_DEVICE, RUNTIME_VERSION, available_runtime, runtime_build, runtime_identifier, verify_runtime_bundle,
-)
+from execution.ios_runtime import DEFAULT_DEVICE, RUNTIME_VERSION, available_runtime, runtime_build, verify_runtime_bundle
 
 
 def select_runtime(runtimes, device_type=DEFAULT_DEVICE, version=None):
     version = version or RUNTIME_VERSION
-    bundle = available_runtime(runtimes, version, device_type)
-    if bundle is None:
+    runtime = available_runtime(runtimes, version, device_type)
+    if runtime is None:
         build = runtime_build(version, device_type)
         raise ValueError(f'Install iOS {version} ({build}) compatible with {device_type}; no fallback to a different runtime is allowed.')
-    return bundle
+    return runtime
 
 
 def main():
@@ -33,15 +31,16 @@ def main():
         simctl.extend(['--set', str(args.device_set)])
     runtimes = json.loads(subprocess.check_output([*simctl, 'list', 'runtimes', '--json']))['runtimes']
     runtime = select_runtime(runtimes, args.device_type, args.runtime)
+    bundle = runtime['bundlePath']
     version = args.runtime or RUNTIME_VERSION
-    verify_runtime_bundle(runtime, version, args.device_type)
-    print(f"Verified installed iOS {version} ({runtime_build(version, args.device_type)}) at {runtime} for {args.device_type}", file=sys.stderr)
+    verify_runtime_bundle(bundle, version, args.device_type)
+    print(f"Verified installed iOS {version} ({runtime_build(version, args.device_type)}) at {bundle} for {args.device_type}", file=sys.stderr)
     if args.create:
         print(subprocess.check_output([*simctl, 'create', 'Onionary Isolated Tests',
-                                       args.device_type, runtime], text=True).strip())
+                                       args.device_type, bundle], text=True).strip())
     else:
         devices = json.loads(subprocess.check_output([*simctl, 'list', 'devices', 'available', '--json']))['devices']
-        matching = [d for d in devices.get(runtime_identifier(version), [])
+        matching = [d for d in devices.get(runtime['identifier'], [])
                     if d.get('deviceTypeIdentifier') == args.device_type]
         if not matching:
             raise SystemExit('No matching simulator exists; use --create.')

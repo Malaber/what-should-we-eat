@@ -28,25 +28,31 @@ def test_installer_checks_device_and_exact_stable_pin(monkeypatch, build, device
                  'bundlePath': '/runtimes/installed.simruntime',
                  'supportedDeviceTypes': [{'identifier': device}]}
     monkeypatch.setattr(installer, 'read_command', lambda *a: json.dumps({'runtimes': [installed]}))
-    assert installer.available('27.2', device) == (installed['bundlePath'] if expected else None)
+    assert installer.available('27.2', device) == (installed if expected else None)
 
 
-@pytest.mark.parametrize('installed_after_download', [False, True])
-def test_download_exit_cannot_override_exact_availability(monkeypatch, installed_after_download):
+@pytest.mark.parametrize('registered_as', [None, 'generic', 'device-specific'])
+def test_download_exit_cannot_override_exact_availability(monkeypatch, registered_as):
     version, device = '27.2', ios_runtime.DUO_DEVICE
     bundle = '/runtimes/duo.simruntime'
-    availability = iter([None, bundle if installed_after_download else None])
-    monkeypatch.setattr(installer, 'available', lambda *a: next(availability))
+    identifier = ios_runtime.runtime_identifier(version)
+    if registered_as == 'device-specific':
+        identifier += '-iPhone19-4'
+    runtime = {'identifier': identifier, 'bundlePath': bundle}
+    availability = iter([None, runtime if registered_as else None])
+    monkeypatch.setattr(installer, 'available', lambda *a, **kwargs: next(availability))
     calls, stages = [], []
     monkeypatch.setattr(installer.subprocess, 'run', lambda command, **kwargs:
                         calls.append(command) or subprocess.CompletedProcess(command, 70))
     monkeypatch.setattr(installer, 'verify_runtime_bundle', lambda *a: stages.append(('verify', a)))
     monkeypatch.setattr(installer, 'configure_sdk_runtime', lambda *a: stages.append(('map', a)))
     monkeypatch.setattr(installer, 'prepare_runtime_cache', lambda *a: stages.append(('cache', a)))
-    if installed_after_download:
+    if registered_as:
         installer.ensure(version, device)
-        assert stages == [('verify', (bundle, version, device)), ('map', (version, device)),
-                          ('cache', (version, device))]
+        expected = [('verify', (bundle, version, device))]
+        if registered_as == 'generic':
+            expected.append(('map', (version, device)))
+        assert stages == expected + [('cache', (version, device))]
     else:
         with pytest.raises(RuntimeError, match=r'24B91016s.*exit 70'):
             installer.ensure(version, device)

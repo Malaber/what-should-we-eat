@@ -27,7 +27,8 @@
 | iPhone 17 Pro and iPad Pro | 27.2 | `24B8117` |
 | iPhone Duo | 27.2 | `24B91016s` |
 
-Both stable builds use `com.apple.CoreSimulator.SimRuntime.iOS-27-2`.
+The regular runtime uses `com.apple.CoreSimulator.SimRuntime.iOS-27-2`.
+Duo can register as `com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4`.
 Inspect `supportedDeviceTypes` in `xcrun simctl list runtimes --json` and match
 the exact `buildversion`. `simctl create` accepts the full runtime bundle path.
 Onionary checks that path, confirms its `SystemVersion.plist`, and prepares the
@@ -46,13 +47,14 @@ python3 execution/check_ios_build_environment.py --xcode-only
 python3 ios/Onionary/Scripts/ensure_ios_runtimes.py --device-type "$duo"
 ```
 
-If preflight reports a different SDK mapping, run the command it prints to
-select the Duo build, then rerun preflight. Choose the regular build before
-switching back to iPhone or iPad tests. Each hosted job runs one profile and
-configures its own mapping.
+The Duo-specific runtime identifier keeps its own device profile and needs
+no change to the regular SDK mapping. If Duo registers under the generic
+identifier and preflight reports a mapping mismatch, run the command it
+prints, then rerun preflight. Each hosted job runs one device profile.
 
 ```bash
 sdk_build=$(xcrun --sdk iphonesimulator --show-sdk-build-version)
+# Run the mapping command only if preflight requested it.
 xcrun simctl runtime match set iphoneos27.2 24B91016s --sdkBuild "$sdk_build"
 python3 ios/Onionary/Scripts/ensure_ios_runtimes.py --device-type "$duo"
 SIMULATOR_DEVICE_TYPE="$duo" bash ios/Onionary/Scripts/test.sh

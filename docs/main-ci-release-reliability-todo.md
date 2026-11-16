@@ -85,3 +85,10 @@ timed out before the iPad XCTest suite started. Its Duo marketing case could
 not launch the app during XCTest. Apple's catalog lists `24B8117` and
 `24B91016s` as separate stable iOS 27.2 simulator builds. The former is the
 runner's regular iPhone/iPad runtime. The latter adds the Duo profile.
+
+[Run 43855117738](https://github.com/Malaber/what-should-we-eat/actions/runs/43855117738)
+registered the exact download on the new runner image and reported it already
+downloaded on the older image. The availability check only accepted the
+generic iOS runtime identifier. Recognize Duo's device-specific identifier
+while still requiring the stable build, supported device type and bundle
+system metadata.

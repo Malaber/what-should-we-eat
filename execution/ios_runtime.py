@@ -21,15 +21,18 @@ def runtime_build(version, device_type=DEFAULT_DEVICE):
 
 def available_runtime(runtimes, version, device_type):
     build = runtime_build(version, device_type)
-    bundles = sorted(runtime['bundlePath'] for runtime in runtimes
-                     if runtime.get('isAvailable')
-                     and runtime.get('identifier') == runtime_identifier(version)
-                     and runtime.get('version') == version
-                     and runtime.get('buildversion') == build
-                     and Path(runtime.get('bundlePath', '')).is_absolute()
-                     and any(device.get('identifier') == device_type
-                             for device in runtime.get('supportedDeviceTypes', [])))
-    return next(iter(bundles), None)
+    generic_id = runtime_identifier(version)
+    identifiers = {generic_id, f'{generic_id}-iPhone19-4'} if device_type == DUO_DEVICE else {generic_id}
+    matching = (runtime for runtime in runtimes
+                if runtime.get('isAvailable')
+                and runtime.get('identifier') in identifiers
+                and runtime.get('version') == version
+                and runtime.get('buildversion') == build
+                and Path(runtime.get('bundlePath') or '').is_absolute()
+                and any(device.get('identifier') == device_type
+                        for device in runtime.get('supportedDeviceTypes', [])))
+    return min(matching, key=lambda runtime: (runtime['identifier'] == generic_id, runtime['bundlePath']),
+               default=None)
 
 
 def runtime_identifier(version):
@@ -80,9 +83,10 @@ def prepare_runtime_cache(version, device_type=DEFAULT_DEVICE, *, environ=None):
             and environ.get('RUNNER_OS') == 'macOS'):
         return  # Never generate/remove developer or self-hosted runtime caches.
     runtimes = json.loads(read_command('xcrun', 'simctl', 'list', 'runtimes', '--json'))['runtimes']
-    bundle = available_runtime(runtimes, version, device_type)
-    if bundle is None:
+    runtime = available_runtime(runtimes, version, device_type)
+    if runtime is None:
         raise RuntimeError(f'Cannot prepare cache: iOS {version} ({expected}) for {device_type} is unavailable.')
+    bundle = runtime['bundlePath']
     verify_runtime_bundle(bundle, version, device_type)
     # A non-forced update is an immediate no-op when the cache exists. Never
     # invalidate caches or prepare every installed OS; only this pinned bundle.
