@@ -372,6 +372,14 @@ declared in `OnionaryDuoTests` has exactly one matrix entry and matching result
 path. Export the Duo outer and unfolded screenshots from the two passing
 result bundles in the same workflow. The capture job needs all native jobs.
 
+GitHub-hosted build, native test, result export and archive jobs select Xcode
+27.2 (27B52). The standard `xcode-27` label served macOS 27.0.1 and 27.2 on
+adjacent jobs. Both runner images include this exact Xcode build. At 54e2648 an
+isolated Duo guest on the older image failed in Instruments before XCTest
+timed out waiting for Accessibility. Keep the same device/runtime builds and
+verify the newer toolchain through the native jobs. Developer machines and
+local TestFlight retain the existing Xcode 27.1 preflight.
+
 The standard GitHub runner uses the default 12 GB iPad Pro 13-inch M5
 device profile. Xcode's two profiles have the same device model and screen
 geometry. The default profile has a lower simulated memory class. The

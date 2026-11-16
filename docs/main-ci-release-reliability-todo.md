@@ -4,6 +4,7 @@
 - [x] Let XCTest boot the pinned simulator for each session. Keep the standard runners, selectors, case deadlines and failure diagnostics.
 - [x] Separate offline save/cold restoration from the saved-draft changes sheet. Keep both flows in the native phone and tablet suites.
 - [x] Isolate each Duo case on its own standard runner. Export both display sizes from the passing screenshot and fold results of that run.
+- [x] Pin the hosted build, test, export and archive toolchain to Xcode 27.2 across both GitHub runner images.
 - [x] Verify GHCR publishing and exercise stable screenshot packaging on PRs. Publish the stable GitHub release with all four ZIPs after its matching image is pushed.
 - [x] Run focused local verification. Swift 50, Python harness 87, release/artifact tests 10. iPhone and iPad passed both draft cases. Duo fold and screenshot cases passed locally on the simulator RC selected by Xcode. The stable Duo runtime is verified by hosted CI.
 - [ ] Verify the stable GitHub release and versioned GHCR image after the follow-up merges and main CI passes.
@@ -24,3 +25,11 @@ passed the Duo fold and marketing cases on 27.1 build 24A94425. The third
 guest on the same runner stalled loading Accessibility before the suite
 started. The same passing result bundles produced and validated the combined
 Duo artwork locally.
+
+The [isolated Duo shopping job](https://github.com/Malaber/what-should-we-eat/actions/runs/43821715191/job/133147310015)
+also failed before the app launched. The Instruments service connection was
+interrupted and XCTest timed out waiting for Accessibility. Adjacent jobs
+using `xcode-27` received two different macOS images. The iPad job on the
+newer image lost a preflight-verified 27.0 runtime during app installation.
+The hosted toolchain
+pin advances to the same [Xcode build available on both images](https://github.com/actions/runner-images/releases).

@@ -5,11 +5,17 @@ import plistlib
 import struct
 
 
-def test_xcode_matches_version_and_build():
-    validate_xcode('Xcode 27.1\nBuild version 27A9275\n')
-    for output in ['Xcode 26.6\nBuild version 17F113', 'Xcode 27.1\nBuild version other']:
-        with pytest.raises(ValueError, match='xcode-27 runner'):
-            validate_xcode(output)
+@pytest.mark.parametrize('environment,version,build', [
+    ({}, '27.1', '27A9275'),
+    ({'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'self-hosted'}, '27.1', '27A9275'),
+    ({'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted'}, '27.2', '27B52'),
+])
+def test_xcode_matches_version_and_build(environment, version, build):
+    validate_xcode(f'Xcode {version}\nBuild version {build}\n', environment)
+    other = '27.1' if version == '27.2' else '27.2'
+    for output in (f'Xcode {other}\nBuild version {build}', f'Xcode {version}\nBuild version other'):
+        with pytest.raises(ValueError, match=f'Xcode_{version}'):
+            validate_xcode(output, environment)
 
 
 def test_disk_guard_accepts_boundary_and_rejects_insufficient_space():
