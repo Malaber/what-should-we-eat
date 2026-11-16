@@ -156,8 +156,8 @@ The 1800-second UI-suite budget begins at the first literal "Test Suite 'Selecte
 tests' started at " log line. If startup or execution expires, the wrapper
 returns 124 and preserves the log. If macOS rejects a group signal, signal the
 owned command directly and bound the remaining cleanup wait.
-The ordinary case limit defaults to 180 seconds. The two native menu tests
-may request 240 seconds, and Duo cases have 360 seconds. Workflow timeouts
+The ordinary case limit defaults to 180 seconds. The two native menu cases
+and the edit-progress case request 240 seconds, and Duo cases have 360 seconds. Workflow timeouts
 remain unchanged. This keeps
 platform startup out of the UI budget without retrying or skipping a test.
 Reference: https://developer.apple.com/library/archive/technotes/tn2339/_index.html

@@ -553,7 +553,11 @@ final class OnionaryUITests: OnionaryUITestCase {
         let app = try openStepEditor()
         let instruction = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-")).element(boundBy: 0)
         XCTAssertTrue(instruction.waitForExistence(timeout: 5))
-        instruction.tap()
+        // Hit the editable interior. XCTest's leading-edge accessibility
+        // activation point can leave this multiline field unfocused on iOS 27.2.
+        instruction.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5),
+                      "The instruction field must open the keyboard")
         let insert = app.buttons["insert-ingredient-amount"]
         XCTAssertTrue(insert.waitForExistence(timeout: 5))
         insert.tap()
@@ -596,6 +600,9 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testEditRecipeKeepsCookingProgress() throws {
+        // A hosted iPad passed the save and progress checks before its
+        // three-minute timer expired during XCTest's finalization.
+        executionTimeAllowance = 240
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--editing-active-recipe", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()

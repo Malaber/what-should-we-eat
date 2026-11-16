@@ -110,3 +110,15 @@ Home and foreground events, expiry and checked progress assertions.
 The revised test passed locally in 51 seconds on the installed iOS 27.0
 simulator. All eight Duo screenshots exported from the two 27.2 XCTest
 bundles and passed release validation.
+
+[Run 43883677267](https://github.com/Malaber/what-should-we-eat/actions/runs/43883677267)
+passed the revised renewal case on iPad. An iPhone screenshot from that run
+shows the instruction field after its native tap with the keyboard still
+closed. Tap the center of the field and verify keyboard focus before looking
+up the ingredient menu. The separate iPad edit-progress case completed its
+assertions and timed out during XCTest finalization. Give that case the same
+four-minute allowance as the two other measured cases.
+The revised renewal case also passed on iPhone in 52 seconds. That shard
+failed independently when XCTest could not terminate the previous app process
+to start the draft-details case. Both revised input and edit tests passed
+locally in 39 and 51 seconds respectively.
