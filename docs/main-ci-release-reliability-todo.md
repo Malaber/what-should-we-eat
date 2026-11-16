@@ -60,3 +60,15 @@ timed out before launching the iPad test suite. Xcode encountered preset watch
 devices with unavailable runtimes while looking up destinations. Give each
 hosted native job a separate CoreSimulator device set containing its test
 destination and use that set for diagnostics and cleanup.
+
+[Run 43842490646](https://github.com/Malaber/what-should-we-eat/actions/runs/43842490646)
+confirmed that the private set removes the unrelated destination warnings.
+On two iPad workers, CoreSimulator still shut down after opening the
+testmanagerd connection and before XCTest could start any case. One Duo
+worker stalled preparing Accessibility. The iPhone edit-progress case
+reached the save prompt after two minute-long waits for native menu
+animations. Use the recipe preview's edit toolbar for this case. The
+separate feedback-expiry case continues to exercise the cooking menu.
+The same run separately lost the iPhone import app's process during launch
+and timed out in iPad automation while dismissing the deletion confirmation
+and reactivating the app after backgrounding. Four other Duo cases passed.

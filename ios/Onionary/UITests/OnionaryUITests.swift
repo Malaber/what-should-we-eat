@@ -603,8 +603,13 @@ final class OnionaryUITests: OnionaryUITestCase {
         // tests. Begin from an active adventure to focus on the save decision.
         let checkedIngredient = app.buttons["ingredient-1"]
         XCTAssertTrue(UIReadiness.waitForValue("Checked", matching: app.buttons.matching(identifier: "ingredient-1")))
-        app.buttons["cooking-options"].tap()
-        app.buttons["Edit recipe"].tap()
+        // Editing from the preview still updates the active recipe's saved
+        // copy. The feedback test separately covers the native cooking menu.
+        try tapNavigation("Recipes", in: app)
+        try selectRecipe(in: app)
+        let edit = app.navigationBars["Recipe preview"].buttons["Edit recipe"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        edit.tap()
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Total minutes"].exists)
@@ -617,7 +622,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         // its containing app instead of resolving the field again while the
         // keyboard's remote accessibility process is transitioning.
         app.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldName.count) + "Edited pasta")
-        // Verify the exact name in the saved recipe list. Reading the text
+        // Verify the exact name in the saved recipe preview. Reading the text
         // field again here makes XCTest query the transient keyboard hierarchy.
         app.navigationBars["Edit recipe"].buttons["Save"].tap()
         // Resolve the actual presented alert, not an app-wide button during
@@ -627,10 +632,10 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(keepProgress.waitForExistence(timeout: 5))
         keepProgress.tap()
         XCTAssertTrue(reloadAlert.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.collectionViews["recipe-preview"].staticTexts["Edited pasta"].waitForExistence(timeout: 5))
+        try tapNavigation("Cooking", in: app)
         XCTAssertTrue(app.staticTexts["Lemon & cheese pasta"].waitForExistence(timeout: 5))
         XCTAssertEqual(checkedIngredient.value as? String, "Checked")
-        UIReadiness.button("Recipes", in: app).tap()
-        XCTAssertTrue(app.collectionViews["recipe-list"].staticTexts["Edited pasta"].waitForExistence(timeout: 5))
     }
 
     @MainActor
