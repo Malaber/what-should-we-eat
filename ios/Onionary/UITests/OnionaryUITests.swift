@@ -632,10 +632,16 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    func testCookingOptionsSurviveActionFeedbackExpiry() throws {
+    func testCookingOptionsSurviveActionFeedbackExpiry() {
         let clock = "de.malaber.onionary.uitest.feedback." + UUID().uuidString
-        let app = try openCookingRecipe(environment: ["ONIONARY_TEST_FEEDBACK_CLOCK": clock])
+        let app = XCUIApplication()
+        // Start at the active adventure. The independent cooking tests cover
+        // starting it from Preview, while this test exercises the native menu.
+        app.launchArguments = ["--ui-testing", "--reset", "--active-recipe", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchEnvironment = ["ONIONARY_TEST_FEEDBACK_CLOCK": clock]
+        app.launch()
         let ingredient = app.buttons["ingredient-1"]
+        XCTAssertTrue(ingredient.waitForExistence(timeout: 5))
         ingredient.tap()
         XCTAssertEqual(ingredient.value as? String, "Checked")
         let feedback = app.staticTexts["recent-action"]
@@ -647,12 +653,12 @@ final class OnionaryUITests: OnionaryUITestCase {
         // round trips must not race a four-second clock on a loaded CI host.
         XCTAssertEqual(notify_post(clock), UInt32(NOTIFY_STATUS_OK))
         XCTAssertTrue(feedback.waitForNonExistence(timeout: 8))
-        XCTAssertTrue(edit.exists)
         edit.tap()
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
-        app.buttons["Cancel"].tap()
-        XCTAssertTrue(name.waitForNonExistence(timeout: 5))
+        let editor = app.navigationBars["Edit recipe"]
+        editor.buttons["Cancel"].tap()
+        XCTAssertTrue(editor.waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["cooking-options"].waitForExistence(timeout: 5))
         XCTAssertEqual(ingredient.value as? String, "Checked")
     }
@@ -789,10 +795,9 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    private func openCookingRecipe(environment: [String: String] = [:]) throws -> XCUIApplication {
+    private func openCookingRecipe() throws -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launchEnvironment = environment
         app.launch()
         app.buttons["Choose a recipe"].tap()
         try selectRecipe(in: app)

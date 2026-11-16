@@ -465,10 +465,12 @@ final class AppStore {
             }
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: JSONSerialization.data(withJSONObject: recipes))
         }
-        if ProcessInfo.processInfo.arguments.contains("--editing-active-recipe"),
-           let recipe = kitchen.recipes.first, let ingredient = recipe.ingredients.first {
+        let arguments = ProcessInfo.processInfo.arguments
+        let editingActiveRecipe = arguments.contains("--editing-active-recipe")
+        if (editingActiveRecipe || arguments.contains("--active-recipe")), let recipe = kitchen.recipes.first {
             kitchen.visit(recipe)
-            if let current = kitchen.adventures.firstIndex(where: { $0.id == recipe.id }) {
+            if editingActiveRecipe, let ingredient = recipe.ingredients.first,
+               let current = kitchen.adventures.firstIndex(where: { $0.id == recipe.id }) {
                 kitchen.adventures[current].toggle(key: "ingredient-\(ingredient.id)", label: ingredient.name)
             }
         }

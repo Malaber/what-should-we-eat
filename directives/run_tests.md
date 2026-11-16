@@ -463,6 +463,13 @@ change-description case uses the actual form, then verifies the saved change in
 the scoped list. Combining both flows exceeded the iPad budget while XCTest
 resolved app-wide text labels in the nested sheet.
 
+The cooking-menu feedback regression launches with an active adventure and
+checks an ingredient through the real UI. The normal recipe selection path
+is covered by the cooking scenarios. On run 43826496965 XCTest waited twice
+for a 60-second animation notification while its menu was open. Keep the
+controlled feedback expiry, edit sheet, cancellation and checked-progress
+assertions, with the editor's own navigation bar as the sheet boundary.
+
 On disposable GitHub-hosted macOS runners, ensure_ios_runtimes.py also prepares
 the exact installed runtime's dyld shared cache before any device is created.
 Use simctl runtime dyld_shared_cache update for the validated pinned bundle,
