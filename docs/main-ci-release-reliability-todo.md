@@ -99,3 +99,14 @@ The marketing suite took 576 seconds to start. On the same run an iPad
 worker reached the 600-second startup limit, then macOS rejected the kill
 signal for the process group. Extend hosted startup to 900 seconds. Keep
 case and execution limits and preserve timeout diagnostics if group signaling fails.
+
+[Run 43861371753](https://github.com/Malaber/what-should-we-eat/actions/runs/43861371753)
+passed all five native Duo cases, two iPad shards, and the Xcode 27.2 device
+archive. The archive declares minimum iOS 17.0 for the app and both extensions.
+Two iPhone workers lost the simulator session before starting XCTest. Another
+spent 176 seconds on UI setup before pressing Home in the silent renewal case.
+Begin that case from the existing active recipe fixture. Keep the real tap,
+Home and foreground events, expiry and checked progress assertions.
+The revised test passed locally in 51 seconds on the installed iOS 27.0
+simulator. All eight Duo screenshots exported from the two 27.2 XCTest
+bundles and passed release validation.

@@ -2,6 +2,10 @@
 
 ## Move a project from Xcode 26.x
 
+An Xcode 26.x build can run on iPhone Duo. Apple recommends rebuilding with
+Xcode 27.1 or later for the full inner-display layout and Duo simulator support.
+[Apple's Duo developer guidance](https://developer.apple.com/videos/play/tech-talks/111461/)
+
 1. Install Xcode 27.2 (27B52) on an Apple silicon Mac running macOS Tahoe 26.6
    or later. Select it per shell with `DEVELOPER_DIR`. Use the same version
    for simulator test compilation, XCTest, screenshot export and device archives.
