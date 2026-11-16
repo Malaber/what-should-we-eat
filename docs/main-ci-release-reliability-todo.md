@@ -128,3 +128,16 @@ passed the iPhone ingredient picker and edit-progress checks. In a separate
 case XCTest repeatedly queried the editor's retired navigation bar after
 Cancel. Assert the cooking toolbar is actionable and the ingredient is still
 checked after cancellation.
+
+[Run 43896492355](https://github.com/Malaber/what-should-we-eat/actions/runs/43896492355)
+lost an iPhone simulator session before launching the first test. Two other
+sessions terminated a test after Instruments stopped responding. The iPhone
+cooking-menu case also stalled re-resolving the same native menu row after
+feedback expiration. Tap the position of the visible row and verify the editor
+opens and cancels. An iPad capture timed out after visiting Settings and
+returning to Cooking. Start captures from the light marketing fixture, as Duo
+already does, and leave appearance picker coverage in its own test.
+The revised iPhone menu and both capture cases passed locally, and the phone
+and tablet capture bundles validated. Four Duo cases passed on this run. The
+shopping job was canceled before XCTest reported a case. Both passing Duo
+capture results exported and validated all eight screenshots.

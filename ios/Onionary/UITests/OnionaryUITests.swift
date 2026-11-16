@@ -666,11 +666,19 @@ final class OnionaryUITests: OnionaryUITestCase {
         cookingOptions.tap()
         let edit = app.buttons["Edit recipe"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        XCTAssertTrue(edit.isHittable)
+        // Retain the visible menu row's position across the feedback update.
+        // Resolving the native menu's AX snapshot again can stall on CI.
+        let editFrame = edit.frame
+        let appFrame = app.frame
+        let editTarget = app.coordinate(withNormalizedOffset: .zero).withOffset(
+            CGVector(dx: editFrame.midX - appFrame.minX, dy: editFrame.midY - appFrame.minY)
+        )
         // Expire the real feedback while the native menu is open. Accessibility
         // round trips must not race a four-second clock on a loaded CI host.
         XCTAssertEqual(notify_post(clock), UInt32(NOTIFY_STATUS_OK))
         XCTAssertTrue(feedback.waitForNonExistence(timeout: 8))
-        edit.tap()
+        editTarget.tap()
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         let editor = app.navigationBars["Edit recipe"]
@@ -778,9 +786,8 @@ final class OnionaryUITests: OnionaryUITestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        try tapNavigation("Settings", in: app)
-        XCTAssertEqual(app.buttons["appearance-picker"].value as? String, "Light")
-        try tapNavigation("Cooking", in: app)
+        // The marketing fixture already sets light appearance. Start with the
+        // same capture flow as Duo; appearance settings have their own test.
         try captureMarketingScenes(in: app) { identifier in
             if identifier == "recipe-1" { try selectRecipe(in: app) }
             else { app.buttons[identifier].tap() }
