@@ -426,16 +426,23 @@ Before creating a device, resolve_simulator.py validates ProductVersion and
 ProductBuildVersion in the selected bundle's
 Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist.
 Missing or mismatched metadata is terminal before any device is created.
-Compile against the shutdown disposable simulator, then call bounded
-`simctl bootstatus <id> -b` once, followed directly by XCTest. Do not insert
-`simctl getenv` or `simctl spawn` readiness/metadata probes after boot: the added
-getenv gate at 2bb8b14 stalled on all six cold CI guests before any UI test ran,
-despite passing on a warm local simulator. Native runner class setup records
-ProcessInfo.operatingSystemVersionString in the retained test log, in-process
-after XCTest initializes. This log is evidence, not a host-side boot gate.
-Preserve original command failures and owned-device cleanup. Caller-supplied
-devices are neither booted nor deleted by test.sh. Keep all profiles mandatory,
-with no latest/RC fallback or new test retries/deadlines.
+Leave the disposable simulator shut down after creation. Let the bounded
+XCTest command boot the destination and own app installation and runner startup.
+On main run 43811873620, the iPhone had completed an explicit preboot. Its device
+entered Booting again under XCTest, then the Instruments service connection
+timed out before any case ran. Startup is still bounded at 600 seconds. Keep
+guest readiness probes out of the launch path. XCTest class setup records
+`ProcessInfo.operatingSystemVersionString` once the native runner initializes.
+Preserve the original failure and diagnostics before disposing an owned device.
+`test.sh` never deletes caller-supplied devices. Keep all profiles, runtime pins,
+and test deadlines. Use one invocation per selected suite or Duo case.
+
+Verify offline-save recovery and draft change descriptions in separate native
+cases. Recovery must still observe the save error, retain the exact edited name
+and enabled Save action, cold-relaunch the app, and reopen the saved draft. The
+change-description case uses the actual form, then verifies the saved change in
+the scoped list. Combining both flows exceeded the iPad budget while XCTest
+resolved app-wide text labels in the nested sheet.
 
 On disposable GitHub-hosted macOS runners, ensure_ios_runtimes.py also prepares
 the exact installed runtime's dyld shared cache before any device is created.
