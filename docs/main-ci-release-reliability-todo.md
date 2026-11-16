@@ -72,3 +72,10 @@ separate feedback-expiry case continues to exercise the cooking menu.
 The same run separately lost the iPhone import app's process during launch
 and timed out in iPad automation while dismissing the deletion confirmation
 and reactivating the app after backgrounding. Four other Duo cases passed.
+
+## iOS 27.2 and Duo follow-up
+
+- [ ] Diagnose the red native checks on PR #11 and verify Apple's exact 27.2 simulator builds.
+- [ ] Use Xcode 27.2 for build, test and archive. Select the matching 27.2 runtime build by device profile and test both builds sharing an OS version.
+- [ ] Document the migration from Xcode 26.x, including older device support, local setup, Duo layout checks and screenshot capture.
+- [ ] Run local checks, push to PR #11 and verify required checks on the new commit. Record any unresolved hosted runner failure.
