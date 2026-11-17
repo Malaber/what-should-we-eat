@@ -385,13 +385,13 @@ uses the passing iPhone, iPad and Duo captures from the same workflow.
 
 ### Temporary hosted simulator exception
 
-Starting 2026-11-17, iPhone shards 1 and 2 and all three Duo shards run as
-advisory jobs on the standard runner. Runs 43963567984 and 44024736503
-timed out during the first app launch in these jobs, before application
-assertions. Keep their logs and result bundles. Recheck on **2026-11-24**
-and **2026-12-01**. Record each run's runner image version and XCTest results.
-Restore the jobs to the required matrix once they pass repeatably on the
-updated standard image.
+Starting 2026-11-17, all nine hosted native UI shards run as advisory jobs.
+Standard-runner simulator initialization and launch failures moved across
+iPhone, iPad and Duo in runs 43963567984, 44024736503, 44031347022 and
+44035610976. Keep the diagnostics and result bundles. Recheck on
+**2026-11-24** and **2026-12-01**. Record the runner image version and XCTest
+results at each recheck. Restore required status once the affected shards
+pass repeatably on the updated standard image.
 
 Before each push during the exception, run every advisory case locally and
 verify the result bundles passed. Run these commands from the repository
@@ -407,14 +407,19 @@ run_local_shard() {
 }
 run_local_shard iphone-1 iPhone-17-Pro 1 &&
   run_local_shard iphone-2 iPhone-17-Pro 2 &&
+  run_local_shard iphone-3 iPhone-17-Pro 3 &&
+  run_local_shard ipad-1 iPad-Pro-13-inch-M5-12GB 1 &&
+  run_local_shard ipad-2 iPad-Pro-13-inch-M5-12GB 2 &&
+  run_local_shard ipad-3 iPad-Pro-13-inch-M5-12GB 3 &&
   run_local_shard duo-fold iPhone-Duo testRecipeDraftSurvivesFolds,testRecipePreviewAndChecklistSurviveFolds &&
   run_local_shard duo-kitchen iPhone-Duo testExpiredSessionKeepsAdaptiveNavigationReachable,testKitchenShoppingChecksSurviveFolds &&
   run_local_shard duo-marketing iPhone-Duo testMarketingScreenshots
 ```
 
-The backend, web, remaining native shards, build and archive still gate the
-production image and GitHub release. When hosted captures are available, all
-four bundles must pass validation before attachment. If a hosted capture is
+The backend, web, Swift tests, build and archive still gate the production
+image and GitHub release. Each device's marketing job produces its own
+captures. When all three are available, the four release bundles must pass
+validation before attachment. If a hosted capture is
 unavailable, the main workflow publishes the image and release and records
 the missing screenshot bundles in the job summary. For an authorized RC,
 publish the four bundles from passing same-source runs as a GitHub prerelease.

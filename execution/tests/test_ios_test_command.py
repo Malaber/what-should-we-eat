@@ -165,28 +165,32 @@ def test_advisory_ios_jobs_do_not_gate_production_release():
     jobs = dict(re.findall(r'^  ([a-z][a-z-]*):\n((?:^[ ]{4}[^\n]*\n|^\n)*)', workflow, re.MULTILINE))
     expected = {
         ('iphone', '2'),
+        ('iphone', '3'),
+        ('ipad', '2'),
+        ('ipad', '3'),
         ('duo', 'testRecipeDraftSurvivesFolds,testRecipePreviewAndChecklistSurviveFolds'),
         ('duo', 'testExpiredSessionKeepsAdaptiveNavigationReachable,testKitchenShoppingChecksSurviveFolds'),
     }
     rows = r"^\s+- profile: (\w+)\n\s+device: [^\n]+\n\s+shard: '?(\w[\w,]*)"
     assert set(re.findall(rows, jobs['ios-advisory'], re.MULTILINE)) == expected
-    required = set(re.findall(rows, jobs['ios'], re.MULTILINE))
-    assert required == {('iphone', '3'), ('ipad', '1'), ('ipad', '2'), ('ipad', '3')}
-    assert 'continue-on-error: true' in jobs['ios-advisory']
-    assert 'continue-on-error' not in jobs['ios']
-    for name in ('ios', 'ios-advisory', 'iphone-captures', 'duo-captures'):
+    assert 'ios' not in jobs
+    capture_jobs = ('iphone-captures', 'ipad-captures', 'duo-captures')
+    for name in ('ios-advisory', *capture_jobs):
         assert 'uses: ./.github/actions/native-ios' in jobs[name]
-    for name in ('iphone-captures', 'duo-captures'):
         assert 'continue-on-error: true' in jobs[name]
+    for name in capture_jobs:
         assert "capture: 'true'" in jobs[name]
         assert 'outputs.captures' in jobs[name]
         assert f"needs.{name}.outputs.available == 'true'" in jobs['appstore-screenshots']
     assert "shard: '1'" in jobs['iphone-captures']
+    assert "shard: '1'" in jobs['ipad-captures']
     assert 'shard: testMarketingScreenshots' in jobs['duo-captures']
-    assert 'needs: [ios, iphone-captures, duo-captures]' in jobs['appstore-screenshots']
+    assert 'needs: [iphone-captures, ipad-captures, duo-captures]' in jobs['appstore-screenshots']
     release = jobs['release-main']
-    assert 'needs: [backend, browser, ios, ios-archive, publish-image, html-format, appstore-screenshots]' in release
-    for name in ('backend', 'browser', 'ios', 'ios-archive', 'publish-image', 'html-format'):
+    required = ('backend', 'browser', 'ios-build', 'ios-archive', 'publish-image', 'html-format')
+    assert f"needs: [{', '.join((*required, 'appstore-screenshots'))}]" in release
+    for name in required:
+        assert 'continue-on-error' not in jobs[name]
         assert f"needs.{name}.result == 'success'" in release
     assert "needs.appstore-screenshots.result == 'skipped'" in release
     assert "needs.appstore-screenshots.result == 'success'" in release

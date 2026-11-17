@@ -83,38 +83,6 @@ jobs:
           name: onionary-ios-test-build-log
           path: ${{ runner.temp }}/onionary-build/build.log
           retention-days: 7
-  ios:
-    name: ios (${{ matrix.profile }}, ${{ matrix.shard }})
-    needs: ios-build
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - profile: iphone
-            device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
-            shard: '3'
-          - profile: ipad
-            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
-            shard: '1'
-          - profile: ipad
-            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
-            shard: '2'
-          - profile: ipad
-            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
-            shard: '3'
-    runs-on: xcode-27
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
-    timeout-minutes: 65
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/native-ios
-        with:
-          profile: ${{ matrix.profile }}
-          device: ${{ matrix.device }}
-          shard: ${{ matrix.shard }}
-          capture: ${{ matrix.shard == '1' }}
-
   ios-advisory:
     name: ios advisory (${{ matrix.profile }}, ${{ matrix.shard }})
     needs: ios-build
@@ -127,6 +95,15 @@ jobs:
           - profile: iphone
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
             shard: '2'
+          - profile: iphone
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
+            shard: '3'
+          - profile: ipad
+            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
+            shard: '2'
+          - profile: ipad
+            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
+            shard: '3'
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
             shard: testRecipeDraftSurvivesFolds,testRecipePreviewAndChecklistSurviveFolds
@@ -165,6 +142,26 @@ jobs:
           shard: '1'
           capture: 'true'
 
+  ipad-captures:
+    name: ios advisory (ipad, 1)
+    needs: ios-build
+    continue-on-error: true
+    runs-on: xcode-27
+    timeout-minutes: 65
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    outputs:
+      available: ${{ steps.native.outputs.captures }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/native-ios
+        id: native
+        with:
+          profile: ipad
+          device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
+          shard: '1'
+          capture: 'true'
+
   duo-captures:
     name: ios advisory (duo, testMarketingScreenshots)
     needs: ios-build
@@ -186,10 +183,10 @@ jobs:
           capture: 'true'
 
   appstore-screenshots:
-    needs: [ios, iphone-captures, duo-captures]
+    needs: [iphone-captures, ipad-captures, duo-captures]
     if: >-
-      !cancelled() && needs.ios.result == 'success' &&
-      needs.iphone-captures.outputs.available == 'true' &&
+      !cancelled() && needs.iphone-captures.outputs.available == 'true' &&
+      needs.ipad-captures.outputs.available == 'true' &&
       needs.duo-captures.outputs.available == 'true'
     uses: ./.github/workflows/screenshots.yml
     permissions:
@@ -266,12 +263,12 @@ jobs:
           cache-to: type=gha,mode=max
 
   release-main:
-    needs: [backend, browser, ios, ios-archive, publish-image, html-format, appstore-screenshots]
+    needs: [backend, browser, ios-build, ios-archive, publish-image, html-format, appstore-screenshots]
     if: >-
       !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       github.repository == 'Malaber/what-should-we-eat' &&
       needs.backend.result == 'success' && needs.browser.result == 'success' &&
-      needs.ios.result == 'success' && needs.ios-archive.result == 'success' &&
+      needs.ios-build.result == 'success' && needs.ios-archive.result == 'success' &&
       needs.publish-image.result == 'success' && needs.html-format.result == 'success' &&
       (needs.appstore-screenshots.result == 'success' || needs.appstore-screenshots.result == 'skipped')
     runs-on: ubuntu-latest

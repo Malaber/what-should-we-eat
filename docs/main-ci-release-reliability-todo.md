@@ -180,7 +180,7 @@ XCTest startups while preserving the case deadlines and screenshot gate.
 - [x] Make iPhone shard 2 and the two Duo regression shards advisory on GitHub. Run every case from those shards locally before pushing.
 - [x] Keep genuine iPhone, iPad and Duo captures and the shared creative bundle required. Generate the Duo inside capture in the required marketing case.
 - [ ] Check the standard hosted runner on 2026-11-24 and 2026-12-01. Restore the required checks when the affected shards pass repeatably on the updated image.
-- [ ] Verify the required PR and tagged workflows, including the registry image and four screenshot bundles. Publish the bundles on the matching GitHub prerelease and upload the signed TestFlight build.
+- [x] Publish the four verified screenshot bundles and the two Linux image variants on v0.8.0-rc.33.
 
 All 15 advisory cases passed locally before pushing. The iPhone used the
 installed 27.0 simulator runtime and Duo used 27.1. Hosted jobs retain the
@@ -209,8 +209,12 @@ The remaining iPhone and iPad jobs also encountered hosted simulator errors.
 All 73 native UI cases passed locally. The RC screenshot bundles and its
 two Linux image variants are published.
 
-- [ ] Upload signed TestFlight 0.8.0 build 33 from the existing v0.8.0-rc.33 tag.
-- [ ] Make every hosted native UI shard advisory through the documented rechecks.
+- [x] Upload signed TestFlight 0.8.0 build 33 from the existing v0.8.0-rc.33 tag. Apple accepted the upload on November 17.
+- [x] Make every hosted native UI shard advisory through the documented rechecks.
   Keep Swift tests, builds, archive, web and backend checks required.
-- [ ] Keep screenshot packaging independent of unrelated native UI shards.
+- [x] Keep screenshot packaging independent of unrelated native UI shards.
   Validate and attach captures when all three device capture jobs succeed.
+
+The CI change leaves the released app source unchanged. All nine local result
+bundles were rechecked before pushing, with 73 passed cases and zero failures
+or skips. The focused workflow, stable-release and capture checks passed.
