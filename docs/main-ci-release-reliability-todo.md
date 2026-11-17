@@ -177,7 +177,14 @@ XCTest startups while preserving the case deadlines and screenshot gate.
 
 ## Temporary hosted simulator exception (2026-11-17)
 
-- [ ] Make iPhone shard 2 and the two Duo regression shards advisory on GitHub. Run every case from those shards locally before pushing.
-- [ ] Keep genuine iPhone, iPad and Duo captures and the shared creative bundle required. Generate the Duo inside capture in the required marketing case.
+- [x] Make iPhone shard 2 and the two Duo regression shards advisory on GitHub. Run every case from those shards locally before pushing.
+- [x] Keep genuine iPhone, iPad and Duo captures and the shared creative bundle required. Generate the Duo inside capture in the required marketing case.
 - [ ] Check the standard hosted runner on 2026-11-24 and 2026-12-01. Restore the required checks when the affected shards pass repeatably on the updated image.
 - [ ] Verify the required PR and tagged workflows, including the registry image and four screenshot bundles. Publish the bundles on the matching GitHub prerelease and upload the signed TestFlight build.
+
+All 15 advisory cases passed locally before pushing. The iPhone used the
+installed 27.0 simulator runtime and Duo used 27.1. Hosted jobs retain the
+27.2 pin. The required Duo marketing case also passed locally. Its genuine
+six captures exported successfully and the packaged display sizes validated.
+All 345 Python tests passed, including the release gate and screenshot export
+regressions.
