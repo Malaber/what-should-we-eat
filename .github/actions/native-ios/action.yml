@@ -10,6 +10,13 @@ inputs:
   shard:
     description: Numbered shard or comma-separated Duo test cases.
     required: true
+  capture:
+    description: Export and upload marketing captures from this passing shard.
+    default: 'false'
+outputs:
+  captures:
+    description: Whether verified captures were uploaded.
+    value: ${{ steps.captures.outputs.available }}
 runs:
   using: composite
   steps:
@@ -50,3 +57,39 @@ runs:
         ${{ runner.temp }}/onionary-tests/host-diagnostics/
       if-no-files-found: ignore
       retention-days: 7
+  - name: Install capture dependencies
+    if: inputs.capture == 'true'
+    shell: bash
+    run: pip install -r marketing/requirements.txt
+  - name: Export verified native screenshots
+    if: inputs.capture == 'true'
+    shell: bash
+    env:
+      FAMILY: ${{ inputs.profile }}
+      SHARD: ${{ inputs.shard }}
+    run: |
+      results="$RUNNER_TEMP/onionary-tests"
+      bundle="$results/Onionary.xcresult"
+      options=()
+      if [[ "$FAMILY" == duo ]]; then
+        bundle="$results/duo/$SHARD/Onionary.xcresult"
+        options+=(--duo-fold-result "$bundle")
+      fi
+      python3 execution/marketing_screenshots.py --result-bundle "$bundle" \
+        --family "$FAMILY" --output ".tmp/marketing/$FAMILY" --defer-creative "${options[@]}"
+  - name: Upload verified native screenshots
+    if: inputs.capture == 'true'
+    uses: actions/upload-artifact@v4
+    with:
+      name: onionary-capture-${{ inputs.profile }}-en-US
+      path: |
+        .tmp/marketing/${{ inputs.profile }}/
+        !.tmp/marketing/${{ inputs.profile }}/attachments/**
+        !.tmp/marketing/${{ inputs.profile }}/fold/**
+      if-no-files-found: error
+      retention-days: 14
+  - name: Mark captures available for packaging
+    if: inputs.capture == 'true'
+    id: captures
+    shell: bash
+    run: echo 'available=true' >> "$GITHUB_OUTPUT"

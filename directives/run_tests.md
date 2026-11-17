@@ -380,17 +380,18 @@ shopping. The marketing case has its own runner. Each case resets its app
 fixture and establishes its starting hinge position. Two-case shards reuse
 the native XCTest session, avoiding two cold startup transitions. The shell
 contract test checks that all five declared cases run exactly once. The
-required Duo marketing case captures both displays in its own result bundle.
-The capture job depends on the required native matrix.
+Duo marketing case captures both displays in its own result bundle. Packaging
+uses the passing iPhone, iPad and Duo captures from the same workflow.
 
 ### Temporary hosted simulator exception
 
-Starting 2026-11-17, iPhone shard 2 and both Duo regression shards run as
-advisory jobs on the standard runner. The first app launch in all three jobs
-timed out before any application assertion in run 43963567984. Keep their
-logs and result bundles. Recheck on **2026-11-24** and **2026-12-01**. Record
-each run's runner image version and XCTest results. Restore the jobs to the
-required matrix once they pass repeatably on the updated standard image.
+Starting 2026-11-17, iPhone shards 1 and 2 and all three Duo shards run as
+advisory jobs on the standard runner. Runs 43963567984 and 44024736503
+timed out during the first app launch in these jobs, before application
+assertions. Keep their logs and result bundles. Recheck on **2026-11-24**
+and **2026-12-01**. Record each run's runner image version and XCTest results.
+Restore the jobs to the required matrix once they pass repeatably on the
+updated standard image.
 
 Before each push during the exception, run every advisory case locally and
 verify the result bundles passed. Run these commands from the repository
@@ -404,16 +405,19 @@ run_local_shard() {
     SIMULATOR_DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.$2" \
     SIMULATOR_TEST_SHARD="$3" bash ios/Onionary/Scripts/test.sh --test-only
 }
-run_local_shard iphone-2 iPhone-17-Pro 2 &&
+run_local_shard iphone-1 iPhone-17-Pro 1 &&
+  run_local_shard iphone-2 iPhone-17-Pro 2 &&
   run_local_shard duo-fold iPhone-Duo testRecipeDraftSurvivesFolds,testRecipePreviewAndChecklistSurviveFolds &&
-  run_local_shard duo-kitchen iPhone-Duo testExpiredSessionKeepsAdaptiveNavigationReachable,testKitchenShoppingChecksSurviveFolds
+  run_local_shard duo-kitchen iPhone-Duo testExpiredSessionKeepsAdaptiveNavigationReachable,testKitchenShoppingChecksSurviveFolds &&
+  run_local_shard duo-marketing iPhone-Duo testMarketingScreenshots
 ```
 
-The required jobs still validate the backend, web, build, archive and all
-four screenshot bundles. A merge to main publishes the versioned production
-image and GitHub release after those checks. For a requested pre-merge release,
-publish the four verified ZIP bundles from the exact RC tag's workflow as a
-GitHub prerelease.
+The backend, web, remaining native shards, build and archive still gate the
+production image and GitHub release. When hosted captures are available, all
+four bundles must pass validation before attachment. If a hosted capture is
+unavailable, the main workflow publishes the image and release and records
+the missing screenshot bundles in the job summary. For an authorized RC,
+publish the four bundles from passing same-source runs as a GitHub prerelease.
 
 GitHub-hosted build, native test, result export and archive jobs use Xcode
 27.2 (27B52). Local verification and TestFlight use the same Xcode pin. The

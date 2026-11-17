@@ -62,7 +62,9 @@ def publish_release(directory):
     tag = plan['tag']
     if git('rev-parse', f'refs/tags/{tag}^{{commit}}') != os.environ['GITHUB_SHA']:
         raise ValueError(f'Release tag {tag} does not point to the tested main commit')
-    assets = [directory / f'onionary-appstore-{family}-en-US.zip' for family in RELEASE_FAMILIES]
+    assets = []
+    if directory is not None:
+        assets = [directory / f'onionary-appstore-{family}-en-US.zip' for family in RELEASE_FAMILIES]
     for asset in assets:
         if not asset.is_file() or not asset.stat().st_size:
             raise ValueError(f'Missing release asset: {asset}')
@@ -84,9 +86,11 @@ def publish_release(directory):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--publish-assets', type=Path, help='Publish the prepared release with these verified ZIPs')
+    publication = parser.add_mutually_exclusive_group()
+    publication.add_argument('--publish', action='store_true', help='Publish the prepared release without captures')
+    publication.add_argument('--publish-assets', type=Path, help='Publish the prepared release with these verified ZIPs')
     args = parser.parse_args()
-    if args.publish_assets is None:
-        prepare_release()
-    else:
+    if args.publish or args.publish_assets is not None:
         publish_release(args.publish_assets)
+    else:
+        prepare_release()

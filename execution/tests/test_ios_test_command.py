@@ -160,7 +160,7 @@ if 'xcodebuild' in sys.argv:
         assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '360'
 
 
-def test_advisory_ios_jobs_do_not_gate_release_or_supply_captures():
+def test_advisory_ios_jobs_do_not_gate_production_release():
     workflow = (IOS.parents[1] / '.github/workflows/ci.yml').read_text()
     jobs = dict(re.findall(r'^  ([a-z][a-z-]*):\n((?:^[ ]{4}[^\n]*\n|^\n)*)', workflow, re.MULTILINE))
     expected = {
@@ -171,18 +171,30 @@ def test_advisory_ios_jobs_do_not_gate_release_or_supply_captures():
     rows = r"^\s+- profile: (\w+)\n\s+device: [^\n]+\n\s+shard: '?(\w[\w,]*)"
     assert set(re.findall(rows, jobs['ios-advisory'], re.MULTILINE)) == expected
     required = set(re.findall(rows, jobs['ios'], re.MULTILINE))
-    assert required == {('iphone', '1'), ('iphone', '3'), ('ipad', '1'), ('ipad', '2'), ('ipad', '3'),
-                        ('duo', 'testMarketingScreenshots')}
+    assert required == {('iphone', '3'), ('ipad', '1'), ('ipad', '2'), ('ipad', '3')}
     assert 'continue-on-error: true' in jobs['ios-advisory']
     assert 'continue-on-error' not in jobs['ios']
-    for name in ('ios', 'ios-advisory'):
+    for name in ('ios', 'ios-advisory', 'iphone-captures', 'duo-captures'):
         assert 'uses: ./.github/actions/native-ios' in jobs[name]
-    assert 'onionary-duo-marketing-result' in jobs['ios']
-    assert 'onionary-duo-marketing-result' in jobs['duo-captures']
-    assert 'needs: ios\n' in jobs['duo-captures']
-    assert 'needs: [ios, duo-captures]' in jobs['appstore-screenshots']
-    assert 'needs: [backend, browser, ios, ios-archive, publish-image, html-format, appstore-screenshots]' in jobs['release-main']
-    assert 'push: true' in jobs['release-main']
+    for name in ('iphone-captures', 'duo-captures'):
+        assert 'continue-on-error: true' in jobs[name]
+        assert "capture: 'true'" in jobs[name]
+        assert 'outputs.captures' in jobs[name]
+        assert f"needs.{name}.outputs.available == 'true'" in jobs['appstore-screenshots']
+    assert "shard: '1'" in jobs['iphone-captures']
+    assert 'shard: testMarketingScreenshots' in jobs['duo-captures']
+    assert 'needs: [ios, iphone-captures, duo-captures]' in jobs['appstore-screenshots']
+    release = jobs['release-main']
+    assert 'needs: [backend, browser, ios, ios-archive, publish-image, html-format, appstore-screenshots]' in release
+    for name in ('backend', 'browser', 'ios', 'ios-archive', 'publish-image', 'html-format'):
+        assert f"needs.{name}.result == 'success'" in release
+    assert "needs.appstore-screenshots.result == 'skipped'" in release
+    assert "needs.appstore-screenshots.result == 'success'" in release
+    assert "github.ref == 'refs/heads/main'" in release
+    assert 'push: true' in release
+    assert 'platforms: linux/amd64,linux/arm64' in release
+    assert 'python3 -m execution.release_main --publish\n' in release
+    assert 'python3 -m execution.release_main --publish-assets' in release
 
 
 def test_hosted_xctest_owns_a_private_simulator_set(tmp_path):

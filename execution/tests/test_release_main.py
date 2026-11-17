@@ -18,6 +18,29 @@ def test_main_release_promotes_a_reachable_rc_or_bumps_minor():
     assert release_version(tags, 'major', reachable_candidates=tags[1:3]) == '1.0.0'
 
 
+def test_can_publish_tested_main_when_hosted_captures_are_unavailable(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    from execution import release_main
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv('GITHUB_SHA', 'tested-main')
+    release_main.RELEASE_PLAN.write_text('{"tag":"v0.8.0","title":"Onionary"}')
+    release_main.RELEASE_NOTES.write_text('Release notes')
+    monkeypatch.setattr(release_main, 'git', lambda *args: 'tested-main')
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        return SimpleNamespace(returncode=1 if command[2] == 'view' else 0)
+
+    monkeypatch.setattr(release_main.subprocess, 'run', run)
+    release_main.publish_release(None)
+    assert calls[-1] == ['gh', 'release', 'create', 'v0.8.0', '--verify-tag',
+                         '--title', 'Onionary', '--notes-file', 'release-notes.md']
+    with pytest.raises(ValueError, match='Missing release asset'):
+        release_main.publish_release(tmp_path)
+
+
 def test_release_uses_pr_text_without_shell_and_reuses_tag(monkeypatch, tmp_path):
     import json
     from execution import release_main

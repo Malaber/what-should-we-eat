@@ -92,9 +92,6 @@ jobs:
         include:
           - profile: iphone
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
-            shard: '1'
-          - profile: iphone
-            device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
             shard: '3'
           - profile: ipad
             device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
@@ -105,9 +102,6 @@ jobs:
           - profile: ipad
             device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
             shard: '3'
-          - profile: duo
-            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            shard: testMarketingScreenshots
     runs-on: xcode-27
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
@@ -119,31 +113,7 @@ jobs:
           profile: ${{ matrix.profile }}
           device: ${{ matrix.device }}
           shard: ${{ matrix.shard }}
-      - if: matrix.shard == '1'
-        run: pip install -r marketing/requirements.txt
-      - name: Export captures from this test run
-        if: matrix.shard == '1'
-        env:
-          FAMILY: ${{ matrix.profile }}
-          RESULT_BUNDLE: ${{ runner.temp }}/onionary-tests/Onionary.xcresult
-        run: python3 execution/marketing_screenshots.py --result-bundle "$RESULT_BUNDLE" --family "$FAMILY" --output ".tmp/marketing/$FAMILY" --defer-creative
-      - uses: actions/upload-artifact@v4
-        if: matrix.shard == '1'
-        with:
-          name: onionary-capture-${{ matrix.profile }}-en-US
-          path: |
-            .tmp/marketing/${{ matrix.profile }}/
-            !.tmp/marketing/${{ matrix.profile }}/attachments/**
-          if-no-files-found: error
-          retention-days: 14
-      - name: Preserve passing Duo screenshot results
-        uses: actions/upload-artifact@v4
-        if: matrix.profile == 'duo'
-        with:
-          name: onionary-duo-marketing-result
-          path: ${{ runner.temp }}/onionary-tests/duo/${{ matrix.shard }}/Onionary.xcresult/
-          if-no-files-found: error
-          retention-days: 14
+          capture: ${{ matrix.shard == '1' }}
 
   ios-advisory:
     name: ios advisory (${{ matrix.profile }}, ${{ matrix.shard }})
@@ -175,40 +145,52 @@ jobs:
           device: ${{ matrix.device }}
           shard: ${{ matrix.shard }}
 
-  duo-captures:
-    needs: ios
+  iphone-captures:
+    name: ios advisory (iphone, 1)
+    needs: ios-build
+    continue-on-error: true
     runs-on: xcode-27
-    timeout-minutes: 15
+    timeout-minutes: 65
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    outputs:
+      available: ${{ steps.native.outputs.captures }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/native-ios
+        id: native
         with:
-          python-version: '3.14'
-      - run: pip install -r marketing/requirements.txt
-      - uses: actions/download-artifact@v4
+          profile: iphone
+          device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
+          shard: '1'
+          capture: 'true'
+
+  duo-captures:
+    name: ios advisory (duo, testMarketingScreenshots)
+    needs: ios-build
+    continue-on-error: true
+    runs-on: xcode-27
+    timeout-minutes: 65
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    outputs:
+      available: ${{ steps.native.outputs.captures }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/native-ios
+        id: native
         with:
-          name: onionary-duo-marketing-result
-          path: ${{ runner.temp }}/DuoMarketing.xcresult
-      - name: Export validated iPhone Duo scenes
-        run: |
-          python3 execution/marketing_screenshots.py \
-            --result-bundle "$RUNNER_TEMP/DuoMarketing.xcresult" \
-            --duo-fold-result "$RUNNER_TEMP/DuoMarketing.xcresult" \
-            --family duo --output .tmp/marketing/duo --defer-creative
-      - uses: actions/upload-artifact@v4
-        with:
-          name: onionary-capture-duo-en-US
-          path: |
-            .tmp/marketing/duo/
-            !.tmp/marketing/duo/attachments/**
-            !.tmp/marketing/duo/fold/**
-          if-no-files-found: error
-          retention-days: 14
+          profile: duo
+          device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
+          shard: testMarketingScreenshots
+          capture: 'true'
 
   appstore-screenshots:
-    needs: [ios, duo-captures]
+    needs: [ios, iphone-captures, duo-captures]
+    if: >-
+      !cancelled() && needs.ios.result == 'success' &&
+      needs.iphone-captures.outputs.available == 'true' &&
+      needs.duo-captures.outputs.available == 'true'
     uses: ./.github/workflows/screenshots.yml
     permissions:
       contents: write
@@ -285,7 +267,13 @@ jobs:
 
   release-main:
     needs: [backend, browser, ios, ios-archive, publish-image, html-format, appstore-screenshots]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Malaber/what-should-we-eat'
+    if: >-
+      !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      github.repository == 'Malaber/what-should-we-eat' &&
+      needs.backend.result == 'success' && needs.browser.result == 'success' &&
+      needs.ios.result == 'success' && needs.ios-archive.result == 'success' &&
+      needs.publish-image.result == 'success' && needs.html-format.result == 'success' &&
+      (needs.appstore-screenshots.result == 'success' || needs.appstore-screenshots.result == 'skipped')
     runs-on: ubuntu-latest
     concurrency:
       group: stable-main-release
@@ -299,6 +287,7 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v4
+        if: needs.appstore-screenshots.result == 'success'
         with:
           name: onionary-github-release-assets
           path: ${{ runner.temp }}/release-assets
@@ -327,10 +316,17 @@ jobs:
           build-args: |
             APP_VERSION=${{ steps.release.outputs.version }}
             VCS_REF=${{ github.sha }}
-      - name: Publish GitHub release with verified screenshot bundles
+      - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 -m execution.release_main --publish-assets "$RUNNER_TEMP/release-assets"
+          SCREENSHOT_RESULT: ${{ needs.appstore-screenshots.result }}
+        run: |
+          if [[ "$SCREENSHOT_RESULT" == success ]]; then
+            python3 -m execution.release_main --publish-assets "$RUNNER_TEMP/release-assets"
+          else
+            echo 'Hosted simulator captures were unavailable. Publishing the production release.' >> "$GITHUB_STEP_SUMMARY"
+            python3 -m execution.release_main --publish
+          fi
 
   html-format:
     runs-on: ubuntu-latest
