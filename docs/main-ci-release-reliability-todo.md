@@ -193,6 +193,14 @@ Run 44024736503 hit the same first-launch timeout in iPhone shard 1 and the
 Duo marketing job. The temporary exception also covers these two jobs with
 local verification, subject to the same November 24 and December 1 rechecks.
 
-- [ ] Verify every iPhone shard 1 case and the Duo marketing case locally.
-- [ ] Publish the stable image and release when hosted captures are unavailable.
+- [x] Verify every iPhone shard 1 case and the Duo marketing case locally.
+- [x] Let the main workflow publish the stable image and release when hosted captures are unavailable.
   When hosted captures are available, keep all four bundle validation gates.
+
+All 12 iPhone shard 1 cases passed locally with Xcode 27.2 on the installed
+iOS 27.0 simulator. The Duo marketing case had already passed on 27.1.
+The temporary exception now has 28 local passing cases in total. Local
+iPhone and Duo captures and the passing CI iPad capture produced four
+validated ZIP bundles from the same app, fixtures and artwork sources.
+The final Python suite passed 346 tests, including stable release publication
+with unavailable hosted captures.
