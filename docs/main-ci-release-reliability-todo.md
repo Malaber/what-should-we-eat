@@ -174,3 +174,10 @@ accessibility lookups and waits after display changes. Check the current
 window after folding and capture the checked cover and inside screens once.
 Group the five Duo cases across three standard runners to avoid two independent
 XCTest startups while preserving the case deadlines and screenshot gate.
+
+## Temporary hosted simulator exception (2026-11-17)
+
+- [ ] Make iPhone shard 2 and the two Duo regression shards advisory on GitHub. Run every case from those shards locally before pushing.
+- [ ] Keep genuine iPhone, iPad and Duo captures and the shared creative bundle required. Generate the Duo inside capture in the required marketing case.
+- [ ] Check the standard hosted runner on 2026-11-24 and 2026-12-01. Restore the required checks when the affected shards pass repeatably on the updated image.
+- [ ] Verify the required PR and tagged workflows, including the registry image and four screenshot bundles. Publish the bundles on the matching GitHub prerelease and upload the signed TestFlight build.
