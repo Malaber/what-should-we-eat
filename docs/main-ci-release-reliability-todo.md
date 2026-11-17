@@ -204,3 +204,13 @@ iPhone and Duo captures and the passing CI iPad capture produced four
 validated ZIP bundles from the same app, fixtures and artwork sources.
 The final Python suite passed 346 tests, including stable release publication
 with unavailable hosted captures.
+
+The remaining iPhone and iPad jobs also encountered hosted simulator errors.
+All 73 native UI cases passed locally. The RC screenshot bundles and its
+two Linux image variants are published.
+
+- [ ] Upload signed TestFlight 0.8.0 build 33 from the existing v0.8.0-rc.33 tag.
+- [ ] Make every hosted native UI shard advisory through the documented rechecks.
+  Keep Swift tests, builds, archive, web and backend checks required.
+- [ ] Keep screenshot packaging independent of unrelated native UI shards.
+  Validate and attach captures when all three device capture jobs succeed.
