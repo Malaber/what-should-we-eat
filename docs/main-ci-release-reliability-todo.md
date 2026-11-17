@@ -188,3 +188,11 @@ installed 27.0 simulator runtime and Duo used 27.1. Hosted jobs retain the
 six captures exported successfully and the packaged display sizes validated.
 All 345 Python tests passed, including the release gate and screenshot export
 regressions.
+
+Run 44024736503 hit the same first-launch timeout in iPhone shard 1 and the
+Duo marketing job. The temporary exception also covers these two jobs with
+local verification, subject to the same November 24 and December 1 rechecks.
+
+- [ ] Verify every iPhone shard 1 case and the Duo marketing case locally.
+- [ ] Publish the stable image and release when hosted captures are unavailable.
+  When hosted captures are available, keep all four bundle validation gates.
