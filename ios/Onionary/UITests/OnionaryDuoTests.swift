@@ -189,6 +189,12 @@ final class OnionaryDuoTests: OnionaryUITestCase {
         } capture: { name in
             attachMarketingScreenshot(app.windows.element(boundBy: 0).screenshot(), name: name)
         }
+        try tap("Done", in: app)
+        assertIngredient("Checked", in: app)
+        capture(0, in: app)
+        try pose(180, in: app)
+        assertIngredient("Checked", in: app)
+        capture(180, in: app)
     }
 
     @MainActor func testRecipeDraftSurvivesFolds() throws {

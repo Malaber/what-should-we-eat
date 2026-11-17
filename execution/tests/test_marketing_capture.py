@@ -27,6 +27,11 @@ def export_fixture(monkeypatch, tmp_path):
                 data = (attachments/filename).read_bytes()
                 (attachments/filename).write_bytes(data[:35])
             entries.append({'suggestedHumanReadableName': f'marketing-{scene}_0_UUID.png', 'exportedFileName': filename})
+        for angle, size in state.get('duo_displays', {}).items():
+            filename = f'display-{angle}.png'
+            Image.new('RGB', size, 'blue').save(attachments/filename)
+            entries.append({'suggestedHumanReadableName': f'Duo-workspace-{angle}_0_UUID.png',
+                            'exportedFileName': filename, 'timestamp': 1})
         (attachments/'manifest.json').write_text(json.dumps([{'attachments': entries}]))
     monkeypatch.setattr(capture.subprocess, 'run', export)
     monkeypatch.setattr(capture, 'render_capture', lambda *args: state['rendered'].append(args))
@@ -103,6 +108,19 @@ def test_duo_cannot_publish_with_only_one_display(tmp_path):
     manifest = [{"attachments": [{"suggestedHumanReadableName": "Duo-workspace-0.png"}]}]
     with pytest.raises(ValueError, match="outer and inner"):
         capture.export_duo_captures(manifest, tmp_path, tmp_path)
+
+
+def test_duo_release_uses_one_passing_marketing_result(export_fixture):
+    result, output, state = export_fixture
+    state['size'] = capture.DUO_CAPTURES[0][1]
+    state['duo_displays'] = {angle: size for angle, (_, size) in capture.DUO_CAPTURES.items()}
+    capture.export_captures(result, output, 'duo', True, result)
+    captures = output/'en-US'
+    assert sorted(p.stem for p in captures.glob('*.png')) == sorted(SCENES)
+    name, size = capture.DUO_CAPTURES[180]
+    with Image.open(captures/'inner'/name) as inner:
+        assert inner.size == size
+    assert state['rendered'] == [(captures, 'duo', True)]
 
 
 @pytest.mark.parametrize('summary', [
