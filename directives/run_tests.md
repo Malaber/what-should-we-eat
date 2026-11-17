@@ -89,8 +89,10 @@ The mandatory testLiveActivityStartAndStop explicitly launches with
 the final Off assertion. testCookingModeWithFixtureBackend runs the same full
 cycle against the fixture separately. Both cases must pass on ordinary profiles;
 neither is skipped or accepted as a replacement for the other. Release builds
-exclude the fixture and always construct the Apple backend. There are 29 ordinary
-UI cases and six Duo cases after adding this coverage.
+exclude the fixture and always construct the Apple backend. Widget snapshots
+from these fixtures stay inside the app's temporary container. The fixture
+still persists and displays meal-plan data, while the release app writes to
+its shared container and requests a WidgetKit timeline reload.
 
 Follow the global GitHub CI Monitoring and Automatic Fixes workflow. Complete
 local checks, commit/push, then use an attached, bounded shell watcher:
@@ -150,12 +152,15 @@ with -xctestrun and the existing full-profile selector, not -project/-scheme:
 the latter reopens project/package resolution even with test-without-building.
 Validate the UI target, screenshot policy and compiled app/runner/bundle paths;
 missing, ambiguous or filtered plans fail before boot.
-Runner initialization has a separate 600-second limit. The unchanged
-1800-second UI-suite budget begins at the first literal "Test Suite 'Selected
-tests' started at " log line. Missing suite registration never counts as success;
-failed command statuses are preserved and either phase terminates its process
-group on timeout. Total command time is bounded by 2400 seconds plus termination.
-Per-case 180/360-second limits and workflow timeouts remain unchanged. This keeps
+Runner initialization has a separate 900-second limit on hosted CI and
+600 seconds locally. A passing Duo 27.2 worker took 576 seconds to register.
+The 1800-second UI-suite budget begins at the first literal "Test Suite 'Selected
+tests' started at " log line. If startup or execution expires, the wrapper
+returns 124 and preserves the log. If macOS rejects a group signal, signal the
+owned command directly and bound the remaining cleanup wait.
+The ordinary case limit defaults to 180 seconds. The two native menu cases
+and the edit-progress case request 240 seconds, and Duo cases have 360 seconds. Workflow timeouts
+remain unchanged. This keeps
 platform startup out of the UI budget without retrying or skipping a test.
 Reference: https://developer.apple.com/library/archive/technotes/tn2339/_index.html
 CI sets `TEST_RESULTS_DIR` and uploads that bundle even when tests fail.
@@ -355,13 +360,75 @@ failure traces both reached the Simulator accessibility handshake and stalled
 before a test case or app launch. Local `test.sh` still builds and runs tests
 in one command.
 
+GitHub-hosted `--test-only` runs create a private CoreSimulator device set
+under the result directory. In run 43838616167 the iPad startup expired while
+Xcode enumerated unrelated devices whose runtimes were unavailable. Pass the
+same set to device creation, XCTest, diagnostics and cleanup so only the
+destination created for that job is visible to XCTest.
+
 CI runs the iPhone and iPad cases in three balanced shards per device type.
 Each shard has its own standard runner, native XCTest process and simulator.
 This limits how many consecutive app replacements share one device. The iPad
 failure occurred when XCTest attempted to terminate the previous app before
 the next test ran. Shard 1 owns the marketing captures. Unit tests verify
-that each device's shards include every declared case exactly once. The
-same per-case time limits and the existing Duo fold isolation still apply.
+that each device's shards include every declared case exactly once. Both
+profiles apply the same ordinary and menu case limits.
+
+Duo uses three standard runners with one simulator startup per runner. Pair
+draft restoration with the fold checklist, and session expiry with kitchen
+shopping. The marketing case has its own runner. Each case resets its app
+fixture and establishes its starting hinge position. Two-case shards reuse
+the native XCTest session, avoiding two cold startup transitions. The shell
+contract test checks that all five declared cases run exactly once. The
+Duo marketing case captures both displays in its own result bundle. Packaging
+uses the passing iPhone, iPad and Duo captures from the same workflow.
+
+### Temporary hosted simulator exception
+
+Starting 2026-11-17, all nine hosted native UI shards run as advisory jobs.
+Standard-runner simulator initialization and launch failures moved across
+iPhone, iPad and Duo in runs 43963567984, 44024736503, 44031347022 and
+44035610976. Keep the diagnostics and result bundles. Recheck on
+**2026-11-24** and **2026-12-01**. Record the runner image version and XCTest
+results at each recheck. Restore required status once the affected shards
+pass repeatably on the updated standard image.
+
+Before each push during the exception, run every advisory case locally and
+verify the result bundles passed. Run these commands from the repository
+root with Xcode 27.2 and the pinned simulator runtimes installed.
+
+```bash
+results=$(mktemp -d)
+TEST_RESULTS_DIR="$results/build" bash ios/Onionary/Scripts/test.sh --build-only
+run_local_shard() {
+  TEST_DERIVED_DATA_DIR="$results/build/DerivedData" TEST_RESULTS_DIR="$results/$1" \
+    SIMULATOR_DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.$2" \
+    SIMULATOR_TEST_SHARD="$3" bash ios/Onionary/Scripts/test.sh --test-only
+}
+run_local_shard iphone-1 iPhone-17-Pro 1 &&
+  run_local_shard iphone-2 iPhone-17-Pro 2 &&
+  run_local_shard iphone-3 iPhone-17-Pro 3 &&
+  run_local_shard ipad-1 iPad-Pro-13-inch-M5-12GB 1 &&
+  run_local_shard ipad-2 iPad-Pro-13-inch-M5-12GB 2 &&
+  run_local_shard ipad-3 iPad-Pro-13-inch-M5-12GB 3 &&
+  run_local_shard duo-fold iPhone-Duo testRecipeDraftSurvivesFolds,testRecipePreviewAndChecklistSurviveFolds &&
+  run_local_shard duo-kitchen iPhone-Duo testExpiredSessionKeepsAdaptiveNavigationReachable,testKitchenShoppingChecksSurviveFolds &&
+  run_local_shard duo-marketing iPhone-Duo testMarketingScreenshots
+```
+
+The backend, web, Swift tests, build and archive still gate the production
+image and GitHub release. Each device's marketing job produces its own
+captures. When all three are available, the four release bundles must pass
+validation before attachment. If a hosted capture is
+unavailable, the main workflow publishes the image and release and records
+the missing screenshot bundles in the job summary. For an authorized RC,
+publish the four bundles from passing same-source runs as a GitHub prerelease.
+
+GitHub-hosted build, native test, result export and archive jobs use Xcode
+27.2 (27B52). Local verification and TestFlight use the same Xcode pin. The
+standard `xcode-27` label served macOS 27.0.1 and 27.2 on adjacent jobs. Both
+runner images include this Xcode build. See [Xcode and Duo migration](../docs/ios-duo-migration.md)
+for local setup and advice for apps coming from 26.x.
 
 The standard GitHub runner uses the default 12 GB iPad Pro 13-inch M5
 device profile. Xcode's two profiles have the same device model and screen
@@ -408,34 +475,47 @@ Wait for the previous test command to return, including disposable-device
 cleanup, before starting the next profile. A finalized xcresult alone does not
 mean its simulator has been deleted or its disk reserve has been released.
 
-Runtime installation is not selection. Pass SIMULATOR_RUNTIME from the matrix;
-require the exact compatible runtime/build from execution/ios_runtime.py:
-27.0/24A434 for phone/tablet and stable 27.1/24A94425 for Duo. Apple's catalog
-identifies 24A94232 as the 27.1 RC; do not silently substitute it. RC/stable can
-coexist under one OS identifier. Select the compatible build's absolute runtime
-bundle path when creating the disposable device, regardless of inventory order.
-For matching SDK versions, ensure_ios_runtimes.py checks CoreSimulator's SDK
-mapping too. It may set `simctl runtime match set iphoneos27.1 24A94425 --sdkBuild
-<sdk-build>` only on disposable GitHub-hosted runners, then verifies the result.
-Local/self-hosted preferences are never changed automatically: a mismatch fails
-with the explicit command for a developer to review. Never delete runtimes to
-force selection. Catalog reference:
-https://devimages-cdn.apple.com/downloads/xcode/simulators/index2.dvtdownloadableindex
+Pass `SIMULATOR_DEVICE_TYPE` from the matrix. `execution/ios_runtime.py` pins
+iOS 27.2 build 24B8117 for iPhone and iPad, and 24B91016s for Duo. Duo can use
+the suffix `-iPhone19-4` on the runtime identifier. Match the exact build and
+its supported device list, and create the device by absolute bundle path.
+For the generic identifier, `ensure_ios_runtimes.py` verifies the SDK mapping
+and may set it on a disposable GitHub-hosted runner. Local and self-hosted
+mismatches report the command for the developer to run.
 
 Before creating a device, resolve_simulator.py validates ProductVersion and
 ProductBuildVersion in the selected bundle's
 Contents/Resources/RuntimeRoot/System/Library/CoreServices/SystemVersion.plist.
 Missing or mismatched metadata is terminal before any device is created.
-Compile against the shutdown disposable simulator, then call bounded
-`simctl bootstatus <id> -b` once, followed directly by XCTest. Do not insert
-`simctl getenv` or `simctl spawn` readiness/metadata probes after boot: the added
-getenv gate at 2bb8b14 stalled on all six cold CI guests before any UI test ran,
-despite passing on a warm local simulator. Native runner class setup records
-ProcessInfo.operatingSystemVersionString in the retained test log, in-process
-after XCTest initializes. This log is evidence, not a host-side boot gate.
-Preserve original command failures and owned-device cleanup. Caller-supplied
-devices are neither booted nor deleted by test.sh. Keep all profiles mandatory,
-with no latest/RC fallback or new test retries/deadlines.
+Leave the disposable simulator shut down after creation. Let the bounded
+XCTest command boot the destination and own app installation and runner startup.
+On main run 43811873620, the iPhone had completed an explicit preboot. Its device
+entered Booting again under XCTest, then the Instruments service connection
+timed out before any case ran. Startup is bounded at 600 seconds locally and
+900 seconds on GitHub-hosted runners. Keep
+guest readiness probes out of the launch path. XCTest class setup records
+`ProcessInfo.operatingSystemVersionString` once the native runner initializes.
+Preserve the original failure and diagnostics before disposing an owned device.
+`test.sh` never deletes caller-supplied devices. Keep all profiles, runtime pins,
+and test deadlines. Use one invocation per selected suite or Duo shard.
+
+Verify offline-save recovery and draft change descriptions in separate native
+cases. Recovery must still observe the save error, retain the exact edited name
+and enabled Save action, cold-relaunch the app, and reopen the saved draft. The
+change-description case uses the actual form, then verifies the saved change in
+the scoped list. Combining both flows exceeded the iPad budget while XCTest
+resolved app-wide text labels in the nested sheet.
+
+The cooking-menu feedback regression launches with an active adventure and
+checks an ingredient through the real UI. The normal recipe selection path
+is covered by the cooking scenarios. On run 43826496965 XCTest waited twice
+for a 60-second animation notification while its menu was open. Keep the
+controlled feedback expiry, edit sheet, cancellation and checked-progress
+assertions, with the editor's own navigation bar as the sheet boundary.
+On run 43834232110 the step ingredient picker reached its exact token and
+keyboard dismissal checks after two of these waits. Only these two tests
+request four minutes through `XCTestCase.executionTimeAllowance`. Native
+assertions and the 30-minute suite budget still apply.
 
 On disposable GitHub-hosted macOS runners, ensure_ios_runtimes.py also prepares
 the exact installed runtime's dyld shared cache before any device is created.

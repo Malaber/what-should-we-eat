@@ -86,9 +86,10 @@ def export_attachments(result, exported):
 
 def export_captures(result, output, family, defer_creative=False, duo_fold_result=None):
     require_passing_result(result)
-    if duo_fold_result is not None:
-        if family != 'duo':
-            raise ValueError('A fold result is only supported for iPhone Duo')
+    if duo_fold_result is not None and family != 'duo':
+        raise ValueError('A fold result is only supported for iPhone Duo')
+    separate_fold_result = duo_fold_result is not None and duo_fold_result.resolve() != result.resolve()
+    if separate_fold_result:
         require_passing_result(duo_fold_result)
     output.mkdir(parents=True, exist_ok=False)
     exported = output/'attachments'
@@ -122,8 +123,11 @@ def export_captures(result, output, family, defer_creative=False, duo_fold_resul
     if duo_fold_result is not None:
         fold = output/'fold'
         fold.mkdir()
-        fold_export = fold/'attachments'
-        export_duo_captures(export_attachments(duo_fold_result, fold_export), fold_export, fold)
+        if separate_fold_result:
+            fold_export = fold/'attachments'
+            export_duo_captures(export_attachments(duo_fold_result, fold_export), fold_export, fold)
+        else:
+            export_duo_captures(manifest, exported, fold)
         inner_name = DUO_CAPTURES[180][0]
         inner = screenshots/'inner'
         inner.mkdir()
@@ -138,7 +142,7 @@ def main():
     parser.add_argument('--family', choices=['iphone', 'ipad', 'duo'], required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--defer-creative', action='store_true')
-    parser.add_argument('--duo-fold-result', type=Path, help='Include the unfolded screen from the Duo fold regression')
+    parser.add_argument('--duo-fold-result', type=Path, help='Include the unfolded Duo screen from this or another passing result')
     args = parser.parse_args()
     export_captures(args.result_bundle, args.output, args.family, args.defer_creative, args.duo_fold_result)
 

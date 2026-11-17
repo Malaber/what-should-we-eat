@@ -429,7 +429,8 @@ struct DraftChangesView: View {
                 } else {
                     Text("This draft was saved before changes were tracked.")
                 }
-            }.navigationTitle("Draft changes").navigationBarTitleDisplayMode(.inline)
+            }.accessibilityIdentifier("recipe-draft-changes")
+                .navigationTitle("Draft changes").navigationBarTitleDisplayMode(.inline)
                 .toolbar { Button("Done") { dismiss() } }
         }.task {
             defer { loading = false }

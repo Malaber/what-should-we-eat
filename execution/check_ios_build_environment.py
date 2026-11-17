@@ -9,7 +9,8 @@ import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 
-EXPECTED_XCODE = "Xcode 27.1\nBuild version 27A9275"
+XCODE_VERSION = '27.2'
+XCODE_BUILD = '27B52'
 # Release profiles are sequential and reuse one release-specific DerivedData.
 # Entry needs one test profile's reserve, not a cumulative-build reserve.
 # test.sh and archive.sh independently recheck space immediately before their work.
@@ -18,8 +19,9 @@ MIN_FREE_BYTES = STAGE_GIB["release"] * 1024 ** 3
 
 
 def validate_xcode(output):
-    if output.strip() != EXPECTED_XCODE:
-        raise ValueError(f"Expected {EXPECTED_XCODE!r}; found {output.strip()!r}. Use the xcode-27 runner and Xcode_27.1.app.")
+    expected = f'Xcode {XCODE_VERSION}\nBuild version {XCODE_BUILD}'
+    if output.strip() != expected:
+        raise ValueError(f'Expected {expected!r}; found {output.strip()!r}. Select Xcode_{XCODE_VERSION}.app.')
 
 
 def validate_disk(path, free_bytes, minimum_bytes=MIN_FREE_BYTES):

@@ -6,9 +6,9 @@ import struct
 
 
 def test_xcode_matches_version_and_build():
-    validate_xcode('Xcode 27.1\nBuild version 27A9275\n')
-    for output in ['Xcode 26.6\nBuild version 17F113', 'Xcode 27.1\nBuild version other']:
-        with pytest.raises(ValueError, match='xcode-27 runner'):
+    validate_xcode('Xcode 27.2\nBuild version 27B52\n')
+    for output in ('Xcode 27.1\nBuild version 27A9275', 'Xcode 27.2\nBuild version 27B48'):
+        with pytest.raises(ValueError, match='Xcode_27.2'):
             validate_xcode(output)
 
 

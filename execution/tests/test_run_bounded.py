@@ -1,5 +1,10 @@
 import sys
+import signal
+from subprocess import TimeoutExpired
+from unittest.mock import Mock
+
 import pytest
+from execution import run_bounded
 from execution.run_bounded import run
 
 
@@ -9,6 +14,28 @@ def test_preserves_command_status():
 
 def test_stalled_command_is_stopped():
     assert run(1, [sys.executable, '-c', 'import time; time.sleep(60)']) == 124
+
+
+def test_denied_group_kill_preserves_timeout_and_log(monkeypatch, tmp_path, capsys):
+    child = Mock(pid=123, returncode=None)
+    child.poll.return_value = None
+    child.wait.side_effect = [TimeoutExpired(['xcodebuild'], seconds) for seconds in (1, 10, 5)]
+
+    def start(command, **kwargs):
+        kwargs['stdout'].write(b'simulator startup log\n')
+        return child
+
+    send_group = Mock(side_effect=[None, PermissionError])
+    monkeypatch.setattr(run_bounded.subprocess, 'Popen', start)
+    monkeypatch.setattr(run_bounded.os, 'killpg', send_group)
+    log = tmp_path / 'tests.log'
+
+    assert run(1, ['xcodebuild'], log) == 124
+    assert log.read_bytes() == b'simulator startup log\n'
+    child.send_signal.assert_called_once_with(signal.SIGKILL)
+    report = capsys.readouterr()
+    assert 'simulator startup log' in report.out
+    assert 'Cannot send SIGKILL to process group' in report.err
 
 
 def test_verbose_output_goes_directly_to_log(tmp_path, capsys):

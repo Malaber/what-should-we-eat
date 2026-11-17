@@ -26,10 +26,13 @@ def capture(command, destination, *, timeout=5, limit=65536):
     return report
 
 
-def commands(simulator):
+def commands(simulator, device_set=None):
     # UUID validation keeps the log predicate an exact device filter. No writes
     # to simulator state, no environment dump and no unrelated process cleanup.
     simulator = str(UUID(simulator)).upper()
+    simctl = ['xcrun', 'simctl']
+    if device_set:
+        simctl.extend(['--set', str(device_set)])
     predicate = (
         '(process CONTAINS "CoreSimulator" OR process == "launchd_sim") AND NOT '
         '(eventMessage BEGINSWITH "Failed to get a device identity for simulator device") AND '
@@ -47,17 +50,17 @@ def commands(simulator):
         "hardware": ["sysctl", "hw.ncpu", "hw.memsize"],
         "memory": ["vm_stat"],
         "swap": ["sysctl", "vm.swapusage"],
-        "devices": ["xcrun", "simctl", "list", "devices", "--json"],
-        "runtimes": ["xcrun", "simctl", "list", "runtimes", "--json"],
+        "devices": [*simctl, "list", "devices", "--json"],
+        "runtimes": [*simctl, "list", "runtimes", "--json"],
         "simulator-events": ["/usr/bin/log", "show", "--last", "15m", "--style",
                              "compact", "--predicate", predicate],
-        "guest-automation": ["xcrun", "simctl", "spawn", simulator, "log", "show",
+        "guest-automation": [*simctl, "spawn", simulator, "log", "show",
                              "--last", "15m", "--style", "compact", "--predicate", automation_predicate],
     }
 
 
-def collect(output, simulator):
-    plan = commands(simulator)
+def collect(output, simulator, device_set=None):
+    plan = commands(simulator, device_set)
     output.mkdir(parents=True, exist_ok=True)
     reports = {name: capture(command, output / f"{name}.txt")
                for name, command in plan.items()}
@@ -70,5 +73,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--simulator", required=True)
+    parser.add_argument("--device-set", type=Path)
     args = parser.parse_args()
-    collect(args.output, args.simulator)
+    collect(args.output, args.simulator, args.device_set)

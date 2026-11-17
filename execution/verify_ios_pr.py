@@ -53,12 +53,13 @@ def verify(repo, commit, output, derived_data, push_branch=None):
             status["profiles"][name] = {"status": "running", "results": str(results)}
             save()
             print(f"Running full {name} suite for {commit}", flush=True)
-            environment = {**os.environ, "SIMULATOR_DEVICE_TYPE": device, "SIMULATOR_RUNTIME": "27.0",
+            environment = {**os.environ, "SIMULATOR_DEVICE_TYPE": device,
                            "TEST_RESULTS_DIR": str(results), "TEST_DERIVED_DATA_DIR": str(derived_data)}
             environment["PATH"] = str(Path(sys.executable).parent) + os.pathsep + environment.get("PATH", "")
             # Always own a fresh simulator. A caller's shell must not accidentally
             # turn both profiles into tests against its existing device.
             environment.pop("SIMULATOR_ID", None)
+            environment.pop("SIMULATOR_RUNTIME", None)
             with (results / "profile.log").open("w") as log:
                 result = subprocess.run(["bash", str(source / "ios/Onionary/Scripts/test.sh")],
                                         cwd=source, env=environment, stdout=log, stderr=subprocess.STDOUT)

@@ -212,8 +212,21 @@ final class AppStore {
     }
 
     private func clearWidget() {
-        do { try WidgetSnapshotStore.write(nil); WidgetCenter.shared.reloadTimelines(ofKind: "OnionaryKitchen") }
+        do { try writeWidgetSnapshot(nil) }
         catch { self.error = error.localizedDescription }
+    }
+
+    private func writeWidgetSnapshot(_ snapshot: KitchenWidgetSnapshot?) throws {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
+            // Fixture meals must stay in the test app. Asking WidgetKit to
+            // reload would also wake the system's widget host in every case.
+            try WidgetSnapshotStore.write(snapshot, to: file?.appendingPathExtension("widget"))
+            return
+        }
+        #endif
+        try WidgetSnapshotStore.write(snapshot)
+        WidgetCenter.shared.reloadTimelines(ofKind: "OnionaryKitchen")
     }
 
     func publishWidget(_ items: [MealPlan.Item], account: String) {
@@ -224,8 +237,7 @@ final class AppStore {
             let snapshot = KitchenWidgetSnapshot(scope: account,
                 meals: items.map { .init(id: $0.recipeId, name: $0.recipe.name, cooked: $0.isCooked) },
                 language: UserDefaults.standard.string(forKey: "language") ?? "system")
-            try WidgetSnapshotStore.write(snapshot)
-            WidgetCenter.shared.reloadTimelines(ofKind: "OnionaryKitchen")
+            try writeWidgetSnapshot(snapshot)
         } catch { self.error = error.localizedDescription }
     }
 
@@ -426,20 +438,23 @@ final class AppStore {
 
     #if DEBUG
     private func setupUITest() {
-        file = FileManager.default.temporaryDirectory.appending(path: "onionary-ui-kitchen.json")
+        let testFile = FileManager.default.temporaryDirectory.appending(path: "onionary-ui-kitchen.json")
+        file = testFile
         if ProcessInfo.processInfo.arguments.contains("--reset") {
             for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("cookingModeDisabled.") {
                 UserDefaults.standard.removeObject(forKey: key)
             }
-            try? FileManager.default.removeItem(at: file!)
-            try? FileManager.default.removeItem(at: file!.appendingPathExtension("drafts"))
+            try? FileManager.default.removeItem(at: testFile)
+            for extensionName in ["drafts", "meals", "widget"] {
+                try? FileManager.default.removeItem(at: testFile.appendingPathExtension(extensionName))
+            }
             UserDefaults.standard.removeObject(forKey: "accent")
             UserDefaults.standard.removeObject(forKey: "recipe-sort")
             UserDefaults.standard.removeObject(forKey: "recipe-sort-reversed")
             UserDefaults.standard.removeObject(forKey: "appearance")
             UserDefaults.standard.removeObject(forKey: "language")
         }
-        kitchen = (try? KitchenFile.read(file!)) ?? Kitchen()
+        kitchen = (try? KitchenFile.read(testFile)) ?? Kitchen()
         if kitchen.recipes.isEmpty && ProcessInfo.processInfo.arguments.contains("--ordering-fixture") {
             let data = try! JSONSerialization.data(withJSONObject: [UITestBackend.recipe])
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: data)
@@ -465,10 +480,12 @@ final class AppStore {
             }
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: JSONSerialization.data(withJSONObject: recipes))
         }
-        if ProcessInfo.processInfo.arguments.contains("--editing-active-recipe"),
-           let recipe = kitchen.recipes.first, let ingredient = recipe.ingredients.first {
+        let arguments = ProcessInfo.processInfo.arguments
+        let editingActiveRecipe = arguments.contains("--editing-active-recipe")
+        if (editingActiveRecipe || arguments.contains("--active-recipe")), let recipe = kitchen.recipes.first {
             kitchen.visit(recipe)
-            if let current = kitchen.adventures.firstIndex(where: { $0.id == recipe.id }) {
+            if editingActiveRecipe, let ingredient = recipe.ingredients.first,
+               let current = kitchen.adventures.firstIndex(where: { $0.id == recipe.id }) {
                 kitchen.adventures[current].toggle(key: "ingredient-\(ingredient.id)", label: ingredient.name)
             }
         }

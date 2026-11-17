@@ -41,21 +41,54 @@ fi
 device_type=${SIMULATOR_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro}
 shard=all
 if [[ "$mode" == --test-only ]]; then shard=${SIMULATOR_TEST_SHARD:-all}; fi
-case "$shard" in
-  all|1|2|3) ;;
-  *) echo "Invalid simulator test shard: $shard" >&2; exit 2 ;;
-esac
-if [[ "$device_type" == *iPhone-Duo && "$shard" != all ]]; then
-  echo "Duo fold cases use their own per-case simulators" >&2
-  exit 2
+if [[ "$device_type" == *iPhone-Duo ]]; then
+  duo_cases=$(sed -nE 's/^[[:space:]]*(@MainActor[[:space:]]+)?func (test[A-Za-z0-9_]+)\(\).*/\2/p' UITests/OnionaryDuoTests.swift)
+  [[ -n "$duo_cases" ]] || { echo 'No Duo test cases found' >&2; exit 1; }
+  if [[ "$shard" != all ]]; then
+    if [[ ! "$shard" =~ ^test[A-Za-z0-9_]+(,test[A-Za-z0-9_]+)*$ ]]; then
+      echo "Invalid Duo test selection: $shard" >&2
+      exit 2
+    fi
+    IFS=, read -r -a selected_cases <<< "$shard"
+    duo_filters=()
+    for scenario in "${selected_cases[@]}"; do
+      if ! grep -Fxq -- "$scenario" <<< "$duo_cases"; then
+        echo "Unknown Duo test case: $scenario" >&2
+        exit 2
+      fi
+      duo_filters+=("-only-testing:OnionaryUITests/OnionaryDuoTests/$scenario")
+    done
+  fi
+else
+  case "$shard" in
+    all|1|2|3) ;;
+    *) echo "Invalid simulator test shard: $shard" >&2; exit 2 ;;
+  esac
 fi
 simulator_id=${SIMULATOR_ID:-}
+simulator_set=
+simctl=(xcrun simctl)
+resolve_options=(--device-type "$device_type" --runtime "${SIMULATOR_RUNTIME:-}")
+xctest_command=(xcodebuild)
+startup_seconds=600
+if [[ "$mode" == --test-only && -z "$simulator_id" &&
+      "${GITHUB_ACTIONS:-}" == true && "${RUNNER_ENVIRONMENT:-}" == github-hosted ]]; then
+  # Avoid enumerating the runner image's unrelated precreated devices, which
+  # can reference runtime builds absent from this image.
+  simulator_set="$result_dir/simulator-set"
+  mkdir -p "$simulator_set"
+  simctl+=(--set "$simulator_set")
+  resolve_options+=(--device-set "$simulator_set")
+  xctest_command+=("-DVTSimulatorSetLocation=$simulator_set")
+  # A successful 27.2 Duo worker took 576 seconds to register XCTest.
+  startup_seconds=900
+fi
 create_simulator() {
-  simulator_id=$(python3 Scripts/resolve_simulator.py --create --device-type "$device_type" --runtime "${SIMULATOR_RUNTIME:-}")
+  simulator_id=$(python3 Scripts/resolve_simulator.py --create "${resolve_options[@]}")
 }
 delete_owned_simulator() {
   if [[ -z "${SIMULATOR_ID:-}" && -n "$simulator_id" ]]; then
-    xcrun simctl delete "$simulator_id" >/dev/null 2>&1 || true
+    "${simctl[@]}" delete "$simulator_id" >/dev/null 2>&1 || true
     simulator_id=
   fi
 }
@@ -65,9 +98,10 @@ cleanup() {
   if [[ "$result" != 0 && -n "$simulator_id" ]]; then
     # Preserve the original failure. Diagnostics are read-only and bounded;
     # neither an unavailable log service nor cleanup can replace its exit code.
+    local diagnostics_options=(--simulator "$simulator_id" --output "$result_dir/host-diagnostics")
+    if [[ -n "$simulator_set" ]]; then diagnostics_options+=(--device-set "$simulator_set"); fi
     python3 ../../execution/run_bounded.py --log "$result_dir/host-diagnostics.log" 60 \
-      python3 ../../execution/collect_ios_test_diagnostics.py \
-      --simulator "$simulator_id" --output "$result_dir/host-diagnostics" || true
+      python3 ../../execution/collect_ios_test_diagnostics.py "${diagnostics_options[@]}" || true
   fi
   delete_owned_simulator
   exit "$result"
@@ -80,24 +114,22 @@ fi
 validate_test_products
 if [[ -z "$simulator_id" ]]; then create_simulator; fi
 run_tests() {
-  local output=$1 allowance=$2
-  shift 2
+  local output=$1 default_allowance=$2 maximum_allowance=$3
+  shift 3
   mkdir -p "$output"
-  if [[ -z "${SIMULATOR_ID:-}" ]]; then
-    # Cold compilation is complete before the first guest boots. Avoid extra
-    # post-boot guest RPCs before XCTest starts.
-    python3 ../../execution/run_bounded.py 600 xcrun simctl bootstatus "$simulator_id" -b
-  fi
-  python3 ../../execution/run_bounded.py --startup-seconds 600 --ready-prefix "Test Suite 'Selected tests' started at " \
-    --log "$output/tests.log" 1800 xcodebuild -xctestrun "$test_plan" \
+  # Keep the new device shut down until XCTest takes ownership of its boot,
+  # app installation and test session. A prebooted session can disappear
+  # while xcodebuild is still initializing its runner.
+  python3 ../../execution/run_bounded.py --startup-seconds "$startup_seconds" --ready-prefix "Test Suite 'Selected tests' started at " \
+    --log "$output/tests.log" 1800 "${xctest_command[@]}" -xctestrun "$test_plan" \
     -destination "platform=iOS Simulator,id=$simulator_id" \
     -parallel-testing-enabled NO -collect-test-diagnostics never -test-timeouts-enabled YES \
-    -default-test-execution-time-allowance "$allowance" -maximum-test-execution-time-allowance "$allowance" \
+    -default-test-execution-time-allowance "$default_allowance" -maximum-test-execution-time-allowance "$maximum_allowance" \
     -resultBundlePath "$output/Onionary.xcresult" test-without-building "$@"
 }
 
 if [[ "$device_type" != *iPhone-Duo && "$shard" == all ]]; then
-  run_tests "$result_dir" 180 -only-testing:OnionaryUITests/OnionaryUITests
+  run_tests "$result_dir" 180 240 -only-testing:OnionaryUITests/OnionaryUITests
 elif [[ "$device_type" != *iPhone-Duo ]]; then
   # A fresh standard runner runs each third of the suite. Keep the capture
   # case on shard 1 and balance all other cases in a stable order.
@@ -118,18 +150,18 @@ elif [[ "$device_type" != *iPhone-Duo ]]; then
     fi
   done <<< "$native_cases"
   [[ ${#tests[@]} -gt 0 ]] || { echo "No UI tests found in shard $shard" >&2; exit 1; }
-  run_tests "$result_dir" 180 "${tests[@]}"
+  run_tests "$result_dir" 180 240 "${tests[@]}"
+elif [[ "$shard" != all ]]; then
+  # Hosted scenarios each reset their app fixture and establish their own
+  # hinge pose. Run the selected group in one native startup on this job.
+  run_tests "$result_dir/duo/$shard" 360 360 "${duo_filters[@]}"
 elif [[ -n "${SIMULATOR_ID:-}" ]]; then
-  run_tests "$result_dir" 360 -only-testing:OnionaryUITests/OnionaryDuoTests
+  run_tests "$result_dir" 360 360 -only-testing:OnionaryUITests/OnionaryDuoTests
 else
-  # Each fold scenario starts with a clean SpringBoard/AX session. Reusing the
-  # guest forces XCTest to terminate a process tracked by the previous display.
-  # Keep the Duo source order: the first fold case validates hinge primitives.
-  duo_cases=$(sed -nE 's/^[[:space:]]*(@MainActor[[:space:]]+)?func (test[A-Za-z0-9_]+)\(\).*/\2/p' UITests/OnionaryDuoTests.swift)
-  [[ -n "$duo_cases" ]] || { echo 'No Duo test cases found' >&2; exit 1; }
+  # Local full runs start a clean guest per case in source order.
   while IFS= read -r scenario; do
     if [[ -z "$simulator_id" ]]; then create_simulator; fi
-    run_tests "$result_dir/duo/$scenario" 360 "-only-testing:OnionaryUITests/OnionaryDuoTests/$scenario"
+    run_tests "$result_dir/duo/$scenario" 360 360 "-only-testing:OnionaryUITests/OnionaryDuoTests/$scenario"
     delete_owned_simulator
   done <<< "$duo_cases"
 fi
