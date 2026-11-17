@@ -1,0 +1,52 @@
+name: Run native iOS shard
+description: Run a selected UI shard and retain its XCTest result and diagnostics.
+inputs:
+  profile:
+    description: Simulator profile used for artifact names.
+    required: true
+  device:
+    description: CoreSimulator device type.
+    required: true
+  shard:
+    description: Numbered shard or comma-separated Duo test cases.
+    required: true
+runs:
+  using: composite
+  steps:
+  - uses: actions/setup-python@v5
+    with:
+      python-version: '3.14'
+  - name: Verify matching Xcode build
+    shell: bash
+    run: python3 execution/check_ios_build_environment.py --xcode-only
+  - name: Prepare the 27.2 simulator runtime for this device
+    env:
+      SIMULATOR_DEVICE_TYPE: ${{ inputs.device }}
+    shell: bash
+    run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py --device-type "$SIMULATOR_DEVICE_TYPE"
+  - uses: actions/download-artifact@v4
+    with:
+      name: onionary-ios-test-products
+      path: ${{ runner.temp }}
+  - name: Run UI tests on the pinned simulator
+    env:
+      TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
+      SIMULATOR_DEVICE_TYPE: ${{ inputs.device }}
+      SIMULATOR_TEST_SHARD: ${{ inputs.shard }}
+    shell: bash
+    run: |
+      mkdir -p "$TEST_RESULTS_DIR/DerivedData"
+      tar -xzf "$RUNNER_TEMP/onionary-test-products.tar.gz" -C "$TEST_RESULTS_DIR/DerivedData"
+      bash ios/Onionary/Scripts/test.sh --test-only
+  - name: Preserve simulator test diagnostics
+    if: always()
+    uses: actions/upload-artifact@v4
+    with:
+      name: onionary-ios-test-results-${{ inputs.profile }}-${{ inputs.shard }}
+      path: |
+        ${{ runner.temp }}/onionary-tests/Onionary.xcresult
+        ${{ runner.temp }}/onionary-tests/*.log
+        ${{ runner.temp }}/onionary-tests/duo/
+        ${{ runner.temp }}/onionary-tests/host-diagnostics/
+      if-no-files-found: ignore
+      retention-days: 7

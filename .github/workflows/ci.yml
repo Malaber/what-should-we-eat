@@ -89,56 +89,36 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [iphone, ipad]
-        shard: ['1', '2', '3']
         include:
           - profile: iphone
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
+            shard: '1'
+          - profile: iphone
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
+            shard: '3'
           - profile: ipad
             device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
-          - profile: duo
-            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            shard: testRecipeDraftSurvivesFolds,testRecipePreviewAndChecklistSurviveFolds
-            capture: testRecipePreviewAndChecklistSurviveFolds
+            shard: '1'
+          - profile: ipad
+            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
+            shard: '2'
+          - profile: ipad
+            device: com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB
+            shard: '3'
           - profile: duo
             device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
             shard: testMarketingScreenshots
-            capture: testMarketingScreenshots
-          - profile: duo
-            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
-            shard: testExpiredSessionKeepsAdaptiveNavigationReachable,testKitchenShoppingChecksSurviveFolds
     runs-on: xcode-27
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     timeout-minutes: 65
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/native-ios
         with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
-      - name: Verify matching Xcode build
-        run: python3 execution/check_ios_build_environment.py --xcode-only
-      - name: Prepare the 27.2 simulator runtime for this device
-        timeout-minutes: 30
-        env:
-          SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
-        run: python3 ios/Onionary/Scripts/ensure_ios_runtimes.py --device-type "$SIMULATOR_DEVICE_TYPE"
-      - uses: actions/download-artifact@v4
-        with:
-          name: onionary-ios-test-products
-          path: ${{ runner.temp }}
-      - name: Run UI tests on the pinned simulator
-        timeout-minutes: 60
-        env:
-          TEST_RESULTS_DIR: ${{ runner.temp }}/onionary-tests
-          SIMULATOR_DEVICE_TYPE: ${{ matrix.device }}
-          SIMULATOR_TEST_SHARD: ${{ matrix.shard }}
-        run: |
-          mkdir -p "$TEST_RESULTS_DIR/DerivedData"
-          tar -xzf "$RUNNER_TEMP/onionary-test-products.tar.gz" -C "$TEST_RESULTS_DIR/DerivedData"
-          bash ios/Onionary/Scripts/test.sh --test-only
+          profile: ${{ matrix.profile }}
+          device: ${{ matrix.device }}
+          shard: ${{ matrix.shard }}
       - if: matrix.shard == '1'
         run: pip install -r marketing/requirements.txt
       - name: Export captures from this test run
@@ -158,24 +138,42 @@ jobs:
           retention-days: 14
       - name: Preserve passing Duo screenshot results
         uses: actions/upload-artifact@v4
-        if: matrix.profile == 'duo' && matrix.capture != ''
+        if: matrix.profile == 'duo'
         with:
-          name: onionary-duo-result-${{ matrix.capture }}
+          name: onionary-duo-marketing-result
           path: ${{ runner.temp }}/onionary-tests/duo/${{ matrix.shard }}/Onionary.xcresult/
           if-no-files-found: error
           retention-days: 14
-      - name: Preserve simulator test diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
+
+  ios-advisory:
+    name: ios advisory (${{ matrix.profile }}, ${{ matrix.shard }})
+    needs: ios-build
+    # Temporary exception for standard-runner launch failures. See directives/run_tests.md.
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: iphone
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro
+            shard: '2'
+          - profile: duo
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
+            shard: testRecipeDraftSurvivesFolds,testRecipePreviewAndChecklistSurviveFolds
+          - profile: duo
+            device: com.apple.CoreSimulator.SimDeviceType.iPhone-Duo
+            shard: testExpiredSessionKeepsAdaptiveNavigationReachable,testKitchenShoppingChecksSurviveFolds
+    runs-on: xcode-27
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/native-ios
         with:
-          name: onionary-ios-test-results-${{ matrix.profile }}-${{ matrix.shard }}
-          path: |
-            ${{ runner.temp }}/onionary-tests/Onionary.xcresult
-            ${{ runner.temp }}/onionary-tests/*.log
-            ${{ runner.temp }}/onionary-tests/duo/
-            ${{ runner.temp }}/onionary-tests/host-diagnostics/
-          if-no-files-found: ignore
-          retention-days: 7
+          profile: ${{ matrix.profile }}
+          device: ${{ matrix.device }}
+          shard: ${{ matrix.shard }}
 
   duo-captures:
     needs: ios
@@ -191,17 +189,13 @@ jobs:
       - run: pip install -r marketing/requirements.txt
       - uses: actions/download-artifact@v4
         with:
-          name: onionary-duo-result-testMarketingScreenshots
+          name: onionary-duo-marketing-result
           path: ${{ runner.temp }}/DuoMarketing.xcresult
-      - uses: actions/download-artifact@v4
-        with:
-          name: onionary-duo-result-testRecipePreviewAndChecklistSurviveFolds
-          path: ${{ runner.temp }}/DuoFold.xcresult
       - name: Export validated iPhone Duo scenes
         run: |
           python3 execution/marketing_screenshots.py \
             --result-bundle "$RUNNER_TEMP/DuoMarketing.xcresult" \
-            --duo-fold-result "$RUNNER_TEMP/DuoFold.xcresult" \
+            --duo-fold-result "$RUNNER_TEMP/DuoMarketing.xcresult" \
             --family duo --output .tmp/marketing/duo --defer-creative
       - uses: actions/upload-artifact@v4
         with:

@@ -160,6 +160,31 @@ if 'xcodebuild' in sys.argv:
         assert run[run.index('-maximum-test-execution-time-allowance') + 1] == '360'
 
 
+def test_advisory_ios_jobs_do_not_gate_release_or_supply_captures():
+    workflow = (IOS.parents[1] / '.github/workflows/ci.yml').read_text()
+    jobs = dict(re.findall(r'^  ([a-z][a-z-]*):\n((?:^[ ]{4}[^\n]*\n|^\n)*)', workflow, re.MULTILINE))
+    expected = {
+        ('iphone', '2'),
+        ('duo', 'testRecipeDraftSurvivesFolds,testRecipePreviewAndChecklistSurviveFolds'),
+        ('duo', 'testExpiredSessionKeepsAdaptiveNavigationReachable,testKitchenShoppingChecksSurviveFolds'),
+    }
+    rows = r"^\s+- profile: (\w+)\n\s+device: [^\n]+\n\s+shard: '?(\w[\w,]*)"
+    assert set(re.findall(rows, jobs['ios-advisory'], re.MULTILINE)) == expected
+    required = set(re.findall(rows, jobs['ios'], re.MULTILINE))
+    assert required == {('iphone', '1'), ('iphone', '3'), ('ipad', '1'), ('ipad', '2'), ('ipad', '3'),
+                        ('duo', 'testMarketingScreenshots')}
+    assert 'continue-on-error: true' in jobs['ios-advisory']
+    assert 'continue-on-error' not in jobs['ios']
+    for name in ('ios', 'ios-advisory'):
+        assert 'uses: ./.github/actions/native-ios' in jobs[name]
+    assert 'onionary-duo-marketing-result' in jobs['ios']
+    assert 'onionary-duo-marketing-result' in jobs['duo-captures']
+    assert 'needs: ios\n' in jobs['duo-captures']
+    assert 'needs: [ios, duo-captures]' in jobs['appstore-screenshots']
+    assert 'needs: [backend, browser, ios, ios-archive, publish-image, html-format, appstore-screenshots]' in jobs['release-main']
+    assert 'push: true' in jobs['release-main']
+
+
 def test_hosted_xctest_owns_a_private_simulator_set(tmp_path):
     bins = tmp_path / 'bin'
     bins.mkdir()
