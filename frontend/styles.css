@@ -597,8 +597,8 @@ body::before {
 }
 
 .shopping-card-header {
-  padding: 20px 24px;
-  background: linear-gradient(135deg, var(--green-pale), #f0faf2);
+  padding: 16px 24px;
+  background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -607,11 +607,29 @@ body::before {
   gap: 12px;
 }
 
+.shopping-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .shopping-card-header h2 {
   font-family: var(--font-display);
   font-size: 1.4rem;
-  color: var(--green-dark);
+  color: var(--text);
   margin: 0;
+}
+
+.shopping-count {
+  min-inline-size: 1.8rem;
+  padding: .15rem .45rem;
+  border-radius: var(--radius-pill);
+  background: var(--orange-pale);
+  color: var(--orange-dark);
+  font-size: .85rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .btn-copy {
@@ -619,29 +637,25 @@ body::before {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(86, 155, 110, 0.15); /* light green border */
-  color: var(--green-dark);
-  font-family: var(--font-sans);
-  font-size: 0.8rem;
+  min-height: 44px;
+  background: var(--bg-card);
+  border: 1px solid var(--orange-dark);
+  color: var(--orange-dark);
+  font-family: var(--font-body);
+  font-size: .9rem;
   font-weight: 700;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .btn-copy:hover {
-  background: #FFF;
-  border-color: rgba(86, 155, 110, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(86, 155, 110, 0.1);
+  background: var(--orange-pale);
 }
 
-.btn-copy:active {
-  transform: translateY(0);
+.btn-copy:focus-visible {
+  outline: 2px solid var(--orange-dark);
+  outline-offset: 3px;
 }
 
 .shopping-list {
@@ -1204,14 +1218,6 @@ body::before {
 
   .shopping-card-header {
     padding: 16px 18px;
-  }
-
-  .btn-copy .btn-text {
-    display: none;
-  }
-
-  .btn-copy {
-    padding: 6px 8px; /* Tighter padding for icon-only button */
   }
 
   /* ── Recipe card footer buttons ─────────────── */
