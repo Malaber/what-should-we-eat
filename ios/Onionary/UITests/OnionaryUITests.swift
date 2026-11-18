@@ -17,6 +17,8 @@ final class OnionaryUITests: OnionaryUITestCase {
         add.tap()
         let keyboard = app.keyboards.element(boundBy: 0)
         XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        let quickPath = keyboard.buttons["Continue"]
+        if quickPath.exists { quickPath.tap() }
         let fields = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-"))
             .matching(NSPredicate(format: "elementType IN %@", [XCUIElement.ElementType.textField.rawValue, XCUIElement.ElementType.textView.rawValue]))
         app.typeText("Add lemon zest.")

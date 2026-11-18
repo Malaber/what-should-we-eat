@@ -28,12 +28,10 @@ struct WorkspacePanes<Primary: View, Secondary: View>: View {
                     .padding(.bottom, !split && keepFocusedFieldVisible && focus != nil ? bottomSpace(geometry.size.height) : 0)
                 }.scrollDisabled(split)
                     .onChange(of: split) { _, _ in if let focus { outer.scrollTo(focus, anchor: .center) } }
-                    .task(id: ScrollPosition(focus: focus, height: geometry.size.height, enabled: !split && keepFocusedFieldVisible)) {
-                        if !split && keepFocusedFieldVisible, let focus {
-                            await Task.yield()
-                            if !Task.isCancelled { outer.scrollTo(focus, anchor: .center) }
-                        }
-                    }
+            }
+        }.background {
+            if keepFocusedFieldVisible {
+                KeyboardFocusScroll(focus: focus).frame(width: 0, height: 0)
             }
         }
     }
@@ -49,18 +47,7 @@ struct WorkspacePanes<Primary: View, Secondary: View>: View {
                 .fixedSize(horizontal: false, vertical: !split)
                 .frame(height: split ? max(120, height ?? 300) : nil)
                 .onChange(of: split) { _, _ in if let focus { proxy.scrollTo(focus, anchor: .center) } }
-                .task(id: ScrollPosition(focus: focus, height: height ?? 0, enabled: split && keepFocusedFieldVisible)) {
-                    if split && keepFocusedFieldVisible, let focus {
-                        await Task.yield()
-                        if !Task.isCancelled { proxy.scrollTo(focus, anchor: .center) }
-                    }
-                }
         }
-    }
-    private struct ScrollPosition: Equatable {
-        var focus: String?
-        var height: CGFloat
-        var enabled: Bool
     }
 
     private func bottomSpace(_ height: CGFloat) -> CGFloat { min(height / 2, 260) }
