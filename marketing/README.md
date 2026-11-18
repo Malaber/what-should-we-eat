@@ -1,9 +1,12 @@
 # Onionary App Store artwork
 
 The CI workflow uses real captures from the passing iPhone, iPad and iPhone Duo
-native suites. Each device gets a ZIP with four screenshots and three framed
-portraits in `en-US/portraits/`. The portraits feature the cooking checklist,
-recipe book and portion controls at the device's App Store upload dimensions.
+native suites. Each device gets a ZIP with raw screenshots and framed portraits
+in `en-US/portraits/`. The portraits feature the cooking checklist, recipe
+book and portion controls at the device's App Store upload dimensions.
+The iPhone ZIP also includes a raw Lock Screen Live Activity and a framed
+portrait made from it. The native test opens the iOS Lock Screen cover sheet
+and verifies the actual WidgetKit activity before capture.
 The Duo ZIP also includes an unfolded cooking screenshot in `en-US/inner/`.
 
 The separate creative ZIP is shared across devices. Its `en-US/creative/`
@@ -19,8 +22,9 @@ placement previews before publishing.
 
 - [Apple creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications)
 - [Editable artwork and shared CI renderer](creative/README.md)
+- [Apple product bezel guidelines](https://developer.apple.com/app-store/marketing/guidelines/)
 
-Generate framed portraits locally from the four original XCTest PNGs:
+Generate framed portraits locally from the original XCTest PNGs:
 
 ```sh
 python -m pip install -r marketing/requirements.txt
@@ -28,6 +32,9 @@ python execution/render_marketing_assets.py .tmp/marketing/iphone/en-US --family
 ```
 
 Add `--include-creative` to render the shared artwork using that iPhone capture.
+The renderer downloads matching model-specific Apple bezels from pinned commits
+and verifies their SHA-256 digests. Set `ONIONARY_BEZELS_DIRECTORY` to a verified
+local cache to render offline. Only the finished composites are packaged.
 
 Use Inkscape for SVG output. The renderer uses bundled Lora and Manrope fonts
 with their SIL Open Font Licenses. CI checks every output's dimensions and

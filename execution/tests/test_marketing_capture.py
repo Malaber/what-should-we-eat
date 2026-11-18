@@ -6,13 +6,14 @@ from PIL import Image, ImageOps
 from execution import marketing_screenshots as capture
 
 SCENES = ['01-recipe-book', '02-cooking-companion', '03-flexible-portions', '04-every-tap-remembered']
+IPHONE_SCENES = [*SCENES, '08-live-activity-lock-screen']
 
 
 @pytest.fixture
 def export_fixture(monkeypatch, tmp_path):
     result = tmp_path/'passed.xcresult'; result.mkdir()
     output = tmp_path/'output'
-    state = {'scenes': list(SCENES), 'size': (1206, 2622), 'rendered': [],
+    state = {'scenes': list(IPHONE_SCENES), 'size': (1206, 2622), 'rendered': [],
              'summary': {'result': 'Passed', 'passedTests': 19, 'failedTests': 0, 'skippedTests': 0}}
     monkeypatch.setattr(capture.subprocess, 'check_output', lambda *args, **kwargs: json.dumps(state['summary']))
     def export(command, **kwargs):
@@ -39,16 +40,18 @@ def export_fixture(monkeypatch, tmp_path):
 
 
 @pytest.mark.parametrize('family,size', [('iphone', (1206, 2622)), ('ipad', (2064, 2752))])
-def test_exports_four_original_scenes_without_starting_tests(export_fixture, family, size):
+def test_exports_all_original_scenes_without_starting_tests(export_fixture, family, size):
     result, output, state = export_fixture; state['size'] = size
+    scenes = IPHONE_SCENES if family == 'iphone' else SCENES
+    state['scenes'] = scenes
     capture.export_captures(result, output, family, True)
-    assert sorted(p.stem for p in (output/'en-US').glob('*.png')) == sorted(SCENES)
-    for i, scene in enumerate(SCENES):
+    assert sorted(p.stem for p in (output/'en-US').glob('*.png')) == sorted(scenes)
+    for i, scene in enumerate(scenes):
         assert (output/'en-US'/f'{scene}.png').read_bytes() == (output/'attachments'/f'{i}.png').read_bytes()
     assert state['rendered'] == [(output/'en-US', family, True)]
 
 
-@pytest.mark.parametrize('scenes', [SCENES[:3], SCENES+[SCENES[0]], SCENES+['invented-scene']])
+@pytest.mark.parametrize('scenes', [SCENES, IPHONE_SCENES+[SCENES[0]], IPHONE_SCENES+['invented-scene']])
 def test_missing_duplicate_or_unknown_scene_cannot_render(export_fixture, scenes):
     result, output, state = export_fixture; state['scenes'] = scenes
     with pytest.raises(ValueError): capture.export_captures(result, output, 'iphone')
@@ -113,6 +116,7 @@ def test_duo_cannot_publish_with_only_one_display(tmp_path):
 def test_duo_release_uses_one_passing_marketing_result(export_fixture):
     result, output, state = export_fixture
     state['size'] = capture.DUO_CAPTURES[0][1]
+    state['scenes'] = SCENES
     state['duo_displays'] = {angle: size for angle, (_, size) in capture.DUO_CAPTURES.items()}
     capture.export_captures(result, output, 'duo', True, result)
     captures = output/'en-US'

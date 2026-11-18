@@ -1,9 +1,11 @@
 """Editable SVG -> outlined, embedded SVG -> Inkscape -> fully decoded RGB PNG."""
 import argparse
 import base64
+from io import BytesIO
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 
 from fontTools.ttLib import TTFont
@@ -12,6 +14,9 @@ from fontTools.pens.svgPathPen import SVGPathPen
 from PIL import Image, ImageCms
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from execution.marketing_device_frames import load_frame
+
 SIZE = (5244, 2950)
 SAFE_AREA = (1921, 660, 3323, 1622)
 SVG = 'http://www.w3.org/2000/svg'
@@ -67,6 +72,28 @@ def validate_safe_area(inkscape, svg):
             and x + width <= right and y + height <= bottom):
         raise ValueError(f'Artwork extends outside Apple’s safe area: {svg}: {group}')
 
+def png_bytes(image):
+    output = BytesIO()
+    image.save(output, format="PNG")
+    return output.getvalue()
+
+
+def position(x, y, width, height):
+    return {key: str(value) for key, value in zip(("x", "y", "width", "height"), (x, y, width, height), strict=True)}
+
+
+def device_layers(capture_size):
+    frame = load_frame(capture_size)
+    scale = min(565 / frame.bezel.width, 880 / frame.bezel.height)
+    width, height = frame.bezel.width * scale, frame.bezel.height * scale
+    x, y = 3260 - width, (SAFE_AREA[1] + SAFE_AREA[3] - height) / 2
+    bezel = position(x, y, width, height)
+    screen = position(x + frame.display_origin[0] * scale, y + frame.display_origin[1] * scale,
+                      frame.display_mask.width * scale, frame.display_mask.height * scale)
+    return {"bezel": bezel, "screenshot": screen, "display-mask": screen}, {
+        "bezel": png_bytes(frame.bezel), "display-mask": png_bytes(frame.display_mask),
+    }
+
 
 def render(screenshot, output):
     inkscape = shutil.which('inkscape')
@@ -77,30 +104,22 @@ def render(screenshot, output):
         raise RuntimeError('Install Inkscape before rendering creative assets.')
     output.mkdir(parents=True, exist_ok=True)
     icon = ROOT / 'ios/Onionary/AppIcon.icon/Assets/Onionary.png'
+    with Image.open(screenshot) as captured:
+        captured.load()
+        positions, layers = device_layers(captured.size)
+    layers.update(icon=icon.read_bytes(), screenshot=screenshot.read_bytes())
     for name in ('header', 'search-results'):
         tree = ET.parse(Path(__file__).parent / f'{name}.svg')
-        # Fit the device to the real capture ratio; never letterbox an iPad in a phone.
-        with Image.open(screenshot) as captured:
-            ratio = captured.width / captured.height
-        screen_height = min(852, 574 / ratio)
-        screen_width = screen_height * ratio
-        screen_x = 3260 - screen_width
-        screen_y = (SAFE_AREA[1] + SAFE_AREA[3] - screen_height) / 2
         for element in tree.getroot().iter():
-            if name == 'search-results':
-                if element.attrib.get('id') == 'device-frame':
-                    element.attrib.update(x=str(screen_x-16), y=str(screen_y-16), width=str(screen_width+32), height=str(screen_height+32))
-                elif element.attrib.get('id') == 'screen':
-                    element[0].attrib.update(x=str(screen_x), y=str(screen_y), width=str(screen_width), height=str(screen_height))
-                elif element.attrib.get('data-source') == 'screenshot':
-                    element.attrib.update(x=str(screen_x), y=str(screen_y), width=str(screen_width), height=str(screen_height))
+            if element.attrib.get('id') == 'screen':
+                element.attrib.update(positions["screenshot"])
             if element.tag == f'{{{SVG}}}text':
                 outline(element)
             elif element.tag == f'{{{SVG}}}image':
-                path = icon if element.attrib.pop('data-source') == 'icon' else screenshot
-                with Image.open(path) as image:
-                    image.load()
-                element.set(f'{{{XLINK}}}href', 'data:image/png;base64,' + base64.b64encode(path.read_bytes()).decode())
+                source = element.attrib.pop('data-source')
+                if source in positions:
+                    element.attrib.update(positions[source])
+                element.set(f'{{{XLINK}}}href', 'data:image/png;base64,' + base64.b64encode(layers[source]).decode())
         svg = output / f'{name}.svg'
         tree.write(svg, encoding='utf-8', xml_declaration=True)
         validate_safe_area(inkscape, svg)

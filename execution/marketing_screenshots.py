@@ -11,9 +11,7 @@ import shutil
 import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from execution.package_marketing_screenshots import CAPTURES, DUO_CAPTURES, validate_dimensions, validate_duo_bundle
-
-NAMES = {Path(name).stem for name in CAPTURES}
+from execution.package_marketing_screenshots import DUO_CAPTURES, source_captures, validate_dimensions, validate_duo_bundle
 
 
 def render_capture(screenshots, family, defer_creative):
@@ -99,6 +97,7 @@ def export_captures(result, output, family, defer_creative=False, duo_fold_resul
         export_duo_captures(manifest, exported, output)
         return
     captures = {}
+    expected = {Path(name).stem for name in source_captures(family)}
     for test in manifest:
         for attachment in test.get('attachments', []):
             name = attachment.get('suggestedHumanReadableName', '')
@@ -106,7 +105,7 @@ def export_captures(result, output, family, defer_creative=False, duo_fold_resul
                 continue
             match = re.match(r'marketing-([^._]+)(?:_|\.png|$)', name)
             key = match.group(1) if match else ''
-            if key not in NAMES or key in captures:
+            if key not in expected or key in captures:
                 raise ValueError(f'Unexpected or duplicate marketing capture: {name}')
             source = attachment_path(exported, attachment)
             validate_dimensions(source, family)
@@ -114,8 +113,8 @@ def export_captures(result, output, family, defer_creative=False, duo_fold_resul
             with Image.open(source) as image:
                 image.load()
             captures[key] = source
-    if set(captures) != NAMES:
-        raise ValueError(f'Expected four marketing scenes; missing {sorted(NAMES - set(captures))}')
+    if set(captures) != expected:
+        raise ValueError(f'Expected {len(expected)} marketing scenes; missing {sorted(expected - set(captures))}')
     screenshots = output/'en-US'
     screenshots.mkdir()
     for key, source in captures.items():
@@ -133,7 +132,7 @@ def export_captures(result, output, family, defer_creative=False, duo_fold_resul
         inner.mkdir()
         shutil.copy2(fold/'en-US'/inner_name, inner/inner_name)
     render_capture(screenshots, family, defer_creative)
-    print(f'Exported four original {family} captures from {result} to {screenshots}')
+    print(f'Exported {len(captures)} original {family} captures from {result} to {screenshots}')
 
 
 def main():

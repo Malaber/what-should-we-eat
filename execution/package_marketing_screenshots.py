@@ -15,12 +15,23 @@ PORTRAITS = (
     "05-cooking-with-onionary.png", "06-your-recipe-book.png", "07-make-it-your-size.png",
 )
 PORTRAIT_SOURCES = dict(zip(PORTRAITS, (CAPTURES[1], CAPTURES[0], CAPTURES[2]), strict=True))
+LIVE_ACTIVITY_CAPTURE = "08-live-activity-lock-screen.png"
+LIVE_ACTIVITY_PORTRAIT = "09-cooking-on-your-lock-screen.png"
 DUO_CAPTURES = {
     0: ("01-duo-outer-cooking.png", (1398, 2034)),
     180: ("02-duo-inner-cooking.png", (2853, 2007)),
 }
 DEVICE_FAMILIES = ("iphone", "ipad", "duo")
 RELEASE_FAMILIES = (*DEVICE_FAMILIES, "creative")
+
+def source_captures(family):
+    return (*CAPTURES, LIVE_ACTIVITY_CAPTURE) if family == "iphone" else CAPTURES
+
+
+def portrait_sources(family):
+    if family == "iphone":
+        return {**PORTRAIT_SOURCES, LIVE_ACTIVITY_PORTRAIT: LIVE_ACTIVITY_CAPTURE}
+    return PORTRAIT_SOURCES
 
 
 def validate_dimensions(path: Path, family: str):
@@ -36,10 +47,11 @@ def validate_dimensions(path: Path, family: str):
 
 
 def validate_bundle(root: Path, family: str) -> list[Path]:
-    raw = [root / name for name in CAPTURES]
-    portraits = [root / "portraits" / name for name in PORTRAITS]
+    raw = [root / name for name in source_captures(family)]
+    sources = portrait_sources(family)
+    portraits = [root / "portraits" / name for name in sources]
     if any(not p.is_file() or p.stat().st_size == 0 for p in raw + portraits):
-        raise ValueError(f"Expected four raw and three marketing {family} PNGs in {root}")
+        raise ValueError(f"Expected {len(raw)} raw and {len(portraits)} marketing {family} PNGs in {root}")
     from PIL import Image
     pngs = raw + portraits
     for png in pngs:
@@ -51,7 +63,7 @@ def validate_bundle(root: Path, family: str) -> list[Path]:
     manifest = json.loads((root / "manifest.json").read_text())
     hashes = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in raw}
     if (manifest["family"] != family or manifest["captures"] != hashes
-            or manifest["portrait_sources"] != PORTRAIT_SOURCES
+            or manifest["portrait_sources"] != sources
             or manifest["source"] != CAPTURES[1] or manifest["source_sha256"] != hashes[CAPTURES[1]]):
         raise ValueError("Marketing artwork does not match the current capture")
     if manifest['portrait_sha256'] != {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in portraits}:

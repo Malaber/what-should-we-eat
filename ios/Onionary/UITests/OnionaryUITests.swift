@@ -1,5 +1,6 @@
 import XCTest
 import notify
+import UIKit
 
 final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
@@ -863,6 +864,8 @@ final class OnionaryUITests: OnionaryUITestCase {
     func testMarketingScreenshots() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        let captureLockScreen = UIDevice.current.userInterfaceIdiom == .phone
+        if captureLockScreen { app.launchArguments.append("--system-live-activity") }
         app.launch()
         // The marketing fixture already sets light appearance. Start with the
         // same capture flow as Duo; appearance settings have their own test.
@@ -872,6 +875,42 @@ final class OnionaryUITests: OnionaryUITestCase {
         } capture: { name in
             attachMarketingScreenshot(XCUIScreen.main.screenshot(), name: name)
         }
+        if captureLockScreen {
+            app.buttons["Done"].tap()
+            let modes = app.buttons.matching(identifier: "cooking-mode")
+            XCTAssertTrue(modes.firstMatch.waitForExistence(timeout: 5))
+            if modes.firstMatch.value as? String == "Off" { modes.firstMatch.tap() }
+            XCTAssertTrue(UIReadiness.waitForValue("On", matching: modes))
+            try captureLiveActivity(in: app)
+        }
+    }
+
+    @MainActor
+    private func captureLiveActivity(in app: XCUIApplication) throws {
+        // iOS presents its real Lock Screen (Cover Sheet) when pulled down
+        // from the leading status-bar edge. WidgetKit owns all visible pixels.
+        let top = app.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.005))
+        let bottom = app.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.8))
+        top.press(forDuration: 0.02, thenDragTo: bottom)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let activity = springboard.descendants(matching: .any).matching(identifier: "onionary-cooking-live-activity").firstMatch
+        let title = springboard.staticTexts["Creamy lemon pasta"].firstMatch
+        let rendered = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in activity.exists || title.exists }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [rendered], timeout: 12), .completed, "The system Live Activity must be visible on the Lock Screen")
+        let allow = springboard.buttons.matching(NSPredicate(format: "label IN %@", ["Allow", "Erlauben"])).firstMatch
+        if allow.waitForExistence(timeout: 2) {
+            allow.tap()
+            XCTAssertTrue(allow.waitForNonExistence(timeout: 5))
+        }
+        XCTAssertTrue(activity.exists || title.exists, "The capture must show cooking progress without the permission prompt")
+        attachMarketingScreenshot(XCUIScreen.main.screenshot(), name: "08-live-activity-lock-screen")
+        // Close the Cover Sheet and remove the actual system activity.
+        let handle = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.50, dy: 0.995))
+        handle.press(forDuration: 0.02, thenDragTo: springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.50, dy: 0.25)))
+        let modes = app.buttons.matching(identifier: "cooking-mode")
+        XCTAssertTrue(UIReadiness.waitForValue("On", matching: modes))
+        modes.firstMatch.tap()
+        XCTAssertTrue(UIReadiness.waitForValue("Off", matching: modes))
     }
 
     @MainActor
