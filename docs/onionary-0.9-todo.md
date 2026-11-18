@@ -8,5 +8,6 @@
 - [ ] Include a genuine Lock Screen Live Activity capture in the iPhone marketing bundle.
 - [ ] Use Apple iPhone bezels in the marketing previews. Keep the editable creative sources, safe-area validation, and existing release bundles.
 - [ ] Keep new recipe fields visible above the keyboard, including at the end of the editor.
+- [ ] Fix title, item count, and Copy readability in the web shopping-list header. Verify light, dark, and narrow layouts.
 - [ ] Verify the standard GitHub runner image in actual iPhone, iPad, and Duo jobs. Run native checks locally if hosted UI checks are still advisory.
 - [ ] Run integrated tests, open a new PR for 0.9.0, monitor CI, and upload a fresh immutable TestFlight build after validation.
