@@ -286,3 +286,13 @@
 "Timer done" = "Timer done";
 "Cancel timer" = "Cancel timer";
 "Dismiss timer" = "Dismiss timer";
+
+"Saved imports" = "Saved imports";
+"No saved imports" = "No saved imports";
+"Save a recipe link or text on the Onionary website using this account." = "Save a recipe link or text on the Onionary website using this account.";
+"Recipe link" = "Recipe link";
+"Copy link" = "Copy link";
+"Copy text" = "Copy text";
+"Copied" = "Copied";
+"Remove saved import" = "Remove saved import";
+"Remove saved import?" = "Remove saved import?";

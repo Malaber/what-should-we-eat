@@ -106,6 +106,19 @@ class User(Base):
     )
 
 
+class RecipeInboxItem(Base):
+    __tablename__ = "recipe_inbox_items"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    kind = Column(String(4), nullable=False)
+    content = Column(Text, nullable=False)
+    fingerprint = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    __table_args__ = (UniqueConstraint("user_id", "fingerprint", name="uq_recipe_inbox_owner_source"),)
+
+
 # ---------- meal_plan_items ----------
 class MealPlanItem(Base):
     __tablename__ = "meal_plan_items"

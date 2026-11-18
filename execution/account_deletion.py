@@ -2,7 +2,7 @@
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import or_
-from execution.db.models import User, Household, HouseholdMember, Recipe, MealPlanItem, RecipeShare, Tag
+from execution.db.models import User, Household, HouseholdMember, Recipe, MealPlanItem, RecipeInboxItem, RecipeShare, Tag
 from execution.db.passkeys import AuthFlow, AuthSession, Passkey, PasskeyAddLink
 
 
@@ -46,6 +46,7 @@ def delete_account(db, user, confirmation):
     db.query(PasskeyAddLink).filter_by(created_by=user.id).update({"created_by": None})
     db.query(AuthSession).filter_by(user_id=user.id).delete()
     db.query(Passkey).filter_by(user_id=user.id).delete()
+    db.query(RecipeInboxItem).filter_by(user_id=user.id).delete()
     db.query(HouseholdMember).filter_by(user_id=user.id).delete()
     db.delete(user)
     db.flush()

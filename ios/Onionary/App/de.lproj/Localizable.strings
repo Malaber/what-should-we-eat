@@ -373,3 +373,13 @@
 "Timer done" = "Timer abgelaufen";
 "Cancel timer" = "Timer abbrechen";
 "Dismiss timer" = "Timer schließen";
+
+"Saved imports" = "Vorgemerkte Importe";
+"No saved imports" = "Keine vorgemerkten Importe";
+"Save a recipe link or text on the Onionary website using this account." = "Merke einen Rezeptlink oder Rezepttext auf der Onionary-Website mit diesem Konto vor.";
+"Recipe link" = "Rezeptlink";
+"Copy link" = "Link kopieren";
+"Copy text" = "Text kopieren";
+"Copied" = "Kopiert";
+"Remove saved import" = "Vorgemerkten Import entfernen";
+"Remove saved import?" = "Vorgemerkten Import entfernen?";

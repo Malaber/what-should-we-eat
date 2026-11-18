@@ -74,7 +74,7 @@ struct RecipesView: View {
     @State private var search = ""
     @State private var preview: Recipe?
     @State private var preferredColumn = NavigationSplitViewColumn.sidebar
-    private enum Creation: String, Identifiable { case manual, intelligence, importRecipe; var id: String { rawValue } }
+    private enum Creation: String, Identifiable { case manual, intelligence, importRecipe, inbox; var id: String { rawValue } }
     @State private var creation: Creation?
     @State private var showCreationActions = false
     @State private var selectedTags: Set<String> = []
@@ -229,6 +229,7 @@ struct RecipesView: View {
                 case .manual: RecipeEditor(store: store, draft: RecipeDraft())
                 case .intelligence: IntelligenceRecipeView(store: store)
                 case .importRecipe: ImportRecipeView(store: store, link: "")
+                case .inbox: RecipeInboxView(store: store)
                 }
             }
             .refreshable { await store.refresh() }
@@ -239,6 +240,7 @@ struct RecipesView: View {
                         Button("New recipe") { creation = .manual }
                         Button("Create with Intelligence") { creation = .intelligence }
                         Button("Import recipe") { creation = .importRecipe }
+                        Button("Saved imports") { creation = .inbox }
                         Button("Cancel", role: .cancel) {}
                     }
             }

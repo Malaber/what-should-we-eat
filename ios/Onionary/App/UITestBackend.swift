@@ -70,6 +70,7 @@ import OnionaryCore
             return Data()
         }
         if path == "users/me" { result = ["id": 1, "name": "Test Cook", "email": "cook@example.org"] }
+        else if path == "recipe-inbox" { result = [["id": 1, "kind": "url", "content": "https://chefkoch.de/rezepte/123"]] }
         else if path == "recipes" && method == "GET" { result = [recipe] }
         else if path == "recipes/1" && method == "GET" { result = recipe }
         else if path == "recipes/1" && method == "PUT", let input {

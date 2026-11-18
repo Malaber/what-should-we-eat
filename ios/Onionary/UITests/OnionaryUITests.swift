@@ -3,6 +3,26 @@ import notify
 
 final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
+    func testSavedImportCanBeCopiedAndReviewed() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        app.buttons["add-recipe"].tap()
+        app.buttons["Saved imports"].tap()
+        let copy = app.buttons["copy-saved-import-1"]
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        copy.tap()
+        XCTAssertEqual(copy.value as? String, "Copied")
+        app.buttons["review-saved-import-1"].tap()
+        let field = app.textFields["recipe-import-url"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertEqual(field.value as? String, "https://chefkoch.de/rezepte/123")
+        app.buttons["review-recipe-import"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "recipe-editor").firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["Name"].exists)
+    }
+    @MainActor
     func testEquipmentStaysCheckedAfterRelaunch() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--equipment-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

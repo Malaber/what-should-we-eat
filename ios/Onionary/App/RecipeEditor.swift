@@ -386,6 +386,14 @@ struct ImportRecipeView: View {
     @State private var pasteRecipe = false
     @State private var recipeText = ""
     @Environment(\.dismiss) private var dismiss
+
+    init(store: AppStore, link: String, text: String? = nil) {
+        self.store = store
+        _link = State(initialValue: link)
+        _recipeText = State(initialValue: text ?? "")
+        _pasteRecipe = State(initialValue: text != nil)
+    }
+
     var body: some View {
         Group {
             if let draft { RecipeEditor(store: store, draft: draft) }
