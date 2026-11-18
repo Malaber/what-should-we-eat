@@ -77,8 +77,11 @@ final class OnionaryUITests: OnionaryUITestCase {
         try selectRecipe(in: app)
         app.buttons["preview-cook"].tap()
         let start = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "start-timer-1-1-")).element(boundBy: 0)
-        if !start.isHittable { app.swipeUp() }
         XCTAssertTrue(start.waitForExistence(timeout: 5))
+        let history = app.buttons["History"]
+        if start.frame.maxY >= history.frame.minY { app.swipeUp() }
+        XCTAssertLessThan(start.frame.maxY, history.frame.minY)
+        XCTAssertTrue(start.isHittable)
         start.tap()
         let timer = app.staticTexts["active-cooking-timer"]
         XCTAssertTrue(timer.waitForExistence(timeout: 5))
