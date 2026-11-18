@@ -16,7 +16,7 @@ struct RecipeEditor: View {
     @Environment(\.dismiss) private var dismiss
     @State private var saving = false
     @State private var error: String?
-    @FocusState private var focusedStep: UUID?
+    @FocusState private var focusedInput: String?
     @State private var showingStepHelp = false
     @State private var timerStep: UUID?
     @State private var enteringTimer = false
@@ -28,6 +28,7 @@ struct RecipeEditor: View {
         var id: Self { self }
     }
     @State private var recipeOrder: RecipeOrder?
+    private var focusedStep: UUID? { focusedInput.flatMap(UUID.init(uuidString:)) }
     var body: some View {
         NavigationStack {
             editorForm.safeAreaInset(edge: .bottom) {
@@ -102,7 +103,7 @@ struct RecipeEditor: View {
                     ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving || hasOverlongTag || hasInvalidIcon) }
     }
     private var editorForm: some View {
-        WorkspacePanes(focus: focusedStep?.uuidString) {
+        WorkspacePanes(focus: focusedInput, keepFocusedFieldVisible: true) {
 
             metadataSection
             tagsSection
@@ -118,12 +119,13 @@ struct RecipeEditor: View {
                 get: { (draft.equipment ?? []).joined(separator: "\n") },
                 set: { draft.equipment = $0.components(separatedBy: .newlines) }), axis: .vertical)
                 .lineLimit(2...6)
+                .focused($focusedInput, equals: "equipment").id("equipment")
                 .accessibilityIdentifier("recipe-equipment")
         }
     }
     private var metadataSection: some View {
                 Section("Recipe") {
-                    TextField("Name", text: $draft.name)
+                    TextField("Name", text: $draft.name).focused($focusedInput, equals: "name").id("name")
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Food icon").font(.caption).foregroundStyle(.secondary)
                         TextField("One emoji (optional)", text: Binding(
@@ -131,6 +133,7 @@ struct RecipeEditor: View {
                                   prompt: Text(verbatim: FoodIcons.display(nil)))
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
+                            .focused($focusedInput, equals: "icon").id("icon")
                             .accessibilityIdentifier("recipe-emoji")
                         if hasInvalidIcon {
                             Text("Enter a single emoji.").font(.footnote).foregroundStyle(.red)
@@ -139,19 +142,24 @@ struct RecipeEditor: View {
                     VStack(alignment: .leading) {
                         Text("Original recipe serves").font(.caption).foregroundStyle(.secondary)
                         TextField("Original recipe serves", value: $draft.servings, format: .number).keyboardType(.decimalPad)
+                            .focused($focusedInput, equals: "servings").id("servings")
                     }
                     TextField("Notes", text: Binding(get: { draft.notes ?? "" }, set: { draft.notes = $0 }), axis: .vertical)
+                        .focused($focusedInput, equals: "notes").id("notes")
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Total minutes").font(.caption).foregroundStyle(.secondary)
                         TextField("Total minutes", value: $draft.totalTimeMin, format: .number).keyboardType(.numberPad)
+                            .focused($focusedInput, equals: "total").id("total")
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Active minutes").font(.caption).foregroundStyle(.secondary)
                         TextField("Active minutes", value: $draft.activeCookingTimeMin, format: .number).keyboardType(.numberPad)
+                            .focused($focusedInput, equals: "active").id("active")
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Calories per serving").font(.caption).foregroundStyle(.secondary)
                         TextField("Calories per serving", value: $draft.kcalPerServing, format: .number).keyboardType(.decimalPad)
+                            .focused($focusedInput, equals: "calories").id("calories")
                     }
                 }
     }
@@ -171,6 +179,7 @@ struct RecipeEditor: View {
                     .submitLabel(.done)
                     .onSubmit { addTag(pendingTag) }
                     .onChange(of: tagInput) { _, _ in retain() }
+                    .focused($focusedInput, equals: "tags").id("tags")
                     .accessibilityIdentifier("recipe-tag-input")
                 Button { addTag(pendingTag) } label: {
                     Image(systemName: "plus.circle.fill").font(.title3).frame(minWidth: 44, minHeight: 44)
@@ -227,11 +236,15 @@ struct RecipeEditor: View {
             ForEach($draft.ingredients) { $item in
                 VStack(alignment: .leading, spacing: 8) {
                     groupHeading(item.groupName, startsGroup: startsGroup(item, in: draft.ingredients, group: \.groupName))
-                    IngredientDraftRow(item: $item, remove: { draft.ingredients.removeAll { $0.id == item.id } })
+                    IngredientDraftRow(item: $item, focus: $focusedInput, remove: { draft.ingredients.removeAll { $0.id == item.id } })
                         .padding(.leading, item.groupName == nil ? 0 : 8)
                 }
             }
-            Button("Add ingredient") { draft.ingredients.append(.init()) }
+            Button("Add ingredient") {
+                let item = RecipeDraft.Item()
+                draft.ingredients.append(item)
+                focusNewField("ingredient-name-" + item.id.uuidString)
+            }
         } header: {
             HStack {
                 Text("Ingredients")
@@ -251,7 +264,12 @@ struct RecipeEditor: View {
                             stepRow($step).padding(.leading, step.groupName == nil ? 0 : 8)
                         }
                     }.id("instruction-steps")
-                    Button("Add step") { var step = RecipeDraft.Step(); step.stepNumber = draft.instructionSteps.count + 1; draft.instructionSteps.append(step) }
+                    Button("Add step") {
+                        var step = RecipeDraft.Step()
+                        step.stepNumber = draft.instructionSteps.count + 1
+                        draft.instructionSteps.append(step)
+                        focusNewField(step.id.uuidString)
+                    }
                 } header: {
                     HStack {
                         Text("Steps")
@@ -292,18 +310,26 @@ struct RecipeEditor: View {
                 }.buttonStyle(.borderless)
             }
             TextField("Instruction", text: binding.description, axis: .vertical)
-                .focused($focusedStep, equals: id)
+                .focused($focusedInput, equals: id.uuidString)
+                .id(id.uuidString)
                 .accessibilityIdentifier("instruction-" + id.uuidString)
             Text("Minutes").font(.caption).foregroundStyle(.secondary)
             TextField("Minutes", value: binding.durationMin, format: .number).keyboardType(.numberPad)
+                .focused($focusedInput, equals: "step-minutes-" + id.uuidString).id("step-minutes-" + id.uuidString)
             Button("Insert timer", systemImage: "timer") {
-                focusedStep = nil
+                focusedInput = nil
                 timerStep = id
                 timerMinutes = ""
                 timerSeconds = ""
                 enteringTimer = true
             }.buttonStyle(.borderless)
-        }.recipeDraftCard().id(id.uuidString)
+        }.recipeDraftCard()
+    }
+    private func focusNewField(_ id: String) {
+        Task { @MainActor in
+            await Task.yield()
+            focusedInput = id
+        }
     }
     private var enteredTime: RecipeTime? {
         guard let minutes = timerMinutes.isEmpty ? 0 : Int(timerMinutes), (0...1440).contains(minutes),
@@ -517,11 +543,14 @@ struct DraftChangesView: View {
 
 private struct IngredientDraftRow: View {
     @Binding var item: RecipeDraft.Item
+    var focus: FocusState<String?>.Binding
     var remove: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 TextField("Ingredient", text: $item.name)
+                    .focused(focus, equals: "ingredient-name-" + item.id.uuidString)
+                    .id("ingredient-name-" + item.id.uuidString)
                 Button(role: .destructive, action: remove) {
                     Label("Delete ingredient", systemImage: "trash").labelStyle(.iconOnly)
                         .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
@@ -531,8 +560,12 @@ private struct IngredientDraftRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Quantity").font(.caption).foregroundStyle(.secondary)
                     TextField("Quantity", value: $item.quantity, format: .number).keyboardType(.decimalPad)
+                        .focused(focus, equals: "ingredient-quantity-" + item.id.uuidString)
+                        .id("ingredient-quantity-" + item.id.uuidString)
                 }
                 TextField("Unit", text: Binding(get: { item.unit ?? "" }, set: { item.unit = $0 }))
+                    .focused(focus, equals: "ingredient-unit-" + item.id.uuidString)
+                    .id("ingredient-unit-" + item.id.uuidString)
             }
         }.recipeDraftCard()
     }

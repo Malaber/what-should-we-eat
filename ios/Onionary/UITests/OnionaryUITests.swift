@@ -3,6 +3,28 @@ import notify
 
 final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
+    func testNewStepFocusStaysAboveKeyboard() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        app.buttons["add-recipe"].tap()
+        app.buttons["New recipe"].tap()
+        let add = app.buttons["Add step"]
+        if !add.isHittable { app.swipeUp() }
+        XCTAssertTrue(add.isHittable)
+        add.tap()
+        let keyboard = app.keyboards.element(boundBy: 0)
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        let fields = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-"))
+            .matching(NSPredicate(format: "elementType IN %@", [XCUIElement.ElementType.textField.rawValue, XCUIElement.ElementType.textView.rawValue]))
+        app.typeText("Add lemon zest.")
+        XCTAssertTrue(UIReadiness.waitForValue("Add lemon zest.", matching: fields))
+        let field = fields.element(boundBy: 0)
+        XCTAssertEqual(field.value as? String, "Add lemon zest.")
+        XCTAssertLessThanOrEqual(field.frame.maxY, keyboard.frame.minY)
+    }
+    @MainActor
     func testSavedImportCanBeCopiedAndReviewed() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
