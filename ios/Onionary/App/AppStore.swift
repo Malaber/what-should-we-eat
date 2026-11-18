@@ -219,6 +219,21 @@ final class AppStore {
         } catch { self.error = error.localizedDescription }
     }
 
+    func startCookingTimer(_ time: RecipeTime, id: String, title: String) {
+        do {
+            var next = kitchen
+            if next.startTimer(id: id, title: title, time: time) { try persist(next) }
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func removeCookingTimer(_ id: String) {
+        do {
+            var next = kitchen
+            next.removeTimer(id)
+            try persist(next)
+        } catch { self.error = error.localizedDescription }
+    }
+
     private func clearWidget() {
         do { try writeWidgetSnapshot(nil) }
         catch { self.error = error.localizedDescription }

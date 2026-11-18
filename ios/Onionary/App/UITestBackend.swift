@@ -20,6 +20,11 @@ import OnionaryCore
                     ["id": 2, "step_number": 2, "description": "Fold in {{Cheese|20%}} and lemon zest."],
                 ]]
         if ProcessInfo.processInfo.arguments.contains("--equipment-fixture") { fixture["equipment"] = ["Springform pan"] }
+        if ProcessInfo.processInfo.arguments.contains("--timer-fixture") {
+            fixture["instruction_steps"] = [
+                ["id": 1, "step_number": 1, "description": "Boil for {{time|2m}}.", "duration_min": 2],
+            ]
+        }
         return fixture
     }()
     static var planned = false

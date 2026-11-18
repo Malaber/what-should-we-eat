@@ -277,3 +277,12 @@
 "One tool per line" = "One tool per line";
 "Checked tools stay ready for other recipes on this device." = "Checked tools stay ready for other recipes on this device.";
 "Add up to 50 tools, with a maximum of 100 characters each." = "Add up to 50 tools, with a maximum of 100 characters each.";
+
+"Insert timer" = "Insert timer";
+"Seconds" = "Seconds";
+"Insert" = "Insert";
+"Set a countdown of up to 24 hours. It stays the same for any number of portions." = "Set a countdown of up to 24 hours. It stays the same for any number of portions.";
+"Start timer for %@" = "Start timer for %@";
+"Timer done" = "Timer done";
+"Cancel timer" = "Cancel timer";
+"Dismiss timer" = "Dismiss timer";

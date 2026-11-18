@@ -22,6 +22,26 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(restored.waitForExistence(timeout: 5))
         XCTAssertEqual(restored.value as? String, "1")
     }
+
+    @MainActor
+    func testStepTimerStartsAndCanBeCancelled() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--timer-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        try selectRecipe(in: app)
+        app.buttons["preview-cook"].tap()
+        let start = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "start-timer-1-1-")).element(boundBy: 0)
+        if !start.isHittable { app.swipeUp() }
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        start.tap()
+        let timer = app.staticTexts["active-cooking-timer"]
+        XCTAssertTrue(timer.waitForExistence(timeout: 5))
+        XCTAssertFalse(start.isEnabled)
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "remove-timer-1-1-")).element(boundBy: 0).tap()
+        XCTAssertTrue(timer.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(start.isEnabled)
+    }
     @MainActor
     private static func relaunchPreservingData(_ app: XCUIApplication) {
         app.launchArguments.removeAll { $0 == "--reset" }

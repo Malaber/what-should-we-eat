@@ -364,3 +364,12 @@
 "One tool per line" = "Ein Utensil pro Zeile";
 "Checked tools stay ready for other recipes on this device." = "Abgehakte Utensilien bleiben auf diesem Gerät für andere Rezepte bereit.";
 "Add up to 50 tools, with a maximum of 100 characters each." = "Füge bis zu 50 Utensilien mit höchstens 100 Zeichen pro Eintrag hinzu.";
+
+"Insert timer" = "Timer einfügen";
+"Seconds" = "Sekunden";
+"Insert" = "Einfügen";
+"Set a countdown of up to 24 hours. It stays the same for any number of portions." = "Stelle einen Countdown von bis zu 24 Stunden ein. Er bleibt bei jeder Portionszahl gleich.";
+"Start timer for %@" = "Timer für %@ starten";
+"Timer done" = "Timer abgelaufen";
+"Cancel timer" = "Timer abbrechen";
+"Dismiss timer" = "Timer schließen";

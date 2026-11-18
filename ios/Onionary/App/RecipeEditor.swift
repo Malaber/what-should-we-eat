@@ -18,6 +18,10 @@ struct RecipeEditor: View {
     @State private var error: String?
     @FocusState private var focusedStep: UUID?
     @State private var showingStepHelp = false
+    @State private var timerStep: UUID?
+    @State private var enteringTimer = false
+    @State private var timerMinutes = ""
+    @State private var timerSeconds = ""
     @State private var tagInput = ""
     private enum RecipeOrder: String, Identifiable {
         case ingredients, steps
@@ -53,6 +57,14 @@ struct RecipeEditor: View {
                     Button("Done", role: .cancel) {}
                 } message: {
                     Text("Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.")
+                }
+                .alert("Insert timer", isPresented: $enteringTimer) {
+                    TextField("Minutes", text: $timerMinutes).keyboardType(.numberPad)
+                    TextField("Seconds", text: $timerSeconds).keyboardType(.numberPad)
+                    Button("Cancel", role: .cancel) {}
+                    Button("Insert", action: insertTimer).disabled(enteredTime == nil)
+                } message: {
+                    Text("Set a countdown of up to 24 hours. It stays the same for any number of portions.")
                 }
                 .interactiveDismissDisabled(saving || askingReload)
                 .onAppear {
@@ -284,7 +296,24 @@ struct RecipeEditor: View {
                 .accessibilityIdentifier("instruction-" + id.uuidString)
             Text("Minutes").font(.caption).foregroundStyle(.secondary)
             TextField("Minutes", value: binding.durationMin, format: .number).keyboardType(.numberPad)
+            Button("Insert timer", systemImage: "timer") {
+                focusedStep = nil
+                timerStep = id
+                timerMinutes = ""
+                timerSeconds = ""
+                enteringTimer = true
+            }.buttonStyle(.borderless)
         }.recipeDraftCard().id(id.uuidString)
+    }
+    private var enteredTime: RecipeTime? {
+        guard let minutes = timerMinutes.isEmpty ? 0 : Int(timerMinutes), (0...1440).contains(minutes),
+              let seconds = timerSeconds.isEmpty ? 0 : Int(timerSeconds), (0...59).contains(seconds) else { return nil }
+        return RecipeTime(seconds: minutes * 60 + seconds)
+    }
+    private func insertTimer() {
+        guard let time = enteredTime, let index = draft.instructionSteps.firstIndex(where: { $0.id == timerStep }) else { return }
+        if !draft.instructionSteps[index].description.isEmpty { draft.instructionSteps[index].description += " " }
+        draft.instructionSteps[index].description += time.placeholder
     }
     private func numberSteps() {
         for index in draft.instructionSteps.indices { draft.instructionSteps[index].stepNumber = index + 1 }

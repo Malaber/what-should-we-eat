@@ -6,15 +6,16 @@ public enum IngredientPlaceholders {
     public enum Part: Equatable, Sendable {
         case text(String)
         case amount(Ingredient, label: String)
+        case time(RecipeTime, label: String)
 
         public var text: String {
             switch self {
-            case .text(let text), .amount(_, let text): text
+            case .text(let text), .amount(_, let text), .time(_, let text): text
             }
         }
     }
 
-    private static let token = try! NSRegularExpression(pattern: #"\{\{([^{}|]+)\|(\d+(?:[.,]\d+)?)%\}\}"#)
+    private static let token = try! NSRegularExpression(pattern: #"\{\{([^{}|]+)\|([^{}|]+)\}\}"#)
 
     public static func key(name: String, group: String?) -> String {
         group.map { $0 + "::" + name } ?? name
@@ -27,11 +28,19 @@ public enum IngredientPlaceholders {
         for match in token.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
             guard let whole = Range(match.range, in: text),
                   let nameRange = Range(match.range(at: 1), in: text),
-                  let percentRange = Range(match.range(at: 2), in: text),
-                  let percent = Decimal(string: String(text[percentRange]).replacingOccurrences(of: ",", with: "."),
+                  let valueRange = Range(match.range(at: 2), in: text) else { continue }
+            let name = text[nameRange].trimmingCharacters(in: .whitespacesAndNewlines)
+            let argument = text[valueRange]
+            if name == "time", let time = RecipeTime(String(argument)) {
+                if cursor != whole.lowerBound { result.append(.text(String(text[cursor..<whole.lowerBound]))) }
+                result.append(.time(time, label: time.label(locale: locale)))
+                cursor = whole.upperBound
+                continue
+            }
+            guard argument.range(of: #"^\d+(?:[.,]\d+)?%$"#, options: .regularExpression) != nil,
+                  let percent = Decimal(string: argument.dropLast().replacingOccurrences(of: ",", with: "."),
                                         locale: Locale(identifier: "en_US_POSIX")),
                   percent >= 0, percent <= 100 else { continue }
-            let name = text[nameRange].trimmingCharacters(in: .whitespacesAndNewlines)
             let exact = ingredients.filter { $0.name.caseInsensitiveCompare(name) == .orderedSame }
             let matches = exact.isEmpty ? ingredients.filter {
                 $0.groupName != nil && key(name: $0.name, group: $0.groupName).caseInsensitiveCompare(name) == .orderedSame

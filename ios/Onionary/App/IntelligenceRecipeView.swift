@@ -141,7 +141,8 @@ enum RecipeIntelligence {
             When an instruction specifies a quantity of an ingredient, convert it to {{Ingredient name|80%}} with the exact ingredient name
             and the percentage of that listed ingredient quantity. Example: 40 g cheese out of 100 g Cheese becomes {{Cheese|40%}}.
             For duplicate ingredient names include the exact ingredient group, like {{Filling::Cheese|40%}}.
-            Keep times, temperatures and amounts that cannot be confidently matched as ordinary text.
+            Use {{time|15m}} or {{time|1m30s}} for an explicit countdown in a step, with the source time unchanged.
+            Leave time ranges, temperatures and amounts that cannot be confidently matched as ordinary text.
             """
         let session = LanguageModelSession(instructions: instructions)
         let result: GeneratedRecipe

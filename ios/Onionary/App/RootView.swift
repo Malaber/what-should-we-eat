@@ -375,7 +375,12 @@ struct CookingView: View {
                 }.sensoryFeedback(.selection, trigger: adventure.portions)
                  .sensoryFeedback(.selection, trigger: adventure.checked)
                  .safeAreaInset(edge: .bottom) {
-                    CookingHistoryBar(store: store) { sheet = .history }
+                    VStack(spacing: 0) {
+                        if !store.kitchen.cookingTimers.isEmpty {
+                            CookingTimersBar(timers: store.kitchen.cookingTimers, remove: store.removeCookingTimer)
+                        }
+                        CookingHistoryBar(store: store) { sheet = .history }
+                    }
                 }
             } else {
                 ContentUnavailableView {
@@ -441,13 +446,39 @@ struct CookingView: View {
                      subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""),
                      adventure: adventure)
             ChipFlow(spacing: 6) {
-                ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
-                    if case .amount(let ingredient, let label) = part {
+                ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
+                    switch part {
+                    case .amount(let ingredient, let label):
                         ingredientBadge(ingredient, label: label, adventure: adventure)
+                    case .time(let time, let label):
+                        timerBadge(time, label: label, key: "\(adventure.id)-\(step.id)-\(index)", title: adventure.recipe.name)
+                    case .text:
+                        EmptyView()
                     }
+                }
+                if let time = RecipeTime.stepMinutes(step.durationMin), !parts.contains(where: {
+                    if case .time(let reference, _) = $0 { return time == reference }
+                    return false
+                }) {
+                    timerBadge(time, label: time.label(locale: L10n.locale),
+                               key: "\(adventure.id)-\(step.id)-duration", title: adventure.recipe.name)
                 }
             }.padding(.leading, 32)
         }
+    }
+
+    private func timerBadge(_ time: RecipeTime, label: String, key: String, title: String) -> some View {
+        Button {
+            store.startCookingTimer(time, id: key, title: title)
+        } label: {
+            Label(label, systemImage: "timer").font(.subheadline.weight(.medium))
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .foregroundStyle(onion).background(onion.opacity(0.14), in: Capsule())
+                .frame(minHeight: 44).contentShape(Rectangle())
+        }.buttonStyle(.plain)
+            .accessibilityLabel(L10n.format("Start timer for %@", label))
+            .accessibilityIdentifier("start-timer-" + key)
+            .disabled(store.kitchen.cookingTimers.contains { $0.id == key })
     }
 
     private func ingredientBadge(_ ingredient: Ingredient, label: String, adventure: Adventure) -> some View {

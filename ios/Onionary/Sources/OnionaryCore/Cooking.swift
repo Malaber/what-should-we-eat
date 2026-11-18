@@ -142,6 +142,7 @@ public struct Kitchen: Codable, Equatable, Sendable {
     public var currentID: Int?
     public var pantrySupplies: [PantryMatching.Supply]?
     private var ownedEquipment: Set<String>?
+    private var countdowns: [RecipeCountdown]?
     public init() {}
 
     public func hasEquipment(_ name: String) -> Bool {
@@ -153,6 +154,18 @@ public struct Kitchen: Codable, Equatable, Sendable {
         let key = RecipeEquipment.key(name)
         if tools.remove(key) == nil { tools.insert(key) }
         ownedEquipment = tools
+    }
+    public var cookingTimers: [RecipeCountdown] { countdowns ?? [] }
+
+    @discardableResult
+    public mutating func startTimer(id: String, title: String, time: RecipeTime, now: Date = .now) -> Bool {
+        guard !cookingTimers.contains(where: { $0.id == id }) else { return false }
+        countdowns = cookingTimers + [.init(id: id, title: title, deadline: now.addingTimeInterval(TimeInterval(time.seconds)))]
+        return true
+    }
+
+    public mutating func removeTimer(_ id: String) {
+        countdowns = cookingTimers.filter { $0.id != id }
     }
     public mutating func visit(_ recipe: Recipe, now: Date = Date()) {
         if let index = adventures.firstIndex(where: { $0.id == recipe.id }) {
