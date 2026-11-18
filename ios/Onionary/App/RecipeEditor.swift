@@ -441,7 +441,7 @@ struct ImportRecipeView: View {
                         if busy { ProgressView() }
                         if let error {
                             Text(error).foregroundStyle(.red)
-                            if !pasteRecipe, let url = try? RecipeImportLink.webRecipe(link) {
+                            if !pasteRecipe, let url = (try? RecipeImportLink.sharedRecipe(link)) ?? (try? RecipeImportLink.webRecipe(link)) {
                                 Link("Open in Safari", destination: url)
                                 Button("Paste recipe text") { pasteRecipe = true; self.error = nil }
                             }
