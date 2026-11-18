@@ -205,5 +205,3 @@ def test_recipe_equipment_survives_edits_and_can_be_cleared(client, auth_headers
     assert client.put(path, headers=auth_headers, json={"name": "Pear cake"}).json()["equipment"] == recipe["equipment"]
     assert client.put(path, headers=auth_headers, json={"equipment": [" "]}).status_code == 422
     assert client.put(path, headers=auth_headers, json={"equipment": []}).json()["equipment"] == []
-
-
