@@ -469,6 +469,7 @@ final class AppStore {
 
     #if DEBUG
     private func setupUITest() {
+        let arguments = ProcessInfo.processInfo.arguments
         let testFile = FileManager.default.temporaryDirectory.appending(path: "onionary-ui-kitchen.json")
         file = testFile
         if ProcessInfo.processInfo.arguments.contains("--reset") {
@@ -486,7 +487,8 @@ final class AppStore {
             UserDefaults.standard.removeObject(forKey: "language")
         }
         kitchen = (try? KitchenFile.read(testFile)) ?? Kitchen()
-        if kitchen.recipes.isEmpty && ProcessInfo.processInfo.arguments.contains("--ordering-fixture") {
+        let recipeOptions = ["--ordering-fixture", "--equipment-fixture", "--timer-fixture"]
+        if kitchen.recipes.isEmpty && recipeOptions.contains(where: arguments.contains) {
             let data = try! JSONSerialization.data(withJSONObject: [UITestBackend.recipe])
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: data)
         } else if kitchen.recipes.isEmpty {
@@ -511,7 +513,6 @@ final class AppStore {
             }
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: JSONSerialization.data(withJSONObject: recipes))
         }
-        let arguments = ProcessInfo.processInfo.arguments
         let editingActiveRecipe = arguments.contains("--editing-active-recipe")
         if (editingActiveRecipe || arguments.contains("--active-recipe")), let recipe = kitchen.recipes.first {
             kitchen.visit(recipe)
@@ -521,6 +522,11 @@ final class AppStore {
             }
         }
         credential = Credential(server: URL(string: "https://ui-test.invalid")!, token: "test", userID: "1", name: "Test Cook", email: "cook@example.org")
+        if arguments.contains("--marketing-lock-screen") {
+            for recipe in kitchen.recipes {
+                UserDefaults.standard.set(true, forKey: "cookingModeDisabled.\(scope).\(recipe.id)")
+            }
+        }
         if ProcessInfo.processInfo.arguments.contains("--renew-session") {
             credential?.refreshToken = "test-refresh"
             credential?.sessionExpiresAt = Date().addingTimeInterval(42 * 86400).timeIntervalSince1970
