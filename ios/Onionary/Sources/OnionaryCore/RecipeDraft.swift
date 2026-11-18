@@ -1,6 +1,18 @@
 import Foundation
 
 public enum RecipeImportLink {
+    public enum Source: Equatable, Sendable {
+        case onionary(URL)
+        case chefkoch(URL)
+        case website(URL)
+    }
+
+    public static func source(_ text: String) throws -> Source {
+        if let url = try? sharedRecipe(text) { return .onionary(url) }
+        if let url = try? chefkoch(text) { return .chefkoch(url) }
+        return try .website(webRecipe(text))
+    }
+
     public static func sharedRecipe(_ text: String) throws -> URL {
         guard let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
               url.scheme == "https", url.host != nil, url.user == nil, url.password == nil,
@@ -24,8 +36,8 @@ public enum RecipeImportLink {
         throw CookingError.response("No supported recipe link found.")
     }
     public static func accepted(_ text: String) throws -> URL {
-        if let url = try? chefkoch(text) { return url }
-        return try sharedRecipe(text)
+        if let url = try? sharedRecipe(text) { return url }
+        return try chefkoch(text)
     }
     public static func chefkoch(_ text: String) throws -> URL {
         guard let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),

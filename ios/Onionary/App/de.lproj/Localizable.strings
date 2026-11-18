@@ -345,3 +345,17 @@
 "Last added" = "Zuletzt hinzugefügt";
 "Ingredient count" = "Anzahl der Zutaten";
 "Reverse sort order" = "Sortierreihenfolge umkehren";
+
+"The Apple Intelligence model isn’t ready. Check Apple Intelligence in Settings and try again later." = "Das Apple-Intelligence-Modell ist noch nicht bereit. Prüfe Apple Intelligence in den Einstellungen und versuche es später erneut.";
+"This device does not support Apple Intelligence." = "Dieses Gerät unterstützt Apple Intelligence nicht.";
+"Apple Intelligence could not prepare a recipe draft. Try shorter recipe text or enter it manually." = "Apple Intelligence konnte keinen Rezeptentwurf erstellen. Kürze den Rezepttext oder gib das Rezept manuell ein.";
+"Could not connect to the recipe website. Open the link in Safari or try again." = "Die Rezeptseite ist nicht erreichbar. Öffne den Link in Safari oder versuche es erneut.";
+"This website blocked recipe import. Open the link in Safari and copy the recipe text." = "Diese Website blockiert den Rezeptimport. Öffne den Link in Safari und kopiere den Rezepttext.";
+"This recipe language is unavailable in Apple Intelligence. Try another language or enter the recipe manually." = "Apple Intelligence unterstützt diese Rezeptsprache nicht. Wähle eine andere Sprache oder gib das Rezept manuell ein.";
+"Apple Intelligence is busy. Try again in a moment." = "Apple Intelligence ist beschäftigt. Versuche es gleich erneut.";
+"Recipe text" = "Rezepttext";
+"Use recipe URL" = "Rezeptlink verwenden";
+"Onionary checks the page for recipe data. If needed, Apple Intelligence formats the text on this device." = "Onionary sucht auf der Seite nach Rezeptdaten. Bei Bedarf formatiert Apple Intelligence den Text auf diesem Gerät.";
+"Open in Safari" = "In Safari öffnen";
+"Paste recipe text" = "Rezepttext einfügen";
+"Enter recipe manually" = "Rezept manuell eingeben";

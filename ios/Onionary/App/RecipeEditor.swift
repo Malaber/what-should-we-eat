@@ -344,6 +344,8 @@ struct ImportRecipeView: View {
     @State private var draft: RecipeDraft?
     @State private var busy = false
     @State private var error: String?
+    @State private var pasteRecipe = false
+    @State private var recipeText = ""
     @Environment(\.dismiss) private var dismiss
     var body: some View {
         Group {
@@ -351,23 +353,48 @@ struct ImportRecipeView: View {
             else {
                 NavigationStack {
                     Form {
-                        TextField("Recipe URL", text: $link).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                            .accessibilityIdentifier("recipe-import-url")
-                        Text("Other recipe websites use Apple Intelligence on this device.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                        Button("Review recipe") { Task {
-                            busy = true; error = nil; defer { busy = false }
-                            do { draft = try await store.importDraft(link) }
-                            catch { self.error = L10n.text(error.localizedDescription) }
-                        } }.disabled(busy).accessibilityIdentifier("review-recipe-import")
+                        if pasteRecipe {
+                            TextEditor(text: $recipeText).frame(minHeight: 140).accessibilityLabel("Recipe text")
+                            Button("Use recipe URL") { pasteRecipe = false; error = nil }.disabled(busy)
+                        } else {
+                            TextField("Recipe URL", text: $link).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                                .accessibilityIdentifier("recipe-import-url")
+                            Text("Onionary checks the page for recipe data. If needed, Apple Intelligence formats the text on this device.")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
+                        Button("Review recipe") { Task { await review() } }
+                            .disabled(busy || (pasteRecipe && recipeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+                            .accessibilityIdentifier("review-recipe-import")
                         if busy { ProgressView() }
-                        if let error { Text(error).foregroundStyle(.red) }
+                        if let error {
+                            Text(error).foregroundStyle(.red)
+                            if !pasteRecipe, let url = try? RecipeImportLink.webRecipe(link) {
+                                Link("Open in Safari", destination: url)
+                                Button("Paste recipe text") { pasteRecipe = true; self.error = nil }
+                            }
+                            Button("Enter recipe manually") { draft = RecipeDraft() }
+                        }
                     }.accessibilityIdentifier("recipe-import-form")
                         .connectionRecovery(store).dismissibleKeyboard().navigationTitle("Import recipe")
                         .interactiveDismissDisabled(busy)
                         .toolbar { Button("Cancel") { dismiss() } }
                 }
             }
+        }
+    }
+
+    private func review() async {
+        guard !busy else { return }
+        busy = true; error = nil; defer { busy = false }
+        do {
+            if pasteRecipe {
+                draft = try await RecipeIntelligence.draft(from: recipeText, language: .automatic, mode: .format)
+            } else {
+                draft = try await store.importDraft(link)
+            }
+        } catch is CancellationError {
+        } catch {
+            self.error = L10n.text(error.localizedDescription)
         }
     }
 }

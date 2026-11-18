@@ -1,4 +1,5 @@
 import FoundationModels
+import OSLog
 import SwiftUI
 import OnionaryCore
 
@@ -11,7 +12,8 @@ struct IntelligenceRecipeView: View {
     @State private var busy = false
     @State private var error: String?
     @Environment(\.dismiss) private var dismiss
-    private var unavailable: String? { RecipeIntelligence.unavailable }
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var unavailable: String?
     var body: some View {
         if let draft { RecipeEditor(store: store, draft: draft) }
         else {
@@ -34,10 +36,10 @@ struct IntelligenceRecipeView: View {
                     }
                     Section("Apple Intelligence") {
                         Text("Generation stays on this device. Review ingredients, quantities and cooking instructions before saving to your backend.")
-                        if let unavailable { Text(unavailable).foregroundStyle(.secondary) }
+                        if let unavailable { Text(L10n.text(unavailable)).foregroundStyle(.secondary) }
                         if let error { Text(error).foregroundStyle(.red) }
                         Button("Create recipe draft") { Task { await generate() } }
-                            .disabled(busy || prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || unavailable != nil)
+                            .disabled(busy || prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         if busy { ProgressView() }
                     }
                 }.accessibilityIdentifier("intelligence-form").dismissibleKeyboard().navigationTitle("Create with Intelligence")
@@ -47,12 +49,16 @@ struct IntelligenceRecipeView: View {
                         }
                     }
                     .interactiveDismissDisabled(busy)
+                    .task(id: scenePhase) {
+                        if scenePhase == .active { unavailable = RecipeIntelligence.unavailable }
+                    }
             }
         }
     }
     private func generate() async {
-        guard unavailable == nil else { return }
         busy = true; error = nil; defer { busy = false }
+        unavailable = RecipeIntelligence.unavailable
+        guard unavailable == nil else { return }
         do {
             draft = try await RecipeIntelligence.draft(from: prompt, language: recipeLanguage, mode: mode)
         } catch { self.error = L10n.text(error.localizedDescription) }
@@ -60,18 +66,21 @@ struct IntelligenceRecipeView: View {
 }
 
 enum RecipeIntelligence {
+    private static let log = Logger(subsystem: "de.malaber.onionary", category: "RecipeIntelligence")
+    private static let modelUnavailable = "The Apple Intelligence model isn’t ready. Check Apple Intelligence in Settings and try again later."
+    private static let generationFailed = "Apple Intelligence could not prepare a recipe draft. Try shorter recipe text or enter it manually."
     static var unavailable: String? {
         guard #available(iOS 26, *) else { return "Requires iOS 26 or later." }
         switch SystemLanguageModel.default.availability {
         case .available: return nil
         case .unavailable(.appleIntelligenceNotEnabled): return "Enable Apple Intelligence in Settings."
-        case .unavailable(.modelNotReady): return "Apple Intelligence is downloading its model."
+        case .unavailable(.modelNotReady): return modelUnavailable
+        case .unavailable(.deviceNotEligible): return "This device does not support Apple Intelligence."
         case .unavailable: return "Apple Intelligence is unavailable on this device."
         }
     }
 
     static func importPage(_ url: URL) async throws -> RecipeDraft {
-        if let unavailable { throw CookingError.response(unavailable) }
         let config = URLSessionConfiguration.ephemeral
         config.httpShouldSetCookies = false
         config.urlCache = nil
@@ -81,8 +90,21 @@ enum RecipeIntelligence {
         defer { session.invalidateAndCancel() }
         let failure = CookingError.response("Could not read this recipe page. Paste the recipe text instead.")
         let byteLimit = 2_000_000
-        let (bytes, response) = try await session.bytes(from: url)
-        guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode),
+        var request = URLRequest(url: url)
+        request.setValue("text/html, application/xhtml+xml", forHTTPHeaderField: "Accept")
+        let bytes: URLSession.AsyncBytes
+        let metadata: URLResponse
+        do { (bytes, metadata) = try await session.bytes(for: request) }
+        catch let error as URLError {
+            if error.code == .cancelled { throw CancellationError() }
+            log.info("Recipe page request failed with URL error \(error.code.rawValue, privacy: .public)")
+            throw CookingError.response("Could not connect to the recipe website. Open the link in Safari or try again.")
+        }
+        guard let response = metadata as? HTTPURLResponse else { throw failure }
+        if [401, 403, 429].contains(response.statusCode) {
+            throw CookingError.response("This website blocked recipe import. Open the link in Safari and copy the recipe text.")
+        }
+        guard (200..<300).contains(response.statusCode),
               ["text/html", "application/xhtml+xml"].contains(response.mimeType),
               response.expectedContentLength <= byteLimit else { throw failure }
         var data = Data()
@@ -90,9 +112,17 @@ enum RecipeIntelligence {
             guard data.count < byteLimit else { throw failure }
             data.append(byte)
         }
-        guard let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
+        let encoding = response.textEncodingName.flatMap { name -> String.Encoding? in
+            switch name.lowercased() {
+            case "windows-1252": .windowsCP1252
+            case "iso-8859-1", "latin1": .isoLatin1
+            default: nil
+            }
+        } ?? .utf8
+        guard let html = String(data: data, encoding: encoding) ?? String(data: data, encoding: .isoLatin1) else {
             throw failure
         }
+        if let structured = ExternalRecipePage.structuredDraft(from: html) { return structured }
         let source = try ExternalRecipePage.recipeText(from: html)
         return try await draft(from: source, language: .automatic, mode: .format)
     }
@@ -114,7 +144,14 @@ enum RecipeIntelligence {
             Keep times, temperatures and amounts that cannot be confidently matched as ordinary text.
             """
         let session = LanguageModelSession(instructions: instructions)
-        let result = try await session.respond(to: source, generating: GeneratedRecipe.self).content
+        let result: GeneratedRecipe
+        do { result = try await session.respond(to: source, generating: GeneratedRecipe.self).content }
+        catch {
+            if error is CancellationError || Task.isCancelled { throw CancellationError() }
+            let diagnostic = error as NSError
+            log.error("Recipe generation failed: \(diagnostic.domain, privacy: .public) \(diagnostic.code, privacy: .public)")
+            throw CookingError.response(generationMessage(error))
+        }
         var recipe = RecipeDraft()
         recipe.name = result.name
         recipe.servings = result.servings.map { Decimal($0) }
@@ -134,8 +171,33 @@ enum RecipeIntelligence {
             step.durationMin = source.durationMin
             return step
         }
-        _ = try recipe.validatedData()
+        guard (try? recipe.validatedData()) != nil else { throw CookingError.response(generationFailed) }
         return recipe
+    }
+
+    @available(iOS 26, *)
+    private static func generationMessage(_ error: Error) -> String {
+        if #available(iOS 27, *) {
+            if error is SystemLanguageModel.Error { return modelUnavailable }
+            if let error = error as? LanguageModelError {
+                switch error {
+                case .contextSizeExceeded: return "Use a shorter recipe text."
+                case .unsupportedLanguageOrLocale: return "This recipe language is unavailable in Apple Intelligence. Try another language or enter the recipe manually."
+                case .rateLimited, .timeout: return "Apple Intelligence is busy. Try again in a moment."
+                default: break
+                }
+            }
+        }
+        if let error = error as? LanguageModelSession.GenerationError {
+            switch error {
+            case .assetsUnavailable: return modelUnavailable
+            case .exceededContextWindowSize: return "Use a shorter recipe text."
+            case .unsupportedLanguageOrLocale: return "This recipe language is unavailable in Apple Intelligence. Try another language or enter the recipe manually."
+            case .rateLimited: return "Apple Intelligence is busy. Try again in a moment."
+            default: break
+            }
+        }
+        return unavailable ?? generationFailed
     }
 
     private static func group(_ name: String) -> String? {

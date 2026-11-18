@@ -330,12 +330,20 @@ final class AppStore {
 
     func importDraft(_ link: String) async throws -> RecipeDraft {
         guard let credential else { throw CookingError.response("Sign in before importing.") }
-        guard let url = try? RecipeImportLink.accepted(link) else {
-            return try await RecipeIntelligence.importPage(RecipeImportLink.webRecipe(link))
+        let url: URL
+        let endpoint: String
+        switch try RecipeImportLink.source(link) {
+        case .onionary(let copy):
+            url = copy
+            endpoint = "recipe-shares/preview"
+        case .chefkoch(let recipe):
+            url = recipe
+            endpoint = "recipes/import/parse/html"
+        case .website(let page):
+            return try await RecipeIntelligence.importPage(page)
         }
-        let isCopy = (try? RecipeImportLink.sharedRecipe(link)) != nil
         let body = try JSONEncoder().encode(["source": "chefkoch", "url": url.absoluteString])
-        let data = try await request(isCopy ? "recipe-shares/preview" : "recipes/import/parse/html", method: "POST", body: body)
+        let data = try await request(endpoint, method: "POST", body: body)
         return try OnionaryAPI.decoder.decode(RecipeDraft.self, from: data)
     }
 

@@ -2,6 +2,44 @@ import XCTest
 @testable import OnionaryCore
 
 final class RecipeDraftTests: XCTestCase {
+    func testImportSourceDispatchAndCrossDomainCopies() throws {
+        let token = String(repeating: "a", count: 43)
+        let share = try XCTUnwrap(URL(string: "https://kitchen.example/share.html#" + token))
+        XCTAssertEqual(try RecipeImportLink.source(share.absoluteString), .onionary(share))
+        let chefkoch = try XCTUnwrap(URL(string: "https://www.chefkoch.de/rezepte/123"))
+        XCTAssertEqual(try RecipeImportLink.source(chefkoch.absoluteString), .chefkoch(chefkoch))
+        let other = try XCTUnwrap(URL(string: "https://chefkoch.de.example/recipe"))
+        XCTAssertEqual(try RecipeImportLink.source(other.absoluteString + "#part"), .website(other))
+    }
+
+    func testStructuredWebsiteDraftPreservesAmountsGroupsAndLanguageWithoutModel() throws {
+        let html = #"""
+            <script type="application/ld+json">{"@graph":[{"@type":"WebPage"},
+              {"@type":"Recipe","name":"Birnenkuchen &amp; Creme","recipeYield":["4 Portionen"],
+               "totalTime":"PT1H5M","recipeIngredient":["80 g Butter","1 1/2 EL Öl","½ Birne","2–3 Eier","Salz nach Bedarf"],
+               "recipeInstructions":[{"@type":"HowToSection","name":"Füllung","itemListElement":[
+                {"@type":"HowToStep","text":"40 g Butter schmelzen.","performTime":"PT2M"},
+                {"@type":"HowToStep","text":"Birne schneiden."}]}]}]}</script>
+            """#
+        let draft = try XCTUnwrap(ExternalRecipePage.structuredDraft(from: html))
+        XCTAssertEqual(draft.name, "Birnenkuchen & Creme")
+        XCTAssertEqual(draft.servings, 4)
+        XCTAssertEqual(draft.totalTimeMin, 65)
+        XCTAssertEqual(draft.ingredients.map(\.name), ["Butter", "Öl", "Birne", "2–3 Eier", "Salz nach Bedarf"])
+        XCTAssertEqual(draft.ingredients.map(\.quantity), [80, 1.5, 0.5, nil, nil])
+        XCTAssertEqual(draft.ingredients[1].unit, "EL")
+        XCTAssertEqual(draft.instructionSteps.map(\.groupName), ["Füllung", "Füllung"])
+        XCTAssertEqual(draft.instructionSteps.map(\.stepNumber), [1, 2])
+        XCTAssertEqual(draft.instructionSteps.first?.description, "{{Butter|50%}} schmelzen.")
+        XCTAssertEqual(draft.instructionSteps.first?.durationMin, 2)
+        XCTAssertNoThrow(try draft.validatedData())
+    }
+
+    func testIncompleteStructuredDataFallsBackToPageText() throws {
+        let html = #"<script type="application/ld+json">{"@type":"Recipe","name":"Suppe","recipeIngredient":["Zwiebeln"]}</script><main><h1>Suppe</h1></main>"#
+        XCTAssertNil(ExternalRecipePage.structuredDraft(from: html))
+        XCTAssertTrue(try ExternalRecipePage.recipeText(from: html).contains("Zwiebeln"))
+    }
     func testChefkochSharedTextAndTracking() throws {
         let link = "https://www.chefkoch.de/rezepte/4376441747840412/Unsichtbarer-Apfelkuchen.html?utm_source=com.apple.UIKit.activity.CopyToPasteboard&utm_medium=Social"
         XCTAssertEqual(try RecipeImportLink.sharedText("Try this recipe: " + link).absoluteString, link)

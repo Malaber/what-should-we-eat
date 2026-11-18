@@ -258,3 +258,17 @@
 "Last added" = "Last added";
 "Ingredient count" = "Ingredient count";
 "Reverse sort order" = "Reverse sort order";
+
+"The Apple Intelligence model isn’t ready. Check Apple Intelligence in Settings and try again later." = "The Apple Intelligence model isn’t ready. Check Apple Intelligence in Settings and try again later.";
+"This device does not support Apple Intelligence." = "This device does not support Apple Intelligence.";
+"Apple Intelligence could not prepare a recipe draft. Try shorter recipe text or enter it manually." = "Apple Intelligence could not prepare a recipe draft. Try shorter recipe text or enter it manually.";
+"Could not connect to the recipe website. Open the link in Safari or try again." = "Could not connect to the recipe website. Open the link in Safari or try again.";
+"This website blocked recipe import. Open the link in Safari and copy the recipe text." = "This website blocked recipe import. Open the link in Safari and copy the recipe text.";
+"This recipe language is unavailable in Apple Intelligence. Try another language or enter the recipe manually." = "This recipe language is unavailable in Apple Intelligence. Try another language or enter the recipe manually.";
+"Apple Intelligence is busy. Try again in a moment." = "Apple Intelligence is busy. Try again in a moment.";
+"Recipe text" = "Recipe text";
+"Use recipe URL" = "Use recipe URL";
+"Onionary checks the page for recipe data. If needed, Apple Intelligence formats the text on this device." = "Onionary checks the page for recipe data. If needed, Apple Intelligence formats the text on this device.";
+"Open in Safari" = "Open in Safari";
+"Paste recipe text" = "Paste recipe text";
+"Enter recipe manually" = "Enter recipe manually";
