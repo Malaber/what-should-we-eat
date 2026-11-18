@@ -1,4 +1,7 @@
 {
+  "recipe.equipment": "Equipment",
+  "recipe.equipment-help": "One tool per line.",
+  "share.equipment": "Equipment",
   "nav.pick_meals": "Pick Meals",
   "nav.kitchen": "Kitchen",
   "nav.manage_recipes": "Manage Recipes",

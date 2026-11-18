@@ -28,6 +28,7 @@ public struct Recipe: Codable, Identifiable, Equatable, Sendable {
     public let ingredients: [Ingredient]
     public let instructionSteps: [CookingStep]
     public var createdAt: String? = nil
+    public var equipment: [String]? = nil
 }
 
 public enum CookingError: LocalizedError {
@@ -140,7 +141,19 @@ public struct Kitchen: Codable, Equatable, Sendable {
     public var adventures: [Adventure] = []
     public var currentID: Int?
     public var pantrySupplies: [PantryMatching.Supply]?
+    private var ownedEquipment: Set<String>?
     public init() {}
+
+    public func hasEquipment(_ name: String) -> Bool {
+        ownedEquipment?.contains(RecipeEquipment.key(name)) == true
+    }
+
+    public mutating func toggleEquipment(_ name: String) {
+        var tools = ownedEquipment ?? []
+        let key = RecipeEquipment.key(name)
+        if tools.remove(key) == nil { tools.insert(key) }
+        ownedEquipment = tools
+    }
     public mutating func visit(_ recipe: Recipe, now: Date = Date()) {
         if let index = adventures.firstIndex(where: { $0.id == recipe.id }) {
             adventures[index].lastVisited = now

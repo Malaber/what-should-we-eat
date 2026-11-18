@@ -211,6 +211,14 @@ final class AppStore {
         try persist(next)
     }
 
+    func toggleEquipment(_ name: String) {
+        do {
+            var next = kitchen
+            next.toggleEquipment(name)
+            try persist(next)
+        } catch { self.error = error.localizedDescription }
+    }
+
     private func clearWidget() {
         do { try writeWidgetSnapshot(nil) }
         catch { self.error = error.localizedDescription }

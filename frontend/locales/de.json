@@ -1,4 +1,7 @@
 {
+  "recipe.equipment": "Küchenutensilien",
+  "recipe.equipment-help": "Ein Utensil pro Zeile.",
+  "share.equipment": "Küchenutensilien",
   "nav.pick_meals": "Gerichte planen",
   "nav.kitchen": "Küche",
   "nav.manage_recipes": "Rezepte verwalten",

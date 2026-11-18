@@ -94,10 +94,20 @@ struct RecipeEditor: View {
 
             metadataSection
             tagsSection
+            equipmentSection
             ingredientsSection
         } secondary: {
             stepsSection
         }.textFieldStyle(.roundedBorder).accessibilityIdentifier("recipe-editor")
+    }
+    private var equipmentSection: some View {
+        Section("Equipment") {
+            TextField("One tool per line", text: Binding(
+                get: { (draft.equipment ?? []).joined(separator: "\n") },
+                set: { draft.equipment = $0.components(separatedBy: .newlines) }), axis: .vertical)
+                .lineLimit(2...6)
+                .accessibilityIdentifier("recipe-equipment")
+        }
     }
     private var metadataSection: some View {
                 Section("Recipe") {

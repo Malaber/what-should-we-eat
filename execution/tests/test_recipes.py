@@ -193,3 +193,17 @@ class TestRecipeStructure:
         for fields in ({'icon': 'x' * 33}, {'ingredients': [{'name': 'Milk', 'group_name': 'x' * 101}]}):
             response = client.post('/recipes', json={'name': 'Recipe', **fields}, headers=auth_headers)
             assert response.status_code == 422
+def test_recipe_equipment_survives_edits_and_can_be_cleared(client, auth_headers):
+    response = client.post("/recipes", headers=auth_headers, json={
+        "name": "Cake",
+        "equipment": [" Springform pan ", "Knife", "springform  pan"],
+    })
+    assert response.status_code == 201
+    recipe = response.json()
+    assert recipe["equipment"] == ["Springform pan", "Knife"]
+    path = f'/recipes/{recipe["id"]}'
+    assert client.put(path, headers=auth_headers, json={"name": "Pear cake"}).json()["equipment"] == recipe["equipment"]
+    assert client.put(path, headers=auth_headers, json={"equipment": [" "]}).status_code == 422
+    assert client.put(path, headers=auth_headers, json={"equipment": []}).json()["equipment"] == []
+
+

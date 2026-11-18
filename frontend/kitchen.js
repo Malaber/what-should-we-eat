@@ -28,6 +28,7 @@ const $modal = document.getElementById('meal-modal');
 const $btnCloseModal = document.getElementById('btn-close-modal');
 const $modalTitle = document.getElementById('modal-title');
 const $modalMeta = document.getElementById('modal-meta');
+const $modalEquipment = document.getElementById('modal-equipment');
 const $modalIngredients = document.getElementById('modal-ingredients');
 const $modalInstructions = document.getElementById('modal-instructions');
 const $btnToggleCooked = document.getElementById('btn-toggle-cooked');
@@ -143,6 +144,7 @@ function openModal(id) {
   if (recipe.active_cooking_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">🧅</span> ${recipe.active_cooking_time_min} ${window.t('feedback.39')}</span>`);
   if (recipe.total_time_min) metaHTML.push(`<span class="meta-chip"><span class="icon">⏱️</span> ${recipe.total_time_min} ${window.t('feedback.40')}</span>`);
   $modalMeta.innerHTML = metaHTML.join('');
+  renderEquipment(recipe.equipment || []);
 
   // Ingredients
   $modalIngredients.innerHTML = (recipe.ingredients || []).map(ing => {
@@ -179,6 +181,37 @@ function openModal(id) {
 
   $modal.style.display = 'flex';
   document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function renderEquipment(tools) {
+  $modalEquipment.parentElement.hidden = tools.length === 0;
+  $modalEquipment.replaceChildren();
+  const userID = window.WSWEAuth?.user?.id;
+  const key = userID === undefined ? null : `onionary-equipment-v1-${userID}`;
+  let owned = new Set();
+  if (key) {
+    try { owned = new Set(JSON.parse(localStorage.getItem(key) || '[]')); }
+    catch { /* The checklist still works when browser storage is unavailable. */ }
+  }
+  for (const name of tools) {
+    const toolKey = name.trim().replace(/\s+/g, ' ').toLowerCase();
+    const item = document.createElement('li');
+    const label = document.createElement('label');
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = owned.has(toolKey);
+    check.addEventListener('change', () => {
+      if (check.checked) owned.add(toolKey);
+      else owned.delete(toolKey);
+      if (key) {
+        try { localStorage.setItem(key, JSON.stringify([...owned])); }
+        catch { /* Keep the current checklist usable. */ }
+      }
+    });
+    label.append(check, ` ${name}`);
+    item.append(label);
+    $modalEquipment.append(item);
+  }
 }
 
 function updateCookedButtonState(isCooked) {

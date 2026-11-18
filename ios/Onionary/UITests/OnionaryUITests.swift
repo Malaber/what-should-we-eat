@@ -3,6 +3,26 @@ import notify
 
 final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
+    func testEquipmentStaysCheckedAfterRelaunch() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--equipment-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        try selectRecipe(in: app)
+        app.buttons["preview-cook"].tap()
+        let tool = app.switches["equipment-Springform pan"]
+        if !tool.isHittable { app.swipeUp() }
+        XCTAssertTrue(tool.waitForExistence(timeout: 5))
+        XCTAssertEqual(tool.value as? String, "0")
+        tool.tap()
+        XCTAssertEqual(tool.value as? String, "1")
+        Self.relaunchPreservingData(app)
+        let restored = app.switches["equipment-Springform pan"]
+        if !restored.isHittable { app.swipeUp() }
+        XCTAssertTrue(restored.waitForExistence(timeout: 5))
+        XCTAssertEqual(restored.value as? String, "1")
+    }
+    @MainActor
     private static func relaunchPreservingData(_ app: XCUIApplication) {
         app.launchArguments.removeAll { $0 == "--reset" }
         // XCTest's launch terminates the running instance and starts a clean

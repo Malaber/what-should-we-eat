@@ -49,9 +49,11 @@ function renderRecipe(recipe, active, checked, persist) {
   section.replaceChildren(element('h2', recipe.name));
   if (recipe.notes) section.append(element('p', recipe.notes));
   for (const [key, rows, text] of [
+    ['equipment', recipe.equipment || [], tool => tool],
     ['ingredients', ingredients, ingredient => [ingredient.quantity, ingredient.unit, ingredient.name].filter(value => value != null && value !== '').join(' ')],
     ['steps', steps, step => resolveIngredientPlaceholders(step.description, ingredients)],
   ]) {
+    if (key === 'equipment' && !rows.length) continue;
     section.append(element('h3', window.t(`share.${key}`)));
     let group;
     let list;

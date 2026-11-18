@@ -333,6 +333,19 @@ struct CookingView: View {
                             }.scrollIndicators(.hidden)
                         }
                     }
+                    if let tools = adventure.recipe.equipment, !tools.isEmpty {
+                        Text("Equipment").font(.headline).accessibilityAddTraits(.isHeader)
+                        Text("Checked tools stay ready for other recipes on this device.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        ForEach(tools, id: \.self) { tool in
+                            Toggle(isOn: Binding(
+                                get: { store.kitchen.hasEquipment(tool) },
+                                set: { value in
+                                    if value != store.kitchen.hasEquipment(tool) { store.toggleEquipment(tool) }
+                                })) { Text(tool) }
+                                .accessibilityIdentifier("equipment-" + tool)
+                        }
+                    }
                     Text("Gather your ingredients").font(.headline).accessibilityAddTraits(.isHeader)
                     Group {
                         ForEach(Array(adventure.recipe.ingredients.enumerated()), id: \.element.id) { index, ingredient in

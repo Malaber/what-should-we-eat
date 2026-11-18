@@ -25,6 +25,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -136,6 +137,7 @@ class Recipe(Base):
     notes = Column(Text, nullable=True)
     icon = Column(String(32), nullable=True)
     servings = Column(Float, nullable=False, default=1, server_default="1")
+    equipment = Column(JSON, nullable=False, default=list, server_default="[]")
     kcal_per_serving = Column(Float, nullable=True)
     active_cooking_time_min = Column(Integer, nullable=True)
     total_time_min = Column(Integer, nullable=True)

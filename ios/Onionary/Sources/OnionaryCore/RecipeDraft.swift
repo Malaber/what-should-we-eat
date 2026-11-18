@@ -95,6 +95,7 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
     public var ingredients: [Item] = []
     public var instructionSteps: [Step] = []
     public var tags: [String] = []
+    public var equipment: [String]?
     public init() {}
 
     public struct Change: Identifiable, Sendable {
@@ -126,6 +127,8 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
         compare("Active minutes", original.activeCookingTimeMin.map(String.init) ?? "", activeCookingTimeMin.map(String.init) ?? "")
         compare("Total minutes", original.totalTimeMin.map(String.init) ?? "", totalTimeMin.map(String.init) ?? "")
         compare("Tags", original.tags.joined(separator: "\n"), tags.joined(separator: "\n"))
+        compare("Equipment", RecipeEquipment.cleaned(original.equipment).joined(separator: "\n"),
+                RecipeEquipment.cleaned(equipment).joined(separator: "\n"))
         if ingredients.count != original.ingredients.count || zip(ingredients, original.ingredients).contains(where: { item, previous in
             item.name != previous.name || item.quantity != previous.quantity
                 || (item.unit ?? "") != (previous.unit ?? "") || (item.groupName ?? "") != (previous.groupName ?? "")
@@ -155,6 +158,13 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
               (servings ?? 1) > 0, (servings ?? 1) <= 1_000_000,
               (kcalPerServing ?? 0) >= 0 else { throw CookingError.response("Check recipe name, ingredients, steps, and positive quantities.") }
         var copy = self
+        if equipment != nil {
+            let tools = RecipeEquipment.cleaned(equipment)
+            guard tools.count <= 50, tools.allSatisfy({ $0.unicodeScalars.count <= 100 }) else {
+                throw CookingError.response("Add up to 50 tools, with a maximum of 100 characters each.")
+            }
+            copy.equipment = tools
+        }
         for index in copy.instructionSteps.indices { copy.instructionSteps[index].stepNumber = index + 1 }
         let encoder = JSONEncoder(); encoder.keyEncodingStrategy = .convertToSnakeCase
         // PUT supports partial updates: explicitly encode cleared optional metadata.
@@ -163,5 +173,20 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
             payload[key] = NSNull()
         }
         return try JSONSerialization.data(withJSONObject: payload)
+    }
+}
+
+public enum RecipeEquipment {
+    static func key(_ name: String) -> String {
+        name.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            .folding(options: .caseInsensitive, locale: Locale(identifier: "en_US_POSIX"))
+    }
+
+    public static func cleaned(_ names: [String]?) -> [String] {
+        var seen = Set<String>()
+        return (names ?? []).compactMap { name in
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            return !trimmed.isEmpty && seen.insert(key(trimmed)).inserted ? trimmed : nil
+        }
     }
 }

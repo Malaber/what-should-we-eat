@@ -43,6 +43,11 @@ struct RecipePreview: View {
                 .disabled(selectedPortions == nil)
                 .accessibilityIdentifier("preview-cook")
             }
+            if let tools = recipe.equipment, !tools.isEmpty {
+                Section("Equipment") {
+                    ForEach(tools, id: \.self) { Text($0) }
+                }
+            }
             Section("Ingredients") {
                 ForEach(recipe.ingredients) { ingredient in
                     VStack(alignment: .leading) {

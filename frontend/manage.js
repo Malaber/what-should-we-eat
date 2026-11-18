@@ -34,6 +34,7 @@ const $recipeKcal = document.getElementById('recipe-kcal');
 const $recipeActiveTime = document.getElementById('recipe-active-time');
 const $recipeTotalTime = document.getElementById('recipe-total-time');
 const $recipeNotes = document.getElementById('recipe-notes');
+const $recipeEquipment = document.getElementById('recipe-equipment');
 const $recipeModeSwitch = document.getElementById('recipe-mode-switch');
 const $btnModeManual = document.getElementById('btn-mode-manual');
 const $btnModeImport = document.getElementById('btn-mode-import');
@@ -232,6 +233,7 @@ function editRecipe(id) {
 
   $recipeName.value = r.name || '';
   $recipeNotes.value = r.notes || '';
+  $recipeEquipment.value = (r.equipment || []).join('\n');
   $recipeServings.value = r.servings || 1;
   $recipeKcal.value = r.kcal_per_serving || '';
   $recipeActiveTime.value = r.active_cooking_time_min || '';
@@ -327,6 +329,7 @@ function applyImportedRecipe(recipe) {
   $recipeIcon.value = recipe.icon || '';
   $recipeName.value = recipe.name || '';
   $recipeNotes.value = recipe.notes || '';
+  $recipeEquipment.value = (recipe.equipment || []).join('\n');
   $recipeServings.value = recipe.servings || 1;
   $recipeKcal.value = recipe.kcal_per_serving || '';
   $recipeActiveTime.value = recipe.active_cooking_time_min || '';
@@ -559,6 +562,7 @@ async function saveRecipe(e) {
     icon: icon || null,
     name: name,
     notes: $recipeNotes.value.trim() || null,
+    equipment: $recipeEquipment.value.split(/\r?\n/).map(name => name.trim()).filter(Boolean),
     servings: Number($recipeServings.value),
     kcal_per_serving: parseFloat($recipeKcal.value) || null,
     active_cooking_time_min: parseInt($recipeActiveTime.value) || null,

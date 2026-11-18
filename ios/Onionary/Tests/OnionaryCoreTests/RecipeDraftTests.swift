@@ -2,6 +2,25 @@ import XCTest
 @testable import OnionaryCore
 
 final class RecipeDraftTests: XCTestCase {
+    func testEquipmentFollowsKitchenAcrossRecipesAndPersistence() throws {
+        var kitchen = try JSONDecoder().decode(Kitchen.self, from: Data(#"{"recipes":[],"adventures":[]}"#.utf8))
+        XCTAssertFalse(kitchen.hasEquipment("Springform pan"))
+        kitchen.toggleEquipment("Springform pan")
+        let restored = try JSONDecoder().decode(Kitchen.self, from: JSONEncoder().encode(kitchen))
+        XCTAssertTrue(restored.hasEquipment(" SPRINGFORM  PAN "))
+        XCTAssertFalse(Kitchen().hasEquipment("Springform pan"))
+
+        var draft = RecipeDraft()
+        draft.name = "Cake"
+        draft.equipment = ["Knife", " knife ", "Springform pan", ""]
+        let encoded = try JSONSerialization.jsonObject(with: draft.validatedData()) as? [String: Any]
+        XCTAssertEqual(encoded?["equipment"] as? [String], ["Knife", "Springform pan"])
+        var edited = draft
+        edited.equipment = []
+        XCTAssertEqual(edited.changes(from: draft).map(\.field), ["Equipment"])
+        let cleared = try JSONSerialization.jsonObject(with: edited.validatedData()) as? [String: Any]
+        XCTAssertEqual(cleared?["equipment"] as? [String], [])
+    }
     func testImportSourceDispatchAndCrossDomainCopies() throws {
         let token = String(repeating: "a", count: 43)
         let share = try XCTUnwrap(URL(string: "https://kitchen.example/share.html#" + token))
