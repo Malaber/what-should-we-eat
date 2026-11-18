@@ -478,7 +478,7 @@ struct CookingView: View {
                 .foregroundStyle(onion).background(onion.opacity(0.14), in: Capsule())
                 .frame(minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain)
-            .accessibilityLabel(L10n.format("Start timer for %@", label))
+            .accessibilityLabel(String(format: L10n.text("Start timer for %@"), label))
             .accessibilityIdentifier("start-timer-" + key)
             .disabled(store.kitchen.cookingTimers.contains { $0.id == key })
     }
