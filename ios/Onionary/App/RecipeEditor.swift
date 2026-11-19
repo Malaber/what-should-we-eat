@@ -74,7 +74,7 @@ struct RecipeEditor: View {
                 .alert("Recipe placeholders", isPresented: $showingStepHelp) {
                     Button("Done", role: .cancel) {}
                 } message: {
-                    Text("Example: Add {{Flour|50%}}, then bake for {{time|2m30s}}. The flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown.")
+                    Text("Add {{Flour|50%}}, then bake for {{time|2m30s}}.\n\nThe flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown.")
                 }
                 .alert("Insert timer", isPresented: $enteringTimer) {
                     TextField("Minutes", text: $timerMinutes).keyboardType(.numberPad)
@@ -115,6 +115,14 @@ struct RecipeEditor: View {
     }
     private func placeholderMenu(for step: UUID) -> some View {
         Menu {
+            Button("Insert timer", systemImage: "timer") {
+                guard let target = insertionTarget(for: step) else { return }
+                timerTarget = target
+                timerMinutes = ""
+                timerSeconds = ""
+                enteringTimer = true
+            }.accessibilityIdentifier("insert-time-placeholder")
+            Button("What is this?", systemImage: "questionmark.circle") { showingStepHelp = true }
             Section("Ingredient amounts") {
                 if insertableIngredients.isEmpty {
                     if draft.ingredients.allSatisfy({ $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
@@ -127,16 +135,8 @@ struct RecipeEditor: View {
                     Button(ingredient.name) { insertAmount(ingredient, into: step) }
                 }
             }
-            Button("Insert timer", systemImage: "timer") {
-                guard let target = insertionTarget(for: step) else { return }
-                timerTarget = target
-                timerMinutes = ""
-                timerSeconds = ""
-                focusedInput = nil
-                enteringTimer = true
-            }
-            Button("What is this?", systemImage: "questionmark.circle") { showingStepHelp = true }
         } label: { Label("Insert placeholder", systemImage: "plus.circle") }
+            .menuOrder(.fixed)
             .accessibilityIdentifier("insert-placeholder")
     }
 

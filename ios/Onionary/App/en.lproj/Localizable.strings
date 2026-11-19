@@ -172,7 +172,7 @@
 "What is this?" = "What is this?";
 "Some ingredient amounts have no reference in the steps." = "Some ingredient amounts have no reference in the steps.";
 
-"Example: Add {{Flour|50%}}, then bake for {{time|2m30s}}. The flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown." = "Example: Add {{Flour|50%}}, then bake for {{time|2m30s}}. The flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown.";
+"Add {{Flour|50%}}, then bake for {{time|2m30s}}.\n\nThe flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown." = "Add {{Flour|50%}}, then bake for {{time|2m30s}}.\n\nThe flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown.";
 
 "Start Live Activity" = "Start Live Activity";
 

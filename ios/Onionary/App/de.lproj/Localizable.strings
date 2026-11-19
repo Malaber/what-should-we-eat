@@ -172,7 +172,7 @@
 "What is this?" = "Was ist das?";
 "Some ingredient amounts have no reference in the steps." = "Einige Zutatenmengen sind in den Schritten noch nicht verknüpft.";
 
-"Example: Add {{Flour|50%}}, then bake for {{time|2m30s}}. The flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown." = "Beispiel: {{Mehl|50%}} dazugeben und {{time|2m30s}} backen. Damit verwendest du die Hälfte der Mehlmenge, angepasst an deine Portionen. Tippe beim Kochen auf die Zeit, um einen Timer für 2 Minuten und 30 Sekunden zu starten.";
+"Add {{Flour|50%}}, then bake for {{time|2m30s}}.\n\nThe flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown." = "{{Mehl|50%}} dazugeben und {{time|2m30s}} backen.\n\nDamit verwendest du die Hälfte der Mehlmenge, angepasst an deine Portionen. Tippe beim Kochen auf die Zeit, um einen Timer für 2 Minuten und 30 Sekunden zu starten.";
 
 "Start Live Activity" = "Live-Aktivität starten";
 
