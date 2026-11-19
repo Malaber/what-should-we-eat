@@ -179,6 +179,11 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
 public enum RecipeEquipment {
     static func key(_ name: String) -> String {
         name.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            .lowercased().precomposedStringWithCanonicalMapping
+    }
+
+    static func legacyKey(_ name: String) -> String {
+        name.split(whereSeparator: \.isWhitespace).joined(separator: " ")
             .folding(options: .caseInsensitive, locale: Locale(identifier: "en_US_POSIX"))
     }
 
@@ -186,7 +191,7 @@ public enum RecipeEquipment {
         var seen = Set<String>()
         return (names ?? []).compactMap { name in
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            return !trimmed.isEmpty && seen.insert(key(trimmed)).inserted ? trimmed : nil
+            return !trimmed.isEmpty && seen.insert(legacyKey(trimmed)).inserted ? trimmed : nil
         }
     }
 }

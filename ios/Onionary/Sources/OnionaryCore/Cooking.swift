@@ -136,24 +136,62 @@ public struct Adventure: Codable, Identifiable, Equatable, Sendable {
     }
 }
 
+public struct EquipmentUpdate: Encodable, Sendable {
+    public let changes: [String: Bool]
+    public let legacyOwned: [String]
+    public var isEmpty: Bool { changes.isEmpty && legacyOwned.isEmpty }
+
+    private enum CodingKeys: String, CodingKey {
+        case changes
+        case legacyOwned = "legacy_owned"
+    }
+}
+
 public struct Kitchen: Codable, Equatable, Sendable {
     public var recipes: [Recipe] = []
     public var adventures: [Adventure] = []
     public var currentID: Int?
     public var pantrySupplies: [PantryMatching.Supply]?
     private var ownedEquipment: Set<String>?
+    private var pendingEquipment: [String: Bool]?
+    private var importedEquipment: Bool?
     private var countdowns: [RecipeCountdown]?
     public init() {}
 
     public func hasEquipment(_ name: String) -> Bool {
-        ownedEquipment?.contains(RecipeEquipment.key(name)) == true
+        let key = RecipeEquipment.key(name)
+        if let pending = pendingEquipment?[key] { return pending }
+        let owned = ownedEquipment ?? []
+        return owned.contains(key) || (importedEquipment != true && owned.contains(RecipeEquipment.legacyKey(name)))
     }
 
     public mutating func toggleEquipment(_ name: String) {
-        var tools = ownedEquipment ?? []
-        let key = RecipeEquipment.key(name)
-        if tools.remove(key) == nil { tools.insert(key) }
-        ownedEquipment = tools
+        let owned = !hasEquipment(name)
+        var pending = pendingEquipment ?? [:]
+        pending[RecipeEquipment.key(name)] = owned
+        pendingEquipment = pending
+    }
+
+    public var hasPendingEquipment: Bool { pendingEquipment?.isEmpty == false }
+
+    public var equipmentUpdate: EquipmentUpdate {
+        let owned = ownedEquipment ?? []
+        var legacy = Set<String>()
+        if importedEquipment != true {
+            legacy = Set(owned.map(RecipeEquipment.key))
+            for recipe in recipes + adventures.map(\.recipe) {
+                for tool in recipe.equipment ?? [] where owned.contains(RecipeEquipment.legacyKey(tool)) {
+                    legacy.insert(RecipeEquipment.key(tool))
+                }
+            }
+        }
+        return EquipmentUpdate(changes: pendingEquipment ?? [:], legacyOwned: legacy.sorted())
+    }
+
+    public mutating func reconcileEquipment(_ owned: [String], sent: EquipmentUpdate) {
+        ownedEquipment = Set(owned)
+        importedEquipment = true
+        pendingEquipment = (pendingEquipment ?? [:]).filter { sent.changes[$0.key] != $0.value }
     }
     public var cookingTimers: [RecipeCountdown] { countdowns ?? [] }
 

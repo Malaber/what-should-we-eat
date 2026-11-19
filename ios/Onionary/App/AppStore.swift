@@ -16,6 +16,7 @@ final class AppStore {
     var reauthenticationError: String?
     var mealItems: [MealPlan.Item] = []
     private var renewal: Task<Credential, Error>?
+    private var equipmentRequests: Set<String> = []
 
     let cookingActivity = CookingActivityController()
     var scope: String {
@@ -190,17 +191,18 @@ final class AppStore {
             }
             var next = kitchen; next.recipes = recipes
             try persist(next)
+            await syncEquipment()
             await refreshWidget()
             error = nil
         } catch APIError.unauthorized { error = nil }
         catch { self.error = error.localizedDescription }
     }
 
-    private func persist(_ next: Kitchen) throws {
+    private func persist(_ next: Kitchen, syncCooking: Bool = true) throws {
         guard let file else { throw CookingError.response("Your saved kitchen could not be loaded. Reconnect before making changes.") }
         try KitchenFile.write(next, to: file)
         kitchen = next
-        synchronizeCookingActivity()
+        if syncCooking { synchronizeCookingActivity() }
     }
 
     func savePantry(_ supplies: [PantryMatching.Supply]) throws {
@@ -215,8 +217,30 @@ final class AppStore {
         do {
             var next = kitchen
             next.toggleEquipment(name)
-            try persist(next)
+            try persist(next, syncCooking: false)
+            Task { await syncEquipment() }
         } catch { self.error = error.localizedDescription }
+    }
+
+    private func syncEquipment() async {
+        let account = scope
+        guard !account.isEmpty, equipmentRequests.insert(account).inserted else { return }
+        defer { equipmentRequests.remove(account) }
+        struct Inventory: Decodable { let owned: [String] }
+        do {
+            repeat {
+                let sent = kitchen.equipmentUpdate
+                let body = sent.isEmpty ? nil : try JSONEncoder().encode(sent)
+                let data = try await request("users/me/equipment", method: body == nil ? "GET" : "PUT", body: body)
+                guard account == scope else { return }
+                let result = try OnionaryAPI.decoder.decode(Inventory.self, from: data)
+                var next = kitchen
+                next.reconcileEquipment(result.owned, sent: sent)
+                if next != kitchen { try persist(next, syncCooking: false) }
+            } while kitchen.hasPendingEquipment
+        } catch {
+            // Keep the queued checks for the next toggle or foreground refresh.
+        }
     }
 
     func startCookingTimer(_ time: RecipeTime, id: String, title: String) {
@@ -472,6 +496,7 @@ final class AppStore {
         let arguments = ProcessInfo.processInfo.arguments
         let testFile = FileManager.default.temporaryDirectory.appending(path: "onionary-ui-kitchen.json")
         file = testFile
+        if arguments.contains("--fresh-equipment-cache") { try? FileManager.default.removeItem(at: testFile) }
         if ProcessInfo.processInfo.arguments.contains("--reset") {
             for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("cookingModeDisabled.") {
                 UserDefaults.standard.removeObject(forKey: key)
@@ -485,6 +510,7 @@ final class AppStore {
             UserDefaults.standard.removeObject(forKey: "recipe-sort-reversed")
             UserDefaults.standard.removeObject(forKey: "appearance")
             UserDefaults.standard.removeObject(forKey: "language")
+            UserDefaults.standard.removeObject(forKey: "ui-test-equipment")
         }
         kitchen = (try? KitchenFile.read(testFile)) ?? Kitchen()
         let recipeOptions = ["--ordering-fixture", "--equipment-fixture", "--timer-fixture"]

@@ -61,10 +61,13 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertEqual(tool.value as? String, "0")
         tool.tap()
         XCTAssertEqual(tool.value as? String, "1")
+        XCTAssertTrue(app.staticTexts["Equipment changes waiting to sync."].waitForNonExistence(timeout: 5))
+        app.launchArguments += ["--fresh-equipment-cache", "--active-recipe"]
         Self.relaunchPreservingData(app)
         let restored = app.switches["equipment-Springform pan"]
         if !restored.isHittable { app.swipeUp() }
         XCTAssertTrue(restored.waitForExistence(timeout: 5))
+        XCTAssertTrue(UIReadiness.waitForValue("1", matching: app.switches.matching(identifier: "equipment-Springform pan")))
         XCTAssertEqual(restored.value as? String, "1")
     }
 

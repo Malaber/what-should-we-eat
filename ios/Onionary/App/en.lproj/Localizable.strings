@@ -274,6 +274,8 @@
 "Enter recipe manually" = "Enter recipe manually";
 
 "Equipment" = "Equipment";
+"Checked tools sync to your account for other recipes." = "Checked tools sync to your account for other recipes.";
+"Equipment changes waiting to sync." = "Equipment changes waiting to sync.";
 "One tool per line" = "One tool per line";
 "Checked tools stay ready for other recipes on this device." = "Checked tools stay ready for other recipes on this device.";
 "Add up to 50 tools, with a maximum of 100 characters each." = "Add up to 50 tools, with a maximum of 100 characters each.";

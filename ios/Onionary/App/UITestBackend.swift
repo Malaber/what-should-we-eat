@@ -70,6 +70,13 @@ import OnionaryCore
             return Data()
         }
         if path == "users/me" { result = ["id": 1, "name": "Test Cook", "email": "cook@example.org"] }
+        else if path == "users/me/equipment" {
+            var inventory = UserDefaults.standard.dictionary(forKey: "ui-test-equipment") as? [String: Bool] ?? [:]
+            for name in input?["legacy_owned"] as? [String] ?? [] where inventory[name] == nil { inventory[name] = true }
+            inventory.merge(input?["changes"] as? [String: Bool] ?? [:]) { _, changed in changed }
+            if method == "PUT" { UserDefaults.standard.set(inventory, forKey: "ui-test-equipment") }
+            result = ["owned": inventory.filter { $0.value }.keys.sorted()]
+        }
         else if path == "recipe-inbox" { result = [["id": 1, "kind": "url", "content": "https://chefkoch.de/rezepte/123"]] }
         else if path == "recipes" && method == "GET" { result = [recipe] }
         else if path == "recipes/1" && method == "GET" { result = recipe }

@@ -21,6 +21,28 @@ final class RecipeDraftTests: XCTestCase {
         let cleared = try JSONSerialization.jsonObject(with: edited.validatedData()) as? [String: Any]
         XCTAssertEqual(cleared?["equipment"] as? [String], [])
     }
+    func testEquipmentReconcilesLegacyAndChangesMadeDuringSync() throws {
+        let fixture = Data(#"{"recipes":[],"adventures":[],"ownedEquipment":["springform pan"]}"#.utf8)
+        var kitchen = try JSONDecoder().decode(Kitchen.self, from: fixture)
+        XCTAssertEqual(kitchen.equipmentUpdate.legacyOwned, ["springform pan"])
+        XCTAssertTrue(kitchen.hasEquipment("SPRINGFORM PAN"))
+        kitchen.toggleEquipment("Kitchen scale")
+        let sent = kitchen.equipmentUpdate
+        kitchen.toggleEquipment("Kitchen scale")
+        kitchen.toggleEquipment("Chef knife")
+        kitchen.reconcileEquipment(["springform pan", "kitchen scale"], sent: sent)
+        XCTAssertFalse(kitchen.hasEquipment("Kitchen scale"))
+        XCTAssertTrue(kitchen.hasEquipment("Chef knife"))
+        XCTAssertEqual(kitchen.equipmentUpdate.legacyOwned, [])
+        XCTAssertEqual(kitchen.equipmentUpdate.changes, ["kitchen scale": false, "chef knife": true])
+        let confirmed = kitchen.equipmentUpdate
+        kitchen.reconcileEquipment(["springform pan", "chef knife"], sent: confirmed)
+        XCTAssertFalse(kitchen.hasPendingEquipment)
+        kitchen.reconcileEquipment(["thermomix"], sent: kitchen.equipmentUpdate)
+        XCTAssertTrue(kitchen.hasEquipment("Thermomix"))
+        XCTAssertFalse(kitchen.hasEquipment("Chef knife"))
+    }
+
     func testImportSourceDispatchAndCrossDomainCopies() throws {
         let token = String(repeating: "a", count: 43)
         let share = try XCTUnwrap(URL(string: "https://kitchen.example/share.html#" + token))

@@ -106,6 +106,14 @@ class User(Base):
     )
 
 
+class AccountEquipment(Base):
+    __tablename__ = "account_equipment"
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    name = Column(String(640), primary_key=True)
+    owned = Column(Boolean, nullable=False)
+
+
 class RecipeInboxItem(Base):
     __tablename__ = "recipe_inbox_items"
 

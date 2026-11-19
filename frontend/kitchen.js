@@ -29,11 +29,13 @@ const $btnCloseModal = document.getElementById('btn-close-modal');
 const $modalTitle = document.getElementById('modal-title');
 const $modalMeta = document.getElementById('modal-meta');
 const $modalEquipment = document.getElementById('modal-equipment');
+const $modalEquipmentSync = document.getElementById('modal-equipment-sync');
 const $modalIngredients = document.getElementById('modal-ingredients');
 const $modalInstructions = document.getElementById('modal-instructions');
 const $btnToggleCooked = document.getElementById('btn-toggle-cooked');
 
 let activeRecipeId = null;
+const equipmentAccounts = new Map();
 
 // ── Init ───────────────────────────────────────────────────────
 function init() {
@@ -42,6 +44,7 @@ function init() {
       loadMealPlan();
     } else {
       kitchenRecipes = [];
+      if (activeRecipeId !== null) closeModal();
       updateGridVisibility();
     }
   });
@@ -54,6 +57,10 @@ function init() {
 
   if ($btnCloseModal) $btnCloseModal.addEventListener('click', closeModal);
   if ($btnToggleCooked) $btnToggleCooked.addEventListener('click', handleToggleCooked);
+  window.addEventListener('focus', () => {
+    const inventory = equipmentForAccount();
+    if (inventory && activeRecipeId !== null && $modalEquipment.childElementCount) syncEquipmentChecks(inventory);
+  });
 
   window.addEventListener('i18n:loaded', () => {
     if (kitchenRecipes.length > 0) renderGrid();
@@ -183,34 +190,97 @@ function openModal(id) {
   document.body.style.overflow = 'hidden'; // Prevent background scrolling
 }
 
+function equipmentKey(name) {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase().normalize('NFC');
+}
+
+function equipmentForAccount() {
+  const account = window.WSWEAuth?.user?.id;
+  if (account == null) return null;
+  if (equipmentAccounts.has(account)) return equipmentAccounts.get(account);
+  const key = `onionary-equipment-v2-${account}`;
+  let saved = {};
+  let legacy = [];
+  try {
+    saved = JSON.parse(localStorage.getItem(key) || '{}') || {};
+    if (!saved.imported) legacy = JSON.parse(localStorage.getItem(`onionary-equipment-v1-${account}`) || '[]');
+  } catch { /* Keep checks usable when browser storage is unavailable. */ }
+  if (!Array.isArray(legacy)) legacy = [];
+  const owned = saved.imported && Array.isArray(saved.owned) ? saved.owned : legacy;
+  const inventory = {
+    key, legacy, owned: new Set(owned),
+    imported: Boolean(saved.imported), changes: new Map(Object.entries(saved.changes || {})), syncing: false,
+  };
+  equipmentAccounts.set(account, inventory);
+  return inventory;
+}
+
+function showEquipmentChecks(inventory) {
+  if (inventory !== equipmentForAccount()) return;
+  for (const input of $modalEquipment.querySelectorAll('input[data-tool]')) {
+    const tool = input.dataset.tool;
+    input.checked = inventory.changes.get(tool) ?? inventory.owned.has(tool);
+  }
+  $modalEquipmentSync.hidden = inventory.changes.size === 0;
+}
+
+function saveEquipmentChecks(inventory) {
+  try {
+    localStorage.setItem(inventory.key, JSON.stringify({
+      owned: [...inventory.owned], imported: inventory.imported, changes: Object.fromEntries(inventory.changes),
+    }));
+  } catch { /* The live checklist remains usable. */ }
+  showEquipmentChecks(inventory);
+}
+
+async function syncEquipmentChecks(inventory) {
+  if (inventory.syncing || inventory !== equipmentForAccount()) return;
+  inventory.syncing = true;
+  try {
+    do {
+      const sent = new Map(inventory.changes);
+      const legacy = inventory.imported ? [] : inventory.legacy;
+      const options = sent.size || legacy.length ? {
+        method: 'PUT', headers: getAuthHeaders({'Content-Type': 'application/json'}),
+        body: JSON.stringify({changes: Object.fromEntries(sent), legacy_owned: legacy}),
+      } : {headers: getAuthHeaders()};
+      const response = await fetch(`${API}/users/me/equipment`, options);
+      if (!response.ok) return;
+      const {owned} = await response.json();
+      inventory.owned = new Set(owned);
+      inventory.imported = true;
+      for (const [name, checked] of sent) {
+        if (inventory.changes.get(name) === checked) inventory.changes.delete(name);
+      }
+      saveEquipmentChecks(inventory);
+    } while (inventory.changes.size && inventory === equipmentForAccount());
+  } catch { /* Retain pending changes for the next open or edit. */ }
+  finally { inventory.syncing = false; }
+}
+
 function renderEquipment(tools) {
   $modalEquipment.parentElement.hidden = tools.length === 0;
   $modalEquipment.replaceChildren();
-  const userID = window.WSWEAuth?.user?.id;
-  const key = userID === undefined ? null : `onionary-equipment-v1-${userID}`;
-  let owned = new Set();
-  if (key) {
-    try { owned = new Set(JSON.parse(localStorage.getItem(key) || '[]')); }
-    catch { /* The checklist still works when browser storage is unavailable. */ }
-  }
+  const inventory = equipmentForAccount();
   for (const name of tools) {
-    const toolKey = name.trim().replace(/\s+/g, ' ').toLowerCase();
     const item = document.createElement('li');
     const label = document.createElement('label');
     const check = document.createElement('input');
     check.type = 'checkbox';
-    check.checked = owned.has(toolKey);
+    check.dataset.tool = equipmentKey(name);
     check.addEventListener('change', () => {
-      if (check.checked) owned.add(toolKey);
-      else owned.delete(toolKey);
-      if (key) {
-        try { localStorage.setItem(key, JSON.stringify([...owned])); }
-        catch { /* Keep the current checklist usable. */ }
-      }
+      if (!inventory || inventory !== equipmentForAccount()) return;
+      inventory.changes.set(check.dataset.tool, check.checked);
+      saveEquipmentChecks(inventory);
+      syncEquipmentChecks(inventory);
     });
     label.append(check, ` ${name}`);
     item.append(label);
     $modalEquipment.append(item);
+  }
+  if (inventory && tools.length) {
+    showEquipmentChecks(inventory);
+    syncEquipmentChecks(inventory);
   }
 }
 

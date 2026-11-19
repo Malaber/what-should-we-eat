@@ -2,6 +2,7 @@
   "recipe.save-for-iphone": "Save for iPhone",
   "recipe.equipment": "Equipment",
   "recipe.equipment-help": "One tool per line.",
+  "recipe.equipment-sync": "Equipment changes waiting to sync.",
   "share.equipment": "Equipment",
   "nav.pick_meals": "Pick Meals",
   "nav.kitchen": "Kitchen",

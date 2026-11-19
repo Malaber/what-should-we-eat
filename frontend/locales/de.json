@@ -2,6 +2,7 @@
   "recipe.save-for-iphone": "Für iPhone vormerken",
   "recipe.equipment": "Küchenutensilien",
   "recipe.equipment-help": "Ein Utensil pro Zeile.",
+  "recipe.equipment-sync": "Änderungen an Küchenutensilien warten auf Synchronisierung.",
   "share.equipment": "Küchenutensilien",
   "nav.pick_meals": "Gerichte planen",
   "nav.kitchen": "Küche",

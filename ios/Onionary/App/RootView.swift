@@ -337,8 +337,11 @@ struct CookingView: View {
                     }
                     if let tools = adventure.recipe.equipment, !tools.isEmpty {
                         Text("Equipment").font(.headline).accessibilityAddTraits(.isHeader)
-                        Text("Checked tools stay ready for other recipes on this device.")
+                        Text("Checked tools sync to your account for other recipes.")
                             .font(.footnote).foregroundStyle(.secondary)
+                        if store.kitchen.hasPendingEquipment {
+                            Text("Equipment changes waiting to sync.").font(.footnote).foregroundStyle(.secondary)
+                        }
                         ForEach(tools, id: \.self) { tool in
                             Toggle(isOn: Binding(
                                 get: { store.kitchen.hasEquipment(tool) },
