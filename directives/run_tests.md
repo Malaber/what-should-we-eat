@@ -462,6 +462,12 @@ same editor directly from Preview and finish after confirming insertion
 and dismissal of the keyboard action. The separate draft test checks
 editor cancellation.
 
+Scope recipe-editor scrolls to `app.scrollViews["recipe-editor"]`. The
+identifier also matches a zero-size keyboard-focus attachment. An app-wide
+gesture can land outside the centered sheet on iPad. The timer duration form
+keeps its actions above the keyboard. Assert both duration fields and the
+resulting token in the selected instruction after dismissing the form.
+
 Ingredient and step group creation uses an inline form in the reorder
 sheet. The nested text alert stalled during the iPad accessibility
 transition. UI coverage still creates a group, assigns an ingredient,
