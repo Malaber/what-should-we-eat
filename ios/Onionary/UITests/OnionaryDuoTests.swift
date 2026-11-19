@@ -115,7 +115,7 @@ final class OnionaryDuoTests: OnionaryUITestCase {
     }
 
     @MainActor private func launchFixture(extraArguments: [String] = []) -> XCUIApplication {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"] + extraArguments
         // A foreground app on Duo can exit while XCTest still tracks the old
         // display as active. Let SpringBoard take focus before the cold launch.

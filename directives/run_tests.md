@@ -393,6 +393,13 @@ iPhone, iPad and Duo in runs 43963567984, 44024736503, 44031347022 and
 results at each recheck. Restore required status once the affected shards
 pass repeatably on the updated standard image.
 
+In RC run 44434900460, the same commit as the earlier PR run lost four
+native cases during app launch, before the user flows started. XCTest reported
+either a launch timeout or no app process ID. Keep the standard runner and
+the same test coverage. Resolve the app by its bundle identifier from the
+test plan's dependent products when launching on a different VM. Capture
+the launch and runner evidence again when the image is rechecked.
+
 Before each push during the exception, run every advisory case locally and
 verify the result bundles passed. Run these commands from the repository
 root with Xcode 27.2 and the pinned simulator runtimes installed.

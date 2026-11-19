@@ -5,7 +5,7 @@ import UIKit
 final class OnionaryUITests: OnionaryUITestCase {
     @MainActor
     func testNewStepFocusStaysAboveKeyboard() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -29,7 +29,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
     @MainActor
     func testSavedImportCanBeCopiedAndReviewed() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -49,7 +49,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
     @MainActor
     func testEquipmentStaysCheckedAfterRelaunch() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--equipment-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -73,7 +73,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testEquipmentEditorAddsAndRemovesRows() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--equipment-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -101,7 +101,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testStepTimerStartsAndCanBeCancelled() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--timer-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -157,7 +157,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testMultipleTagFilters() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -182,7 +182,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testPantryMatchingQuantities() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -239,7 +239,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testIntelligenceModeAndLanguageOptions() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -254,7 +254,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testAccountDeletionConfirmationAndSuccess() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Settings", in: app)
@@ -278,7 +278,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testAccountDeletionOfflineKeepsAccount() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--offline-delete", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Settings", in: app)
@@ -337,7 +337,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     private func newRecipeWithName(_ title: String) throws -> XCUIApplication {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--offline-save", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -358,7 +358,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testIngredientOrderCanBeMovedAndSaved() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--ordering-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -397,7 +397,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testCancellingUnchangedEditDoesNotSaveDraft() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -417,7 +417,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testIngredientGroupPersistsAfterSaving() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -452,7 +452,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testRecipeTagSuggestionsAndMultiwordChips() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -484,7 +484,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testSilentRenewalPreservesCookingProgress() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         // The recipe preview has its own coverage. Start cooking so that
         // this test's first navigation action exercises the session lifecycle.
         app.launchArguments = ["--ui-testing", "--reset", "--active-recipe", "--renew-session", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
@@ -511,7 +511,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testExpiredSessionLeavesCookingAvailable() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--expired-session", "--test-passkey-success", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 5))
@@ -530,7 +530,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testReauthenticationRejectsDifferentAccount() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--expired-session", "--test-passkey-wrong-account", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["Sign in with passkey"].waitForExistence(timeout: 5))
@@ -552,7 +552,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testCategoryBrowsingAndIngredientSearch() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -635,7 +635,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     private func openCookingTag() throws -> XCUIApplication {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()
@@ -647,7 +647,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     private func openStepEditor() throws -> XCUIApplication {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -700,7 +700,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testStepPlaceholderHelpInEmptyRecipe() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -725,7 +725,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testKitchenPlanAndOpenRecipe() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Kitchen", in: app)
@@ -744,7 +744,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         // A hosted iPad passed the save and progress checks before its
         // three-minute timer expired during XCTest's finalization.
         executionTimeAllowance = 240
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--editing-active-recipe", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         // Starting a recipe and toggling a check are covered by the checklist
@@ -791,7 +791,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         // XCTest can wait 60 seconds for each of the native menu transitions.
         executionTimeAllowance = 240
         let clock = "de.malaber.onionary.uitest.feedback." + UUID().uuidString
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         // Start at the active adventure. The independent cooking tests cover
         // starting it from Preview, while this test exercises the native menu.
         app.launchArguments = ["--ui-testing", "--reset", "--active-recipe", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
@@ -833,7 +833,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testShareRecipeCopyAndRevokeLink() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -854,7 +854,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testImportRecipePreview() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -872,7 +872,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testIntelligenceDraftRequiresUserInput() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Recipes", in: app)
@@ -895,7 +895,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testNativeSettingsLanguageAndAppearance() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         try tapNavigation("Settings", in: app)
@@ -925,7 +925,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testMarketingScreenshots() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--marketing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         let captureLockScreen = UIDevice.current.userInterfaceIdiom == .phone
         if captureLockScreen { app.launchArguments += ["--system-live-activity", "--marketing-lock-screen"] }
@@ -989,7 +989,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testPortionButtonsWithoutKeyboard() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()
@@ -1015,7 +1015,7 @@ final class OnionaryUITests: OnionaryUITestCase {
     private func launchCookingControlsFixture(systemActivityKit: Bool = false) -> XCUIApplication {
         // Cover the full recipe selection separately in the cold-restoration
         // test. Start these control tests with the same recipe already active.
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "--active-recipe", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         if systemActivityKit { app.launchArguments.append("--system-live-activity") }
         app.launch()
@@ -1095,7 +1095,7 @@ final class OnionaryUITests: OnionaryUITestCase {
 
     @MainActor
     func testCookUndoScaleAndRestoreAfterTermination() throws {
-        let app = XCUIApplication()
+        let app = makeOnionaryApp()
         app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         app.buttons["Choose a recipe"].tap()

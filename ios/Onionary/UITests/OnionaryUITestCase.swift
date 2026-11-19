@@ -14,6 +14,13 @@ import XCTest
 /// starts its own reset fixture. Cold-persistence tests launch again without
 /// clearing the fixture files; do not add a global Home/terminate boundary.
 class OnionaryUITestCase: XCTestCase {
+    @MainActor
+    func makeOnionaryApp() -> XCUIApplication {
+        // Let XCTest resolve the app by bundle ID from this test plan's
+        // dependent products, including when CI moved the build to a new VM.
+        XCUIApplication(bundleIdentifier: "de.malaber.onionary")
+    }
+
     override class func setUp() {
         super.setUp()
         // Read in-process after XCTest has initialized; no extra host/guest RPC.
