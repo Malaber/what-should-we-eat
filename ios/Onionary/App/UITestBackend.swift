@@ -13,12 +13,19 @@ import OnionaryCore
         if ProcessInfo.processInfo.arguments.contains("--ordering-fixture") {
             ingredients.append(["id": 3, "name": "Lemon", "quantity": 1, "unit": "piece"])
         }
-        return ["id": 1, "household_id": 1, "name": "Lemon & cheese pasta", "notes": "Finish with lemon zest.",
+        var fixture: [String: Any] = ["id": 1, "household_id": 1, "name": "Lemon & cheese pasta", "notes": "Finish with lemon zest.",
                 "total_time_min": 20, "active_cooking_time_min": 10, "kcal_per_serving": 400,
                 "tags": [["id": 1, "name": "vegetarian"]], "ingredients": ingredients, "instruction_steps": [
                     ["id": 1, "step_number": 1, "description": "Boil the pasta in salted water.", "duration_min": 10],
                     ["id": 2, "step_number": 2, "description": "Fold in {{Cheese|20%}} and lemon zest."],
                 ]]
+        if ProcessInfo.processInfo.arguments.contains("--equipment-fixture") { fixture["equipment"] = ["Springform pan"] }
+        if ProcessInfo.processInfo.arguments.contains("--timer-fixture") {
+            fixture["instruction_steps"] = [
+                ["id": 1, "step_number": 1, "description": "Boil for {{time|2m}}.", "duration_min": 2],
+            ]
+        }
+        return fixture
     }()
     static var planned = false
     static var cooked = false
@@ -63,6 +70,14 @@ import OnionaryCore
             return Data()
         }
         if path == "users/me" { result = ["id": 1, "name": "Test Cook", "email": "cook@example.org"] }
+        else if path == "users/me/equipment" {
+            var inventory = UserDefaults.standard.dictionary(forKey: "ui-test-equipment") as? [String: Bool] ?? [:]
+            for name in input?["legacy_owned"] as? [String] ?? [] where inventory[name] == nil { inventory[name] = true }
+            inventory.merge(input?["changes"] as? [String: Bool] ?? [:]) { _, changed in changed }
+            if method == "PUT" { UserDefaults.standard.set(inventory, forKey: "ui-test-equipment") }
+            result = ["owned": inventory.filter { $0.value }.keys.sorted()]
+        }
+        else if path == "recipe-inbox" { result = [["id": 1, "kind": "url", "content": "https://chefkoch.de/rezepte/123"]] }
         else if path == "recipes" && method == "GET" { result = [recipe] }
         else if path == "recipes/1" && method == "GET" { result = recipe }
         else if path == "recipes/1" && method == "PUT", let input {

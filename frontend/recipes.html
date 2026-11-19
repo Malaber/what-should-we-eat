@@ -52,6 +52,7 @@
             id="btn-create-recipe"
           ></button>
         </div>
+        <p><a href="/import-later" data-i18n="recipe.save-for-iphone">Save for iPhone</a></p>
         <div class="search-bar-container">
           <input
             class="search-input"
@@ -218,6 +219,20 @@
               </div>
               <div class="tag-selector tag-suggestions" id="tag-suggestions" hidden></div>
             </div>
+            <section class="list-editor" aria-labelledby="equipment-heading">
+              <div class="editor-section-heading">
+                <h3 id="equipment-heading" data-i18n="recipe.equipment">Equipment</h3>
+              </div>
+              <div id="equipment-list"></div>
+              <button
+                class="btn btn-secondary btn-sm"
+                id="btn-add-equipment"
+                type="button"
+                data-i18n="recipe.add-tool"
+              >
+                Add tool
+              </button>
+            </section>
             <!-- Ingredients -->
             <div class="list-editor">
               <div class="editor-section-heading">

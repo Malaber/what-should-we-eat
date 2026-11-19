@@ -393,6 +393,13 @@ iPhone, iPad and Duo in runs 43963567984, 44024736503, 44031347022 and
 results at each recheck. Restore required status once the affected shards
 pass repeatably on the updated standard image.
 
+In RC run 44434900460, the same commit as the earlier PR run lost four
+native cases during app launch, before the user flows started. XCTest reported
+either a launch timeout or no app process ID. Keep the standard runner and
+the same test coverage. Resolve the app by its bundle identifier from the
+test plan's dependent products when launching on a different VM. Capture
+the launch and runner evidence again when the image is rechecked.
+
 Before each push during the exception, run every advisory case locally and
 verify the result bundles passed. Run these commands from the repository
 root with Xcode 27.2 and the pinned simulator runtimes installed.
@@ -454,6 +461,12 @@ consumed over a minute on the RC 31 iPad run. Step amount tests open the
 same editor directly from Preview and finish after confirming insertion
 and dismissal of the keyboard action. The separate draft test checks
 editor cancellation.
+
+Scope recipe-editor scrolls to `app.scrollViews["recipe-editor"]`. The
+identifier also matches a zero-size keyboard-focus attachment. An app-wide
+gesture can land outside the centered sheet on iPad. The timer duration form
+keeps its actions above the keyboard. Assert both duration fields and the
+resulting token in the selected instruction after dismissing the form.
 
 Ingredient and step group creation uses an inline form in the reorder
 sheet. The nested text alert stalled during the iPad accessibility
@@ -589,8 +602,13 @@ Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 
 Marketing capture runs once per device inside the normal UI suite. After that
-suite passes, export its four attachments with marketing_screenshots.py
---result-bundle. Reject missing/duplicate/unknown scenes, bad dimensions and
+suite passes, export its four app scenes with `marketing_screenshots.py
+--result-bundle`. The iPhone suite also captures its actual Lock Screen activity.
+ActivityKit reports On when its request succeeds. A fresh iOS 27.2 simulator
+needed about 21 seconds from that request to launch the first WidgetKit
+renderer. Wait for the cooking activity in SpringBoard before handling its
+permission prompt and taking the screenshot. Attach the screen if the bounded
+wait expires. Reject missing/duplicate/unknown scenes, bad dimensions and
 undecodable PNGs. The CI caller then invokes screenshots.yml as a reusable
 workflow to render with Malaber/github-workflows, bundle and attach main-release
 assets. Never start another simulator/test run just to obtain the same images.

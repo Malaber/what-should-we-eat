@@ -16,6 +16,7 @@ final class AppStore {
     var reauthenticationError: String?
     var mealItems: [MealPlan.Item] = []
     private var renewal: Task<Credential, Error>?
+    private var equipmentRequests: Set<String> = []
 
     let cookingActivity = CookingActivityController()
     var scope: String {
@@ -190,17 +191,18 @@ final class AppStore {
             }
             var next = kitchen; next.recipes = recipes
             try persist(next)
+            await syncEquipment()
             await refreshWidget()
             error = nil
         } catch APIError.unauthorized { error = nil }
         catch { self.error = error.localizedDescription }
     }
 
-    private func persist(_ next: Kitchen) throws {
+    private func persist(_ next: Kitchen, syncCooking: Bool = true) throws {
         guard let file else { throw CookingError.response("Your saved kitchen could not be loaded. Reconnect before making changes.") }
         try KitchenFile.write(next, to: file)
         kitchen = next
-        synchronizeCookingActivity()
+        if syncCooking { synchronizeCookingActivity() }
     }
 
     func savePantry(_ supplies: [PantryMatching.Supply]) throws {
@@ -209,6 +211,51 @@ final class AppStore {
         var next = kitchen
         next.pantrySupplies = supplies.isEmpty ? nil : supplies
         try persist(next)
+    }
+
+    func toggleEquipment(_ name: String) {
+        do {
+            var next = kitchen
+            next.toggleEquipment(name)
+            try persist(next, syncCooking: false)
+            Task { await syncEquipment() }
+        } catch { self.error = error.localizedDescription }
+    }
+
+    private func syncEquipment() async {
+        let account = scope
+        guard !account.isEmpty, equipmentRequests.insert(account).inserted else { return }
+        defer { equipmentRequests.remove(account) }
+        struct Inventory: Decodable { let owned: [String] }
+        do {
+            repeat {
+                let sent = kitchen.equipmentUpdate
+                let body = sent.isEmpty ? nil : try JSONEncoder().encode(sent)
+                let data = try await request("users/me/equipment", method: body == nil ? "GET" : "PUT", body: body)
+                guard account == scope else { return }
+                let result = try OnionaryAPI.decoder.decode(Inventory.self, from: data)
+                var next = kitchen
+                next.reconcileEquipment(result.owned, sent: sent)
+                if next != kitchen { try persist(next, syncCooking: false) }
+            } while kitchen.hasPendingEquipment
+        } catch {
+            // Keep the queued checks for the next toggle or foreground refresh.
+        }
+    }
+
+    func startCookingTimer(_ time: RecipeTime, id: String, title: String) {
+        do {
+            var next = kitchen
+            if next.startTimer(id: id, title: title, time: time) { try persist(next) }
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func removeCookingTimer(_ id: String) {
+        do {
+            var next = kitchen
+            next.removeTimer(id)
+            try persist(next)
+        } catch { self.error = error.localizedDescription }
     }
 
     private func clearWidget() {
@@ -330,12 +377,20 @@ final class AppStore {
 
     func importDraft(_ link: String) async throws -> RecipeDraft {
         guard let credential else { throw CookingError.response("Sign in before importing.") }
-        guard let url = try? RecipeImportLink.accepted(link) else {
-            return try await RecipeIntelligence.importPage(RecipeImportLink.webRecipe(link))
+        let url: URL
+        let endpoint: String
+        switch try RecipeImportLink.source(link) {
+        case .onionary(let copy):
+            url = copy
+            endpoint = "recipe-shares/preview"
+        case .chefkoch(let recipe):
+            url = recipe
+            endpoint = "recipes/import/parse/html"
+        case .website(let page):
+            return try await RecipeIntelligence.importPage(page)
         }
-        let isCopy = (try? RecipeImportLink.sharedRecipe(link)) != nil
         let body = try JSONEncoder().encode(["source": "chefkoch", "url": url.absoluteString])
-        let data = try await request(isCopy ? "recipe-shares/preview" : "recipes/import/parse/html", method: "POST", body: body)
+        let data = try await request(endpoint, method: "POST", body: body)
         return try OnionaryAPI.decoder.decode(RecipeDraft.self, from: data)
     }
 
@@ -438,8 +493,10 @@ final class AppStore {
 
     #if DEBUG
     private func setupUITest() {
+        let arguments = ProcessInfo.processInfo.arguments
         let testFile = FileManager.default.temporaryDirectory.appending(path: "onionary-ui-kitchen.json")
         file = testFile
+        if arguments.contains("--fresh-equipment-cache") { try? FileManager.default.removeItem(at: testFile) }
         if ProcessInfo.processInfo.arguments.contains("--reset") {
             for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("cookingModeDisabled.") {
                 UserDefaults.standard.removeObject(forKey: key)
@@ -453,9 +510,11 @@ final class AppStore {
             UserDefaults.standard.removeObject(forKey: "recipe-sort-reversed")
             UserDefaults.standard.removeObject(forKey: "appearance")
             UserDefaults.standard.removeObject(forKey: "language")
+            UserDefaults.standard.removeObject(forKey: "ui-test-equipment")
         }
         kitchen = (try? KitchenFile.read(testFile)) ?? Kitchen()
-        if kitchen.recipes.isEmpty && ProcessInfo.processInfo.arguments.contains("--ordering-fixture") {
+        let recipeOptions = ["--ordering-fixture", "--equipment-fixture", "--timer-fixture"]
+        if kitchen.recipes.isEmpty && recipeOptions.contains(where: arguments.contains) {
             let data = try! JSONSerialization.data(withJSONObject: [UITestBackend.recipe])
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: data)
         } else if kitchen.recipes.isEmpty {
@@ -480,7 +539,6 @@ final class AppStore {
             }
             kitchen.recipes = try! OnionaryAPI.decoder.decode([Recipe].self, from: JSONSerialization.data(withJSONObject: recipes))
         }
-        let arguments = ProcessInfo.processInfo.arguments
         let editingActiveRecipe = arguments.contains("--editing-active-recipe")
         if (editingActiveRecipe || arguments.contains("--active-recipe")), let recipe = kitchen.recipes.first {
             kitchen.visit(recipe)
@@ -490,6 +548,11 @@ final class AppStore {
             }
         }
         credential = Credential(server: URL(string: "https://ui-test.invalid")!, token: "test", userID: "1", name: "Test Cook", email: "cook@example.org")
+        if arguments.contains("--marketing-lock-screen") {
+            for recipe in kitchen.recipes {
+                UserDefaults.standard.set(true, forKey: "cookingModeDisabled.\(scope).\(recipe.id)")
+            }
+        }
         if ProcessInfo.processInfo.arguments.contains("--renew-session") {
             credential?.refreshToken = "test-refresh"
             credential?.sessionExpiresAt = Date().addingTimeInterval(42 * 86400).timeIntervalSince1970

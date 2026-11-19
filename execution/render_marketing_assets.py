@@ -1,4 +1,4 @@
-"""Compose three App Store portraits around this run's native screenshots."""
+"""Compose App Store portraits around this run's native screenshots."""
 import argparse
 import hashlib
 import json
@@ -8,7 +8,8 @@ import sys
 from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from execution.package_marketing_screenshots import CAPTURES, PORTRAIT_SOURCES, validate_dimensions
+from execution.marketing_device_frames import load_frame
+from execution.package_marketing_screenshots import CAPTURES, LIVE_ACTIVITY_PORTRAIT, portrait_sources, source_captures, validate_dimensions
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "marketing"
@@ -27,6 +28,10 @@ PORTRAIT_DESIGNS = {
         "FLEXIBLE PORTIONS", ("Make it", "your size."), "Scale to what you have.",
         "#e8efdc", "#aebf9f", "#233b30", "#38563f",
     ),
+    LIVE_ACTIVITY_PORTRAIT: (
+        "LIVE ACTIVITY", ("Your next step,", "right there."), "Follow along from the Lock Screen.",
+        "#222032", "#535467", "#fff6ee", "#ead0de",
+    ),
 }
 
 
@@ -38,17 +43,11 @@ def font(size, serif=False, weight=500):
 
 def device(canvas, screen, box):
     x, y, w, h = box
-    fitted = ImageOps.contain(screen, (w, h), Image.Resampling.LANCZOS)
+    frame = load_frame(screen.size).compose(screen)
+    fitted = ImageOps.contain(frame, (w, h), Image.Resampling.LANCZOS)
     sw, sh = fitted.size
     x, y = round(x + (w - sw) / 2), round(y + (h - sh) / 2)
-    bevel = max(9, round(canvas.width * .012))
-    radius = round(sw * .055)
-    draw = ImageDraw.Draw(canvas)
-    draw.rounded_rectangle((x-bevel, y-bevel, x+sw+bevel, y+sh+bevel), radius=radius+bevel,
-                           fill="#241e24", outline="#8e7782", width=max(2, bevel//4))
-    mask = Image.new("L", fitted.size)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, sw-1, sh-1), radius=radius, fill=255)
-    canvas.paste(fitted, (x, y), mask)
+    canvas.paste(fitted, (x, y), fitted)
 
 
 def portrait_background(size, start, end, ink, muted):
@@ -101,7 +100,7 @@ def draw_portrait(screen, design):
 
 
 def render(root: Path, family: str, *, include_creative: bool = True):
-    paths = {name: root / name for name in CAPTURES}
+    paths = {name: root / name for name in source_captures(family)}
     for name, path in paths.items():
         candidates = list(root.glob(f"{path.stem}*.png"))
         if candidates != [path]:
@@ -119,7 +118,8 @@ def render(root: Path, family: str, *, include_creative: bool = True):
         outputs.extend(render_vectors(screenshot, root / "creative"))
     hashes = {}
     profile = srgb()
-    for name, source in PORTRAIT_SOURCES.items():
+    sources = portrait_sources(family)
+    for name, source in sources.items():
         with Image.open(paths[source]) as captured:
             portrait = draw_portrait(captured.convert("RGB"), PORTRAIT_DESIGNS[name])
         path = portraits / name
@@ -129,7 +129,7 @@ def render(root: Path, family: str, *, include_creative: bool = True):
     captures = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in paths.items()}
     manifest = {
         "source": screenshot.name, "source_sha256": captures[screenshot.name],
-        "family": family, "captures": captures, "portrait_sources": PORTRAIT_SOURCES,
+        "family": family, "captures": captures, "portrait_sources": sources,
         "portrait_sha256": hashes,
     }
     (root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

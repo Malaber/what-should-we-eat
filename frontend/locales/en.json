@@ -1,4 +1,11 @@
 {
+  "recipe.save-for-iphone": "Save for iPhone",
+  "recipe.equipment": "Equipment",
+  "recipe.add-tool": "Add tool",
+  "recipe.tool-name": "Tool name",
+  "recipe.remove-tool": "Remove tool",
+  "recipe.equipment-sync": "Equipment changes waiting to sync.",
+  "share.equipment": "Equipment",
   "nav.pick_meals": "Pick Meals",
   "nav.kitchen": "Kitchen",
   "nav.manage_recipes": "Manage Recipes",
@@ -254,5 +261,7 @@
   "share.cook": "Cook now",
   "share.stop-cooking": "Exit cooking mode",
   "share.ingredients": "Ingredients",
+  "share.prepare-ingredients": "Prepare ingredients",
+  "share.use-in-step": "Use in this step",
   "share.steps": "Steps"
 }

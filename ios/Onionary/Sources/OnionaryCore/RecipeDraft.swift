@@ -1,6 +1,18 @@
 import Foundation
 
 public enum RecipeImportLink {
+    public enum Source: Equatable, Sendable {
+        case onionary(URL)
+        case chefkoch(URL)
+        case website(URL)
+    }
+
+    public static func source(_ text: String) throws -> Source {
+        if let url = try? sharedRecipe(text) { return .onionary(url) }
+        if let url = try? chefkoch(text) { return .chefkoch(url) }
+        return try .website(webRecipe(text))
+    }
+
     public static func sharedRecipe(_ text: String) throws -> URL {
         guard let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
               url.scheme == "https", url.host != nil, url.user == nil, url.password == nil,
@@ -24,8 +36,8 @@ public enum RecipeImportLink {
         throw CookingError.response("No supported recipe link found.")
     }
     public static func accepted(_ text: String) throws -> URL {
-        if let url = try? chefkoch(text) { return url }
-        return try sharedRecipe(text)
+        if let url = try? sharedRecipe(text) { return url }
+        return try chefkoch(text)
     }
     public static func chefkoch(_ text: String) throws -> URL {
         guard let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
@@ -73,6 +85,22 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
         enum CodingKeys: String, CodingKey { case stepNumber, description, durationMin, groupName }
         public init() {}
     }
+
+    public var hasUnreferencedIngredientAmounts: Bool {
+        guard instructionSteps.contains(where: { $0.description.contains("{{") }) else { return false }
+        let quantified = ingredients.enumerated().compactMap { index, item -> Ingredient? in
+            let name = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty, let quantity = item.quantity, !quantity.isNaN, quantity > 0 else { return nil }
+            return Ingredient(id: index, name: name, quantity: quantity, groupName: item.groupName, unit: item.unit)
+        }
+        let usedIDs = Set(instructionSteps.flatMap { step in
+            IngredientPlaceholders.parts(step.description, ingredients: quantified).compactMap { part -> Int? in
+                if case let .amount(item, _) = part { return item.id }
+                return nil
+            }
+        })
+        return !usedIDs.isEmpty && usedIDs.count < quantified.count
+    }
     public var name = ""
     public var icon: String?
     public var notes: String? = ""
@@ -83,6 +111,7 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
     public var ingredients: [Item] = []
     public var instructionSteps: [Step] = []
     public var tags: [String] = []
+    public var equipment: [String]?
     public init() {}
 
     public struct Change: Identifiable, Sendable {
@@ -114,6 +143,8 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
         compare("Active minutes", original.activeCookingTimeMin.map(String.init) ?? "", activeCookingTimeMin.map(String.init) ?? "")
         compare("Total minutes", original.totalTimeMin.map(String.init) ?? "", totalTimeMin.map(String.init) ?? "")
         compare("Tags", original.tags.joined(separator: "\n"), tags.joined(separator: "\n"))
+        compare("Equipment", RecipeEquipment.cleaned(original.equipment).joined(separator: "\n"),
+                RecipeEquipment.cleaned(equipment).joined(separator: "\n"))
         if ingredients.count != original.ingredients.count || zip(ingredients, original.ingredients).contains(where: { item, previous in
             item.name != previous.name || item.quantity != previous.quantity
                 || (item.unit ?? "") != (previous.unit ?? "") || (item.groupName ?? "") != (previous.groupName ?? "")
@@ -143,6 +174,13 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
               (servings ?? 1) > 0, (servings ?? 1) <= 1_000_000,
               (kcalPerServing ?? 0) >= 0 else { throw CookingError.response("Check recipe name, ingredients, steps, and positive quantities.") }
         var copy = self
+        if equipment != nil {
+            let tools = RecipeEquipment.cleaned(equipment)
+            guard tools.count <= 50, tools.allSatisfy({ $0.unicodeScalars.count <= 100 }) else {
+                throw CookingError.response("Add up to 50 tools, with a maximum of 100 characters each.")
+            }
+            copy.equipment = tools
+        }
         for index in copy.instructionSteps.indices { copy.instructionSteps[index].stepNumber = index + 1 }
         let encoder = JSONEncoder(); encoder.keyEncodingStrategy = .convertToSnakeCase
         // PUT supports partial updates: explicitly encode cleared optional metadata.
@@ -151,5 +189,25 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
             payload[key] = NSNull()
         }
         return try JSONSerialization.data(withJSONObject: payload)
+    }
+}
+
+public enum RecipeEquipment {
+    static func key(_ name: String) -> String {
+        name.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            .lowercased().precomposedStringWithCanonicalMapping
+    }
+
+    static func legacyKey(_ name: String) -> String {
+        name.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            .folding(options: .caseInsensitive, locale: Locale(identifier: "en_US_POSIX"))
+    }
+
+    public static func cleaned(_ names: [String]?) -> [String] {
+        var seen = Set<String>()
+        return (names ?? []).compactMap { name in
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            return !trimmed.isEmpty && seen.insert(legacyKey(trimmed)).inserted ? trimmed : nil
+        }
     }
 }

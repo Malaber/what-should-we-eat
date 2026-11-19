@@ -165,9 +165,14 @@
 
 "%lld recipes" = "%lld Rezepte";
 
-"Insert ingredient amount" = "Zutatenmenge einsetzen";
+"Insert placeholder" = "Platzhalter einsetzen";
+"Ingredient amounts" = "Zutatenmengen";
+"No ingredients added yet" = "Noch keine Zutaten hinzugefügt";
+"Add an ingredient quantity to insert its amount" = "Gib zuerst eine Zutatenmenge an";
+"What is this?" = "Was ist das?";
+"Some ingredient amounts have no reference in the steps." = "Einige Zutatenmengen sind in den Schritten noch nicht verknüpft.";
 
-"Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking." = "Ändere 100% im Platzhalter auf den Anteil für diesen Schritt, etwa 80%. Beim Kochen passen sich die Mengen an deine Portionen an.";
+"Add {{Flour|50%}}, then bake for {{time|2m30s}}.\n\nThe flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown." = "{{Mehl|50%}} dazugeben und {{time|2m30s}} backen.\n\nDamit verwendest du die Hälfte der Mehlmenge, angepasst an deine Portionen. Tippe beim Kochen auf die Zeit, um einen Timer für 2 Minuten und 30 Sekunden zu starten.";
 
 "Start Live Activity" = "Live-Aktivität starten";
 
@@ -181,7 +186,7 @@
 
 "Open Kitchen to update your plan." = "Öffne Küche, um deinen Plan zu aktualisieren.";
 
-"Ingredient amount help" = "Hilfe zu Zutatenmengen";
+"Recipe placeholders" = "Platzhalter im Rezept";
 "Browse by tag" = "Nach Tag stöbern";
 "Clear filter" = "Filter zurücksetzen";
 "Find a tag" = "Tag suchen";
@@ -345,3 +350,49 @@
 "Last added" = "Zuletzt hinzugefügt";
 "Ingredient count" = "Anzahl der Zutaten";
 "Reverse sort order" = "Sortierreihenfolge umkehren";
+
+"The Apple Intelligence model isn’t ready. Check Apple Intelligence in Settings and try again later." = "Das Apple-Intelligence-Modell ist noch nicht bereit. Prüfe Apple Intelligence in den Einstellungen und versuche es später erneut.";
+"This device does not support Apple Intelligence." = "Dieses Gerät unterstützt Apple Intelligence nicht.";
+"Apple Intelligence could not prepare a recipe draft. Try shorter recipe text or enter it manually." = "Apple Intelligence konnte keinen Rezeptentwurf erstellen. Kürze den Rezepttext oder gib das Rezept manuell ein.";
+"Could not connect to the recipe website. Open the link in Safari or try again." = "Die Rezeptseite ist nicht erreichbar. Öffne den Link in Safari oder versuche es erneut.";
+"This website blocked recipe import. Open the link in Safari and copy the recipe text." = "Diese Website blockiert den Rezeptimport. Öffne den Link in Safari und kopiere den Rezepttext.";
+"This recipe language is unavailable in Apple Intelligence. Try another language or enter the recipe manually." = "Apple Intelligence unterstützt diese Rezeptsprache nicht. Wähle eine andere Sprache oder gib das Rezept manuell ein.";
+"Apple Intelligence is busy. Try again in a moment." = "Apple Intelligence ist beschäftigt. Versuche es gleich erneut.";
+"Recipe text" = "Rezepttext";
+"Use recipe URL" = "Rezeptlink verwenden";
+"Onionary checks the page for recipe data. If needed, Apple Intelligence formats the text on this device." = "Onionary sucht auf der Seite nach Rezeptdaten. Bei Bedarf formatiert Apple Intelligence den Text auf diesem Gerät.";
+"Open in Safari" = "In Safari öffnen";
+"Paste recipe text" = "Rezepttext einfügen";
+"Enter recipe manually" = "Rezept manuell eingeben";
+
+"Equipment" = "Küchenutensilien";
+"Checked tools sync to your account for other recipes." = "Abgehakte Utensilien werden für weitere Rezepte mit deinem Konto synchronisiert.";
+"Equipment changes waiting to sync." = "Änderungen an Küchenutensilien warten auf Synchronisierung.";
+"Tool name" = "Name des Utensils";
+"Add tool" = "Utensil hinzufügen";
+"Remove tool" = "Utensil entfernen";
+"Use in this step" = "In diesem Schritt verwenden";
+"Used" = "Verwendet";
+"Not used" = "Noch nicht verwendet";
+"Step %lld · %@" = "Schritt %lld · %@";
+"Toggle whether you used this amount in this step." = "Markiere, ob du diese Menge in diesem Schritt verwendet hast.";
+"Add up to 50 tools, with a maximum of 100 characters each." = "Füge bis zu 50 Utensilien mit höchstens 100 Zeichen pro Eintrag hinzu.";
+
+"Insert timer" = "Timer einfügen";
+"Seconds" = "Sekunden";
+"Insert" = "Einfügen";
+"Set a countdown of up to 24 hours. It stays the same for any number of portions." = "Stelle einen Countdown von bis zu 24 Stunden ein. Er bleibt bei jeder Portionszahl gleich.";
+"Start timer for %@" = "Timer für %@ starten";
+"Timer done" = "Timer abgelaufen";
+"Cancel timer" = "Timer abbrechen";
+"Dismiss timer" = "Timer schließen";
+
+"Saved imports" = "Vorgemerkte Importe";
+"No saved imports" = "Keine vorgemerkten Importe";
+"Save a recipe link or text on the Onionary website using this account." = "Merke einen Rezeptlink oder Rezepttext auf der Onionary-Website mit diesem Konto vor.";
+"Recipe link" = "Rezeptlink";
+"Copy link" = "Link kopieren";
+"Copy text" = "Text kopieren";
+"Copied" = "Kopiert";
+"Remove saved import" = "Vorgemerkten Import entfernen";
+"Remove saved import?" = "Vorgemerkten Import entfernen?";

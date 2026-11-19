@@ -79,3 +79,32 @@ class TestCurrentUser:
     def test_me_invalid_token_returns_401(self, client):
         r = client.get("/users/me", headers={"Authorization": "Bearer invalid.token.here"})
         assert r.status_code == 401
+
+
+def test_account_equipment_sync_and_legacy_import(client, auth_headers, second_user_headers):
+    path = "/users/me/equipment"
+    assert client.get(path).status_code == 401
+    assert client.put(path, json={"changes": {"Knife": True}}).status_code == 401
+    assert client.get(path, headers=auth_headers).json() == {"owned": []}
+    update = client.put(path, headers=auth_headers, json={
+        "changes": {" Springform  Pan ": True, "THERMOMIX": False},
+        "legacy_owned": ["Thermomix", "Wooden spoon"],
+    })
+    assert update.json() == {"owned": ["springform pan", "wooden spoon"]}
+    second_device = client.post("/users/token", data={
+        "username": "alice@test.com", "password": "alice-password-123",
+    }).json()["access_token"]
+    other_device = {"Authorization": f"Bearer {second_device}"}
+    assert client.get(path, headers=other_device).json() == update.json()
+    assert client.get(path, headers=second_user_headers).json() == {"owned": []}
+    assert client.put(path, headers=other_device, json={"changes": {"Springform pan": False}}).status_code == 200
+    assert client.put(path, headers=auth_headers, json={"legacy_owned": ["SPRINGFORM PAN"]}).json() == {
+        "owned": ["wooden spoon"],
+    }
+    assert client.put(path, headers=auth_headers, json={"changes": {"Knife": "false"}}).status_code == 422
+    assert client.post("/users/me/delete", headers=auth_headers, json={"email": "alice@test.com"}).status_code == 204
+    from execution.db.database import SessionLocal
+    from execution.db.models import AccountEquipment
+
+    with SessionLocal() as db:
+        assert db.query(AccountEquipment).count() == 0

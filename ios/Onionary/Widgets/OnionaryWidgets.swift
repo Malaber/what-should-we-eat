@@ -22,6 +22,8 @@ struct CookingLiveActivity: Widget {
                 Text(context.isStale ? "Open Onionary to refresh" : context.state.nextStep)
                     .font(.subheadline).lineLimit(3)
             }.padding().activityBackgroundTint(Color(.secondarySystemBackground))
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("onionary-cooking-live-activity")
                 .widgetURL(URL(string: "de.malaber.onionary://cooking?scope=\(context.attributes.scope)"))
         } dynamicIsland: { context in
             DynamicIsland {

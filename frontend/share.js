@@ -49,10 +49,13 @@ function renderRecipe(recipe, active, checked, persist) {
   section.replaceChildren(element('h2', recipe.name));
   if (recipe.notes) section.append(element('p', recipe.notes));
   for (const [key, rows, text] of [
+    ['equipment', recipe.equipment || [], tool => tool],
     ['ingredients', ingredients, ingredient => [ingredient.quantity, ingredient.unit, ingredient.name].filter(value => value != null && value !== '').join(' ')],
     ['steps', steps, step => resolveIngredientPlaceholders(step.description, ingredients)],
   ]) {
-    section.append(element('h3', window.t(`share.${key}`)));
+    if (key === 'equipment' && !rows.length) continue;
+    const heading = active && key === 'ingredients' ? 'prepare-ingredients' : key;
+    section.append(element('h3', window.t(`share.${heading}`)));
     let group;
     let list;
     for (const [index, row] of rows.entries()) {
@@ -78,16 +81,20 @@ function renderRecipe(recipe, active, checked, persist) {
         if (key === 'steps') {
           const badges = element('div');
           badges.className = 'shared-ingredient-badges';
-          for (const part of ingredientPlaceholderParts(row.description, ingredients)) {
+          for (const [partIndex, part] of ingredientPlaceholderParts(row.description, ingredients).entries()) {
             if (!part.ingredient) continue;
-            const ingredientID = `ingredients-${ingredients.indexOf(part.ingredient)}`;
+            const ingredientID = `step-use-${index}-${partIndex}`;
             const badge = element('button', part.text);
             badge.type = 'button';
             observe(ingredientID, value => badge.setAttribute('aria-pressed', String(value)));
             badge.onclick = () => toggle(ingredientID, !checked.has(ingredientID));
             badges.append(badge);
           }
-          if (badges.childElementCount) item.append(badges);
+          if (badges.childElementCount) {
+            badges.setAttribute('role', 'group');
+            badges.setAttribute('aria-label', window.t('share.use-in-step'));
+            item.append(element('p', window.t('share.use-in-step')), badges);
+          }
         }
       }
       list.append(item);

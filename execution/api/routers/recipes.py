@@ -100,6 +100,7 @@ def create_recipe(data: RecipeCreate, current_user: User = Depends(get_current_a
         kcal_per_serving=data.kcal_per_serving,
         active_cooking_time_min=data.active_cooking_time_min,
         total_time_min=data.total_time_min,
+        equipment=data.equipment,
     )
     recipe.ingredients = [
         Ingredient(**ing.model_dump(), position=index) for index, ing in enumerate(data.ingredients)
@@ -145,6 +146,7 @@ def import_recipes_from_household(
             kcal_per_serving=recipe.kcal_per_serving,
             active_cooking_time_min=recipe.active_cooking_time_min,
             total_time_min=recipe.total_time_min,
+            equipment=recipe.equipment,
         )
         
         new_recipe.ingredients = [
@@ -219,6 +221,8 @@ def update_recipe(recipe_id: int, data: RecipeUpdate, current_user: User = Depen
             setattr(recipe, field, getattr(data, field))
 
     # replace ingredients if provided
+    if data.equipment is not None:
+        recipe.equipment = data.equipment
     if data.ingredients is not None:
         recipe.ingredients = [
             Ingredient(**ing.model_dump(), position=index) for index, ing in enumerate(data.ingredients)
