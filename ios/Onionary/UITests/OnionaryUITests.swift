@@ -72,6 +72,34 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
+    func testEquipmentEditorAddsAndRemovesRows() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "--equipment-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        try selectRecipe(in: app)
+        app.buttons["Edit recipe"].tap()
+        let add = app.buttons["Add tool"]
+        let lower = app.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.77))
+        let upper = app.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.32))
+        for _ in 0..<3 where !add.isHittable { lower.press(forDuration: 0.02, thenDragTo: upper) }
+        XCTAssertTrue(add.isHittable)
+        add.tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
+        app.typeText("Cookie sheet")
+        let fields = app.textFields.matching(identifier: "recipe-equipment-name")
+        XCTAssertEqual(fields.element(boundBy: 1).value as? String, "Cookie sheet")
+        app.buttons["Done"].tap()
+        let remove = app.buttons.matching(identifier: "Remove tool").element(boundBy: 0)
+        if !remove.isHittable { upper.press(forDuration: 0.02, thenDragTo: lower) }
+        remove.tap()
+        XCTAssertEqual(fields.element(boundBy: 0).value as? String, "Cookie sheet")
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.staticTexts["Cookie sheet"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Springform pan"].exists)
+    }
+
+    @MainActor
     func testStepTimerStartsAndCanBeCancelled() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--reset", "--timer-fixture", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

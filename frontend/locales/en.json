@@ -1,7 +1,9 @@
 {
   "recipe.save-for-iphone": "Save for iPhone",
   "recipe.equipment": "Equipment",
-  "recipe.equipment-help": "One tool per line.",
+  "recipe.add-tool": "Add tool",
+  "recipe.tool-name": "Tool name",
+  "recipe.remove-tool": "Remove tool",
   "recipe.equipment-sync": "Equipment changes waiting to sync.",
   "share.equipment": "Equipment",
   "nav.pick_meals": "Pick Meals",

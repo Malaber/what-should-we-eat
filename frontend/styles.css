@@ -866,6 +866,7 @@ body::before {
 .editor-row input:focus { border-color: var(--green); }
 .editor-row > .control-group { min-width: 0; flex: 1; }
 .editor-row > .btn-icon { flex: 0 0 auto; }
+.editor-row.equipment-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
 .form-row > .control-group { min-width: 0; }
 .recipe-icon-field { max-width: 9rem; }
 .editor-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }

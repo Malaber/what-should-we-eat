@@ -23,6 +23,19 @@ struct RecipeEditor: View {
     @State private var timerMinutes = ""
     @State private var timerSeconds = ""
     @State private var tagInput = ""
+    @State private var equipmentIDs: [UUID]
+
+    init(store: AppStore, draft: RecipeDraft, recipeID: Int? = nil, draftID: UUID = UUID(),
+         savedBaseline: RecipeDraft? = nil, isRecovery: Bool = false) {
+        self.store = store
+        _draft = State(initialValue: draft)
+        _recipeID = State(initialValue: recipeID)
+        _draftID = State(initialValue: draftID)
+        self.savedBaseline = savedBaseline
+        self.isRecovery = isRecovery
+        _equipmentIDs = State(initialValue: (draft.equipment ?? []).map { _ in UUID() })
+    }
+
     private enum RecipeOrder: String, Identifiable {
         case ingredients, steps
         var id: Self { self }
@@ -115,12 +128,36 @@ struct RecipeEditor: View {
     }
     private var equipmentSection: some View {
         Section("Equipment") {
-            TextField("One tool per line", text: Binding(
-                get: { (draft.equipment ?? []).joined(separator: "\n") },
-                set: { draft.equipment = $0.components(separatedBy: .newlines) }), axis: .vertical)
-                .lineLimit(2...6)
-                .focused($focusedInput, equals: "equipment").id("equipment")
-                .accessibilityIdentifier("recipe-equipment")
+            ForEach(equipmentIDs, id: \.self) { id in
+                let field = "equipment-" + id.uuidString
+                HStack {
+                    TextField("Tool name", text: Binding(
+                        get: {
+                            guard let index = equipmentIDs.firstIndex(of: id) else { return "" }
+                            return draft.equipment?[index] ?? ""
+                        },
+                        set: { name in
+                            guard let index = equipmentIDs.firstIndex(of: id) else { return }
+                            draft.equipment?[index] = name
+                        }))
+                        .focused($focusedInput, equals: field).id(field)
+                        .accessibilityIdentifier("recipe-equipment-name")
+                    Button(role: .destructive) {
+                        guard let index = equipmentIDs.firstIndex(of: id) else { return }
+                        equipmentIDs.remove(at: index)
+                        draft.equipment?.remove(at: index)
+                    } label: {
+                        Label("Remove tool", systemImage: "trash").labelStyle(.iconOnly)
+                            .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                    }.buttonStyle(.borderless)
+                }.recipeDraftCard()
+            }
+            Button("Add tool") {
+                let id = UUID()
+                draft.equipment = (draft.equipment ?? []) + [""]
+                equipmentIDs.append(id)
+                focusNewField("equipment-" + id.uuidString)
+            }.disabled(equipmentIDs.count >= 50)
         }
     }
     private var metadataSection: some View {

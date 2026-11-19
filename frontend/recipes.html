@@ -191,17 +191,6 @@
                 rows="5"
               ></textarea>
             </div>
-            <div class="control-group" style="margin-top: 16px">
-              <label for="recipe-equipment" data-i18n="recipe.equipment">Equipment</label>
-              <textarea
-                id="recipe-equipment"
-                rows="3"
-                aria-describedby="recipe-equipment-help"
-              ></textarea>
-              <small id="recipe-equipment-help" data-i18n="recipe.equipment-help"
-                >One tool per line.</small
-              >
-            </div>
             <div class="form-row">
               <div class="control-group">
                 <label>Active Time (min)</label>
@@ -230,6 +219,20 @@
               </div>
               <div class="tag-selector tag-suggestions" id="tag-suggestions" hidden></div>
             </div>
+            <section class="list-editor" aria-labelledby="equipment-heading">
+              <div class="editor-section-heading">
+                <h3 id="equipment-heading" data-i18n="recipe.equipment">Equipment</h3>
+              </div>
+              <div id="equipment-list"></div>
+              <button
+                class="btn btn-secondary btn-sm"
+                id="btn-add-equipment"
+                type="button"
+                data-i18n="recipe.add-tool"
+              >
+                Add tool
+              </button>
+            </section>
             <!-- Ingredients -->
             <div class="list-editor">
               <div class="editor-section-heading">

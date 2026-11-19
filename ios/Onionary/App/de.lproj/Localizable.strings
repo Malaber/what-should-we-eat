@@ -363,8 +363,9 @@
 "Equipment" = "Küchenutensilien";
 "Checked tools sync to your account for other recipes." = "Abgehakte Utensilien werden für weitere Rezepte mit deinem Konto synchronisiert.";
 "Equipment changes waiting to sync." = "Änderungen an Küchenutensilien warten auf Synchronisierung.";
-"One tool per line" = "Ein Utensil pro Zeile";
-"Checked tools stay ready for other recipes on this device." = "Abgehakte Utensilien bleiben auf diesem Gerät für andere Rezepte bereit.";
+"Tool name" = "Name des Utensils";
+"Add tool" = "Utensil hinzufügen";
+"Remove tool" = "Utensil entfernen";
 "Add up to 50 tools, with a maximum of 100 characters each." = "Füge bis zu 50 Utensilien mit höchstens 100 Zeichen pro Eintrag hinzu.";
 
 "Insert timer" = "Timer einfügen";

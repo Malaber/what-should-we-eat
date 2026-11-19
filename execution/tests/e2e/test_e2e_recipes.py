@@ -22,6 +22,11 @@ def test_recipe_crud(page: Page):
     tag.fill("Weeknight meals")
     tag.press("Enter")
     expect(page.get_by_role("button", name="Remove tag Weeknight meals")).to_be_visible()
+    tools = page.get_by_role("region", name="Equipment")
+    tools.get_by_role("button", name="Add tool").click()
+    tools.get_by_role("textbox", name="Tool name").fill("Chef knife")
+    tools.get_by_role("button", name="Add tool").click()
+    tools.get_by_role("textbox", name="Tool name").last.fill("Kitchen scale")
     page.locator("#btn-save-recipe").click()
     expect(page.locator("#toast")).to_contain_text("Recipe created!", timeout=5000)
     
@@ -31,6 +36,8 @@ def test_recipe_crud(page: Page):
     
     # EDIT
     cards.first.locator("text='✏️ Edit'").click()
+    expect(tools.get_by_role("textbox", name="Tool name").first).to_have_value("Chef knife")
+    tools.get_by_role("button", name="Remove tool").first.click()
     page.get_by_role("button", name="Remove tag Weeknight meals").click()
     tag.fill("night")
     page.locator("#tag-suggestions").get_by_role("button", name="Weeknight meals").click()
@@ -52,6 +59,7 @@ def test_recipe_crud(page: Page):
     expect(page.locator("#toast")).to_contain_text("Recipe updated!")
     expect(cards.first.locator("h3")).to_have_text("CRUD Updated Recipe")
     cards.first.get_by_text('✏️ Edit').click()
+    expect(tools.get_by_role("textbox", name="Tool name")).to_have_value("Kitchen scale")
     expect(page.locator('.step-desc').first).to_have_value('Mix the dough')
     expect(page.locator('#steps-list .editor-group')).to_have_text('Base')
     page.locator('#btn-close-modal').click()
