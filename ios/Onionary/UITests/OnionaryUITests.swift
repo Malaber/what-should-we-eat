@@ -902,13 +902,22 @@ final class OnionaryUITests: OnionaryUITestCase {
         top.press(forDuration: 0.02, thenDragTo: bottom)
         let activity = springboard.descendants(matching: .any).matching(NSPredicate(
             format: "identifier == %@ OR label == %@", "onionary-cooking-live-activity", "Creamy lemon pasta")).firstMatch
-        XCTAssertTrue(activity.waitForExistence(timeout: 12), "The system Live Activity must be visible on the Lock Screen")
+        // ActivityKit can report On while iOS 27.2 is still launching the first
+        // WidgetKit renderer. Start the capture only after SpringBoard has it.
+        guard activity.waitForExistence(timeout: 35) else {
+            let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            screenshot.name = "lock-screen-activity-missing"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            XCTFail("The system Live Activity must be visible on the Lock Screen")
+            return
+        }
         let allow = springboard.buttons.matching(NSPredicate(format: "label IN %@", ["Allow", "Erlauben"])).firstMatch
         if allow.waitForExistence(timeout: 2) {
             allow.tap()
             XCTAssertTrue(allow.waitForNonExistence(timeout: 5))
         }
-        XCTAssertTrue(activity.exists, "The capture must show cooking progress without the permission prompt")
+        XCTAssertTrue(activity.waitForExistence(timeout: 5), "The capture must show cooking progress without the permission prompt")
         attachMarketingScreenshot(XCUIScreen.main.screenshot(), name: "08-live-activity-lock-screen")
         // Close the Cover Sheet and remove the actual system activity.
         let handle = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.50, dy: 0.995))

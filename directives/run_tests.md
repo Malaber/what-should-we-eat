@@ -589,8 +589,13 @@ Source reference:
 https://github.com/appium/appium-ios/blob/main/packages/webdriveragent/WebDriverAgentLib/Categories/XCUIDevice%2BFBHinge.m
 
 Marketing capture runs once per device inside the normal UI suite. After that
-suite passes, export its four attachments with marketing_screenshots.py
---result-bundle. Reject missing/duplicate/unknown scenes, bad dimensions and
+suite passes, export its four app scenes with `marketing_screenshots.py
+--result-bundle`. The iPhone suite also captures its actual Lock Screen activity.
+ActivityKit reports On when its request succeeds. A fresh iOS 27.2 simulator
+needed about 21 seconds from that request to launch the first WidgetKit
+renderer. Wait for the cooking activity in SpringBoard before handling its
+permission prompt and taking the screenshot. Attach the screen if the bounded
+wait expires. Reject missing/duplicate/unknown scenes, bad dimensions and
 undecodable PNGs. The CI caller then invokes screenshots.yml as a reusable
 workflow to render with Malaber/github-workflows, bundle and attach main-release
 assets. Never start another simulator/test run just to obtain the same images.
