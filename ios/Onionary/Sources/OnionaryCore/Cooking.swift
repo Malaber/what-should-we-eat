@@ -88,6 +88,15 @@ public struct Adventure: Codable, Identifiable, Equatable, Sendable {
     public var canUndo: Bool { !undoStack.isEmpty }
     public var canRedo: Bool { redoStack?.isEmpty == false }
     public var portions: Decimal { baseServings * multiplier }
+    public var checklistProgress: (checked: Int, total: Int) {
+        let keys = Set(recipe.ingredients.map { "ingredient-\($0.id)" }
+            + recipe.instructionSteps.map { "step-\($0.id)" })
+        return (checked.intersection(keys).count, keys.count)
+    }
+
+    public static func ingredientUseKey(stepID: Int, part: Int) -> String {
+        "step-use-\(stepID)-\(part)"
+    }
 
     public init(recipe: Recipe, now: Date = Date()) { self.recipe = recipe; baseServings = recipe.servings ?? 1; lastVisited = now }
     public func quantity(_ ingredient: Ingredient) -> Decimal? { ingredient.quantity.map { $0 * multiplier } }

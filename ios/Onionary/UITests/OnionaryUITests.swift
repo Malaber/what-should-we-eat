@@ -1036,10 +1036,10 @@ final class OnionaryUITests: OnionaryUITestCase {
     }
 
     @MainActor
-    func testScaledStepIngredientSharesCheckAndUndo() {
+    func testScaledStepIngredientUseIsSeparateFromPreparation() {
         let app = launchCookingControlsFixture()
         let cheese = app.buttons["ingredient-1"]
-        let badge = app.buttons["step-ingredient-1"]
+        let badge = app.buttons["step-use-2-1"]
         XCTAssertTrue(badge.waitForExistence(timeout: 5))
         XCTAssertEqual(badge.label, "40 g Cheese")
         app.buttons["portion-plus"].tap()
@@ -1048,13 +1048,17 @@ final class OnionaryUITests: OnionaryUITestCase {
         app.swipeUp()
         XCTAssertTrue(badge.isHittable)
         badge.tap()
-        XCTAssertEqual(badge.value as? String, "Checked")
-        XCTAssertEqual(cheese.value as? String, "Checked")
+        XCTAssertEqual(badge.value as? String, "Used")
+        XCTAssertEqual(cheese.value as? String, "Unchecked")
         XCTAssertEqual(app.buttons["step-2"].value as? String, "Unchecked")
         app.buttons["undo"].tap()
-        XCTAssertEqual(badge.value as? String, "Unchecked")
+        XCTAssertEqual(badge.value as? String, "Not used")
         XCTAssertEqual(cheese.value as? String, "Unchecked")
         XCTAssertEqual(badge.label, "80 g Cheese")
+        if !cheese.isHittable { app.swipeDown() }
+        cheese.tap()
+        XCTAssertEqual(cheese.value as? String, "Checked")
+        XCTAssertEqual(badge.value as? String, "Not used")
     }
 
     @MainActor

@@ -12,10 +12,7 @@ public struct CookingSnapshot: Codable, Hashable, Sendable {
     public init(_ adventure: Adventure, locale: Locale = .current) {
         recipeID = adventure.id
         title = String(adventure.recipe.name.prefix(120))
-        let keys = Set(adventure.recipe.ingredients.map { "ingredient-\($0.id)" }
-            + adventure.recipe.instructionSteps.map { "step-\($0.id)" })
-        checked = adventure.checked.intersection(keys).count
-        total = keys.count
+        (checked, total) = adventure.checklistProgress
         let next = adventure.recipe.instructionSteps.sorted { $0.stepNumber < $1.stepNumber }
             .first { !adventure.checked.contains("step-\($0.id)") }
         nextStep = String(next.map { IngredientPlaceholders.resolve($0.description,

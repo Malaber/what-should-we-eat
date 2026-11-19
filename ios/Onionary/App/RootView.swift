@@ -169,7 +169,7 @@ struct RecipesView: View {
             if search.isEmpty && selectedTags.isEmpty && !store.kitchen.recent.isEmpty {
                 Section("Recently visited") {
                     ForEach(store.kitchen.recent.prefix(showAllRecent ? store.kitchen.recent.count : 3)) { adventure in
-                        recipeRow(adventure.recipe, subtitle: L10n.format("Continue · %lld checked", adventure.checked.count))
+                        recipeRow(adventure.recipe, subtitle: L10n.format("Continue · %lld checked", adventure.checklistProgress.checked))
                     }
                     if store.kitchen.recent.count > 3 {
                         Button(showAllRecent ? "Show less" : "Show more") { showAllRecent.toggle() }
@@ -316,9 +316,10 @@ struct CookingView: View {
                                 } label: { Image(systemName: "plus").frame(width: 44, height: 44).contentShape(Rectangle()) }
                                     .buttonStyle(.bordered).accessibilityLabel("One more portion").accessibilityIdentifier("portion-plus")
                             }
-                            ProgressView(value: Double(adventure.checked.count), total: Double(max(1, adventure.recipe.ingredients.count + adventure.recipe.instructionSteps.count)))
+                            let progress = adventure.checklistProgress
+                            ProgressView(value: Double(progress.checked), total: Double(max(1, progress.total)))
                                 .accessibilityLabel("Cooking progress")
-                            Text("\(adventure.checked.count) of \(adventure.recipe.ingredients.count + adventure.recipe.instructionSteps.count) checked")
+                            Text("\(progress.checked) of \(progress.total) checked")
                                 .font(.caption).foregroundStyle(.secondary)
                             Button("Adjust portions", systemImage: "slider.horizontal.3") { sheet = .portions }.buttonStyle(.bordered)
                         }.padding(.vertical, 4)
@@ -450,11 +451,14 @@ struct CookingView: View {
             checkRow(key: "step-\(step.id)", label: parts.map(\.text).joined(),
                      subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""),
                      adventure: adventure)
+            if parts.contains(where: { if case .amount = $0 { return true }; return false }) {
+                Text("Use in this step").font(.caption).foregroundStyle(.secondary).padding(.leading, 32)
+            }
             ChipFlow(spacing: 6) {
                 ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
                     switch part {
-                    case .amount(let ingredient, let label):
-                        ingredientBadge(ingredient, label: label, adventure: adventure)
+                    case .amount(_, let label):
+                        ingredientBadge(label, step: step, part: index, adventure: adventure)
                     case .time(let time, let label):
                         timerBadge(time, label: label, key: "\(adventure.id)-\(step.id)-\(index)", title: adventure.recipe.name)
                     case .text:
@@ -486,11 +490,11 @@ struct CookingView: View {
             .disabled(store.kitchen.cookingTimers.contains { $0.id == key })
     }
 
-    private func ingredientBadge(_ ingredient: Ingredient, label: String, adventure: Adventure) -> some View {
-        let key = "ingredient-\(ingredient.id)"
+    private func ingredientBadge(_ label: String, step: CookingStep, part: Int, adventure: Adventure) -> some View {
+        let key = Adventure.ingredientUseKey(stepID: step.id, part: part)
         let checked = adventure.checked.contains(key)
         return Button {
-            store.update { $0.toggle(key: key, label: ingredient.name) }
+            store.update { $0.toggle(key: key, label: L10n.format("Step %lld · %@", step.stepNumber, label)) }
         } label: {
             Label(label, systemImage: checked ? "checkmark.circle.fill" : "circle")
                 .font(.subheadline.weight(.medium)).padding(.horizontal, 10).padding(.vertical, 6)
@@ -498,8 +502,9 @@ struct CookingView: View {
                 .background(onion.opacity(0.14), in: Capsule())
                 .frame(minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain)
-            .accessibilityValue(checked ? "Checked" : "Unchecked")
-            .accessibilityIdentifier("step-ingredient-\(ingredient.id)")
+            .accessibilityValue(checked ? "Used" : "Not used")
+            .accessibilityHint("Toggle whether you used this amount in this step.")
+            .accessibilityIdentifier(key)
     }
 
     func checkRow(key: String, label: String, subtitle: String, adventure: Adventure) -> some View {

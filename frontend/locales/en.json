@@ -261,5 +261,7 @@
   "share.cook": "Cook now",
   "share.stop-cooking": "Exit cooking mode",
   "share.ingredients": "Ingredients",
+  "share.prepare-ingredients": "Prepare ingredients",
+  "share.use-in-step": "Use in this step",
   "share.steps": "Steps"
 }

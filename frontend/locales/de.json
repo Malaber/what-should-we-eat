@@ -259,5 +259,7 @@
   "share.cook": "Jetzt kochen",
   "share.stop-cooking": "Kochmodus verlassen",
   "share.ingredients": "Zutaten",
+  "share.prepare-ingredients": "Zutaten bereitstellen",
+  "share.use-in-step": "In diesem Schritt verwenden",
   "share.steps": "Schritte"
 }
