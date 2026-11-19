@@ -85,6 +85,22 @@ public struct RecipeDraft: Codable, Equatable, Sendable {
         enum CodingKeys: String, CodingKey { case stepNumber, description, durationMin, groupName }
         public init() {}
     }
+
+    public var hasUnreferencedIngredientAmounts: Bool {
+        guard instructionSteps.contains(where: { $0.description.contains("{{") }) else { return false }
+        let quantified = ingredients.enumerated().compactMap { index, item -> Ingredient? in
+            let name = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty, let quantity = item.quantity, !quantity.isNaN, quantity > 0 else { return nil }
+            return Ingredient(id: index, name: name, quantity: quantity, groupName: item.groupName, unit: item.unit)
+        }
+        let usedIDs = Set(instructionSteps.flatMap { step in
+            IngredientPlaceholders.parts(step.description, ingredients: quantified).compactMap { part -> Int? in
+                if case let .amount(item, _) = part { return item.id }
+                return nil
+            }
+        })
+        return !usedIDs.isEmpty && usedIDs.count < quantified.count
+    }
     public var name = ""
     public var icon: String?
     public var notes: String? = ""

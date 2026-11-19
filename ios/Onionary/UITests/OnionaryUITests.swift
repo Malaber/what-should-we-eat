@@ -654,7 +654,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         try selectRecipe(in: app)
         app.buttons["Edit recipe"].tap()
         XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["insert-ingredient-amount"].exists)
+        XCTAssertFalse(app.buttons["insert-placeholder"].exists)
         app.swipeUp()
         app.swipeUp()
         return app
@@ -672,28 +672,51 @@ final class OnionaryUITests: OnionaryUITestCase {
         instruction.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5),
                       "The instruction field must open the keyboard")
-        let insert = app.buttons["insert-ingredient-amount"]
+        let insert = app.buttons["insert-placeholder"]
         XCTAssertTrue(insert.waitForExistence(timeout: 5))
+        instruction.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: .command)
         insert.tap()
         app.buttons["Cheese"].tap()
-        XCTAssertTrue((instruction.value as? String ?? "").contains("{{Cheese|100%}}"))
+        XCTAssertEqual(instruction.value as? String, "{{Cheese|100%}} Boil the pasta in salted water.")
+        instruction.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: .command)
+        insert.tap()
+        app.buttons["Insert timer"].tap()
+        let timer = app.alerts["Insert timer"]
+        XCTAssertTrue(timer.waitForExistence(timeout: 5))
+        timer.textFields["Minutes"].tap()
+        app.typeText("1")
+        timer.textFields["Seconds"].tap()
+        app.typeText("30")
+        timer.buttons["Insert"].tap()
+        XCTAssertTrue(UIReadiness.waitForValue("{{time|90s}} {{Cheese|100%}} Boil the pasta in salted water.",
+            matching: app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-"))))
         app.buttons["Done"].tap()
         XCTAssertFalse(insert.exists)
     }
 
     @MainActor
-    func testStepHelpWithoutKeyboard() throws {
-        let app = try openStepEditor()
-        let help = app.buttons["step-help"]
-        XCTAssertTrue(help.waitForExistence(timeout: 5))
-        help.tap()
-        let alert = app.alerts["Ingredient amount help"]
+    func testStepPlaceholderHelpInEmptyRecipe() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--reset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        try tapNavigation("Recipes", in: app)
+        app.buttons["add-recipe"].tap()
+        app.buttons["New recipe"].tap()
+        let add = app.buttons["Add step"]
+        if !add.isHittable { app.swipeUp() }
+        add.tap()
+        let insert = app.buttons["insert-placeholder"]
+        XCTAssertTrue(insert.waitForExistence(timeout: 5))
+        insert.tap()
+        XCTAssertTrue(app.buttons["No ingredients added yet"].exists)
+        XCTAssertTrue(app.buttons["Insert timer"].isEnabled)
+        app.buttons["What is this?"].tap()
+        let alert = app.alerts["Recipe placeholders"]
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        XCTAssertTrue(alert.staticTexts.containing(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@",
+            "{{Flour|50%}}", "{{time|2m30s}}")).firstMatch.exists)
         alert.buttons["Done"].tap()
         XCTAssertTrue(alert.waitForNonExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["insert-ingredient-amount"].exists)
-        app.buttons["Cancel"].tap()
-        XCTAssertTrue(app.textFields["Name"].waitForNonExistence(timeout: 5))
     }
 
     @MainActor

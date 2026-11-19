@@ -165,9 +165,14 @@
 
 "%lld recipes" = "%lld Rezepte";
 
-"Insert ingredient amount" = "Zutatenmenge einsetzen";
+"Insert placeholder" = "Platzhalter einsetzen";
+"Ingredient amounts" = "Zutatenmengen";
+"No ingredients added yet" = "Noch keine Zutaten hinzugefügt";
+"Add an ingredient quantity to insert its amount" = "Gib zuerst eine Zutatenmenge an";
+"What is this?" = "Was ist das?";
+"Some ingredient amounts have no reference in the steps." = "Einige Zutatenmengen sind in den Schritten noch nicht verknüpft.";
 
-"Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking." = "Ändere 100% im Platzhalter auf den Anteil für diesen Schritt, etwa 80%. Beim Kochen passen sich die Mengen an deine Portionen an.";
+"Example: Add {{Flour|50%}}, then bake for {{time|2m30s}}. The flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown." = "Beispiel: {{Mehl|50%}} dazugeben und {{time|2m30s}} backen. Damit verwendest du die Hälfte der Mehlmenge, angepasst an deine Portionen. Tippe beim Kochen auf die Zeit, um einen Timer für 2 Minuten und 30 Sekunden zu starten.";
 
 "Start Live Activity" = "Live-Aktivität starten";
 
@@ -181,7 +186,7 @@
 
 "Open Kitchen to update your plan." = "Öffne Küche, um deinen Plan zu aktualisieren.";
 
-"Ingredient amount help" = "Hilfe zu Zutatenmengen";
+"Recipe placeholders" = "Platzhalter im Rezept";
 "Browse by tag" = "Nach Tag stöbern";
 "Clear filter" = "Filter zurücksetzen";
 "Find a tag" = "Tag suchen";

@@ -18,7 +18,8 @@ struct RecipeEditor: View {
     @State private var error: String?
     @FocusState private var focusedInput: String?
     @State private var showingStepHelp = false
-    @State private var timerStep: UUID?
+    @State private var stepSelections: [UUID: NSRange] = [:]
+    @State private var timerTarget: InsertionTarget?
     @State private var enteringTimer = false
     @State private var timerMinutes = ""
     @State private var timerSeconds = ""
@@ -39,6 +40,10 @@ struct RecipeEditor: View {
     private enum RecipeOrder: String, Identifiable {
         case ingredients, steps
         var id: Self { self }
+    }
+    private struct InsertionTarget {
+        let step: UUID
+        let selection: NSRange?
     }
     @State private var recipeOrder: RecipeOrder?
     private var focusedStep: UUID? { focusedInput.flatMap(UUID.init(uuidString:)) }
@@ -67,15 +72,18 @@ struct RecipeEditor: View {
                         }
                     }
                 }
-                .alert("Ingredient amount help", isPresented: $showingStepHelp) {
+                .alert("Recipe placeholders", isPresented: $showingStepHelp) {
                     Button("Done", role: .cancel) {}
                 } message: {
-                    Text("Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.")
+                    Text("Example: Add {{Flour|50%}}, then bake for {{time|2m30s}}. The flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown.")
                 }
                 .alert("Insert timer", isPresented: $enteringTimer) {
                     TextField("Minutes", text: $timerMinutes).keyboardType(.numberPad)
                     TextField("Seconds", text: $timerSeconds).keyboardType(.numberPad)
-                    Button("Cancel", role: .cancel) {}
+                    Button("Cancel", role: .cancel) {
+                        if let timerTarget { focusNewField(timerTarget.step.uuidString) }
+                        timerTarget = nil
+                    }
                     Button("Insert", action: insertTimer).disabled(enteredTime == nil)
                 } message: {
                     Text("Set a countdown of up to 24 hours. It stays the same for any number of portions.")
@@ -101,20 +109,38 @@ struct RecipeEditor: View {
     @ToolbarContentBuilder private var editorToolbar: some ToolbarContent {
 
                     ToolbarItemGroup(placement: .keyboard) {
-                        if let focusedStep {
-                            Menu {
-                                ForEach(insertableIngredients) { ingredient in
-                                    Button(ingredient.name) {
-                                        insertAmount(ingredient, into: focusedStep)
-                                    }
-                                }
-                            } label: { Label("Insert ingredient amount", systemImage: "plus.circle") }
-                            .accessibilityIdentifier("insert-ingredient-amount")
-                        }
+                        if let focusedStep { placeholderMenu(for: focusedStep) }
                     }
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
                     ToolbarItem(placement: .primaryAction) { Button("Save") { Task { await save() } }.disabled(saving || hasOverlongTag || hasInvalidIcon) }
     }
+    private func placeholderMenu(for step: UUID) -> some View {
+        Menu {
+            Section("Ingredient amounts") {
+                if insertableIngredients.isEmpty {
+                    if draft.ingredients.allSatisfy({ $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+                        Button("No ingredients added yet") {}.disabled(true)
+                    } else {
+                        Button("Add an ingredient quantity to insert its amount") {}.disabled(true)
+                    }
+                }
+                ForEach(insertableIngredients) { ingredient in
+                    Button(ingredient.name) { insertAmount(ingredient, into: step) }
+                }
+            }
+            Button("Insert timer", systemImage: "timer") {
+                guard let target = insertionTarget(for: step) else { return }
+                timerTarget = target
+                timerMinutes = ""
+                timerSeconds = ""
+                focusedInput = nil
+                enteringTimer = true
+            }
+            Button("What is this?", systemImage: "questionmark.circle") { showingStepHelp = true }
+        } label: { Label("Insert placeholder", systemImage: "plus.circle") }
+            .accessibilityIdentifier("insert-placeholder")
+    }
+
     private var editorForm: some View {
         WorkspacePanes(focus: focusedInput, keepFocusedFieldVisible: true) {
 
@@ -295,6 +321,10 @@ struct RecipeEditor: View {
     }
     private var stepsSection: some View {
                 Section {
+                    if draft.hasUnreferencedIngredientAmounts {
+                        Text("Some ingredient amounts have no reference in the steps.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
                     ForEach($draft.instructionSteps) { $step in
                         VStack(alignment: .leading, spacing: 8) {
                             groupHeading(step.groupName, startsGroup: startsGroup(step, in: draft.instructionSteps, group: \.groupName))
@@ -315,9 +345,6 @@ struct RecipeEditor: View {
                             Button("Reorder", systemImage: "arrow.up.arrow.down") { recipeOrder = .steps }
                                 .accessibilityLabel("Reorder steps")
                         }
-                        Button { showingStepHelp = true } label: { Image(systemName: "info.circle") }
-                            .accessibilityLabel("Ingredient amount help")
-                            .accessibilityIdentifier("step-help")
                     }
                 }
 
@@ -346,21 +373,33 @@ struct RecipeEditor: View {
                         .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }.buttonStyle(.borderless)
             }
-            TextField("Instruction", text: binding.description, axis: .vertical)
+            instructionField(binding.description, step: id)
                 .focused($focusedInput, equals: id.uuidString)
                 .id(id.uuidString)
                 .accessibilityIdentifier("instruction-" + id.uuidString)
             Text("Minutes").font(.caption).foregroundStyle(.secondary)
             TextField("Minutes", value: binding.durationMin, format: .number).keyboardType(.numberPad)
                 .focused($focusedInput, equals: "step-minutes-" + id.uuidString).id("step-minutes-" + id.uuidString)
-            Button("Insert timer", systemImage: "timer") {
-                focusedInput = nil
-                timerStep = id
-                timerMinutes = ""
-                timerSeconds = ""
-                enteringTimer = true
-            }.buttonStyle(.borderless)
         }.recipeDraftCard()
+    }
+
+    @ViewBuilder private func instructionField(_ text: Binding<String>, step: UUID) -> some View {
+        if #available(iOS 18, *) {
+            TextField("Instruction", text: text, selection: instructionSelection(text, step: step), axis: .vertical)
+        } else {
+            TextField("Instruction", text: text, axis: .vertical)
+        }
+    }
+
+    @available(iOS 18, *)
+    private func instructionSelection(_ text: Binding<String>, step: UUID) -> Binding<TextSelection?> {
+        Binding {
+            guard let stored = stepSelections[step], let range = Range(stored, in: text.wrappedValue) else { return nil }
+            return TextSelection(range: range)
+        } set: { selection in
+            guard let selection, case let .selection(range) = selection.indices else { return }
+            stepSelections[step] = NSRange(range, in: text.wrappedValue)
+        }
     }
     private func focusNewField(_ id: String) {
         Task { @MainActor in
@@ -374,9 +413,9 @@ struct RecipeEditor: View {
         return RecipeTime(seconds: minutes * 60 + seconds)
     }
     private func insertTimer() {
-        guard let time = enteredTime, let index = draft.instructionSteps.firstIndex(where: { $0.id == timerStep }) else { return }
-        if !draft.instructionSteps[index].description.isEmpty { draft.instructionSteps[index].description += " " }
-        draft.instructionSteps[index].description += time.placeholder
+        guard let time = enteredTime, let timerTarget else { return }
+        self.timerTarget = nil
+        insertPlaceholder(time.placeholder, at: timerTarget)
     }
     private func numberSteps() {
         for index in draft.instructionSteps.indices { draft.instructionSteps[index].stepNumber = index + 1 }
@@ -384,14 +423,31 @@ struct RecipeEditor: View {
     private var insertableIngredients: [RecipeDraft.Item] {
         draft.ingredients.filter { item in
             guard let quantity = item.quantity else { return false }
-            return quantity > Decimal.zero && !item.name.isEmpty
+            return !quantity.isNaN && quantity > Decimal.zero && !item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
     private func insertAmount(_ ingredient: RecipeDraft.Item, into stepID: UUID) {
-        guard let index = draft.instructionSteps.firstIndex(where: { $0.id == stepID }) else { return }
+        guard let target = insertionTarget(for: stepID) else { return }
         let duplicate = draft.ingredients.filter { $0.name.caseInsensitiveCompare(ingredient.name) == .orderedSame }.count > 1
         let key = IngredientPlaceholders.key(name: ingredient.name, group: duplicate ? ingredient.groupName : nil)
-        draft.instructionSteps[index].description += " {{" + key + "|100%}}"
+        insertPlaceholder("{{" + key + "|100%}}", at: target)
+    }
+
+    private func insertionTarget(for step: UUID) -> InsertionTarget? {
+        guard let row = draft.instructionSteps.first(where: { $0.id == step }) else { return nil }
+        return InsertionTarget(step: step, selection: ActiveTextSelection.read(in: row.description) ?? stepSelections[step])
+    }
+
+    private func insertPlaceholder(_ placeholder: String, at target: InsertionTarget) {
+        guard let index = draft.instructionSteps.firstIndex(where: { $0.id == target.step }) else { return }
+        let result = IngredientPlaceholders.inserting(placeholder, in: draft.instructionSteps[index].description,
+                                                       selection: target.selection)
+        draft.instructionSteps[index].description = result.text
+        stepSelections[target.step] = result.caret
+        focusNewField(target.step.uuidString)
+        if #unavailable(iOS 18) {
+            DispatchQueue.main.async { ActiveTextSelection.restore(result.caret, in: result.text) }
+        }
     }
     private var exportText: String {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

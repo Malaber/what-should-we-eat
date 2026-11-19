@@ -3,6 +3,16 @@ import Foundation
 /// Portable text syntax survives recipe copies and imports without relying on database IDs.
 /// Ambiguous/missing ingredients and malformed tokens stay visible for correction.
 public enum IngredientPlaceholders {
+    public static func inserting(_ placeholder: String, in text: String, selection: NSRange?) -> (text: String, caret: NSRange) {
+        let range = selection.flatMap { Range($0, in: text) } ?? text.endIndex..<text.endIndex
+        let before = text[..<range.lowerBound]
+        let after = text[range.upperBound...]
+        let leadingSpace = before.last.map { !$0.isWhitespace && !"([{".contains($0) } ?? false
+        let trailingSpace = after.first.map { !$0.isWhitespace && !".,!?;:)]}".contains($0) } ?? false
+        let prefix = String(before) + (leadingSpace ? " " : "") + placeholder + (trailingSpace ? " " : "")
+        return (prefix + String(after), NSRange(location: prefix.utf16.count, length: 0))
+    }
+
     public enum Part: Equatable, Sendable {
         case text(String)
         case amount(Ingredient, label: String)

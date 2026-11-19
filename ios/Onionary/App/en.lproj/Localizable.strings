@@ -165,9 +165,14 @@
 
 "%lld recipes" = "%lld recipes";
 
-"Insert ingredient amount" = "Insert ingredient amount";
+"Insert placeholder" = "Insert placeholder";
+"Ingredient amounts" = "Ingredient amounts";
+"No ingredients added yet" = "No ingredients added yet";
+"Add an ingredient quantity to insert its amount" = "Add an ingredient quantity to insert its amount";
+"What is this?" = "What is this?";
+"Some ingredient amounts have no reference in the steps." = "Some ingredient amounts have no reference in the steps.";
 
-"Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking." = "Change 100% in the placeholder to the share used in this step, such as 80%. Amounts follow your portions while cooking.";
+"Example: Add {{Flour|50%}}, then bake for {{time|2m30s}}. The flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown." = "Example: Add {{Flour|50%}}, then bake for {{time|2m30s}}. The flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown.";
 
 "Start Live Activity" = "Start Live Activity";
 
@@ -181,7 +186,7 @@
 
 "Open Kitchen to update your plan." = "Open Kitchen to update your plan.";
 
-"Ingredient amount help" = "Ingredient amount help";
+"Recipe placeholders" = "Recipe placeholders";
 "Browse by tag" = "Browse by tag";
 "Find a tag" = "Find a tag";
 "Tags" = "Tags";

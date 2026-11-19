@@ -43,6 +43,34 @@ final class RecipeDraftTests: XCTestCase {
         XCTAssertFalse(kitchen.hasEquipment("Chef knife"))
     }
 
+    func testInsertPlaceholderReplacesSelectionWithUnicodeBeforeCaret() {
+        let text = "🥣 Add flour, then bake."
+        let range = (text as NSString).range(of: "flour")
+        let result = IngredientPlaceholders.inserting("{{Flour|50%}}", in: text, selection: range)
+        XCTAssertEqual(result.text, "🥣 Add {{Flour|50%}}, then bake.")
+        XCTAssertEqual(result.caret.location, "🥣 Add {{Flour|50%}}".utf16.count)
+        let timer = IngredientPlaceholders.inserting("{{time|90s}}", in: "stir", selection: NSRange(location: 0, length: 0))
+        XCTAssertEqual(timer.text, "{{time|90s}} stir")
+    }
+
+    func testPartialIngredientReferenceHintOnlyAfterFirstValidReference() {
+        var draft = RecipeDraft()
+        for name in ["Flour", "Milk"] {
+            var item = RecipeDraft.Item()
+            item.name = name
+            item.quantity = 100
+            item.unit = "g"
+            draft.ingredients.append(item)
+        }
+        draft.instructionSteps = [RecipeDraft.Step()]
+        draft.instructionSteps[0].description = "Mix the flour and milk."
+        XCTAssertFalse(draft.hasUnreferencedIngredientAmounts)
+        draft.instructionSteps[0].description = "Mix {{Flour|50%}} with milk."
+        XCTAssertTrue(draft.hasUnreferencedIngredientAmounts)
+        draft.instructionSteps[0].description = "Mix {{Flour|50%}} with {{Milk|100%}}."
+        XCTAssertFalse(draft.hasUnreferencedIngredientAmounts)
+    }
+
     func testImportSourceDispatchAndCrossDomainCopies() throws {
         let token = String(repeating: "a", count: 43)
         let share = try XCTUnwrap(URL(string: "https://kitchen.example/share.html#" + token))

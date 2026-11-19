@@ -11,6 +11,30 @@ private extension UIView {
     }
 }
 
+@MainActor enum ActiveTextSelection {
+    private static func input(for text: String) -> (any UITextInput)? {
+        let editor = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows).first(where: \.isKeyWindow)?.focusedTextEditor
+        guard let input = editor as? any UITextInput,
+              let range = input.textRange(from: input.beginningOfDocument, to: input.endOfDocument),
+              input.text(in: range) == text else { return nil }
+        return input
+    }
+
+    static func read(in text: String) -> NSRange? {
+        guard let input = input(for: text), let selection = input.selectedTextRange else { return nil }
+        return NSRange(location: input.offset(from: input.beginningOfDocument, to: selection.start),
+                       length: input.offset(from: selection.start, to: selection.end))
+    }
+
+    static func restore(_ selection: NSRange, in text: String) {
+        guard let input = input(for: text),
+              let start = input.position(from: input.beginningOfDocument, offset: selection.location),
+              let end = input.position(from: start, offset: selection.length) else { return }
+        input.selectedTextRange = input.textRange(from: start, to: end)
+    }
+}
+
 /// Each window owns its recognizer and handler for its full lifetime. SwiftUI
 /// may replace the zero-size attachment view when a sheet or tab changes.
 @MainActor
