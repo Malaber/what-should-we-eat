@@ -693,13 +693,20 @@ final class OnionaryUITests: OnionaryUITestCase {
         let insertTimer = app.buttons["insert-time-placeholder"]
         XCTAssertTrue(insertTimer.wait(for: \.isHittable, toEqual: true, timeout: 5))
         insertTimer.tap()
-        let timer = app.alerts["Insert timer"]
+        let timer = app.collectionViews["recipe-timer-editor"]
         XCTAssertTrue(timer.waitForExistence(timeout: 5))
-        timer.textFields["Minutes"].tap()
+        let minutes = timer.textFields["timer-minutes"]
+        let seconds = timer.textFields["timer-seconds"]
+        minutes.tap()
         app.typeText("1")
-        timer.textFields["Seconds"].tap()
+        seconds.tap()
         app.typeText("30")
-        timer.buttons["Insert"].tap()
+        XCTAssertEqual(minutes.value as? String, "1")
+        XCTAssertEqual(seconds.value as? String, "30")
+        let confirm = app.buttons["confirm-recipe-timer"]
+        XCTAssertTrue(confirm.wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertTrue(confirm.isEnabled)
+        confirm.tap()
         XCTAssertTrue(timer.waitForNonExistence(timeout: 5))
         XCTAssertEqual(second.value as? String, "{{time|90s}} Fold in {{Cheese|20%}} and lemon zest.")
         XCTAssertEqual(first.value as? String, firstWithIngredient)

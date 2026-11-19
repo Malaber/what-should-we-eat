@@ -20,8 +20,7 @@ struct RecipeEditor: View {
     @State private var showingStepHelp = false
     @State private var timerTarget: InsertionTarget?
     @State private var enteringTimer = false
-    @State private var timerMinutes = ""
-    @State private var timerSeconds = ""
+    @State private var confirmedTimer: RecipeTime?
     @State private var tagInput = ""
     @State private var equipmentIDs: [UUID]
 
@@ -76,16 +75,9 @@ struct RecipeEditor: View {
                 } message: {
                     Text("Add {{Flour|50%}}, then bake for {{time|2m30s}}.\n\nThe flour amount uses half the listed quantity and scales with portions. Tap the time while cooking to start a 2-minute 30-second countdown.")
                 }
-                .alert("Insert timer", isPresented: $enteringTimer) {
-                    TextField("Minutes", text: $timerMinutes).keyboardType(.numberPad)
-                    TextField("Seconds", text: $timerSeconds).keyboardType(.numberPad)
-                    Button("Cancel", role: .cancel) {
-                        if let timerTarget { focusNewField(timerTarget.step.uuidString) }
-                        timerTarget = nil
-                    }
-                    Button("Insert", action: insertTimer).disabled(enteredTime == nil)
-                } message: {
-                    Text("Set a countdown of up to 24 hours. It stays the same for any number of portions.")
+                .sheet(isPresented: $enteringTimer, onDismiss: finishTimerEntry) {
+                    TimerPlaceholderForm { confirmedTimer = $0 }
+                        .presentationDetents([.medium, .large])
                 }
                 .interactiveDismissDisabled(saving || askingReload)
                 .onAppear {
@@ -118,8 +110,7 @@ struct RecipeEditor: View {
             Button("Insert timer", systemImage: "timer") {
                 guard let target = insertionTarget(for: step) else { return }
                 timerTarget = target
-                timerMinutes = ""
-                timerSeconds = ""
+                focusedInput = nil
                 enteringTimer = true
             }.accessibilityIdentifier("insert-time-placeholder")
             Button("What is this?", systemImage: "questionmark.circle") { showingStepHelp = true }
@@ -388,15 +379,15 @@ struct RecipeEditor: View {
             focusedInput = id
         }
     }
-    private var enteredTime: RecipeTime? {
-        guard let minutes = timerMinutes.isEmpty ? 0 : Int(timerMinutes), (0...1440).contains(minutes),
-              let seconds = timerSeconds.isEmpty ? 0 : Int(timerSeconds), (0...59).contains(seconds) else { return nil }
-        return RecipeTime(seconds: minutes * 60 + seconds)
-    }
-    private func insertTimer() {
-        guard let time = enteredTime, let timerTarget else { return }
+    private func finishTimerEntry() {
+        guard let timerTarget else { return }
         self.timerTarget = nil
-        insertPlaceholder(time.placeholder, at: timerTarget)
+        if let time = confirmedTimer {
+            confirmedTimer = nil
+            insertPlaceholder(time.placeholder, at: timerTarget)
+        } else {
+            focusNewField(timerTarget.step.uuidString)
+        }
     }
     private func numberSteps() {
         for index in draft.instructionSteps.indices { draft.instructionSteps[index].stepNumber = index + 1 }
@@ -474,6 +465,49 @@ struct RecipeEditor: View {
             } else { finish() }
         } catch {
             self.error = L10n.text("Save not confirmed. Your draft stays here. Check the server before retrying to avoid duplicates.") + "\n" + L10n.text(error.localizedDescription)
+        }
+    }
+}
+
+private struct TimerPlaceholderForm: View {
+    let confirm: (RecipeTime) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var minutes = ""
+    @State private var seconds = ""
+
+    private var time: RecipeTime? {
+        guard let minutes = minutes.isEmpty ? 0 : Int(minutes), (0...1440).contains(minutes),
+              let seconds = seconds.isEmpty ? 0 : Int(seconds), (0...59).contains(seconds) else { return nil }
+        return RecipeTime(seconds: minutes * 60 + seconds)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    LabeledContent("Minutes") {
+                        TextField("0", text: $minutes).keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                            .accessibilityLabel("Minutes").accessibilityIdentifier("timer-minutes")
+                    }
+                    LabeledContent("Seconds") {
+                        TextField("0", text: $seconds).keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                            .accessibilityLabel("Seconds").accessibilityIdentifier("timer-seconds")
+                    }
+                } footer: {
+                    Text("Set a countdown of up to 24 hours. It stays the same for any number of portions.")
+                }
+            }.accessibilityIdentifier("recipe-timer-editor")
+                .navigationTitle("Insert timer").navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Insert") {
+                            guard let time else { return }
+                            confirm(time)
+                            dismiss()
+                        }.disabled(time == nil).accessibilityIdentifier("confirm-recipe-timer")
+                    }
+                }
         }
     }
 }
