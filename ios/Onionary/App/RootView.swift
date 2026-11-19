@@ -493,8 +493,9 @@ struct CookingView: View {
     private func ingredientBadge(_ label: String, step: CookingStep, part: Int, adventure: Adventure) -> some View {
         let key = Adventure.ingredientUseKey(stepID: step.id, part: part)
         let checked = adventure.checked.contains(key)
+        let historyLabel = String(format: L10n.text("Step %lld · %@"), locale: L10n.locale, step.stepNumber, label)
         return Button {
-            store.update { $0.toggle(key: key, label: L10n.format("Step %lld · %@", step.stepNumber, label)) }
+            store.update { $0.toggle(key: key, label: historyLabel) }
         } label: {
             Label(label, systemImage: checked ? "checkmark.circle.fill" : "circle")
                 .font(.subheadline.weight(.medium)).padding(.horizontal, 10).padding(.vertical, 6)
