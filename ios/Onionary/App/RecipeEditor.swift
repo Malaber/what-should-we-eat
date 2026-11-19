@@ -18,7 +18,6 @@ struct RecipeEditor: View {
     @State private var error: String?
     @FocusState private var focusedInput: String?
     @State private var showingStepHelp = false
-    @State private var stepSelections: [UUID: NSRange] = [:]
     @State private var timerTarget: InsertionTarget?
     @State private var enteringTimer = false
     @State private var timerMinutes = ""
@@ -373,7 +372,7 @@ struct RecipeEditor: View {
                         .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }.buttonStyle(.borderless)
             }
-            instructionField(binding.description, step: id)
+            TextField("Instruction", text: binding.description, axis: .vertical)
                 .focused($focusedInput, equals: id.uuidString)
                 .id(id.uuidString)
                 .accessibilityIdentifier("instruction-" + id.uuidString)
@@ -383,24 +382,6 @@ struct RecipeEditor: View {
         }.recipeDraftCard()
     }
 
-    @ViewBuilder private func instructionField(_ text: Binding<String>, step: UUID) -> some View {
-        if #available(iOS 18, *) {
-            TextField("Instruction", text: text, selection: instructionSelection(text, step: step), axis: .vertical)
-        } else {
-            TextField("Instruction", text: text, axis: .vertical)
-        }
-    }
-
-    @available(iOS 18, *)
-    private func instructionSelection(_ text: Binding<String>, step: UUID) -> Binding<TextSelection?> {
-        Binding {
-            guard let stored = stepSelections[step], let range = Range(stored, in: text.wrappedValue) else { return nil }
-            return TextSelection(range: range)
-        } set: { selection in
-            guard let selection, case let .selection(range) = selection.indices else { return }
-            stepSelections[step] = NSRange(range, in: text.wrappedValue)
-        }
-    }
     private func focusNewField(_ id: String) {
         Task { @MainActor in
             await Task.yield()
@@ -435,7 +416,7 @@ struct RecipeEditor: View {
 
     private func insertionTarget(for step: UUID) -> InsertionTarget? {
         guard let row = draft.instructionSteps.first(where: { $0.id == step }) else { return nil }
-        return InsertionTarget(step: step, selection: ActiveTextSelection.read(in: row.description) ?? stepSelections[step])
+        return InsertionTarget(step: step, selection: ActiveTextSelection.read(in: row.description))
     }
 
     private func insertPlaceholder(_ placeholder: String, at target: InsertionTarget) {
@@ -443,10 +424,11 @@ struct RecipeEditor: View {
         let result = IngredientPlaceholders.inserting(placeholder, in: draft.instructionSteps[index].description,
                                                        selection: target.selection)
         draft.instructionSteps[index].description = result.text
-        stepSelections[target.step] = result.caret
-        focusNewField(target.step.uuidString)
-        if #unavailable(iOS 18) {
-            DispatchQueue.main.async { ActiveTextSelection.restore(result.caret, in: result.text) }
+        Task { @MainActor in
+            await Task.yield()
+            focusedInput = target.step.uuidString
+            await Task.yield()
+            ActiveTextSelection.restore(result.caret, in: result.text)
         }
     }
     private var exportText: String {

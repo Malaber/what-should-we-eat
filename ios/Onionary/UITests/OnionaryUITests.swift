@@ -678,9 +678,13 @@ final class OnionaryUITests: OnionaryUITestCase {
         insert.tap()
         app.buttons["Cheese"].tap()
         XCTAssertEqual(instruction.value as? String, "{{Cheese|100%}} Boil the pasta in salted water.")
+        instruction.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
         instruction.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: .command)
         insert.tap()
-        app.buttons["Insert timer"].tap()
+        let insertTimer = app.buttons["Insert timer"]
+        XCTAssertTrue(insertTimer.waitForExistence(timeout: 5))
+        insertTimer.tap()
         let timer = app.alerts["Insert timer"]
         XCTAssertTrue(timer.waitForExistence(timeout: 5))
         timer.textFields["Minutes"].tap()
@@ -690,7 +694,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         timer.buttons["Insert"].tap()
         XCTAssertTrue(UIReadiness.waitForValue("{{time|90s}} {{Cheese|100%}} Boil the pasta in salted water.",
             matching: app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "instruction-"))))
-        app.buttons["Done"].tap()
+        if app.keyboards.element(boundBy: 0).exists { app.buttons["Done"].tap() }
         XCTAssertFalse(insert.exists)
     }
 
