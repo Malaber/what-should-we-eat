@@ -79,10 +79,10 @@ final class OnionaryUITests: OnionaryUITestCase {
         try tapNavigation("Recipes", in: app)
         try selectRecipe(in: app)
         app.buttons["Edit recipe"].tap()
+        let editor = app.scrollViews["recipe-editor"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 5))
         let add = app.buttons["Add tool"]
-        let lower = app.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.77))
-        let upper = app.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.32))
-        for _ in 0..<3 where !add.isHittable { lower.press(forDuration: 0.02, thenDragTo: upper) }
+        for _ in 0..<3 where !add.isHittable { editor.swipeUp(velocity: .slow) }
         XCTAssertTrue(add.isHittable)
         add.tap()
         XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
@@ -91,7 +91,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertEqual(fields.element(boundBy: 1).value as? String, "Cookie sheet")
         app.buttons["Done"].tap()
         let remove = app.buttons.matching(identifier: "Remove tool").element(boundBy: 0)
-        if !remove.isHittable { upper.press(forDuration: 0.02, thenDragTo: lower) }
+        if !remove.isHittable { editor.swipeDown(velocity: .slow) }
         remove.tap()
         XCTAssertEqual(fields.element(boundBy: 0).value as? String, "Cookie sheet")
         app.buttons["Save"].tap()
