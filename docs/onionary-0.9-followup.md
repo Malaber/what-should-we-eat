@@ -10,8 +10,8 @@
 
 ## Hosted simulator reliability follow-up
 
-- [ ] Diagnose the November 22 launch and XCTest startup failures using result bundles and runner logs.
-- [ ] Stabilize native setup on standard runners while retaining all iPhone, iPad, and Duo cases and screenshot capture.
+- [x] Diagnose the November 22 launch and XCTest startup failures using result bundles and runner logs.
+- [x] Stage the app and test runner before hosted XCTest startup. Keep all iPhone, iPad, and Duo cases and screenshot capture.
 - [ ] Exercise the changed path locally, then verify the exact pushed commit on GitHub.
 
 ## Behavior and compatibility

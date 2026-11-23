@@ -52,6 +52,8 @@ def commands(simulator, device_set=None):
         "swap": ["sysctl", "vm.swapusage"],
         "devices": [*simctl, "list", "devices", "--json"],
         "runtimes": [*simctl, "list", "runtimes", "--json"],
+        "runtime-mounts": ["/usr/bin/log", "show", "--last", "15m", "--style", "compact",
+                           "--predicate", 'process == "simdiskimaged" OR process == "cryptexd"'],
         "simulator-events": ["/usr/bin/log", "show", "--last", "15m", "--style",
                              "compact", "--predicate", predicate],
         "guest-automation": [*simctl, "spawn", simulator, "log", "show",

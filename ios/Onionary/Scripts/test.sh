@@ -88,7 +88,8 @@ create_simulator() {
 }
 delete_owned_simulator() {
   if [[ -z "${SIMULATOR_ID:-}" && -n "$simulator_id" ]]; then
-    "${simctl[@]}" delete "$simulator_id" >/dev/null 2>&1 || true
+    python3 ../../execution/run_bounded.py --log "$result_dir/simulator-cleanup.log" 30 \
+      "${simctl[@]}" delete "$simulator_id" || true
     simulator_id=
   fi
 }
@@ -113,13 +114,20 @@ if [[ "$mode" == all ]]; then
 fi
 validate_test_products
 if [[ -z "$simulator_id" ]]; then create_simulator; fi
+if [[ -n "$simulator_set" ]]; then
+  # Complete guest migration and register both apps with LaunchServices
+  # before XCTest opens its automation session on a cold hosted VM.
+  python3 ../../execution/run_bounded.py --log "$result_dir/simulator-boot.log" 600 \
+    "${simctl[@]}" bootstatus "$simulator_id" -b
+  python3 ../../execution/run_bounded.py --log "$result_dir/app-install.log" 180 \
+    "${simctl[@]}" install "$simulator_id" "$products/Debug-iphonesimulator/Onionary.app"
+  python3 ../../execution/run_bounded.py --log "$result_dir/runner-install.log" 180 \
+    "${simctl[@]}" install "$simulator_id" "$products/Debug-iphonesimulator/OnionaryUITests-Runner.app"
+fi
 run_tests() {
   local output=$1 default_allowance=$2 maximum_allowance=$3
   shift 3
   mkdir -p "$output"
-  # Keep the new device shut down until XCTest takes ownership of its boot,
-  # app installation and test session. A prebooted session can disappear
-  # while xcodebuild is still initializing its runner.
   python3 ../../execution/run_bounded.py --startup-seconds "$startup_seconds" --ready-prefix "Test Suite 'Selected tests' started at " \
     --log "$output/tests.log" 1800 "${xctest_command[@]}" -xctestrun "$test_plan" \
     -destination "platform=iOS Simulator,id=$simulator_id" \

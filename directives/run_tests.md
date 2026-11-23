@@ -152,6 +152,15 @@ with -xctestrun and the existing full-profile selector, not -project/-scheme:
 the latter reopens project/package resolution even with test-without-building.
 Validate the UI target, screenshot policy and compiled app/runner/bundle paths;
 missing, ambiguous or filtered plans fail before boot.
+
+On standard hosted runners, boot the isolated simulator and wait for guest
+data migration before registering the app and UI runner with `simctl install`.
+XCTest then uses the original compiled plan and test selection. Boot, app
+install and runner install each have their own bounded log, uploaded even
+when a stage fails. Stop on the first setup failure. The host diagnostics
+also record runtime-mount events so a simulator remount can be confirmed
+even if the guest is already unreachable. Simulator deletion is bounded
+so a stalled service cannot prevent uploading the original failure evidence.
 Runner initialization has a separate 900-second limit on hosted CI and
 600 seconds locally. A passing Duo 27.2 worker took 576 seconds to register.
 The 1800-second UI-suite budget begins at the first literal "Test Suite 'Selected
@@ -398,7 +407,12 @@ native cases during app launch, before the user flows started. XCTest reported
 either a launch timeout or no app process ID. Keep the standard runner and
 the same test coverage. Resolve the app by its bundle identifier from the
 test plan's dependent products when launching on a different VM. Capture
-the launch and runner evidence again when the image is rechecked.
+the launch and runner evidence again when the image is rechecked. In the
+November 22 rerun, XCTest timed out launching the first iPhone and Duo
+capture cases, and the Duo fold runner crashed during test preparation.
+Twelve other cases in the iPhone shard passed after the launch failure.
+The earlier boot-only preparation did not verify that app registration
+worked before XCTest started. The hosted startup now verifies both installs.
 
 Before each push during the exception, run every advisory case locally and
 verify the result bundles passed. Run these commands from the repository
