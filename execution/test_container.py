@@ -67,8 +67,38 @@ assert "challenge" in r.json()
         count = docker('exec', db, 'psql', '-U', 'onionary', '-Atc',
                        "SELECT count(*) FROM auth_flows;").stdout.strip()
         assert int(count) >= 1, 'Passkey challenge was not persisted'
+        equipment_check = '''import httpx
+from fastapi import Response
+from execution.api.routers.passkeys import mobile_session
+from execution.db.database import SessionLocal
+from execution.db.models import Household, HouseholdMember, User, generate_unique_invite_code
+
+with SessionLocal() as db:
+    kitchen = Household(name="Shared test kitchen", invite_code=generate_unique_invite_code(db))
+    db.add(kitchen)
+    db.flush()
+    headers = []
+    for email in ("equipment-owner@example.org", "equipment-guest@example.org"):
+        user = User(email=email, hashed_password="!passkey-only",
+                    personal_household_id=kitchen.id, active_household_id=kitchen.id)
+        db.add(user)
+        db.flush()
+        db.add(HouseholdMember(user_id=user.id, household_id=kitchen.id))
+        token = mobile_session(user, Response(), db)["access_token"]
+        headers.append({"Authorization": f"Bearer {token}"})
+
+path = "/users/me/equipment"
+with httpx.Client(base_url="http://localhost:8000") as client:
+    owner, guest = headers
+    assert client.put(path, headers=owner, json={"legacy_owned": ["Whisk"]}).raise_for_status().json() == {"owned": ["whisk"]}
+    assert client.get(path, headers=guest).raise_for_status().json() == {"owned": []}
+    assert client.put(path, headers=owner, json={"changes": {"Whisk": False}}).raise_for_status().json() == {"owned": []}
+    assert client.put(path, headers=owner, json={"legacy_owned": ["Whisk"]}).raise_for_status().json() == {"owned": []}
+'''
+        docker('exec', api, 'python', '-c', equipment_check)
         docker('restart', api)
-        print('Python 3.14/non-root API, frontend, protected recipes, and PostgreSQL passkey writes passed', flush=True)
+        print('Python 3.14/non-root API, frontend, protected recipes, PostgreSQL passkeys and account equipment passed',
+              flush=True)
     except subprocess.CalledProcessError as exc:
         # Synthetic URL can appear in migration errors; redact it for clarity.
         raise RuntimeError(exc.stdout.replace(password, '[test-password]').replace(quote(password, safe=''), '[test-password]')) from None

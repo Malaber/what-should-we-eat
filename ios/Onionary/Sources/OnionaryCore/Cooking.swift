@@ -28,6 +28,7 @@ public struct Recipe: Codable, Identifiable, Equatable, Sendable {
     public let ingredients: [Ingredient]
     public let instructionSteps: [CookingStep]
     public var createdAt: String? = nil
+    public var equipment: [String]? = nil
 }
 
 public enum CookingError: LocalizedError {
@@ -87,6 +88,15 @@ public struct Adventure: Codable, Identifiable, Equatable, Sendable {
     public var canUndo: Bool { !undoStack.isEmpty }
     public var canRedo: Bool { redoStack?.isEmpty == false }
     public var portions: Decimal { baseServings * multiplier }
+    public var checklistProgress: (checked: Int, total: Int) {
+        let keys = Set(recipe.ingredients.map { "ingredient-\($0.id)" }
+            + recipe.instructionSteps.map { "step-\($0.id)" })
+        return (checked.intersection(keys).count, keys.count)
+    }
+
+    public static func ingredientUseKey(stepID: Int, part: Int) -> String {
+        "step-use-\(stepID)-\(part)"
+    }
 
     public init(recipe: Recipe, now: Date = Date()) { self.recipe = recipe; baseServings = recipe.servings ?? 1; lastVisited = now }
     public func quantity(_ ingredient: Ingredient) -> Decimal? { ingredient.quantity.map { $0 * multiplier } }
@@ -135,12 +145,75 @@ public struct Adventure: Codable, Identifiable, Equatable, Sendable {
     }
 }
 
+public struct EquipmentUpdate: Encodable, Sendable {
+    public let changes: [String: Bool]
+    public let legacyOwned: [String]
+    public var isEmpty: Bool { changes.isEmpty && legacyOwned.isEmpty }
+
+    private enum CodingKeys: String, CodingKey {
+        case changes
+        case legacyOwned = "legacy_owned"
+    }
+}
+
 public struct Kitchen: Codable, Equatable, Sendable {
     public var recipes: [Recipe] = []
     public var adventures: [Adventure] = []
     public var currentID: Int?
     public var pantrySupplies: [PantryMatching.Supply]?
+    private var ownedEquipment: Set<String>?
+    private var pendingEquipment: [String: Bool]?
+    private var importedEquipment: Bool?
+    private var countdowns: [RecipeCountdown]?
     public init() {}
+
+    public func hasEquipment(_ name: String) -> Bool {
+        let key = RecipeEquipment.key(name)
+        if let pending = pendingEquipment?[key] { return pending }
+        let owned = ownedEquipment ?? []
+        return owned.contains(key) || (importedEquipment != true && owned.contains(RecipeEquipment.legacyKey(name)))
+    }
+
+    public mutating func toggleEquipment(_ name: String) {
+        let owned = !hasEquipment(name)
+        var pending = pendingEquipment ?? [:]
+        pending[RecipeEquipment.key(name)] = owned
+        pendingEquipment = pending
+    }
+
+    public var hasPendingEquipment: Bool { pendingEquipment?.isEmpty == false }
+
+    public var equipmentUpdate: EquipmentUpdate {
+        let owned = ownedEquipment ?? []
+        var legacy = Set<String>()
+        if importedEquipment != true {
+            legacy = Set(owned.map(RecipeEquipment.key))
+            for recipe in recipes + adventures.map(\.recipe) {
+                for tool in recipe.equipment ?? [] where owned.contains(RecipeEquipment.legacyKey(tool)) {
+                    legacy.insert(RecipeEquipment.key(tool))
+                }
+            }
+        }
+        return EquipmentUpdate(changes: pendingEquipment ?? [:], legacyOwned: legacy.sorted())
+    }
+
+    public mutating func reconcileEquipment(_ owned: [String], sent: EquipmentUpdate) {
+        ownedEquipment = Set(owned)
+        importedEquipment = true
+        pendingEquipment = (pendingEquipment ?? [:]).filter { sent.changes[$0.key] != $0.value }
+    }
+    public var cookingTimers: [RecipeCountdown] { countdowns ?? [] }
+
+    @discardableResult
+    public mutating func startTimer(id: String, title: String, time: RecipeTime, now: Date = .now) -> Bool {
+        guard !cookingTimers.contains(where: { $0.id == id }) else { return false }
+        countdowns = cookingTimers + [.init(id: id, title: title, deadline: now.addingTimeInterval(TimeInterval(time.seconds)))]
+        return true
+    }
+
+    public mutating func removeTimer(_ id: String) {
+        countdowns = cookingTimers.filter { $0.id != id }
+    }
     public mutating func visit(_ recipe: Recipe, now: Date = Date()) {
         if let index = adventures.firstIndex(where: { $0.id == recipe.id }) {
             adventures[index].lastVisited = now

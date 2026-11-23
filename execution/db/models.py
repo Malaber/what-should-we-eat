@@ -25,6 +25,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -105,6 +106,27 @@ class User(Base):
     )
 
 
+class AccountEquipment(Base):
+    __tablename__ = "account_equipment"
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    name = Column(String(640), primary_key=True)
+    owned = Column(Boolean, nullable=False)
+
+
+class RecipeInboxItem(Base):
+    __tablename__ = "recipe_inbox_items"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    kind = Column(String(4), nullable=False)
+    content = Column(Text, nullable=False)
+    fingerprint = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    __table_args__ = (UniqueConstraint("user_id", "fingerprint", name="uq_recipe_inbox_owner_source"),)
+
+
 # ---------- meal_plan_items ----------
 class MealPlanItem(Base):
     __tablename__ = "meal_plan_items"
@@ -136,6 +158,7 @@ class Recipe(Base):
     notes = Column(Text, nullable=True)
     icon = Column(String(32), nullable=True)
     servings = Column(Float, nullable=False, default=1, server_default="1")
+    equipment = Column(JSON, nullable=False, default=list, server_default="[]")
     kcal_per_serving = Column(Float, nullable=True)
     active_cooking_time_min = Column(Integer, nullable=True)
     total_time_min = Column(Integer, nullable=True)

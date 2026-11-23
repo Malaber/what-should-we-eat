@@ -74,7 +74,7 @@ struct RecipesView: View {
     @State private var search = ""
     @State private var preview: Recipe?
     @State private var preferredColumn = NavigationSplitViewColumn.sidebar
-    private enum Creation: String, Identifiable { case manual, intelligence, importRecipe; var id: String { rawValue } }
+    private enum Creation: String, Identifiable { case manual, intelligence, importRecipe, inbox; var id: String { rawValue } }
     @State private var creation: Creation?
     @State private var showCreationActions = false
     @State private var selectedTags: Set<String> = []
@@ -169,7 +169,7 @@ struct RecipesView: View {
             if search.isEmpty && selectedTags.isEmpty && !store.kitchen.recent.isEmpty {
                 Section("Recently visited") {
                     ForEach(store.kitchen.recent.prefix(showAllRecent ? store.kitchen.recent.count : 3)) { adventure in
-                        recipeRow(adventure.recipe, subtitle: L10n.format("Continue · %lld checked", adventure.checked.count))
+                        recipeRow(adventure.recipe, subtitle: L10n.format("Continue · %lld checked", adventure.checklistProgress.checked))
                     }
                     if store.kitchen.recent.count > 3 {
                         Button(showAllRecent ? "Show less" : "Show more") { showAllRecent.toggle() }
@@ -229,6 +229,7 @@ struct RecipesView: View {
                 case .manual: RecipeEditor(store: store, draft: RecipeDraft())
                 case .intelligence: IntelligenceRecipeView(store: store)
                 case .importRecipe: ImportRecipeView(store: store, link: "")
+                case .inbox: RecipeInboxView(store: store)
                 }
             }
             .refreshable { await store.refresh() }
@@ -239,6 +240,7 @@ struct RecipesView: View {
                         Button("New recipe") { creation = .manual }
                         Button("Create with Intelligence") { creation = .intelligence }
                         Button("Import recipe") { creation = .importRecipe }
+                        Button("Saved imports") { creation = .inbox }
                         Button("Cancel", role: .cancel) {}
                     }
             }
@@ -314,9 +316,10 @@ struct CookingView: View {
                                 } label: { Image(systemName: "plus").frame(width: 44, height: 44).contentShape(Rectangle()) }
                                     .buttonStyle(.bordered).accessibilityLabel("One more portion").accessibilityIdentifier("portion-plus")
                             }
-                            ProgressView(value: Double(adventure.checked.count), total: Double(max(1, adventure.recipe.ingredients.count + adventure.recipe.instructionSteps.count)))
+                            let progress = adventure.checklistProgress
+                            ProgressView(value: Double(progress.checked), total: Double(max(1, progress.total)))
                                 .accessibilityLabel("Cooking progress")
-                            Text("\(adventure.checked.count) of \(adventure.recipe.ingredients.count + adventure.recipe.instructionSteps.count) checked")
+                            Text("\(progress.checked) of \(progress.total) checked")
                                 .font(.caption).foregroundStyle(.secondary)
                             Button("Adjust portions", systemImage: "slider.horizontal.3") { sheet = .portions }.buttonStyle(.bordered)
                         }.padding(.vertical, 4)
@@ -331,6 +334,22 @@ struct CookingView: View {
                                     }
                                 }
                             }.scrollIndicators(.hidden)
+                        }
+                    }
+                    if let tools = adventure.recipe.equipment, !tools.isEmpty {
+                        Text("Equipment").font(.headline).accessibilityAddTraits(.isHeader)
+                        Text("Checked tools sync to your account for other recipes.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        if store.kitchen.hasPendingEquipment {
+                            Text("Equipment changes waiting to sync.").font(.footnote).foregroundStyle(.secondary)
+                        }
+                        ForEach(tools, id: \.self) { tool in
+                            Toggle(isOn: Binding(
+                                get: { store.kitchen.hasEquipment(tool) },
+                                set: { value in
+                                    if value != store.kitchen.hasEquipment(tool) { store.toggleEquipment(tool) }
+                                })) { Text(tool) }
+                                .accessibilityIdentifier("equipment-" + tool)
                         }
                     }
                     Text("Gather your ingredients").font(.headline).accessibilityAddTraits(.isHeader)
@@ -362,7 +381,12 @@ struct CookingView: View {
                 }.sensoryFeedback(.selection, trigger: adventure.portions)
                  .sensoryFeedback(.selection, trigger: adventure.checked)
                  .safeAreaInset(edge: .bottom) {
-                    CookingHistoryBar(store: store) { sheet = .history }
+                    VStack(spacing: 0) {
+                        if !store.kitchen.cookingTimers.isEmpty {
+                            CookingTimersBar(timers: store.kitchen.cookingTimers, remove: store.removeCookingTimer)
+                        }
+                        CookingHistoryBar(store: store) { sheet = .history }
+                    }
                 }
             } else {
                 ContentUnavailableView {
@@ -427,21 +451,51 @@ struct CookingView: View {
             checkRow(key: "step-\(step.id)", label: parts.map(\.text).joined(),
                      subtitle: L10n.format("Step %lld", step.stepNumber) + (step.durationMin.map { " · \($0) min" } ?? ""),
                      adventure: adventure)
+            if parts.contains(where: { if case .amount = $0 { return true }; return false }) {
+                Text("Use in this step").font(.caption).foregroundStyle(.secondary).padding(.leading, 32)
+            }
             ChipFlow(spacing: 6) {
-                ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
-                    if case .amount(let ingredient, let label) = part {
-                        ingredientBadge(ingredient, label: label, adventure: adventure)
+                ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
+                    switch part {
+                    case .amount(_, let label):
+                        ingredientBadge(label, step: step, part: index, adventure: adventure)
+                    case .time(let time, let label):
+                        timerBadge(time, label: label, key: "\(adventure.id)-\(step.id)-\(index)", title: adventure.recipe.name)
+                    case .text:
+                        EmptyView()
                     }
+                }
+                if let time = RecipeTime.stepMinutes(step.durationMin), !parts.contains(where: {
+                    if case .time(let reference, _) = $0 { return time == reference }
+                    return false
+                }) {
+                    timerBadge(time, label: time.label(locale: L10n.locale),
+                               key: "\(adventure.id)-\(step.id)-duration", title: adventure.recipe.name)
                 }
             }.padding(.leading, 32)
         }
     }
 
-    private func ingredientBadge(_ ingredient: Ingredient, label: String, adventure: Adventure) -> some View {
-        let key = "ingredient-\(ingredient.id)"
+    private func timerBadge(_ time: RecipeTime, label: String, key: String, title: String) -> some View {
+        Button {
+            store.startCookingTimer(time, id: key, title: title)
+        } label: {
+            Label(label, systemImage: "timer").font(.subheadline.weight(.medium))
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .foregroundStyle(onion).background(onion.opacity(0.14), in: Capsule())
+                .frame(minHeight: 44).contentShape(Rectangle())
+        }.buttonStyle(.plain)
+            .accessibilityLabel(String(format: L10n.text("Start timer for %@"), label))
+            .accessibilityIdentifier("start-timer-" + key)
+            .disabled(store.kitchen.cookingTimers.contains { $0.id == key })
+    }
+
+    private func ingredientBadge(_ label: String, step: CookingStep, part: Int, adventure: Adventure) -> some View {
+        let key = Adventure.ingredientUseKey(stepID: step.id, part: part)
         let checked = adventure.checked.contains(key)
+        let historyLabel = String(format: L10n.text("Step %lld · %@"), locale: L10n.locale, step.stepNumber, label)
         return Button {
-            store.update { $0.toggle(key: key, label: ingredient.name) }
+            store.update { $0.toggle(key: key, label: historyLabel) }
         } label: {
             Label(label, systemImage: checked ? "checkmark.circle.fill" : "circle")
                 .font(.subheadline.weight(.medium)).padding(.horizontal, 10).padding(.vertical, 6)
@@ -449,8 +503,9 @@ struct CookingView: View {
                 .background(onion.opacity(0.14), in: Capsule())
                 .frame(minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain)
-            .accessibilityValue(checked ? "Checked" : "Unchecked")
-            .accessibilityIdentifier("step-ingredient-\(ingredient.id)")
+            .accessibilityValue(checked ? "Used" : "Not used")
+            .accessibilityHint("Toggle whether you used this amount in this step.")
+            .accessibilityIdentifier(key)
     }
 
     func checkRow(key: String, label: String, subtitle: String, adventure: Adventure) -> some View {

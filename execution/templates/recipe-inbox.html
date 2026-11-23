@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="{{ language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Für iPhone vormerken' if language == 'de' else 'Save for iPhone' }} · Onionary</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    {% set de = language == 'de' %}
+    <header class="app-header">
+      <nav class="container" aria-label="Onionary">
+        <a href="/recipes.html">{{ 'Zurück zu den Rezepten' if de else 'Back to recipes' }}</a>
+      </nav>
+    </header>
+    <main class="container">
+      <h1>{{ 'Für iPhone vormerken' if de else 'Save for iPhone' }}</h1>
+      <p>{{ 'Verwende dasselbe Konto auf dem iPhone. Tippe im Rezeptbuch auf „+“ und dann auf „Vorgemerkte Importe“.' if de
+        else 'Use the same account on your iPhone. In the recipe book, tap + and then Saved imports.' }}</p>
+      {% if saved %}
+      <p role="status">{{ 'Import vorgemerkt.' if de else 'Import saved.' }}</p>
+      {% endif %}
+      {% if error == 'input' %}
+      <p role="alert">{{ 'Gib einen öffentlichen HTTPS-Rezeptlink oder Rezepttext ein.' if de
+        else 'Enter a public HTTPS recipe link or recipe text.' }}</p>
+      {% elif error == 'full' %}
+      <p role="alert">{{ 'Entferne in der App einen vorgemerkten Import.' if de
+        else 'Remove a saved import in the app before adding another.' }}</p>
+      {% endif %}
+      <form method="post" action="/import-later">
+        <div class="control-group">
+          <label for="source-kind">{{ 'Art der Quelle' if de else 'Source type' }}</label>
+          <select id="source-kind" name="kind">
+            <option value="url">{{ 'Rezeptlink' if de else 'Recipe link' }}</option>
+            <option value="text"{% if form.kind == 'text' %} selected{% endif %}>{{ 'Rezepttext' if de else 'Recipe text' }}</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="recipe-source">{{ 'Link oder Rezepttext' if de else 'Link or recipe text' }}</label>
+          <textarea id="recipe-source" name="content" rows="6" maxlength="12000" required>{{ form.content or '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">{{ 'Vormerken' if de else 'Save import' }}</button>
+      </form>
+    </main>
+  </body>
+</html>

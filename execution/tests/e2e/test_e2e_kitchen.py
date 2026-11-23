@@ -74,3 +74,39 @@ def test_kitchen_cooked_flow(page: Page):
     
     import re
     expect(card).to_have_class(re.compile(r"cooked-card"))
+
+
+def test_equipment_syncs_with_another_client_and_retries_offline_change(page: Page):
+    login_as_test_user(page)
+    account = page.evaluate("() => ({token: WSWEAuth.token, id: WSWEAuth.user.id})")
+    headers = {"Authorization": f"Bearer {account['token']}"}
+    api = page.request
+    origin = page.base_url
+    path = origin + "/users/me/equipment"
+    recipe = api.post(origin + "/recipes", headers=headers, data={
+        "name": "Cake", "equipment": ["Springform pan", "Chef knife"],
+    }).json()
+    assert api.post(origin + "/meal-plan/add", headers=headers, data={"recipe_ids": [recipe["id"]]}).ok
+    assert api.put(path, headers=headers, data={"changes": {"Chef knife": True}}).ok
+    page.evaluate("(id) => localStorage.setItem('onionary-equipment-v1-' + id, '[\"springform pan\"]')", account["id"])
+    page.goto(origin + "/kitchen.html")
+    with page.expect_response(lambda response: response.url == path and response.request.method == "PUT"):
+        page.locator(".recipe-card").click()
+    pan = page.get_by_role("checkbox", name="Springform pan")
+    knife = page.get_by_role("checkbox", name="Chef knife")
+    expect(pan).to_be_checked()
+    expect(knife).to_be_checked()
+    assert api.get(path, headers=headers).json() == {"owned": ["chef knife", "springform pan"]}
+
+    page.route(path, lambda route: route.fulfill(status=503, body="Offline"))
+    with page.expect_response(lambda response: response.url == path and response.status == 503):
+        knife.uncheck()
+    expect(page.locator("#modal-equipment-sync")).to_be_visible()
+    assert api.get(path, headers=headers).json() == {"owned": ["chef knife", "springform pan"]}
+    page.unroute(path)
+    page.reload()
+    with page.expect_response(lambda response: response.url == path and response.request.method == "PUT"):
+        page.locator(".recipe-card").click()
+    expect(knife).not_to_be_checked()
+    expect(page.locator("#modal-equipment-sync")).to_be_hidden()
+    assert api.get(path, headers=headers).json() == {"owned": ["springform pan"]}

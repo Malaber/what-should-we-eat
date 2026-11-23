@@ -53,6 +53,7 @@ def test_inventory_is_read_only_and_filters_device():
     plan = commands(simulator)
     assert plan["devices"] == ["xcrun", "simctl", "list", "devices", "--json"]
     assert simulator in plan["simulator-events"][-1]
+    assert plan["runtime-mounts"][-1] == 'process == "simdiskimaged" OR process == "cryptexd"'
     assert plan["guest-automation"][:6] == ["xcrun", "simctl", "spawn", simulator, "log", "show"]
     assert 'process == "testmanagerd"' in plan["guest-automation"][-1]
     assert 'process == "SpringBoard"' in plan["guest-automation"][-1]

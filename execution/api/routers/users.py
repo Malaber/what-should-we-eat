@@ -4,13 +4,17 @@ users.py — Endpoints for user registration, login, and profile.
 
 import os
 from typing import Annotated
+from unicodedata import normalize
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel, Field, StrictBool, StringConstraints
+from sqlalchemy.dialects.postgresql import insert as postgres_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
 from execution.db.database import get_db
-from execution.db.models import User, Household, HouseholdMember, generate_unique_invite_code
+from execution.db.models import AccountEquipment, User, Household, HouseholdMember, generate_unique_invite_code
 from execution.api.schemas import UserCreate, UserOut, Token, HouseholdMembershipOut
 from execution.api.auth import get_password_hash, verify_password, create_access_token, get_current_active_user
 
@@ -110,3 +114,55 @@ from execution.account_deletion import DeleteAccount, delete_account
 def delete_my_account(body: DeleteAccount, current_user: User = Depends(get_current_active_user),
                       db: Session = Depends(get_db)):
     delete_account(db, current_user, body.email)
+
+
+ToolName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=320)]
+
+
+class EquipmentUpdate(BaseModel):
+    changes: dict[ToolName, StrictBool] = Field(default_factory=dict)
+    legacy_owned: list[ToolName] = Field(default_factory=list)
+
+
+class EquipmentInventory(BaseModel):
+    owned: list[str]
+
+
+def equipment_key(name: str) -> str:
+    return normalize("NFC", " ".join(name.split()).lower())
+
+
+def equipment_inventory(db: Session, user_id: int) -> EquipmentInventory:
+    rows = db.query(AccountEquipment.name).filter_by(user_id=user_id, owned=True).order_by(AccountEquipment.name)
+    return EquipmentInventory(owned=[name for (name,) in rows])
+
+
+@router.get("/me/equipment", response_model=EquipmentInventory)
+def read_my_equipment(user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    return equipment_inventory(db, user.id)
+
+
+@router.put("/me/equipment", response_model=EquipmentInventory)
+def update_my_equipment(body: EquipmentUpdate, user: User = Depends(get_current_active_user),
+                        db: Session = Depends(get_db)):
+    user_id = user.id
+    if db.query(User.id).filter_by(id=user_id).with_for_update().one_or_none() is None:
+        raise HTTPException(401, "Sign in again to sync equipment.")
+    insert = postgres_insert if db.get_bind().dialect.name == "postgresql" else sqlite_insert
+    changes = {equipment_key(name): owned for name, owned in body.changes.items()}
+    legacy = {equipment_key(name) for name in body.legacy_owned} - changes.keys()
+    key = [AccountEquipment.user_id, AccountEquipment.name]
+    # A stored false prevents a legacy client from reviving a removed tool.
+    if legacy:
+        statement = insert(AccountEquipment.__table__).on_conflict_do_nothing(index_elements=key)
+        db.execute(statement, [
+            {"user_id": user_id, "name": name, "owned": True} for name in sorted(legacy)
+        ])
+    if changes:
+        statement = insert(AccountEquipment.__table__)
+        db.execute(statement.on_conflict_do_update(index_elements=key, set_={"owned": statement.excluded.owned}), [
+            {"user_id": user_id, "name": name, "owned": owned} for name, owned in sorted(changes.items())
+        ])
+    current = equipment_inventory(db, user_id)
+    db.commit()
+    return current

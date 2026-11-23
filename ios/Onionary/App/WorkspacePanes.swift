@@ -4,6 +4,7 @@ import OnionaryCore
 /// Two persistent subtrees: changing the layout never recreates their state.
 struct WorkspacePanes<Primary: View, Secondary: View>: View {
     var focus: String? = nil
+    var keepFocusedFieldVisible = false
     @ViewBuilder let primary: () -> Primary
     @ViewBuilder let secondary: () -> Secondary
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -24,8 +25,13 @@ struct WorkspacePanes<Primary: View, Secondary: View>: View {
                         pane(split: split, height: horizontal ? geometry.size.height : secondExtent) { secondary() }
                             .frame(width: horizontal ? secondExtent : nil)
                     }
+                    .padding(.bottom, !split && keepFocusedFieldVisible && focus != nil ? bottomSpace(geometry.size.height) : 0)
                 }.scrollDisabled(split)
                     .onChange(of: split) { _, _ in if let focus { outer.scrollTo(focus, anchor: .center) } }
+            }
+        }.background {
+            if keepFocusedFieldVisible {
+                KeyboardFocusScroll(focus: focus).frame(width: 0, height: 0)
             }
         }
     }
@@ -34,6 +40,7 @@ struct WorkspacePanes<Primary: View, Secondary: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) { content() }
                     .padding(16).frame(maxWidth: 760, alignment: .leading).frame(maxWidth: .infinity)
+                    .padding(.bottom, split && keepFocusedFieldVisible && focus != nil ? bottomSpace(height ?? 0) : 0)
             // Override the disabled outer scroller for each split pane. Calling
             // scrollDisabled(false) cannot undo an ancestor's disabled value.
             }.environment(\.isScrollEnabled, split)
@@ -42,6 +49,8 @@ struct WorkspacePanes<Primary: View, Secondary: View>: View {
                 .onChange(of: split) { _, _ in if let focus { proxy.scrollTo(focus, anchor: .center) } }
         }
     }
+
+    private func bottomSpace(_ height: CGFloat) -> CGFloat { min(height / 2, 260) }
     private func activeDivision(in geometry: GeometryProxy) -> CGRect? {
         if #available(iOS 27.1, *) {
             return geometry.reservedRegions(kind: .division).first(where: { $0.isActive }).flatMap { region in

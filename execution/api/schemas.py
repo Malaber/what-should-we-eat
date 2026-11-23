@@ -5,9 +5,9 @@ schemas.py — Pydantic models for request / response validation.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, EmailStr, StringConstraints, field_validator
 
 
 # ── Instruction Steps ────────────────────────────────────────────────
@@ -66,6 +66,20 @@ class TagOut(TagBase):
 
 # ── Recipes ──────────────────────────────────────────────────────────
 
+def _unique_equipment(names: list[str]) -> list[str]:
+    by_key = {}
+    for name in names:
+        by_key.setdefault(" ".join(name.split()).casefold(), name)
+    return list(by_key.values())
+
+
+Equipment = Annotated[
+    list[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]],
+    Field(max_length=50),
+    AfterValidator(_unique_equipment),
+]
+
+
 class RecipeBase(BaseModel):
     icon: Optional[str] = Field(default=None, max_length=32)
     servings: float = Field(default=1, gt=0, le=1_000_000, allow_inf_nan=False)
@@ -74,6 +88,7 @@ class RecipeBase(BaseModel):
     kcal_per_serving: Optional[float] = None
     active_cooking_time_min: Optional[int] = None
     total_time_min: Optional[int] = None
+    equipment: Equipment = Field(default_factory=list)
 
 
 class RecipeCreate(RecipeBase):
@@ -94,6 +109,7 @@ class RecipeUpdate(BaseModel):
     kcal_per_serving: Optional[float] = None
     active_cooking_time_min: Optional[int] = None
     total_time_min: Optional[int] = None
+    equipment: Optional[Equipment] = None
     ingredients: Optional[list[IngredientCreate]] = None
     instruction_steps: Optional[list[InstructionStepCreate]] = None
     tags: Optional[list[str]] = None

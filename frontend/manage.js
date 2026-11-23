@@ -56,6 +56,7 @@ let selectedTags = new Set();
 // Dynamic Lists
 const $ingredientsList = document.getElementById('ingredients-list');
 const $stepsList = document.getElementById('steps-list');
+const $equipmentList = document.getElementById('equipment-list');
 const $orderDialog = document.getElementById('recipe-order');
 const $orderRows = document.getElementById('recipe-order-rows');
 const $groupName = document.getElementById('recipe-group-name');
@@ -97,6 +98,7 @@ async function init() {
   // Dynamic lists handlers
   document.getElementById('btn-add-ingredient').addEventListener('click', () => addIngredientRow());
   document.getElementById('btn-add-step').addEventListener('click', () => addStepRow());
+  document.getElementById('btn-add-equipment').addEventListener('click', () => addEquipmentRow().focus());
   document.getElementById('reorder-ingredients').addEventListener('click', () => openOrder($ingredientsList, 'recipe.order-ingredients'));
   document.getElementById('reorder-steps').addEventListener('click', () => openOrder($stepsList, 'recipe.order-steps'));
   document.getElementById('recipe-group-form').addEventListener('submit', event => {
@@ -205,6 +207,7 @@ function openCreateModal() {
 
   $ingredientsList.innerHTML = '';
   $stepsList.innerHTML = '';
+  $equipmentList.replaceChildren();
   addIngredientRow();
   addStepRow();
   $recipeModeSwitch.style.display = 'flex';
@@ -232,6 +235,7 @@ function editRecipe(id) {
 
   $recipeName.value = r.name || '';
   $recipeNotes.value = r.notes || '';
+  setEquipmentRows(r.equipment);
   $recipeServings.value = r.servings || 1;
   $recipeKcal.value = r.kcal_per_serving || '';
   $recipeActiveTime.value = r.active_cooking_time_min || '';
@@ -327,6 +331,7 @@ function applyImportedRecipe(recipe) {
   $recipeIcon.value = recipe.icon || '';
   $recipeName.value = recipe.name || '';
   $recipeNotes.value = recipe.notes || '';
+  setEquipmentRows(recipe.equipment);
   $recipeServings.value = recipe.servings || 1;
   $recipeKcal.value = recipe.kcal_per_serving || '';
   $recipeActiveTime.value = recipe.active_cooking_time_min || '';
@@ -397,6 +402,25 @@ function addNewTag(value = $newTagInput.value) {
 
 
 // ── Dynamic Rows ───────────────────────────────────────────────
+function addEquipmentRow(name = '') {
+  const row = document.createElement('div');
+  row.className = 'editor-row equipment-row';
+  const field = document.createElement('input');
+  field.type = 'text';
+  field.maxLength = 100;
+  field.value = name;
+  field.setAttribute('aria-label', window.t('recipe.tool-name'));
+  field.placeholder = window.t('recipe.tool-name');
+  row.append(field);
+  appendRow($equipmentList, row, 'recipe.remove-tool');
+  return field;
+}
+
+function setEquipmentRows(tools) {
+  $equipmentList.replaceChildren();
+  for (const tool of tools || []) addEquipmentRow(tool);
+}
+
 function addIngredientRow(name = '', qty = '', unit = '', group = '') {
   const div = document.createElement('div');
   div.className = 'editor-row ingredient-row';
@@ -422,8 +446,8 @@ function addStepRow(desc = '', dur = '', group = '') {
 
 function editorRows(list) { return Array.from(list.querySelectorAll('.editor-row')); }
 
-function appendRow(list, row) {
-  const remove = orderButton('✕', window.t('recipe.remove-row'), () => {
+function appendRow(list, row, removeLabel = 'recipe.remove-row') {
+  const remove = orderButton('✕', window.t(removeLabel), () => {
     row.remove();
     updateGroupHeadings(list);
   });
@@ -559,6 +583,7 @@ async function saveRecipe(e) {
     icon: icon || null,
     name: name,
     notes: $recipeNotes.value.trim() || null,
+    equipment: editorRows($equipmentList).map(row => row.querySelector('input').value.trim()).filter(Boolean),
     servings: Number($recipeServings.value),
     kcal_per_serving: parseFloat($recipeKcal.value) || null,
     active_cooking_time_min: parseInt($recipeActiveTime.value) || null,

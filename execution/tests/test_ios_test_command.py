@@ -201,7 +201,16 @@ def test_advisory_ios_jobs_do_not_gate_production_release():
     assert 'python3 -m execution.release_main --publish-assets' in release
 
 
-def test_hosted_xctest_owns_a_private_simulator_set(tmp_path):
+@pytest.mark.parametrize(('profile', 'failure'), [
+    ('iPhone-17-Pro', None),
+    ('iPad-Pro-13-inch-M5-12GB', 'test'),
+    ('iPhone-Duo', None),
+    ('iPhone-Duo', 'bootstatus'),
+    ('iPhone-Duo', 'Onionary.app'),
+    ('iPhone-Duo', 'OnionaryUITests-Runner.app'),
+    ('iPhone-Duo', 'test'),
+])
+def test_hosted_simulator_preparation_is_profile_specific(tmp_path, profile, failure):
     bins = tmp_path / 'bin'
     bins.mkdir()
     capture = tmp_path / 'commands.jsonl'
@@ -212,7 +221,11 @@ with open(os.environ['CAPTURE_ARGS'], 'a') as output:
 if '--test-products' in sys.argv:
     print(sys.argv[-1] + '/Onionary_iphonesimulator27.2-arm64.xctestrun')
 if any(arg.endswith('resolve_simulator.py') for arg in sys.argv): print('hosted-test-device')
-if 'test-without-building' in sys.argv: sys.exit(44)
+failure = os.environ['STAGE_FAILURE']
+if failure == 'test' and 'test-without-building' in sys.argv: sys.exit(44)
+if failure == 'bootstatus' and 'bootstatus' in sys.argv: sys.exit(44)
+if 'install' in sys.argv and sys.argv[-1].endswith('/' + failure): sys.exit(44)
+if 'delete' in sys.argv: sys.exit(124)
 '''
     for name in ('python3', 'xcrun'):
         command = bins / name
@@ -220,24 +233,47 @@ if 'test-without-building' in sys.argv: sys.exit(44)
         command.chmod(0o755)
     results = tmp_path / 'results'
     device_set = str(results / 'simulator-set')
+    duo = profile == 'iPhone-Duo'
     env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
            'CAPTURE_ARGS': str(capture), 'TEST_RESULTS_DIR': str(results),
+           'STAGE_FAILURE': failure or '',
            'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted',
-           'SIMULATOR_DEVICE_TYPE': 'com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro',
-           'SIMULATOR_RUNTIME': '27.2', 'SIMULATOR_TEST_SHARD': '1'}
+           'SIMULATOR_DEVICE_TYPE': f'com.apple.CoreSimulator.SimDeviceType.{profile}',
+           'SIMULATOR_RUNTIME': '27.2',
+           'SIMULATOR_TEST_SHARD': 'testMarketingScreenshots' if duo else '1'}
     env.pop('SIMULATOR_ID', None)
     result = subprocess.run(['bash', str(SCRIPT), '--test-only'], env=env)
-    assert result.returncode == 44
+    assert result.returncode == (44 if failure else 0)
     runs = [json.loads(line) for line in capture.read_text().splitlines()]
     create, = [run for run in runs if '--create' in run]
-    xctest, = [run for run in runs if 'test-without-building' in run]
-    diagnostics, = [run for run in runs if '--simulator' in run]
     assert create[-2:] == ['--device-set', device_set]
-    assert f'-DVTSimulatorSetLocation={device_set}' in xctest
-    assert xctest[xctest.index('--startup-seconds') + 1] == '900'
-    assert xctest[xctest.index('-destination') + 1] == 'platform=iOS Simulator,id=hosted-test-device'
-    assert diagnostics[-2:] == ['--device-set', device_set]
-    assert runs[-1] == ['xcrun', 'simctl', '--set', device_set, 'delete', 'hosted-test-device']
+    products = results / 'DerivedData/Build/Products/Debug-iphonesimulator'
+    simctl = ['xcrun', 'simctl', '--set', device_set]
+    setup = [
+        [*simctl, 'bootstatus', 'hosted-test-device', '-b'],
+        [*simctl, 'install', 'hosted-test-device', str(products / 'Onionary.app')],
+        [*simctl, 'install', 'hosted-test-device', str(products / 'OnionaryUITests-Runner.app')],
+    ]
+    setup_length = {'bootstatus': 1, 'Onionary.app': 2}.get(failure, 3)
+    preparation = [run for run in runs if 'bootstatus' in run or 'install' in run]
+    assert [run[run.index('xcrun'):] for run in preparation] == (setup[:setup_length] if duo else [])
+    assert runs[runs.index(create) + 1:][:len(preparation)] == preparation
+    xctest = [run for run in runs if 'test-without-building' in run]
+    if failure in (None, 'test'):
+        run, = xctest
+        assert f'-DVTSimulatorSetLocation={device_set}' in run
+        assert run[run.index('--startup-seconds') + 1] == '900'
+        assert run[run.index('-destination') + 1] == 'platform=iOS Simulator,id=hosted-test-device'
+        assert run[run.index('-xctestrun') + 1] == str(products.parent / 'Onionary_iphonesimulator27.2-arm64.xctestrun')
+    else:
+        assert not xctest
+    diagnostics = [run for run in runs if '--simulator' in run]
+    assert len(diagnostics) == int(failure is not None)
+    if diagnostics:
+        assert diagnostics[0][-2:] == ['--device-set', device_set]
+    assert runs[-1][runs[-1].index('xcrun') - 1:] == [
+        '30', *simctl, 'delete', 'hosted-test-device',
+    ]
 
 
 @pytest.mark.parametrize('failure_stage', ['none', 'build', 'app', 'plan', 'test'])
@@ -299,7 +335,7 @@ if any(arg.endswith('collect_ios_test_diagnostics.py') for arg in sys.argv) and 
         assert execution[execution.index('--startup-seconds') + 1] == '600'
         assert execution[execution.index('--ready-prefix') + 1] == "Test Suite 'Selected tests' started at "
         assert execution[execution.index('xcodebuild') - 1] == '1800'
-    instances = [c[-1] for c in commands if c[:3] == ['xcrun', 'simctl', 'delete']]
+    instances = [c[-1] for c in commands if c[-4:-1] == ['xcrun', 'simctl', 'delete']]
     assert instances == [f'isolated-test-device-{index}' for index in range(1, len(instances) + 1)]
     if failure_stage == 'none':
         source = (IOS / 'UITests/OnionaryDuoTests.swift').read_text()

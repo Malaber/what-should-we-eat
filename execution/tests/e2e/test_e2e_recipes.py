@@ -22,6 +22,11 @@ def test_recipe_crud(page: Page):
     tag.fill("Weeknight meals")
     tag.press("Enter")
     expect(page.get_by_role("button", name="Remove tag Weeknight meals")).to_be_visible()
+    tools = page.get_by_role("region", name="Equipment")
+    tools.get_by_role("button", name="Add tool").click()
+    tools.get_by_role("textbox", name="Tool name").fill("Chef knife")
+    tools.get_by_role("button", name="Add tool").click()
+    tools.get_by_role("textbox", name="Tool name").last.fill("Kitchen scale")
     page.locator("#btn-save-recipe").click()
     expect(page.locator("#toast")).to_contain_text("Recipe created!", timeout=5000)
     
@@ -31,6 +36,8 @@ def test_recipe_crud(page: Page):
     
     # EDIT
     cards.first.locator("text='✏️ Edit'").click()
+    expect(tools.get_by_role("textbox", name="Tool name").first).to_have_value("Chef knife")
+    tools.get_by_role("button", name="Remove tool").first.click()
     page.get_by_role("button", name="Remove tag Weeknight meals").click()
     tag.fill("night")
     page.locator("#tag-suggestions").get_by_role("button", name="Weeknight meals").click()
@@ -52,6 +59,7 @@ def test_recipe_crud(page: Page):
     expect(page.locator("#toast")).to_contain_text("Recipe updated!")
     expect(cards.first.locator("h3")).to_have_text("CRUD Updated Recipe")
     cards.first.get_by_text('✏️ Edit').click()
+    expect(tools.get_by_role("textbox", name="Tool name")).to_have_value("Kitchen scale")
     expect(page.locator('.step-desc').first).to_have_value('Mix the dough')
     expect(page.locator('#steps-list .editor-group')).to_have_text('Base')
     page.locator('#btn-close-modal').click()
@@ -92,7 +100,7 @@ def test_recipe_share_link_preview_and_revoke(page):
     login_as_test_user(page)
     result = page.evaluate("""async () => {
       const headers={'Content-Type':'application/json',Authorization:'Bearer '+localStorage.getItem('wswe_token')};
-      const recipe=await (await fetch('/recipes',{method:'POST',headers,body:JSON.stringify({name:'Shared soup',ingredients:[{name:'Onion',quantity:2,unit:'pieces',group_name:'Base'}],instruction_steps:[{step_number:1,description:'Chop {{Base::Onion|50%}}'}]})})).json();
+      const recipe=await (await fetch('/recipes',{method:'POST',headers,body:JSON.stringify({name:'Shared soup',ingredients:[{name:'Onion',quantity:2,unit:'pieces',group_name:'Base'}],instruction_steps:[{step_number:1,description:'Chop {{Base::Onion|50%}}'},{step_number:2,description:'Add {{Base::Onion|50%}} to the stock'}]})})).json();
       const share=await (await fetch('/recipe-shares',{method:'POST',headers,body:JSON.stringify({recipe_id:recipe.id})})).json();
       return share;
     }""")
@@ -100,16 +108,22 @@ def test_recipe_share_link_preview_and_revoke(page):
     expect(page.get_by_role('heading', name='Shared soup')).to_be_visible()
     assert '#' not in page.url
     page.get_by_role('button', name='Cook now').click()
-    badge = page.get_by_role('button', name='1 pieces Onion')
+    badges = page.get_by_role('button', name='1 pieces Onion')
+    badge = badges.first
     ingredient = page.get_by_role('checkbox', name='2 pieces Onion')
     badge.click()
+    expect(ingredient).not_to_be_checked()
+    expect(badges.last).to_have_attribute('aria-pressed', 'false')
+    ingredient.check()
     expect(ingredient).to_be_checked()
     ingredient.uncheck()
+    expect(badge).to_have_attribute('aria-pressed', 'true')
+    badge.click()
     expect(badge).to_have_attribute('aria-pressed', 'false')
     badge.click()
     page.get_by_role('checkbox', name='Chop 1 pieces Onion').check()
     page.reload()
-    expect(page.get_by_role('checkbox', name='2 pieces Onion')).to_be_checked()
+    expect(page.get_by_role('checkbox', name='2 pieces Onion')).not_to_be_checked()
     expect(page.get_by_role('checkbox', name='Chop 1 pieces Onion')).to_be_checked()
     expect(badge).to_have_attribute('aria-pressed', 'true')
     assert result['url'].split('#')[-1] not in page.evaluate("localStorage.getItem('onionary.shared-cooking')")

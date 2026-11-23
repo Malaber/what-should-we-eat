@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from execution.api.routers import recipes, shopping_list, tags, users, households, meal_plan, passkeys, recipe_shares
+from execution.api.routers import recipes, shopping_list, tags, users, households, meal_plan, passkeys, recipe_shares, recipe_inbox
 
 
 @asynccontextmanager
@@ -51,6 +51,7 @@ app.include_router(users.router)
 app.include_router(households.router)
 app.include_router(meal_plan.router)
 app.include_router(recipe_shares.router)
+app.include_router(recipe_inbox.router)
 
 
 @app.get("/version", tags=["health"])

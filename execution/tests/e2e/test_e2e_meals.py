@@ -1,6 +1,41 @@
 import pytest
 from playwright.sync_api import Page, expect
 
+
+def test_shopping_header_contrast_and_copy_label(page: Page):
+    login_as_test_user(page)
+    create_recipe(page, "Pasta", "", "", "Italian")
+    page.goto(page.base_url + "/")
+    page.locator("#recipe-count").fill("1")
+    page.locator("#btn-roll").click()
+    toolbar = page.locator(".shopping-card-header")
+    expect(toolbar).to_be_visible()
+
+    for scheme in ("light", "dark"):
+        page.emulate_media(color_scheme=scheme)
+        page.set_viewport_size({"width": 360 if scheme == "dark" else 1200, "height": 800})
+        expect(toolbar.get_by_role("heading")).to_be_visible()
+        expect(toolbar.locator("#shop-badge")).to_be_visible()
+        expect(toolbar.locator("#btn-copy-shopping .btn-text")).to_be_visible()
+        ratios = toolbar.evaluate("""header => {
+          const luminance = color => {
+            const channels = color.match(/[0-9.]+/g).slice(0, 3).map(channel => {
+              const s = Number(channel) / 255;
+              return s <= .04045 ? s / 12.92 : ((s + .055) / 1.055) ** 2.4;
+            });
+            return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2];
+          };
+          const back = getComputedStyle(header).backgroundColor;
+          return ['h2', '#shop-badge', '#btn-copy-shopping'].map(selector => {
+            const style = getComputedStyle(header.querySelector(selector));
+            const foreground = luminance(style.color);
+            const background = luminance(selector === 'h2' ? back : style.backgroundColor);
+            return (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05);
+          });
+        }""")
+        assert min(ratios) >= 4.5, (scheme, ratios)
+        assert toolbar.evaluate("header => header.scrollWidth === header.clientWidth")
+
 def login_as_test_user(page: Page):
     """Helper to log in reliably."""
     page.goto(page.base_url + "/")

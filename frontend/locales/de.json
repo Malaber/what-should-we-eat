@@ -1,4 +1,11 @@
 {
+  "recipe.save-for-iphone": "Für iPhone vormerken",
+  "recipe.equipment": "Küchenutensilien",
+  "recipe.add-tool": "Utensil hinzufügen",
+  "recipe.tool-name": "Name des Utensils",
+  "recipe.remove-tool": "Utensil entfernen",
+  "recipe.equipment-sync": "Änderungen an Küchenutensilien warten auf Synchronisierung.",
+  "share.equipment": "Küchenutensilien",
   "nav.pick_meals": "Gerichte planen",
   "nav.kitchen": "Küche",
   "nav.manage_recipes": "Rezepte verwalten",
@@ -252,5 +259,7 @@
   "share.cook": "Jetzt kochen",
   "share.stop-cooking": "Kochmodus verlassen",
   "share.ingredients": "Zutaten",
+  "share.prepare-ingredients": "Zutaten bereitstellen",
+  "share.use-in-step": "In diesem Schritt verwenden",
   "share.steps": "Schritte"
 }
