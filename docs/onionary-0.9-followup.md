@@ -12,7 +12,9 @@
 
 - [x] Diagnose the November 22 launch and XCTest startup failures using result bundles and runner logs.
 - [x] Stage the app and test runner before hosted XCTest startup. Keep all iPhone, iPad, and Duo cases and screenshot capture.
-- [ ] Exercise the changed path locally, then verify the exact pushed commit on GitHub.
+- [x] Exercise the changed path locally. The 39 iPhone and 39 iPad cases passed on iOS 27.2 with the hosted startup sequence. All five Duo cases passed on the locally installed iOS 27.1 runtime. Apple’s downloader did not install the pinned Duo 27.2 runtime on this Mac. All 355 Python tests and the 60 Swift tests passed.
+
+[Hosted verification](https://github.com/Malaber/what-should-we-eat/pull/12/checks) uses the pinned iOS 27.2 runtimes for all three device profiles.
 
 ## Behavior and compatibility
 
