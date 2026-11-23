@@ -153,11 +153,11 @@ the latter reopens project/package resolution even with test-without-building.
 Validate the UI target, screenshot policy and compiled app/runner/bundle paths;
 missing, ambiguous or filtered plans fail before boot.
 
-On standard hosted runners, boot the isolated simulator and wait for guest
+On standard hosted runners, boot the isolated Duo simulator and wait for guest
 data migration before registering the app and UI runner with `simctl install`.
-XCTest then uses the original compiled plan and test selection. Boot, app
-install and runner install each have their own bounded log, uploaded even
-when a stage fails. Stop on the first setup failure. The host diagnostics
+XCTest then uses the original compiled plan and test selection. XCTest owns
+boot and app installation for iPhone and iPad. Duo boot, app install and runner
+install each have their own bounded log. Stop on the first setup failure. The host diagnostics
 also record runtime-mount events so a simulator remount can be confirmed
 even if the guest is already unreachable. Simulator deletion is bounded
 so a stalled service cannot prevent uploading the original failure evidence.
@@ -411,8 +411,10 @@ the launch and runner evidence again when the image is rechecked. In the
 November 22 rerun, XCTest timed out launching the first iPhone and Duo
 capture cases, and the Duo fold runner crashed during test preparation.
 Twelve other cases in the iPhone shard passed after the launch failure.
-The earlier boot-only preparation did not verify that app registration
-worked before XCTest started. The hosted startup now verifies both installs.
+The November 23 run 45124322034 passed every Duo scenario with explicit
+registration. Standalone app installation stalled on two iPhone workers on
+image `20261104.0337.1`. Keep explicit registration for Duo and let XCTest
+handle installation on the standard runtime.
 
 Before each push during the exception, run every advisory case locally and
 verify the result bundles passed. Run these commands from the repository

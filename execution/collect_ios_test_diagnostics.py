@@ -47,13 +47,13 @@ def commands(simulator, device_set=None):
         '(subsystem BEGINSWITH[c] "com.apple.accessibility" OR eventMessage CONTAINS[c] "Accessibility"))'
     )
     return {
+        "runtime-mounts": ["/usr/bin/log", "show", "--last", "15m", "--style", "compact",
+                           "--predicate", 'process == "simdiskimaged" OR process == "cryptexd"'],
         "hardware": ["sysctl", "hw.ncpu", "hw.memsize"],
         "memory": ["vm_stat"],
         "swap": ["sysctl", "vm.swapusage"],
         "devices": [*simctl, "list", "devices", "--json"],
         "runtimes": [*simctl, "list", "runtimes", "--json"],
-        "runtime-mounts": ["/usr/bin/log", "show", "--last", "15m", "--style", "compact",
-                           "--predicate", 'process == "simdiskimaged" OR process == "cryptexd"'],
         "simulator-events": ["/usr/bin/log", "show", "--last", "15m", "--style",
                              "compact", "--predicate", predicate],
         "guest-automation": [*simctl, "spawn", simulator, "log", "show",
@@ -64,7 +64,9 @@ def commands(simulator, device_set=None):
 def collect(output, simulator, device_set=None):
     plan = commands(simulator, device_set)
     output.mkdir(parents=True, exist_ok=True)
-    reports = {name: capture(command, output / f"{name}.txt")
+    # On a stalled host, log show can spend more than five seconds opening
+    # the log store. Capture mount events first while the VM is still available.
+    reports = {name: capture(command, output / f"{name}.txt", timeout=15 if name == "runtime-mounts" else 5)
                for name, command in plan.items()}
     manifest = {"simulator": simulator, "commands": reports}
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

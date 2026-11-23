@@ -114,9 +114,11 @@ if [[ "$mode" == all ]]; then
 fi
 validate_test_products
 if [[ -z "$simulator_id" ]]; then create_simulator; fi
-if [[ -n "$simulator_set" ]]; then
+if [[ -n "$simulator_set" && "$device_type" == *iPhone-Duo ]]; then
   # Complete guest migration and register both apps with LaunchServices
-  # before XCTest opens its automation session on a cold hosted VM.
+  # before XCTest opens its automation session on the Duo runtime.
+  # The standard runtime stalls during standalone installation on hosted
+  # iPhones. Let XCTest own its boot and install on iPhone and iPad.
   python3 ../../execution/run_bounded.py --log "$result_dir/simulator-boot.log" 600 \
     "${simctl[@]}" bootstatus "$simulator_id" -b
   python3 ../../execution/run_bounded.py --log "$result_dir/app-install.log" 180 \

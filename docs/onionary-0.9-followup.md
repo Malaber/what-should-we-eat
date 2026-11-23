@@ -16,6 +16,8 @@
 
 [Hosted verification](https://github.com/Malaber/what-should-we-eat/pull/12/checks) uses the pinned iOS 27.2 runtimes for all three device profiles.
 
+The [November 23 run](https://github.com/Malaber/what-should-we-eat/actions/runs/45124322034) passed all three Duo shards with explicit guest preparation. Two iPhone jobs stalled during standalone app installation, so explicit preparation now applies only to Duo. The iPad tests failed to reopen the keyboard on the second instruction and exceeded the session renewal case budget while querying the restored checkmark. The tests now wait for the keyboard to close before tapping the next instruction and observe the restored checkmark with one value query.
+
 ## Behavior and compatibility
 
 - Update the backend to migration `20261119_01` to sync equipment checks. Each signed-in account has its own equipment inventory, including within a shared kitchen. Web and iOS keep offline changes queued until the server confirms them. Existing locally checked tools migrate on the first successful sync. An explicit uncheck on the server survives later imports from other devices.

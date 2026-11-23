@@ -201,8 +201,16 @@ def test_advisory_ios_jobs_do_not_gate_production_release():
     assert 'python3 -m execution.release_main --publish-assets' in release
 
 
-@pytest.mark.parametrize('failure', [None, 'bootstatus', 'Onionary.app', 'OnionaryUITests-Runner.app', 'test'])
-def test_hosted_stages_test_products_in_the_private_simulator_set(tmp_path, failure):
+@pytest.mark.parametrize(('profile', 'failure'), [
+    ('iPhone-17-Pro', None),
+    ('iPad-Pro-13-inch-M5-12GB', 'test'),
+    ('iPhone-Duo', None),
+    ('iPhone-Duo', 'bootstatus'),
+    ('iPhone-Duo', 'Onionary.app'),
+    ('iPhone-Duo', 'OnionaryUITests-Runner.app'),
+    ('iPhone-Duo', 'test'),
+])
+def test_hosted_simulator_preparation_is_profile_specific(tmp_path, profile, failure):
     bins = tmp_path / 'bin'
     bins.mkdir()
     capture = tmp_path / 'commands.jsonl'
@@ -225,12 +233,14 @@ if 'delete' in sys.argv: sys.exit(124)
         command.chmod(0o755)
     results = tmp_path / 'results'
     device_set = str(results / 'simulator-set')
+    duo = profile == 'iPhone-Duo'
     env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
            'CAPTURE_ARGS': str(capture), 'TEST_RESULTS_DIR': str(results),
            'STAGE_FAILURE': failure or '',
            'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted',
-           'SIMULATOR_DEVICE_TYPE': 'com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro',
-           'SIMULATOR_RUNTIME': '27.2', 'SIMULATOR_TEST_SHARD': '1'}
+           'SIMULATOR_DEVICE_TYPE': f'com.apple.CoreSimulator.SimDeviceType.{profile}',
+           'SIMULATOR_RUNTIME': '27.2',
+           'SIMULATOR_TEST_SHARD': 'testMarketingScreenshots' if duo else '1'}
     env.pop('SIMULATOR_ID', None)
     result = subprocess.run(['bash', str(SCRIPT), '--test-only'], env=env)
     assert result.returncode == (44 if failure else 0)
@@ -245,8 +255,9 @@ if 'delete' in sys.argv: sys.exit(124)
         [*simctl, 'install', 'hosted-test-device', str(products / 'OnionaryUITests-Runner.app')],
     ]
     setup_length = {'bootstatus': 1, 'Onionary.app': 2}.get(failure, 3)
-    preparation = runs[runs.index(create) + 1:][:setup_length]
-    assert [run[run.index('xcrun'):] for run in preparation] == setup[:setup_length]
+    preparation = [run for run in runs if 'bootstatus' in run or 'install' in run]
+    assert [run[run.index('xcrun'):] for run in preparation] == (setup[:setup_length] if duo else [])
+    assert runs[runs.index(create) + 1:][:len(preparation)] == preparation
     xctest = [run for run in runs if 'test-without-building' in run]
     if failure in (None, 'test'):
         run, = xctest
