@@ -8,6 +8,12 @@
 - [x] Record the physical TestFlight Apple Intelligence result and investigate the production build difference. Exercise available import and error paths.
 - [x] Run integrated backend, browser, Swift, and native simulator tests before pushing. [PR #12 and its CI results](https://github.com/Malaber/what-should-we-eat/pull/12/checks)
 
+## Hosted simulator reliability follow-up
+
+- [ ] Diagnose the November 22 launch and XCTest startup failures using result bundles and runner logs.
+- [ ] Stabilize native setup on standard runners while retaining all iPhone, iPad, and Duo cases and screenshot capture.
+- [ ] Exercise the changed path locally, then verify the exact pushed commit on GitHub.
+
 ## Behavior and compatibility
 
 - Update the backend to migration `20261119_01` to sync equipment checks. Each signed-in account has its own equipment inventory, including within a shared kitchen. Web and iOS keep offline changes queued until the server confirms them. Existing locally checked tools migrate on the first successful sync. An explicit uncheck on the server survives later imports from other devices.
