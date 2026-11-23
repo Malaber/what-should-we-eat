@@ -498,8 +498,9 @@ final class OnionaryUITests: OnionaryUITestCase {
         UIAppLifecycle.background()
         app.activate()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        XCTAssertTrue(ingredient.waitForExistence(timeout: 5))
-        XCTAssertEqual(ingredient.value as? String, "Checked")
+        // One native query observes both existence and the restored value.
+        // A plain existence wait can request several slow snapshots after Home.
+        XCTAssertTrue(UIReadiness.waitForValue("Checked", matching: app.buttons.matching(identifier: "ingredient-1")))
         try tapNavigation("Settings", in: app)
         XCTAssertTrue(app.staticTexts["Access valid until"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Account, Test Cook"].exists)
@@ -682,12 +683,19 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertEqual(first.value as? String, firstWithIngredient)
         if insert.exists { app.buttons["Done"].tap() }
         XCTAssertTrue(insert.waitForNonExistence(timeout: 5))
+        let keyboard = app.keyboards.element(boundBy: 0)
+        XCTAssertTrue(keyboard.waitForNonExistence(timeout: 5))
 
-        let second = instructions.element(boundBy: 1)
+        let secondText = "Fold in {{Cheese|20%}} and lemon zest."
+        let second = instructions.matching(NSPredicate(format: "value == %@", secondText)).firstMatch
         XCTAssertTrue(second.waitForExistence(timeout: 5))
         if !second.isHittable { app.swipeUp() }
-        second.coordinate(withNormalizedOffset: leadingText).tap()
-        XCTAssertTrue(app.keyboards.element(boundBy: 0).waitForExistence(timeout: 5))
+        XCTAssertTrue(second.wait(for: \.isHittable, toEqual: true, timeout: 5),
+                      "The second instruction must be reachable after closing the keyboard")
+        // Use a stable identity once found so we can read its updated text.
+        let secondInstruction = app.textFields[second.identifier]
+        secondInstruction.coordinate(withNormalizedOffset: leadingText).tap()
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5), "The second instruction must open the keyboard")
         XCTAssertTrue(insert.waitForExistence(timeout: 5))
         insert.tap()
         let insertTimer = app.buttons["insert-time-placeholder"]
@@ -708,7 +716,7 @@ final class OnionaryUITests: OnionaryUITestCase {
         XCTAssertTrue(confirm.isEnabled)
         confirm.tap()
         XCTAssertTrue(timer.waitForNonExistence(timeout: 5))
-        XCTAssertEqual(second.value as? String, "{{time|90s}} Fold in {{Cheese|20%}} and lemon zest.")
+        XCTAssertEqual(secondInstruction.value as? String, "{{time|90s}} " + secondText)
         XCTAssertEqual(first.value as? String, firstWithIngredient)
         if app.keyboards.element(boundBy: 0).exists { app.buttons["Done"].tap() }
         XCTAssertFalse(insert.exists)
